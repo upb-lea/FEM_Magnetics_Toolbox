@@ -2231,6 +2231,8 @@ class MainWindow(QMainWindow):
         # List all materials from database
         get_material_list = database.material_list_in_database()
         md_core_material_options = get_material_list
+        # Material data Source for permeability and permittivity
+        data_source_options = [source for source in fmt.MaterialDataSource]
 
         md_winding_material_options = [key for key in fmt.wire_material_database()]
         md_winding_type_options = [self.translation_dict['litz'], self.translation_dict['solid']]
@@ -2265,6 +2267,10 @@ class MainWindow(QMainWindow):
             self.md_simulation_type_comboBox.addItem(option)
         for option in md_core_material_options:
             self.md_core_material_comboBox.addItem(option)
+        for option in data_source_options:
+            self.md_permeability_datasource_combobox.addItem(option)
+        for option in data_source_options:
+            self.md_permittivity_datasource_combobox.addItem(option)
         for option in md_winding_material_options:
             self.md_winding1_material_comboBox.addItem(option)
             self.md_winding2_material_comboBox.addItem(option)
@@ -2506,6 +2512,7 @@ class MainWindow(QMainWindow):
             self.md_core_width_lineEdit.setText(str(format_number(core["core_inner_diameter"])))
             self.md_window_height_lineEdit.setText(str(format_number(core["window_h"])))
             self.md_window_width_lineEdit.setText(str(format_number(core["window_w"])))
+
             self.md_core_width_lineEdit.setEnabled(False)
             self.md_window_height_lineEdit.setEnabled(False)
             self.md_window_width_lineEdit.setEnabled(False)
@@ -2991,16 +2998,18 @@ class MainWindow(QMainWindow):
                                                             core_h=1)
 
             material_enum = fmt.Material(self.md_core_material_comboBox.currentText())
+            permeability_datasource_enum = fmt.MaterialDataSource(self.md_permeability_datasource_combobox.currentText())
+            permittivity_datasource_enum = fmt.MaterialDataSource(self.md_permittivity_datasource_combobox.currentText())
 
             core = fmt.Core(core_type=fmt.CoreType.Single,
                             core_dimensions=core_dimensions,
                             detailed_core_model=False,
                             material=material_enum, temperature=int(self.md_core_temp_lineEdit.text()), frequency=int(self.md_base_frequency_lineEdit.text()),
                             # permeability_datasource="manufacturer_datasheet",
-                            permeability_datasource=fmt.MaterialDataSource.Measurement,
+                            permeability_datasource=permeability_datasource_enum,
                             permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
                             permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
-                            permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                            permittivity_datasource=permittivity_datasource_enum,
                             permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
                             permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
 
@@ -3160,7 +3169,8 @@ class MainWindow(QMainWindow):
 
             # 1. chose simulation type
             geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer,
-                                        working_directory=self.md_working_directory_lineEdit.text())
+                                        working_directory=self.md_working_directory_lineEdit.text(),
+                                        verbosity=fmt.Verbosity.ToConsole)
 
             # -----------------------------------------------
             # Core
@@ -3169,10 +3179,24 @@ class MainWindow(QMainWindow):
                                                             window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text()),
                                                             window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text()),
                                                             core_h=0.04)
-            core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
-                            permeability_datasource=fmt.MaterialDataSource.Custom,
-                            permittivity_datasource=fmt.MaterialDataSource.Custom,
-                            detailed_core_model=False)
+            material_enum = fmt.Material(self.md_core_material_comboBox.currentText())
+            permeability_datasource_enum = fmt.MaterialDataSource(self.md_permeability_datasource_combobox.currentText())
+            permittivity_datasource_enum = fmt.MaterialDataSource(self.md_permittivity_datasource_combobox.currentText())
+            core = fmt.Core(core_type=fmt.CoreType.Single,
+                            core_dimensions=core_dimensions,
+                            detailed_core_model=False,
+                            material=material_enum, temperature=int(self.md_core_temp_lineEdit.text()), frequency=int(self.md_base_frequency_lineEdit.text()),
+                            # permeability_datasource="manufacturer_datasheet",
+                            permeability_datasource=permeability_datasource_enum,
+                            permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                            permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
+                            permittivity_datasource=permittivity_datasource_enum,
+                            permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                            permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+            # core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
+            #                 permeability_datasource=permeability_datasource_enum,
+            #                 permittivity_datasource=permittivity_datasource_enum,
+            #                 detailed_core_model=False)
             geo.set_core(core)
             """
             geo.core.update(window_h = comma_str_to_point_float(self.md_window_height_lineEdit.text()),
