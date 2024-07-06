@@ -1738,7 +1738,7 @@ class MainWindow(QMainWindow):
 
         materials_used_list = [item for item in material_list if item]
 
-        # First plot: uR/u0 vs B (Real Part)
+        # First plot: (Real Part)
         matplotlib_widget1.axis.clear()
         self.layout = QVBoxLayout(self.plotwidget_13)
         self.layout.addWidget(matplotlib_widget1)
@@ -1755,7 +1755,7 @@ class MainWindow(QMainWindow):
         matplotlib_widget1.figure.canvas.draw_idle()
         matplotlib_widget1.figure.tight_layout()
 
-        # Second plot: uR/u0 vs B (Imaginary Part)
+        # Second plot: (Imaginary Part)
         matplotlib_widget2.axis.clear()
         self.layout = QVBoxLayout(self.plotwidget_14)
         self.layout.addWidget(matplotlib_widget2)
@@ -2995,7 +2995,7 @@ class MainWindow(QMainWindow):
             core = fmt.Core(core_type=fmt.CoreType.Single,
                             core_dimensions=core_dimensions,
                             detailed_core_model=False,
-                            material=material_enum, temperature=45, frequency=int(self.md_base_frequency_lineEdit.text()),
+                            material=material_enum, temperature=int(self.md_core_temp_lineEdit.text()), frequency=int(self.md_base_frequency_lineEdit.text()),
                             # permeability_datasource="manufacturer_datasheet",
                             permeability_datasource=fmt.MaterialDataSource.Measurement,
                             permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
@@ -3127,7 +3127,7 @@ class MainWindow(QMainWindow):
             elif winding_material_name == 'Aluminium':
                 winding_material_enum = fmt.Conductivity.Aluminium
 
-            winding = fmt.Conductor(0, winding_material_enum)
+            winding = fmt.Conductor(0, winding_material_enum, winding_material_temperature=int(self.md_winding1_temp_lineEdit.text()))
             scheme1 = getattr(fmt.ConductorArrangement, self.md_winding1_scheme_comboBox.currentText())
             if self.md_winding1_type_comboBox.currentText() == self.translation_dict['solid']:
                 winding.set_solid_round_conductor(
@@ -3301,7 +3301,7 @@ class MainWindow(QMainWindow):
             elif winding1_material_name == 'Aluminium':
                 winding1_material_enum = fmt.Conductivity.Aluminium
 
-            winding1 = fmt.Conductor(0, winding1_material_enum)
+            winding1 = fmt.Conductor(0, winding1_material_enum, winding_material_temperature=int(self.md_winding1_temp_lineEdit.text()))
             scheme1 = getattr(fmt.ConductorArrangement, self.md_winding1_scheme_comboBox.currentText())
             if self.md_winding1_type_comboBox.currentText() == self.translation_dict['solid']:
                 winding1.set_solid_round_conductor(
@@ -3321,7 +3321,7 @@ class MainWindow(QMainWindow):
             elif winding2_material_name == 'Aluminium':
                 winding2_material_enum = fmt.Conductivity.Aluminium
 
-            winding2 = fmt.Conductor(1, winding2_material_enum)
+            winding2 = fmt.Conductor(1, winding2_material_enum, winding_material_temperature=int(self.md_winding2_temp_lineEdit.text()))
             scheme2 = getattr(fmt.ConductorArrangement, self.md_winding2_scheme_comboBox.currentText())
             if self.md_winding2_type_comboBox.currentText() == self.translation_dict['solid']:
                 winding2.set_solid_round_conductor(
