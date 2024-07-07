@@ -245,6 +245,11 @@ class MainWindow(QMainWindow):
         self.md_simulation_type_comboBox.currentTextChanged.connect(self.md_change_simulation_type)
         # update dc and frequencies boxes based on the simulation type.
         self.md_simulation_type_comboBox.currentTextChanged.connect(self.update_dc_and_frequencies_checkboxes)
+        # Materials with setup name
+        self.md_core_material_comboBox.currentIndexChanged.connect(self.md_test_setup_name)
+        # self.md_core_material_comboBox.currentIndexChanged.connect(self.md_test_setup_name_enable)
+        self.md_permeability_datasource_combobox.currentIndexChanged.connect(self.md_test_setup_name_enable)
+        self.md_permittivity_datasource_combobox.currentIndexChanged.connect(self.md_test_setup_name_enable)
 
         # core
         self.md_core_geometry_comboBox.currentTextChanged.connect(self.md_set_core_geometry_from_database)
@@ -2521,6 +2526,41 @@ class MainWindow(QMainWindow):
             self.md_window_height_lineEdit.setEnabled(True)
             self.md_window_width_lineEdit.setEnabled(True)
 
+    def md_test_setup_name(self):
+        """Get test setup names from database for particular material."""
+        mat_text1 = self.md_core_material_comboBox.currentText()
+        self.md_test_name1_comboBox.clear()
+        self.md_test_name2_comboBox.clear()
+
+        names_list = []
+
+        if mat_text1:
+            names_list = database.find_measurement_names(material_name=mat_text1, datatype="complex_permeability")
+
+        for option in names_list:
+            self.md_test_name1_comboBox.addItem(option)
+            self.md_test_name2_comboBox.addItem(option)
+
+    def md_test_setup_name_enable(self):
+        """Enable or disable the test name combo box based on the data source."""
+        # material = self.md_core_material_comboBox.currentText()
+        permeability_source = self.md_permeability_datasource_combobox.currentText()
+        permittivity_source = self.md_permittivity_datasource_combobox.currentText()
+        # Hide the comboboxes and labels if it is datasheet
+        self.md_test_name1_comboBox.setVisible(permeability_source == "measurements")
+        self.md_test_name2_comboBox.setVisible(permittivity_source == "measurements")
+        self.md_test_name1_label.setVisible(permeability_source == "measurements")
+        self.md_test_name2_label.setVisible(permittivity_source == "measurements")
+
+        # if permeability_source == "measurements":
+        #     self.md_test_name1_comboBox.setEnabled(True)
+        # else:
+        #     self.md_test_name1_comboBox.setEnabled(False)
+        # if permittivity_source == "measurements":
+        #     self.md_test_name2_comboBox.setEnabled(True)
+        # else:
+        #     self.md_test_name2_comboBox.setEnabled(False)
+
     def md_winding1_set_litz_parameters_from_litz_database(self):
         """Set litz parameters from material database for winding 1 in manual design."""
         litz_dict = fmt.litz_database()
@@ -3000,6 +3040,8 @@ class MainWindow(QMainWindow):
             material_enum = fmt.Material(self.md_core_material_comboBox.currentText())
             permeability_datasource_enum = fmt.MaterialDataSource(self.md_permeability_datasource_combobox.currentText())
             permittivity_datasource_enum = fmt.MaterialDataSource(self.md_permittivity_datasource_combobox.currentText())
+            permeability_measurement_setup_enum = mdb.MeasurementSetup(self.md_test_name1_comboBox.currentText())
+            permittivity_measurement_setup_enum = mdb.MeasurementSetup(self.md_test_name2_comboBox.currentText())
 
             core = fmt.Core(core_type=fmt.CoreType.Single,
                             core_dimensions=core_dimensions,
@@ -3008,10 +3050,10 @@ class MainWindow(QMainWindow):
                             # permeability_datasource="manufacturer_datasheet",
                             permeability_datasource=permeability_datasource_enum,
                             permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                            permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
+                            permeability_measurement_setup=permeability_measurement_setup_enum,
                             permittivity_datasource=permittivity_datasource_enum,
                             permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                            permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+                            permittivity_measurement_setup=permittivity_measurement_setup_enum, mdb_verbosity=fmt.Verbosity.Silent)
 
             geo.set_core(core)
 
@@ -3182,6 +3224,8 @@ class MainWindow(QMainWindow):
             material_enum = fmt.Material(self.md_core_material_comboBox.currentText())
             permeability_datasource_enum = fmt.MaterialDataSource(self.md_permeability_datasource_combobox.currentText())
             permittivity_datasource_enum = fmt.MaterialDataSource(self.md_permittivity_datasource_combobox.currentText())
+            permeability_measurement_setup_enum = mdb.MeasurementSetup(self.md_test_name1_comboBox.currentText())
+            permittivity_measurement_setup_enum = mdb.MeasurementSetup(self.md_test_name2_comboBox.currentText())
             core = fmt.Core(core_type=fmt.CoreType.Single,
                             core_dimensions=core_dimensions,
                             detailed_core_model=False,
@@ -3189,10 +3233,10 @@ class MainWindow(QMainWindow):
                             # permeability_datasource="manufacturer_datasheet",
                             permeability_datasource=permeability_datasource_enum,
                             permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                            permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
+                            permeability_measurement_setup=permeability_measurement_setup_enum,
                             permittivity_datasource=permittivity_datasource_enum,
                             permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                            permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+                            permittivity_measurement_setup=permittivity_measurement_setup_enum, mdb_verbosity=fmt.Verbosity.Silent)
             # core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
             #                 permeability_datasource=permeability_datasource_enum,
             #                 permittivity_datasource=permittivity_datasource_enum,
