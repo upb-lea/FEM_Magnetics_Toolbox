@@ -224,6 +224,24 @@ class ConductorDistribution(IntEnum):
     HorizontalLeftward_VerticalDownward = 8
     """Places conductors horizontally leftward first, then moves vertically downward for the next set with consistent direction."""
 
+class FoilVerticalDistribution(IntEnum):
+    """Defines specific strategies for placing rectangular foil vertical conductors starting from the peripheral (edges) of the virtual winding window."""
+
+    HorizontalRightward = 1
+    """Moves horizontally rightward for the next set with consistent direction."""
+
+    HorizontalLeftward = 2
+    """Moves horizontally leftward for the next set with consistent direction."""
+
+class FoilHorizontalDistribution(IntEnum):
+    """Defines specific strategies for placing rectangular foil horizontal conductors starting from the peripheral (edges) of the virtual winding window."""
+
+    VerticalUpward = 1
+    """Moves vertically upward for the next set with consistent direction."""
+
+    VerticalDownward = 2
+    """Moves vertically downward for the next set with consistent direction."""
+
 class CenterTappedInterleavingType(IntEnum):
     """Contains different interleaving types for the center tapped transformer."""
 
