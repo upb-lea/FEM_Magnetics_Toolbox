@@ -733,7 +733,8 @@ def fixture_inductor_core_fixed_loss_angle_foil_vertical(temp_folder):
         winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
         winding.set_rectangular_conductor(thickness=1e-3)
 
-        vww.set_winding(winding, 5, fmt.WindingScheme.FoilVertical, wrap_para_type=wrap_para_type)
+        vww.set_winding(winding, 5, fmt.WindingScheme.FoilVertical, fmt.Align.ToEdges, wrap_para_type=wrap_para_type,
+                        foil_vertical_placing_strategy=fmt.FoilVerticalDistribution.HorizontalRightward)
         geo.set_winding_windows([winding_window])
 
         geo.create_model(freq=100000, pre_visualize_geometry=False, save_png=False)
@@ -851,7 +852,8 @@ def fixture_inductor_core_fixed_loss_angle_foil_horizontal(temp_folder):
         winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
         winding.set_rectangular_conductor(thickness=1e-3)
 
-        vww.set_winding(winding, 12, fmt.WindingScheme.FoilHorizontal, wrap_para_type=wrap_para_type)
+        vww.set_winding(winding, 12, fmt.WindingScheme.FoilHorizontal, fmt.Align.ToEdges, wrap_para_type=wrap_para_type,
+                        foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalUpward)
         geo.set_winding_windows([winding_window])
 
         geo.create_model(freq=100000, pre_visualize_geometry=False, save_png=False)
