@@ -801,8 +801,10 @@ class VirtualWindingWindow:
         self.winding_is_set = True
         self.wrap_para = wrap_para_type
 
-        if alignment is not None and placing_strategy is None:
-            raise Exception("When alignment is there a placing_strategy must be set")
+        # if alignment is not None and placing_strategy is None:
+        #     raise Exception("When alignment is there a placing_strategy must be set")
+        # if alignment is not None and (placing_strategy is None and foil_vertical_placing_strategy is None and foil_horizontal_placing_strategy is None):
+        #     raise Exception("When alignment is set, at least one placing strategy must be set")
 
         if winding_scheme is WindingScheme.FoilVertical and wrap_para_type is None:
             raise Exception("When winding scheme is FoilVertical a wrap para type must be set.")
