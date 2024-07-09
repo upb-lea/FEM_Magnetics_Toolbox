@@ -15,7 +15,7 @@ from typing import List
 import PIL
 import webbrowser
 # new import for threads
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QCoreApplication
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QCoreApplication, QMutex
 
 import materialdatabase as mdb
 import matplotlib.pyplot as plt
@@ -69,6 +69,19 @@ def handle_errors(func):
             show_error(str(e))
     return wrapper
 
+def format_number(value, decimals=4):
+    """
+    Round a number to a specified number of decimal places.
+
+    :param value: value to format.
+    :type value: float
+    :param decimals: number of decimal places
+    :type decimals: int
+
+    Returns:
+    float: The formatted number.
+    """
+    return round(value, decimals)
 
 def comma_str_to_point_float(input_str: str) -> float:
     """
@@ -176,6 +189,8 @@ class MainWindow(QMainWindow):
         self.statusBar().addPermanentWidget(self.progressBar)
         self.progressBar.setMinimum(0)
         self.progressBar.setValue(0)
+        # QMutex is used to protect shared resources from concurrent access by multiple runs
+        self.mutex = QMutex()
         # self.coreImageLabel.setPixmap(pixmap)
         # self.imageBoxImageLabel.setPixmap(pixmap)
         self.translation_dict = {
@@ -228,6 +243,9 @@ class MainWindow(QMainWindow):
 
         # simulation
         self.md_simulation_type_comboBox.currentTextChanged.connect(self.md_change_simulation_type)
+        # update dc and frequencies boxes based on the simulation type.
+        self.md_simulation_type_comboBox.currentTextChanged.connect(self.update_dc_and_frequencies_checkboxes)
+
         # core
         self.md_core_geometry_comboBox.currentTextChanged.connect(self.md_set_core_geometry_from_database)
         # windings
@@ -259,15 +277,15 @@ class MainWindow(QMainWindow):
         self.flag_insulation = self.enable_insulation_checkbox.isChecked()
 
         "Signals in Excitation Tab"
-        self.md_dc_checkBox.stateChanged.connect(self.md_dc_enable)
-        self.md_fk1_checkBox.stateChanged.connect(self.md_change_frequencies_1)
-        self.md_fk2_checkBox.stateChanged.connect(self.md_change_frequencies_2)
-        self.md_fk3_checkBox.stateChanged.connect(self.md_change_frequencies_3)
-        self.md_fk4_checkBox.stateChanged.connect(self.md_change_frequencies_4)
-        self.md_fk5_checkBox.stateChanged.connect(self.md_change_frequencies_5)
-        self.md_fk6_checkBox.stateChanged.connect(self.md_change_frequencies_6)
-        self.md_fk7_checkBox.stateChanged.connect(self.md_change_frequencies_7)
-        self.md_fk8_checkBox.stateChanged.connect(self.md_change_frequencies_8)
+        self.md_dc_checkBox.stateChanged.connect(self.update_dc_and_frequencies_checkboxes)
+        self.md_fk1_checkBox.stateChanged.connect(self.update_dc_and_frequencies_checkboxes)
+        self.md_fk2_checkBox.stateChanged.connect(self.update_dc_and_frequencies_checkboxes)
+        self.md_fk3_checkBox.stateChanged.connect(self.update_dc_and_frequencies_checkboxes)
+        self.md_fk4_checkBox.stateChanged.connect(self.update_dc_and_frequencies_checkboxes)
+        self.md_fk5_checkBox.stateChanged.connect(self.update_dc_and_frequencies_checkboxes)
+        self.md_fk6_checkBox.stateChanged.connect(self.update_dc_and_frequencies_checkboxes)
+        self.md_fk7_checkBox.stateChanged.connect(self.update_dc_and_frequencies_checkboxes)
+        self.md_fk8_checkBox.stateChanged.connect(self.update_dc_and_frequencies_checkboxes)
         self.md_excitation_update_graph_Button.clicked.connect(self.md_redraw_input_signals)
 
         "Signals in Simulation Tab"
@@ -679,7 +697,7 @@ class MainWindow(QMainWindow):
 
     def webbrowser_contribute(self):
         """Open the web browser to the GitHub FEMMT repository contribution page."""
-        webbrowser.open('https://github.com/upb-lea/FEM_Magnetics_Toolbox')
+        webbrowser.open('https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/Contributing.rst')
 
     def webbrowser_bugreport(self):
         """Open the web browser to the GitHub FEMMT repository issue page."""
@@ -687,7 +705,7 @@ class MainWindow(QMainWindow):
 
     def webbrowser_documentation(self):
         """Open the web browser to the FEMMT documentation."""
-        webbrowser.open('https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.html')
+        webbrowser.open('https://upb-lea.github.io/FEM_Magnetics_Toolbox/')
 
     #  **************************** Automated design tab ************************************************************  #
 
@@ -2257,7 +2275,11 @@ class MainWindow(QMainWindow):
         :rtype: None
         """
         md_simulation_type_options = [self.translation_dict['inductor'], self.translation_dict['transformer']]
-        md_core_material_options = ['N95', 'N49', 'N87']
+        # md_core_material_options = ['N95', 'N49', 'N87']
+        # List all materials from database
+        get_material_list = database.material_list_in_database()
+        md_core_material_options = get_material_list
+
         md_winding_material_options = [key for key in fmt.wire_material_database()]
         md_winding_type_options = [self.translation_dict['litz'], self.translation_dict['solid']]
         md_implicit_litz_options = [self.translation_dict["implicit_litz_radius"], self.translation_dict["implicit_ff"],
@@ -2453,58 +2475,73 @@ class MainWindow(QMainWindow):
     @handle_errors
     def md_gmsh_pre_visualisation(self, *args, **kwargs):
         """Pre-visualize when update preview button is pressed in the definitions tab."""
+        if not self.mutex.tryLock():  # Try to acquire the mutex. If it's already locked by another operation, show a message and return.
+            # raise RuntimeWarning("Another operation is in progress. Please close gmsh.")
+            QMessageBox.warning(self, "Warning", "Another operation is in progress. Please close gmsh Window.")
+            return
+
         try:
             # Hide the progressBar if it exists.
             try:
                 self.progressBar.hide()
             except:
                 pass
-            # show a statusbar while Pre-visualize running
+
+            # Show a statusbar message while Pre-visualize is running.
             self.statusBar().showMessage('Pre-visualize running...')
             QCoreApplication.processEvents()
 
+            # Call geometry setup.
             geo = self.md_setup_geometry()
             print(f"geo:{geo}")
 
-            # geo.create_model(freq=100000, visualize_before=False, do_meshing=False, save_png=True)
-            geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), pre_visualize_geometry=False,
-                             save_png=True)
-            print(f"geo.file_data.hybrid_color_visualize_file: {geo.file_data.hybrid_color_visualize_file}")
-            image_pre_visualisation = PIL.Image.open(geo.file_data.hybrid_color_visualize_file)
+            # Clear previous mesh files to ensure clean visualization.
+            geo.file_data.clean_folder_structure(geo.file_data.mesh_folder_path)
 
+            # Create the model for pre-visualization without saving PNG files.
+            geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()),
+                             pre_visualize_geometry=False, save_png=True)
+            print(f"geo.file_data.hybrid_color_visualize_file: {geo.file_data.hybrid_color_visualize_file}")
+
+            # Load the generated PNG file for visualization.
+            image_pre_visualisation = PIL.Image.open(geo.file_data.hybrid_color_visualize_file)
             px = image_pre_visualisation.load()
             image_width, image_height = image_pre_visualisation.size
 
+            # Determine the cropping boundaries by finding non-white pixels.
             for cut_x_left in range(0, image_width):
-                if px[cut_x_left, image_height / 2] != (255, 255, 255):
+                if px[cut_x_left, image_height // 2] != (255, 255, 255):
                     cut_x_left -= 1
                     break
             for cut_x_right in reversed(range(0, image_width)):
-                if px[cut_x_right, image_height / 2] != (255, 255, 255):
+                if px[cut_x_right, image_height // 2] != (255, 255, 255):
                     cut_x_right += 1
                     break
-
             for cut_y_bot in reversed(range(0, image_height)):
-                if px[image_width / 2, cut_y_bot] != (255, 255, 255):
+                if px[image_width // 2, cut_y_bot] != (255, 255, 255):
                     cut_y_bot += 1
                     break
             for cut_y_top in range(0, image_height):
-                if px[image_width / 2, cut_y_top] != (255, 255, 255):
+                if px[image_width // 2, cut_y_top] != (255, 255, 255):
                     cut_y_top -= 1
                     break
 
+            # Crop the image to the determined boundaries and save it.
             im_crop = image_pre_visualisation.crop((cut_x_left, cut_y_top, cut_x_right, cut_y_bot))
             im_crop.save(geo.file_data.hybrid_color_visualize_file, quality=95)
 
+            # Load the cropped image into a QPixmap for display in QLabel.
             pixmap = QPixmap(geo.file_data.hybrid_color_visualize_file)
             self.md_gmsh_visualisation_QLabel.setPixmap(pixmap)
             self.md_gmsh_visualisation_QLabel.setMask(pixmap.mask())
             self.md_gmsh_visualisation_QLabel.show()
 
-            # complete Pre-visualize
+            # Update status bar message.
             self.statusBar().showMessage('Pre-visualize completed')
         except Exception as e:
             raise RuntimeError(f"Error during simulation: {str(e)}") from e
+        finally:
+            self.mutex.unlock()
 
     def md_set_core_geometry_from_database(self):
         """Set a core geometry for the material database."""
@@ -2514,9 +2551,9 @@ class MainWindow(QMainWindow):
         if core_type != 'Manual':
             core = core_dict[core_type]
 
-            self.md_core_width_lineEdit.setText(str(core["core_inner_diameter"]))
-            self.md_window_height_lineEdit.setText(str(core["window_h"]))
-            self.md_window_width_lineEdit.setText(str(core["window_w"]))
+            self.md_core_width_lineEdit.setText(str(format_number(core["core_inner_diameter"])))
+            self.md_window_height_lineEdit.setText(str(format_number(core["window_h"])))
+            self.md_window_width_lineEdit.setText(str(format_number(core["window_w"])))
             self.md_core_width_lineEdit.setEnabled(False)
             self.md_window_height_lineEdit.setEnabled(False)
             self.md_window_width_lineEdit.setEnabled(False)
@@ -2615,9 +2652,9 @@ class MainWindow(QMainWindow):
             self.md_winding2_radius_lineEdit.setText(str(litz["conductor_radii"]))
             self.md_winding2_fill_factor_lineEdit.setText(str(litz["ff"]))
 
-            for key, value in enumerate(["implicit_litz_radius", "implicit_ff", 'implicit_strands_number']):
-                if value == litz["implicit"]:
-                    self.md_winding2_implicit_litz_comboBox.setCurrentIndex(key)
+            # for key, value in enumerate(["implicit_litz_radius", "implicit_ff", 'implicit_strands_number']):
+            #     if value == litz["implicit"]:
+            #         self.md_winding2_implicit_litz_comboBox.setCurrentIndex(key)
 
             self.md_winding2_radius_lineEdit.setEnabled(False)
             self.md_winding2_implicit_litz_comboBox.setEnabled(False)
@@ -2811,266 +2848,35 @@ class MainWindow(QMainWindow):
     # Excitation tab
     # ----------------------------------------------------------
 
-    def md_dc_enable(self, status: bool) -> None:
-        """
-        Enable / Disable the input fields for dc current.
+    def update_dc_and_frequencies_checkboxes(self) -> None:
+        """Update the frequency checkboxes and input fields based on the simulation type."""
+        enable_winding2 = self.md_simulation_type_comboBox.currentText() != self.translation_dict['inductor']
 
-        :param status: True for enable fields, False for disable fields
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        self.md_winding1_idc_lineEdit.setEnabled(status)
-        self.md_winding2_idc_lineEdit.setEnabled(status)
-        if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
-            self.md_winding2_idc_lineEdit.setEnabled(False)
-            self.md_winding2_idc_lineEdit.setEnabled(False)
-        else:
-            self.md_winding2_idc_lineEdit.setEnabled(status)
-            self.md_winding2_idc_lineEdit.setEnabled(status)
+        # List of checkbox and corresponding input field pairs.
+        checkboxes = [
+            (self.md_dc_checkBox, self.md_winding1_idc_lineEdit, self.md_winding2_idc_lineEdit),
+            (self.md_fk1_checkBox, self.md_winding1_ik1_lineEdit, self.md_winding1_pk1_lineEdit, self.md_winding2_ik1_lineEdit, self.md_winding2_pk1_lineEdit),
+            (self.md_fk2_checkBox, self.md_winding1_ik2_lineEdit, self.md_winding1_pk2_lineEdit, self.md_winding2_ik2_lineEdit, self.md_winding2_pk2_lineEdit),
+            (self.md_fk3_checkBox, self.md_winding1_ik3_lineEdit, self.md_winding1_pk3_lineEdit, self.md_winding2_ik3_lineEdit, self.md_winding2_pk3_lineEdit),
+            (self.md_fk4_checkBox, self.md_winding1_ik4_lineEdit, self.md_winding1_pk4_lineEdit, self.md_winding2_ik4_lineEdit, self.md_winding2_pk4_lineEdit),
+            (self.md_fk5_checkBox, self.md_winding1_ik5_lineEdit, self.md_winding1_pk5_lineEdit, self.md_winding2_ik5_lineEdit, self.md_winding2_pk5_lineEdit),
+            (self.md_fk6_checkBox, self.md_winding1_ik6_lineEdit, self.md_winding1_pk6_lineEdit, self.md_winding2_ik6_lineEdit, self.md_winding2_pk6_lineEdit),
+            (self.md_fk7_checkBox, self.md_winding1_ik7_lineEdit, self.md_winding1_pk7_lineEdit, self.md_winding2_ik7_lineEdit, self.md_winding2_pk7_lineEdit),
+            (self.md_fk8_checkBox, self.md_winding1_ik8_lineEdit, self.md_winding1_pk8_lineEdit, self.md_winding2_ik8_lineEdit, self.md_winding2_pk8_lineEdit)
+        ]
 
-    def md_f1_enable(self, status: bool) -> None:
-        """
-        Enable / Disable the input fields for frequency/phase No. 1.
-
-        :param status: True for enable fields, False for disable fields
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        self.md_winding1_ik1_lineEdit.setEnabled(status)
-        self.md_winding1_pk1_lineEdit.setEnabled(status)
-        if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
-            self.md_winding2_ik1_lineEdit.setEnabled(False)
-            self.md_winding2_pk1_lineEdit.setEnabled(False)
-        else:
-            self.md_winding2_ik1_lineEdit.setEnabled(status)
-            self.md_winding2_pk1_lineEdit.setEnabled(status)
-
-    def md_f2_enable(self, status: bool) -> None:
-        """
-        Enable / Disable the input fields for frequency/phase No. 2.
-
-        :param status: True for enable fields, False for disable fields
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        self.md_winding1_ik2_lineEdit.setEnabled(status)
-        self.md_winding1_pk2_lineEdit.setEnabled(status)
-        if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
-            self.md_winding2_ik2_lineEdit.setEnabled(False)
-            self.md_winding2_pk2_lineEdit.setEnabled(False)
-        else:
-            self.md_winding2_ik2_lineEdit.setEnabled(status)
-            self.md_winding2_pk2_lineEdit.setEnabled(status)
-
-    def md_f3_enable(self, status: bool) -> None:
-        """
-        Enable / Disable the input fields for frequency/phase No. 3.
-
-        :param status: True for enable fields, False for disable fields
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        self.md_winding1_ik3_lineEdit.setEnabled(status)
-        self.md_winding1_pk3_lineEdit.setEnabled(status)
-        if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
-            self.md_winding2_ik3_lineEdit.setEnabled(False)
-            self.md_winding2_pk3_lineEdit.setEnabled(False)
-        else:
-            self.md_winding2_ik3_lineEdit.setEnabled(status)
-            self.md_winding2_pk3_lineEdit.setEnabled(status)
-
-    def md_f4_enable(self, status: bool) -> None:
-        """
-        Enable / Disable the input fields for frequency/phase No. 4.
-
-        :param status: True for enable fields, False for disable fields
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        self.md_winding1_ik4_lineEdit.setEnabled(status)
-        self.md_winding1_pk4_lineEdit.setEnabled(status)
-        if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
-            self.md_winding2_ik4_lineEdit.setEnabled(False)
-            self.md_winding2_pk4_lineEdit.setEnabled(False)
-        else:
-            self.md_winding2_ik4_lineEdit.setEnabled(status)
-            self.md_winding2_pk4_lineEdit.setEnabled(status)
-
-    def md_f5_enable(self, status: bool) -> None:
-        """
-        Enable / Disable the input fields for frequency/phase No. 5.
-
-        :param status: True for enable fields, False for disable fields
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        self.md_winding1_ik5_lineEdit.setEnabled(status)
-        self.md_winding1_pk5_lineEdit.setEnabled(status)
-        if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
-            self.md_winding2_ik5_lineEdit.setEnabled(False)
-            self.md_winding2_pk5_lineEdit.setEnabled(False)
-        else:
-            self.md_winding2_ik5_lineEdit.setEnabled(status)
-            self.md_winding2_pk5_lineEdit.setEnabled(status)
-
-    def md_f6_enable(self, status: bool) -> None:
-        """
-        Enable / Disable the input fields for frequency/phase No. 6.
-
-        :param status: True for enable fields, False for disable fields
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        self.md_winding1_ik6_lineEdit.setEnabled(status)
-        self.md_winding1_pk6_lineEdit.setEnabled(status)
-        if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
-            self.md_winding2_ik6_lineEdit.setEnabled(False)
-            self.md_winding2_pk6_lineEdit.setEnabled(False)
-        else:
-            self.md_winding2_ik6_lineEdit.setEnabled(status)
-            self.md_winding2_pk6_lineEdit.setEnabled(status)
-
-    def md_f7_enable(self, status: bool) -> None:
-        """
-        Enable / Disable the input fields for frequency/phase No. 7.
-
-        :param status: True for enable fields, False for disable fields
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        self.md_winding1_ik7_lineEdit.setEnabled(status)
-        self.md_winding1_pk7_lineEdit.setEnabled(status)
-        if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
-            self.md_winding2_ik7_lineEdit.setEnabled(False)
-            self.md_winding2_pk7_lineEdit.setEnabled(False)
-        else:
-            self.md_winding2_ik7_lineEdit.setEnabled(status)
-            self.md_winding2_pk7_lineEdit.setEnabled(status)
-
-    def md_f8_enable(self, status: bool) -> None:
-        """
-        Enable / Disable the input fields for frequency/phase No. 8.
-
-        :param status: True for enable fields, False for disable fields
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        self.md_winding1_ik8_lineEdit.setEnabled(status)
-        self.md_winding1_pk8_lineEdit.setEnabled(status)
-        if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
-            self.md_winding2_ik8_lineEdit.setEnabled(False)
-            self.md_winding2_pk8_lineEdit.setEnabled(False)
-        else:
-            self.md_winding2_ik8_lineEdit.setEnabled(status)
-            self.md_winding2_pk8_lineEdit.setEnabled(status)
-
-    def md_change_frequencies_dc(self, status: int) -> None:
-        """
-        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
-
-        :param status: 0 for disabling, anything else for enabling frequency boxes
-        :type status: int
-        :return: None
-        :rtype: None
-        """
-        self.md_dc_enable(False) if status == 0 else self.md_dc_enable(True)
-
-    def md_change_frequencies_1(self, status: int) -> None:
-        """
-        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
-
-        :param status: 0 for disabling, anything else for enabling frequency boxes
-        :type status: int
-        :return: None
-        :rtype: None
-        """
-        self.md_f1_enable(False) if status == 0 else self.md_f1_enable(True)
-
-    def md_change_frequencies_2(self, status) -> None:
-        """
-        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
-
-        :param status: 0 for disabling, anything else for enabling frequency boxes
-        :type status: int
-        :return: None
-        :rtype: None
-        """
-        self.md_f2_enable(False) if status == 0 else self.md_f2_enable(True)
-
-    def md_change_frequencies_3(self, status) -> None:
-        """
-        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
-
-        :param status: 0 for disabling, anything else for enabling frequency boxes
-        :type status: int
-        :return: None
-        :rtype: None
-        """
-        self.md_f3_enable(False) if status == 0 else self.md_f3_enable(True)
-
-    def md_change_frequencies_4(self, status) -> None:
-        """
-        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
-
-        :param status: 0 for disabling, anything else for enabling frequency boxes
-        :type status: int
-        :return: None
-        :rtype: None
-        """
-        self.md_f4_enable(False) if status == 0 else self.md_f4_enable(True)
-
-    def md_change_frequencies_5(self, status) -> None:
-        """
-        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
-
-        :param status: 0 for disabling, anything else for enabling frequency boxes
-        :type status: int
-        :return: None
-        :rtype: None
-        """
-        self.md_f5_enable(False) if status == 0 else self.md_f5_enable(True)
-
-    def md_change_frequencies_6(self, status) -> None:
-        """
-        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
-
-        :param status: 0 for disabling, anything else for enabling frequency boxes
-        :type status: int
-        :return: None
-        :rtype: None
-        """
-        self.md_f6_enable(False) if status == 0 else self.md_f6_enable(True)
-
-    def md_change_frequencies_7(self, status) -> None:
-        """
-        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
-
-        :param status: 0 for disabling, anything else for enabling frequency boxes
-        :type status: int
-        :return: None
-        :rtype: None
-        """
-        self.md_f7_enable(False) if status == 0 else self.md_f7_enable(True)
-
-    def md_change_frequencies_8(self, status) -> None:
-        """
-        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
-
-        :param status: 0 for disabling, anything else for enabling frequency boxes
-        :type status: int
-        :return: None
-        :rtype: None
-        """
-        self.md_f8_enable(False) if status == 0 else self.md_f8_enable(True)
+        for checkbox, *line_edits in checkboxes:
+            status = checkbox.isChecked()
+            # Enable/disable winding 1 input fields.
+            for line_edit in line_edits[:2]:
+                line_edit.setEnabled(status)
+            # Enable/disable winding 2 input fields.
+            if enable_winding2:
+                for line_edit in line_edits[2:]:
+                    line_edit.setEnabled(status)
+            else:
+                for line_edit in line_edits[2:]:
+                    line_edit.setEnabled(False)
 
     def md_redraw_input_signals(self) -> None:
         """
@@ -3414,7 +3220,7 @@ class MainWindow(QMainWindow):
             core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
                             permeability_datasource=fmt.MaterialDataSource.Custom,
                             permittivity_datasource=fmt.MaterialDataSource.Custom,
-                            detailed_core_model=True)
+                            detailed_core_model=False)
             geo.set_core(core)
             """
             geo.core.update(window_h = comma_str_to_point_float(self.md_window_height_lineEdit.text()),
@@ -3606,128 +3412,128 @@ class MainWindow(QMainWindow):
         :return: None
         :rtype: None
         """
-        # check if the necessary fields are not empty
-        self.validate_fields()
-        # call geometry
-        geo = self.md_setup_geometry()
-        # -----------------------------------------------
-        # Simulation
-        # -----------------------------------------------
-        geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), pre_visualize_geometry=False,
-                         save_png=False)
-        # geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), visualize_before=False, do_meshing=True, save_png=False)
+        # Try to acquire the mutex. If it's already locked by another operation, show a message and return.
+        if not self.mutex.tryLock():
+            # self.statusBar().showMessage('Another operation is in progress. Please wait...')
+            # raise RuntimeWarning("Another operation is in progress. Please close gmsh.")
+            QMessageBox.warning(self, "Warning", "Another operation is in progress. Please close gmsh Window.")
+            return
 
-        winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, \
-            winding2_phi_rad_list = self.md_get_frequency_lists()
-        print(winding1_frequency_list)
-        print(winding1_amplitude_list)
         try:
-            # Hide the progressBar if it exists
+            # check if the necessary fields are not empty.
+            self.validate_fields()
+
+            # call geometry
+            geo = self.md_setup_geometry()
+
+            # Clear previous simulation results in the mesh folder.
+            geo.file_data.clean_folder_structure(geo.file_data.mesh_folder_path)
+
+            # Create a model with the given frequency, without pre-visualizing geometry, and without saving PNG files.
+            geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), pre_visualize_geometry=False, save_png=False)
+
+            # Get frequency, amplitude, and phase lists for winding simulations.
+            winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, \
+                winding2_phi_rad_list = self.md_get_frequency_lists()
+            print(winding1_frequency_list)
+            print(winding1_amplitude_list)
+
             try:
-                self.progressBar.hide()
-            except:
-                pass
-            self.statusBar().showMessage('Simulation running...')
-            QCoreApplication.processEvents()
-            if len(winding1_frequency_list) == 1:
-                if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
-                    geo.single_simulation(freq=winding1_frequency_list[0],
-                                          current=[winding1_amplitude_list[0]],
-                                          show_fem_simulation_results=True)
-                elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-                    geo.single_simulation(freq=winding1_frequency_list[0],
-                                          current=[winding1_amplitude_list[0], winding2_amplitude_list[0]],
-                                          phi_deg=[winding1_phi_rad_list[0], winding2_phi_rad_list[0]])
+                # Hide the progress bar if it exists.
+                try:
+                    self.progressBar.hide()
+                except:
+                    pass
 
-            else:
+                # Show a status message indicating that the simulation is running.
+                self.statusBar().showMessage('Simulation running...')
+                QCoreApplication.processEvents()
 
-                if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
-                    amplitude_list = []
-                    print(f"{winding1_amplitude_list=}")
-                    for amplitude_value in winding1_amplitude_list:
-                        amplitude_list.append([amplitude_value])
+                # Run a single or excitation sweep simulation based on the input frequencies and amplitudes.
+                if len(winding1_frequency_list) == 1:
+                    if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
+                        geo.single_simulation(freq=winding1_frequency_list[0], current=[winding1_amplitude_list[0]], show_fem_simulation_results=True)
+                    elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+                        geo.single_simulation(freq=winding1_frequency_list[0], current=[winding1_amplitude_list[0], winding2_amplitude_list[0]],
+                                              phi_deg=[winding1_phi_rad_list[0], winding2_phi_rad_list[0]])
+                else:
+                    if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
+                        amplitude_list = []
+                        print(f"{winding1_amplitude_list=}")
+                        for amplitude_value in winding1_amplitude_list:
+                            amplitude_list.append([amplitude_value])
+                        phase_rad_list = []
+                        for phase_value in winding1_phi_rad_list:
+                            phase_rad_list.append([phase_value])
+                        geo.excitation_sweep(frequency_list=winding1_frequency_list, current_list_list=amplitude_list, phi_deg_list_list=phase_rad_list)
+                    elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+                        amplitude1_list = []
+                        for amplitude1_value, amplitude2_value in zip(winding1_amplitude_list, winding2_amplitude_list):
+                            amplitude1_list.append([amplitude1_value, amplitude2_value])
+                        phase1_rad_list = []
+                        for phase1_value, phase2_value in zip(winding1_phi_rad_list, winding2_phi_rad_list):
+                            phase1_rad_list.append([phase1_value, phase2_value])
+                        geo.excitation_sweep(frequency_list=winding1_frequency_list, current_list_list=amplitude1_list, phi_deg_list_list=phase1_rad_list)
+            except Exception as e:
+                raise RuntimeError(f"Error during simulation: {str(e)}") from e
 
-                    phase_rad_list = []
-                    for phase_value in winding1_phi_rad_list:
-                        phase_rad_list.append([phase_value])
-                    geo.excitation_sweep(frequency_list=winding1_frequency_list, current_list_list=amplitude_list,
-                                         phi_deg_list_list=phase_rad_list)
+            # -----------------------------------------------
+            # Read back results
+            # -----------------------------------------------
+            self.md_simulation_QLabel.setText('simulation complete.')
+            self.statusBar().showMessage('Simulation completed')
+            loaded_results_dict = fmt.visualize_simulation_results(geo.file_data.e_m_results_log_path, geo.file_data.results_em_simulation, show_plot=False)
 
-                elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-                    amplitude1_list = []
-                    for amplitude1_value, amplitude2_value in zip(winding1_amplitude_list, winding2_amplitude_list):
-                        amplitude1_list.append([amplitude1_value, amplitude2_value])
+            for index, sweep in enumerate(loaded_results_dict["single_sweeps"]):
+                # Frequency-specific losses
+                freq_label = getattr(self, f'md_freq{index + 1}')
+                # loss_plot_label = getattr(self, f'md_loss_plot_label1')
+                hysteresis_label = getattr(self, f'md_loss_core_hysteresis_label{index + 1}')
+                eddy_current_label = getattr(self, f'md_loss_core_eddy_current_label{index + 1}')
+                winding1_loss_label = getattr(self, f'md_loss_winding1_label{index + 1}')
+                inductance1_label = getattr(self, f'md_inductance1_label{index + 1}')
 
-                    phase1_rad_list = []
-                    for phase1_value, phase2_value in zip(winding1_phi_rad_list, winding2_phi_rad_list):
-                        phase1_rad_list.append([phase1_value, phase2_value])
+                if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+                    winding2_loss_label = getattr(self, f'md_loss_winding2_label{index + 1}')
+                    inductance2_label = getattr(self, f'md_inductance2_label{index + 1}')
+                # Update frequency label
+                freq_label.setText(f"Frequency: {sweep['f']} Hz")
 
-                    geo.excitation_sweep(frequency_list=winding1_frequency_list,
-                                         current_list_list=amplitude1_list,
-                                         phi_deg_list_list=phase1_rad_list)
+                # Show the image for the loss plot.
+                base_path, ext = os.path.splitext(geo.file_data.results_em_simulation)
+                cumulative_filename = f"{base_path}_total_freq{ext}"
+                pixmap = QPixmap(cumulative_filename)
+                if not pixmap.isNull():
+                    # to show more than one figure in the future:
+                    # loss_plot_label.setPixmap(pixmap)
+                    # loss_plot_label.show()
+                    # just for shown one figure:
+                    self.md_loss_plot_label1.setPixmap(pixmap)
+                    self.md_loss_plot_label1.show()
+                # # loss labels
+                # hysteresis_label.setText(f"Core Hysteresis loss: {sweep.get('core_hyst_losses', 0)} W")
+                # eddy_current_label.setText(f"Core Eddy Current loss: {sweep.get('core_eddy_losses', 0)} W")
+                # winding1_loss_label.setText(f"Winding 1 loss: {sweep['winding1'].get('winding_losses', 0)} W")
+                # inductance1_label.setText(f"Primary Inductance: {sweep['winding1'].get('flux_over_current', [0])[0]} H")
+                # # transformer case
+                # if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+                #     winding2_loss_label.setText(f"Winding 2 loss: {sweep['winding2'].get('winding_losses', 0)} W")
+                #     inductance2_label.setText(f"Secondary Inductance: {sweep['winding2'].get('flux_over_current', [0])[0]} H")
+                # Show the losses with round and approximation.
+                hysteresis_label.setText(f"Core Hysteresis loss: {sweep.get('core_hyst_losses', 0):.5f} W")
+                eddy_current_label.setText(f"Core Eddy Current loss: {sweep.get('core_eddy_losses', 0):.5f} W")
+                winding1_loss_label.setText(f"Winding 1 loss: {sweep['winding1'].get('winding_losses', 0):.5f} W")
 
-                # geo.excitation_sweep(winding1_frequency_list, amplitude_list, phase_rad_list)
-        except Exception as e:
-            raise RuntimeError(f"Error during simulation: {str(e)}") from e
-        # -----------------------------------------------
-        # Read back results
-        # -----------------------------------------------
-        self.md_simulation_QLabel.setText('simulation complete.')
-        self.statusBar().showMessage('Simulation completed')
-        loaded_results_dict = fmt.visualize_simulation_results(geo.file_data.e_m_results_log_path, geo.file_data.results_em_simulation, show_plot=False)
-
-        for index, sweep in enumerate(loaded_results_dict["single_sweeps"]):
-            # Frequency-specific losses
-            freq_label = getattr(self, f'md_freq{index + 1}')
-            # loss_plot_label = getattr(self, f'md_loss_plot_label1')
-            hysteresis_label = getattr(self, f'md_loss_core_hysteresis_label{index + 1}')
-            eddy_current_label = getattr(self, f'md_loss_core_eddy_current_label{index + 1}')
-            winding1_loss_label = getattr(self, f'md_loss_winding1_label{index + 1}')
-            inductance1_label = getattr(self, f'md_inductance1_label{index + 1}')
-
-            if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-                winding2_loss_label = getattr(self, f'md_loss_winding2_label{index + 1}')
-                inductance2_label = getattr(self, f'md_inductance2_label{index + 1}')
-
-            # Update frequency label
-            freq_label.setText(f"Frequency: {sweep['f']} Hz")
-
-            # image for loss plot
-            base_path, ext = os.path.splitext(geo.file_data.results_em_simulation)
-            cumulative_filename = f"{base_path}_total_freq{ext}"
-            pixmap = QPixmap(cumulative_filename)
-            if not pixmap.isNull():
-                # to show more than one figure in the future:
-                # loss_plot_label.setPixmap(pixmap)
-                # loss_plot_label.show()
-                # just for shown one figure:
-                self.md_loss_plot_label1.setPixmap(pixmap)
-                self.md_loss_plot_label1.show()
-
-            # # loss labels
-            # hysteresis_label.setText(f"Core Hysteresis loss: {sweep.get('core_hyst_losses', 0)} W")
-            # eddy_current_label.setText(f"Core Eddy Current loss: {sweep.get('core_eddy_losses', 0)} W")
-            # winding1_loss_label.setText(f"Winding 1 loss: {sweep['winding1'].get('winding_losses', 0)} W")
-            # inductance1_label.setText(f"Primary Inductance: {sweep['winding1'].get('flux_over_current', [0])[0]} H")
-            # # transformer case
-            # if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-            #     winding2_loss_label.setText(f"Winding 2 loss: {sweep['winding2'].get('winding_losses', 0)} W")
-            #     inductance2_label.setText(f"Secondary Inductance: {sweep['winding2'].get('flux_over_current', [0])[0]} H")
-
-            # loss labels with approximations.
-            hysteresis_label.setText(f"Core Hysteresis loss: {sweep.get('core_hyst_losses', 0):.5f} W")
-            eddy_current_label.setText(f"Core Eddy Current loss: {sweep.get('core_eddy_losses', 0):.5f} W")
-            winding1_loss_label.setText(f"Winding 1 loss: {sweep['winding1'].get('winding_losses', 0):.5f} W")
-
-            # Convert inductance to nanohenries.
-            primary_inductance_nh = sweep['winding1'].get('flux_over_current', [0])[0] * 1e9
-            inductance1_label.setText(f"Primary Inductance: {primary_inductance_nh:.0f} nH")
-
-            # transformer case.
-            if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-                secondary_inductance_nh = sweep['winding2'].get('flux_over_current', [0])[0] * 1e9
-                winding2_loss_label.setText(f"Winding 2 loss: {sweep['winding2'].get('winding_losses', 0):.0f} W")
-                inductance2_label.setText(f"Secondary Inductance: {secondary_inductance_nh:.5f} nH")
+                primary_inductance_nh = sweep['winding1'].get('flux_over_current', [0])[0] * 1e9
+                inductance1_label.setText(f"Primary Inductance: {primary_inductance_nh:.0f} nH")
+                # Transformer case.
+                if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+                    secondary_inductance_nh = sweep['winding2'].get('flux_over_current', [0])[0] * 1e9
+                    winding2_loss_label.setText(f"Winding 2 loss: {sweep['winding2'].get('winding_losses', 0):.0f} W")
+                    inductance2_label.setText(f"Secondary Inductance: {secondary_inductance_nh:.5f} nH")
+        finally:
+            # Unlock the mutex to allow other operations to proceed.
+            self.mutex.unlock()
 
     @handle_errors
     def inductancecalc(self, *args, **kwargs):
