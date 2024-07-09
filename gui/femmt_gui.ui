@@ -1098,7 +1098,7 @@
                     <item>
                      <widget class="QGroupBox" name="groupBox_7">
                       <property name="title">
-                       <string>Results</string>
+                       <string>reluctance model</string>
                       </property>
                       <widget class="QPushButton" name="Inductance_value_pushButton">
                        <property name="geometry">
@@ -1110,7 +1110,7 @@
                         </rect>
                        </property>
                        <property name="text">
-                        <string>Inductance value</string>
+                        <string>Calculate Inductane</string>
                        </property>
                       </widget>
                       <widget class="QLabel" name="Inductanceval_label">
@@ -4707,7 +4707,7 @@
                               <rect>
                                <x>0</x>
                                <y>0</y>
-                               <width>635</width>
+                               <width>98</width>
                                <height>518</height>
                               </rect>
                              </property>
@@ -4879,7 +4879,7 @@
                                 <rect>
                                  <x>0</x>
                                  <y>0</y>
-                                 <width>468</width>
+                                 <width>98</width>
                                  <height>518</height>
                                 </rect>
                                </property>
@@ -4934,8 +4934,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>1440</width>
-                     <height>1172</height>
+                     <width>268</width>
+                     <height>253</height>
                     </rect>
                    </property>
                    <layout class="QGridLayout" name="gridLayout_46">
@@ -5065,8 +5065,8 @@
                             <rect>
                              <x>0</x>
                              <y>0</y>
-                             <width>1400</width>
-                             <height>807</height>
+                             <width>98</width>
+                             <height>518</height>
                             </rect>
                            </property>
                            <layout class="QVBoxLayout" name="verticalLayout_11">
@@ -5136,7 +5136,7 @@
                        <rect>
                         <x>0</x>
                         <y>0</y>
-                        <width>1403</width>
+                        <width>98</width>
                         <height>2036</height>
                        </rect>
                       </property>
@@ -9728,7 +9728,7 @@
                        <rect>
                         <x>0</x>
                         <y>0</y>
-                        <width>1403</width>
+                        <width>98</width>
                         <height>1024</height>
                        </rect>
                       </property>
