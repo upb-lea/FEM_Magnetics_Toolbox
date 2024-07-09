@@ -82,7 +82,8 @@ def place_center_tapped_conductor_row(vwws, row_element, row_winding_scheme_type
             vwws[no_vww].set_winding(winding1, row_element.number_of_conds_per_row, row_winding_scheme_type, wrap_para_type=wrap_para_type)
         elif primary_conductors_to_be_placed < 0:
             # In the last row, only the rest shall be placed
-            vwws[no_vww].set_winding(winding1, row_element.number_of_conds_per_row + primary_conductors_to_be_placed, row_winding_scheme_type, wrap_para_type=wrap_para_type)
+            vwws[no_vww].set_winding(winding1, row_element.number_of_conds_per_row + primary_conductors_to_be_placed, row_winding_scheme_type,
+                                     wrap_para_type=wrap_para_type)
             primary_conductors_to_be_placed = 0
 
     elif row_element.winding_tag == WindingTag.Secondary:
@@ -174,7 +175,8 @@ def set_center_tapped_windings(core,
                                iso_primary_to_primary, iso_secondary_to_secondary, iso_primary_to_secondary,
                                interleaving_type: CenterTappedInterleavingType, interleaving_scheme: InterleavingSchemesFoilLitz,
                                bobbin_coil_top=None, bobbin_coil_bot=None, bobbin_coil_left=None, bobbin_coil_right=None,
-                               primary_coil_turns=None, winding_temperature: Optional[float] = None, wrap_para_type=WrapParaType.FixedThickness, foil_horizontal_placing_strategy=None):
+                               primary_coil_turns=None, winding_temperature: Optional[float] = None, wrap_para_type=WrapParaType.FixedThickness,
+                               foil_horizontal_placing_strategy=None):
     """
     Set center tapped windings.
 
