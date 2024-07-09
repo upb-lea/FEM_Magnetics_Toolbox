@@ -839,12 +839,12 @@ class TwoDaxiSymmetric:
                                         if foil_horizontal_placing_strategy == FoilHorizontalDistribution.VerticalUpward:
                                             y_start = bot_bound + i * winding.thickness + i * self.insulation.cond_cond[num][num]
                                             y_move = bot_bound + (i + 1) * winding.thickness + i * self.insulation.cond_cond[num][num]
-                                            if round(y_move) > top_bound:
+                                            if round(y_move, 6) > round(top_bound, 6):
                                                 break
                                         elif foil_horizontal_placing_strategy == FoilHorizontalDistribution.VerticalDownward:
                                             y_start = top_bound - i * winding.thickness - i * self.insulation.cond_cond[num][num]
                                             y_move = top_bound - (i + 1) * winding.thickness - i * self.insulation.cond_cond[num][num]
-                                            if round(y_move) < bot_bound:
+                                            if round(y_move) < round(bot_bound):
                                                 break
                                         # Foil
                                         self.p_conductor[num].extend([

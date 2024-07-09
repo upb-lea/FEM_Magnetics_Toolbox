@@ -117,7 +117,9 @@ def basic_example_transformer_center_tapped(onelab_folder: str = None, show_visu
         interleaving_scheme=fmt.InterleavingSchemesFoilLitz.ter_3_4_sec_ter_4_3_sec,
         primary_additional_bobbin=100,
         winding_temperature=100,
-        center_foil_additional_bobbin=0e-3)
+        center_foil_additional_bobbin=0e-3,
+        wrap_para_type=fmt.WrapParaType.FixedThickness,
+        foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalUpward)
 
     geo.set_insulation(insulation)
     geo.set_winding_windows([winding_window])
