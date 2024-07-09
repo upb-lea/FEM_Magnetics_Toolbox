@@ -824,11 +824,11 @@ class TwoDaxiSymmetric:
                                         # Fill the allowed space in the Winding Window with a chosen number of turns
                                         # we need first to calculate the area of every turn
                                         # Find the wrap turn space
-                                        turn_thickness = (right_bound - left_bound - (turns - 1) * self.insulation.cond_cond[num][num]) / turns
+                                        winding.thickness = (right_bound - left_bound - (turns - 1) * self.insulation.cond_cond[num][num]) / turns
                                         window_height = top_bound - bot_bound
-                                        winding.a_cell = turn_thickness * window_height
-                                        # if winding.thickness is None:
-                                        #     winding.thickness = (right_bound - left_bound - (turns - 1) * self.insulation.cond_cond[num][num]) / turns
+                                        winding.a_cell = winding.thickness * window_height
+                                        # Update MeshData with the new thickness
+                                        self.mesh_data.update_data(frequency=self.mesh_data.frequency, skin_mesh_factor=self.mesh_data.skin_mesh_factor)
                                         # Generate interpolated positions for each turn, starting from the left and moving right
                                         x_interpol = np.linspace(left_bound, right_bound + self.insulation.cond_cond[num][num], turns + 1)
 
@@ -863,9 +863,11 @@ class TwoDaxiSymmetric:
                                         # Fill the allowed space in the Winding Window with a chosen number of turns
                                         # we need first to calculate the area of every turn
                                         # Find the wrap turn space
-                                        turn_thickness = (right_bound - left_bound - (turns - 1) * self.insulation.cond_cond[num][num]) / turns
+                                        winding.thickness = (right_bound - left_bound - (turns - 1) * self.insulation.cond_cond[num][num]) / turns
                                         window_height = top_bound - bot_bound
-                                        winding.a_cell = turn_thickness * window_height
+                                        winding.a_cell = winding.thickness * window_height
+                                        # Update MeshData with the new thickness
+                                        self.mesh_data.update_data(frequency=self.mesh_data.frequency, skin_mesh_factor=self.mesh_data.skin_mesh_factor)
                                         # Generate interpolated positions for each turn, starting from the right and moving left
                                         x_interpol = np.linspace(right_bound, left_bound - self.insulation.cond_cond[num][num], turns + 1)
 
@@ -976,9 +978,11 @@ class TwoDaxiSymmetric:
                                     # Placing Foil horizontal rectangular conductors from bot to top
                                     if foil_horizontal_placing_strategy == FoilHorizontalDistribution.VerticalUpward:
                                         # Turn space
-                                        turn_thickness = (top_bound - bot_bound - (turns - 1) * self.insulation.cond_cond[num][num]) / turns
+                                        winding.thickness = (top_bound - bot_bound - (turns - 1) * self.insulation.cond_cond[num][num]) / turns
                                         window_width = right_bound - left_bound
-                                        winding.a_cell = turn_thickness * window_width
+                                        winding.a_cell = winding.thickness * window_width
+                                        # Update MeshData with the new thickness
+                                        self.mesh_data.update_data(frequency=self.mesh_data.frequency, skin_mesh_factor=self.mesh_data.skin_mesh_factor)
                                         # Generate interpolated positions for each turn, starting from the bottom and moving top
                                         y_interpol = np.linspace(bot_bound, top_bound + self.insulation.cond_cond[num][num], turns + 1)
                                         for i in range(turns):
@@ -1010,9 +1014,11 @@ class TwoDaxiSymmetric:
                                     # Placing Foil horizontal rectangular conductors from top to bot.
                                     elif foil_horizontal_placing_strategy == FoilHorizontalDistribution.VerticalDownward:
                                         # turn space
-                                        turn_thickness = (top_bound - bot_bound - (turns - 1) * self.insulation.cond_cond[num][num]) / turns
+                                        winding.thickness = (top_bound - bot_bound - (turns - 1) * self.insulation.cond_cond[num][num]) / turns
                                         window_width = right_bound - left_bound
-                                        winding.a_cell = turn_thickness * window_width
+                                        winding.a_cell = winding.thickness * window_width
+                                        # Update MeshData with the new thickness
+                                        self.mesh_data.update_data(frequency=self.mesh_data.frequency, skin_mesh_factor=self.mesh_data.skin_mesh_factor)
                                         # Generate interpolated positions for each turn, starting from the top and moving bottom
                                         y_interpol = np.linspace(top_bound, bot_bound - self.insulation.cond_cond[num][num], turns + 1)
                                         for i in range(turns):
