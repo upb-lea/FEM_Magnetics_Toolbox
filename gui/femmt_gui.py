@@ -1635,10 +1635,11 @@ class MainWindow(QMainWindow):
         # show a statusbar while Datasheet-Datasheet is running
         self.statusBar().showMessage('Datasheet-Datasheet running...')
         QCoreApplication.processEvents()
+
         try:
-             matplotlib_widget1.axis_cm.remove()
+            matplotlib_widget1.axis_cm.remove()
         except:
-             pass
+            pass
 
         material_list = [self.dat_core_material1_comboBox.currentText(),
                          self.dat_core_material2_comboBox.currentText(),
@@ -1655,7 +1656,6 @@ class MainWindow(QMainWindow):
                      comma_str_to_point_float(self.aut_flux_m3_comboBox.currentText()),
                      comma_str_to_point_float(self.aut_flux_m4_comboBox.currentText()),
                      comma_str_to_point_float(self.aut_flux_m5_comboBox.currentText())]
-
 
         materials_used_list = [item for item in material_list if item]
         # First plot: Relative power loss vs B
