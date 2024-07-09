@@ -1098,7 +1098,7 @@
                     <item>
                      <widget class="QGroupBox" name="groupBox_7">
                       <property name="title">
-                       <string>reluctance model</string>
+                       <string>Reluctance model</string>
                       </property>
                       <widget class="QPushButton" name="Inductance_value_pushButton">
                        <property name="geometry">
@@ -4934,8 +4934,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>268</width>
-                     <height>253</height>
+                     <width>1440</width>
+                     <height>1172</height>
                     </rect>
                    </property>
                    <layout class="QGridLayout" name="gridLayout_46">
@@ -5065,8 +5065,8 @@
                             <rect>
                              <x>0</x>
                              <y>0</y>
-                             <width>98</width>
-                             <height>518</height>
+                             <width>1400</width>
+                             <height>807</height>
                             </rect>
                            </property>
                            <layout class="QVBoxLayout" name="verticalLayout_11">
@@ -5136,7 +5136,7 @@
                        <rect>
                         <x>0</x>
                         <y>0</y>
-                        <width>98</width>
+                        <width>1403</width>
                         <height>2036</height>
                        </rect>
                       </property>
