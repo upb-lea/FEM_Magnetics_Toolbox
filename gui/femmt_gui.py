@@ -83,6 +83,30 @@ def format_number(value, decimals=4):
     """
     return round(value, decimals)
 
+def format_number_with_units(value, decimals=4):
+    """
+    Format a number to a readable string with appropriate units.
+
+    :param value: The value to format.
+    :type value: float
+    :param decimals: Number of decimal places to round to.
+    :type decimals: int
+    :return: Formatted string with units.
+    :rtype: str
+    """
+    if value >= 1:
+        return f"{round(value, decimals)}"
+    elif value >= 1e-3:
+        return f"{round(value * 1e3, decimals)} m"
+    elif value >= 1e-6:
+        return f"{round(value * 1e6, decimals)} µ"
+    elif value >= 1e-9:
+        return f"{round(value * 1e9, decimals)} n"
+    elif value >= 1e-12:
+        return f"{round(value * 1e12, decimals)} p"
+    else:
+        return f"{round(value, decimals)}"
+
 def comma_str_to_point_float(input_str: str) -> float:
     """
     Workaround to convert a comma (depends on the user input) in a point (needed for python).
@@ -245,6 +269,11 @@ class MainWindow(QMainWindow):
         self.md_simulation_type_comboBox.currentTextChanged.connect(self.md_change_simulation_type)
         # update dc and frequencies boxes based on the simulation type.
         self.md_simulation_type_comboBox.currentTextChanged.connect(self.update_dc_and_frequencies_checkboxes)
+        # Materials with setup name
+        self.md_core_material_comboBox.currentIndexChanged.connect(self.md_test_setup_name)
+        # self.md_core_material_comboBox.currentIndexChanged.connect(self.md_test_setup_name_enable)
+        self.md_permeability_datasource_combobox.currentIndexChanged.connect(self.md_test_setup_name_enable)
+        self.md_permittivity_datasource_combobox.currentIndexChanged.connect(self.md_test_setup_name_enable)
 
         # core
         self.md_core_geometry_comboBox.currentTextChanged.connect(self.md_set_core_geometry_from_database)
@@ -1630,105 +1659,69 @@ class MainWindow(QMainWindow):
         # show a statusbar while Datasheet-Datasheet is running
         self.statusBar().showMessage('Datasheet-Datasheet running...')
         QCoreApplication.processEvents()
-        matplotlib_widget1.axis.clear()
-        self.layout = QVBoxLayout(self.plotwidget)
-        self.layout.addWidget(matplotlib_widget1)
+
         try:
             matplotlib_widget1.axis_cm.remove()
         except:
             pass
 
-        mat1_name = self.dat_core_material1_comboBox.currentText()
-        mat2_name = self.dat_core_material2_comboBox.currentText()
-        mat3_name = self.dat_core_material3_comboBox.currentText()
-        mat4_name = self.dat_core_material4_comboBox.currentText()
-        mat5_name = self.dat_core_material5_comboBox.currentText()
+        material_list = [self.dat_core_material1_comboBox.currentText(),
+                         self.dat_core_material2_comboBox.currentText(),
+                         self.dat_core_material3_comboBox.currentText(),
+                         self.dat_core_material4_comboBox.currentText(),
+                         self.dat_core_material5_comboBox.currentText()]
+        temp_list = [comma_str_to_point_float(self.aut_temp_m1_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_temp_m2_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_temp_m3_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_temp_m4_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_temp_m5_comboBox.currentText())]
+        flux_list = [comma_str_to_point_float(self.aut_flux_m1_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_flux_m2_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_flux_m3_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_flux_m4_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_flux_m5_comboBox.currentText())]
 
-        mat1_temp = comma_str_to_point_float(self.aut_temp_m1_comboBox.currentText())
-        mat2_temp = comma_str_to_point_float(self.aut_temp_m2_comboBox.currentText())
-        mat3_temp = comma_str_to_point_float(self.aut_temp_m3_comboBox.currentText())
-        mat4_temp = comma_str_to_point_float(self.aut_temp_m4_comboBox.currentText())
-        mat5_temp = comma_str_to_point_float(self.aut_temp_m5_comboBox.currentText())
-
-        mat1_flux = comma_str_to_point_float(self.aut_flux_m1_comboBox.currentText())
-        mat2_flux = comma_str_to_point_float(self.aut_flux_m2_comboBox.currentText())
-        mat3_flux = comma_str_to_point_float(self.aut_flux_m3_comboBox.currentText())
-        mat4_flux = comma_str_to_point_float(self.aut_flux_m4_comboBox.currentText())
-        mat5_flux = comma_str_to_point_float(self.aut_flux_m5_comboBox.currentText())
-
-        # print(f"mat1_name: {mat1_name},{mat2_name},{mat3_name},{mat4_name},{mat5_name}")
-        # print(f"mat1_temp: {mat1_temp},{mat2_temp},{mat3_temp},{mat4_temp},{mat5_temp}")
-        # print(f"mat1_flux: {mat1_flux},{mat2_flux},{mat3_flux},{mat4_flux},{mat5_flux}")
-
-        materials_used_list = []
-        material_list = [mat1_name, mat2_name, mat3_name, mat4_name, mat5_name]
-        for items in material_list:
-            if items:
-                materials_used_list.append(items)
-        # print(materials_used_list)
-
-        database.compare_core_loss_flux_density_data(matplotlib_widget1, material_list=materials_used_list,
-                                                     temperature_list=[mat1_temp, mat2_temp, mat3_temp, mat4_temp,
-                                                                       mat5_temp])
-        # self.matplotlib_widget1.axis.legend(fontsize=13)
+        materials_used_list = [item for item in material_list if item]
+        # First plot: Relative power loss vs B
+        matplotlib_widget1.axis.clear()
+        self.layout = QVBoxLayout(self.plotwidget)
+        self.layout.addWidget(matplotlib_widget1)
+        database.compare_core_loss_flux_density_data(matplotlib_widget1, material_list=materials_used_list, temperature_list=temp_list)
+        matplotlib_widget1.axis.legend([f'{mat}, {temp}°C' for mat, temp in zip(materials_used_list, temp_list)], fontsize=10)
         matplotlib_widget1.axis.grid()
         matplotlib_widget1.figure.canvas.draw_idle()
         matplotlib_widget1.figure.tight_layout()
 
-        ################################################################################################################
-
+        # Second plot: Relative power loss vs Temperature
         matplotlib_widget2.axis.clear()
         self.layout = QVBoxLayout(self.plotwidget_2)
         self.layout.addWidget(matplotlib_widget2)
-        try:
-            matplotlib_widget2.axis_cm.remove()
-        except:
-            pass
-
-        flux_list = [mat1_flux, mat2_flux, mat3_flux, mat4_flux, mat5_flux]
-        # print(f"flux_list: {flux_list}")
-        database.compare_core_loss_temperature(matplotlib_widget2, material_list=materials_used_list,
-                                               flux_density_list=[mat1_flux, mat2_flux, mat3_flux, mat4_flux,
-                                                                  mat5_flux])
-        # self.matplotlib_widget2.axis.legend(fontsize=13)
+        database.compare_core_loss_temperature(matplotlib_widget2, material_list=materials_used_list, flux_density_list=flux_list)
+        matplotlib_widget2.axis.legend([f'{mat}, {flux} T' for mat, flux in zip(materials_used_list, flux_list)], fontsize=10)
         matplotlib_widget2.axis.grid()
         matplotlib_widget2.figure.canvas.draw_idle()
         matplotlib_widget2.figure.tight_layout()
 
-        ################################################################################################################
-
+        # Third plot: Relative power loss vs Frequency
         matplotlib_widget3.axis.clear()
         self.layout = QVBoxLayout(self.plotwidget_3)
         self.layout.addWidget(matplotlib_widget3)
-        try:
-            matplotlib_widget3.axis_cm.remove()
-        except:
-            pass
-
-        database.compare_core_loss_frequency(matplotlib_widget3, material_list=materials_used_list,
-                                             temperature_list=[mat1_temp, mat2_temp, mat3_temp, mat4_temp, mat5_temp],
-                                             flux_density_list=[mat1_flux, mat2_flux, mat3_flux, mat4_flux, mat5_flux])
-        # self.matplotlib_widget3.axis.legend(fontsize=13)
+        database.compare_core_loss_frequency(matplotlib_widget3, material_list=materials_used_list, temperature_list=temp_list, flux_density_list=flux_list)
+        matplotlib_widget3.axis.legend([f'{mat}, {temp}°C, {flux} T' for mat, temp, flux in zip(materials_used_list, temp_list, flux_list)], fontsize=10)
         matplotlib_widget3.axis.grid()
         matplotlib_widget3.figure.canvas.draw_idle()
         matplotlib_widget3.figure.tight_layout()
 
-        ################################################################################################################
-
+        # Fourth plot: B vs H
         matplotlib_widget4.axis.clear()
         self.layout = QVBoxLayout(self.plotwidget_4)
         self.layout.addWidget(matplotlib_widget4)
-        try:
-            matplotlib_widget4.axis_cm.remove()
-        except:
-            pass
-
-        database.compare_b_h_curve(matplotlib_widget4, material_list=materials_used_list,
-                                   temperature_list=[mat1_temp, mat2_temp, mat3_temp, mat4_temp, mat5_temp])
-        # self.matplotlib_widget4.axis.legend(fontsize=13)
+        database.compare_b_h_curve(matplotlib_widget4, material_list=materials_used_list, temperature_list=temp_list)
+        matplotlib_widget4.axis.legend([f'{mat}, {temp}°C' for mat, temp in zip(materials_used_list, temp_list)], fontsize=10)
         matplotlib_widget4.axis.grid()
         matplotlib_widget4.figure.canvas.draw_idle()
         matplotlib_widget4.figure.tight_layout()
+
         # Datasheet-Datasheet is finished
         self.statusBar().showMessage('Datasheet-Datasheet completed')
 
@@ -1747,79 +1740,63 @@ class MainWindow(QMainWindow):
         # show a statusbar while Measurement-Measurement is running
         self.statusBar().showMessage('Measurement-Measurement running...')
         QCoreApplication.processEvents()
+        # Show a statusbar while Measurement-Measurement is running
+        self.statusBar().showMessage('Measurement-Measurement running...')
+        QCoreApplication.processEvents()
+
+        material_list = [self.dat_core_material1_comboBox_2.currentText(),
+                         self.dat_core_material2_comboBox_2.currentText(),
+                         self.dat_core_material3_comboBox_2.currentText(),
+                         self.dat_core_material4_comboBox_2.currentText(),
+                         self.dat_core_material5_comboBox_2.currentText()]
+        test_name_list = [self.test_name_1_comboBox.currentText(),
+                          self.test_name_2_comboBox.currentText(),
+                          self.test_name_3_comboBox.currentText(),
+                          self.test_name_4_comboBox.currentText(),
+                          self.test_name_5_comboBox.currentText()]
+        temp_list = [comma_str_to_point_float(self.aut_temp_m1_comboBox_2.currentText()),
+                     comma_str_to_point_float(self.aut_temp_m2_comboBox_2.currentText()),
+                     comma_str_to_point_float(self.aut_temp_m3_comboBox_2.currentText()),
+                     comma_str_to_point_float(self.aut_temp_m4_comboBox_2.currentText()),
+                     comma_str_to_point_float(self.aut_temp_m5_comboBox_2.currentText())]
+        freq_list = [comma_str_to_point_float(self.aut_freq_m1_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_freq_m2_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_freq_m3_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_freq_m4_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_freq_m5_comboBox.currentText())]
+
+        materials_used_list = [item for item in material_list if item]
+
+        # First plot: (Real Part)
         matplotlib_widget1.axis.clear()
         self.layout = QVBoxLayout(self.plotwidget_13)
         self.layout.addWidget(matplotlib_widget1)
-        try:
-            matplotlib_widget1.axis_cm.remove()
-        except:
-            pass
-
-        mat1_name = self.dat_core_material1_comboBox_2.currentText()
-        mat2_name = self.dat_core_material2_comboBox_2.currentText()
-        mat3_name = self.dat_core_material3_comboBox_2.currentText()
-        mat4_name = self.dat_core_material4_comboBox_2.currentText()
-        mat5_name = self.dat_core_material5_comboBox_2.currentText()
-
-        mat1_test_name = self.test_name_1_comboBox.currentText()
-        mat2_test_name = self.test_name_2_comboBox.currentText()
-        mat3_test_name = self.test_name_3_comboBox.currentText()
-        mat4_test_name = self.test_name_4_comboBox.currentText()
-        mat5_test_name = self.test_name_5_comboBox.currentText()
-
-        mat1_temp = comma_str_to_point_float(self.aut_temp_m1_comboBox_2.currentText())
-        mat2_temp = comma_str_to_point_float(self.aut_temp_m2_comboBox_2.currentText())
-        mat3_temp = comma_str_to_point_float(self.aut_temp_m3_comboBox_2.currentText())
-        mat4_temp = comma_str_to_point_float(self.aut_temp_m4_comboBox_2.currentText())
-        mat5_temp = comma_str_to_point_float(self.aut_temp_m5_comboBox_2.currentText())
-
-        mat1_freq = comma_str_to_point_float(self.aut_freq_m1_comboBox.currentText())
-        mat2_freq = comma_str_to_point_float(self.aut_freq_m2_comboBox.currentText())
-        mat3_freq = comma_str_to_point_float(self.aut_freq_m3_comboBox.currentText())
-        mat4_freq = comma_str_to_point_float(self.aut_freq_m4_comboBox.currentText())
-        mat5_freq = comma_str_to_point_float(self.aut_freq_m5_comboBox.currentText())
-
-        # print(f"mat1_name: {mat1_name},{mat2_name},{mat3_name},{mat4_name},{mat5_name}")
-        # print(f"mat1_temp: {mat1_temp},{mat2_temp},{mat3_temp},{mat4_temp},{mat5_temp}")
-        # print(f"mat1_freq: {mat1_freq},{mat2_freq},{mat3_freq},{mat4_freq},{mat5_freq}")
-
-        materials_used_list = []
-        material_list = [mat1_name, mat2_name, mat3_name, mat4_name, mat5_name]
-        for items in material_list:
-            if items:
-                materials_used_list.append(items)
-        # print(materials_used_list)
-
         database.compare_permeability_measurement_data(matplotlib_widget1, material_list=materials_used_list,
-                                                       measurement_name=[mat1_test_name, mat2_test_name, mat3_test_name,
-                                                                         mat4_test_name, mat5_test_name],
-                                                       frequency_list=[mat1_freq, mat2_freq, mat3_freq, mat4_freq,
-                                                                       mat5_freq],
-                                                       temperature_list=[mat1_temp, mat2_temp, mat3_temp, mat4_temp,
-                                                                         mat5_temp],
+                                                       measurement_name=test_name_list,
+                                                       frequency_list=freq_list,
+                                                       temperature_list=temp_list,
                                                        plot_real_part=True)
-
+        legend_labels1 = [f'{mat}, {test}, {freq} Hz, {temp}°C' for mat, test, freq, temp in zip(materials_used_list, test_name_list, freq_list, temp_list)]
+        matplotlib_widget1.axis.legend(legend_labels1, fontsize=8)
+        # legend_labels1 = [f'{mat}, {test}, {freq} Hz, {temp}°C' for mat, test, freq, temp in zip(materials_used_list, test_name_list, freq_list, temp_list)]
+        # matplotlib_widget1.axis.legend(legend_labels1, fontsize=8, loc='center left', bbox_to_anchor=(1, 0.5))
         matplotlib_widget1.axis.grid()
         matplotlib_widget1.figure.canvas.draw_idle()
         matplotlib_widget1.figure.tight_layout()
 
-        ################################################################################################################
-
+        # Second plot: (Imaginary Part)
         matplotlib_widget2.axis.clear()
         self.layout = QVBoxLayout(self.plotwidget_14)
         self.layout.addWidget(matplotlib_widget2)
-        try:
-            matplotlib_widget2.axis_cm.remove()
-        except:
-            pass
         database.compare_permeability_measurement_data(matplotlib_widget2, material_list=materials_used_list,
-                                                       measurement_name=[mat1_test_name, mat2_test_name, mat3_test_name,
-                                                                         mat4_test_name, mat5_test_name],
-                                                       frequency_list=[mat1_freq, mat2_freq, mat3_freq, mat4_freq,
-                                                                       mat5_freq],
-                                                       temperature_list=[mat1_temp, mat2_temp, mat3_temp, mat4_temp,
-                                                                         mat5_temp],
+                                                       measurement_name=test_name_list,
+                                                       frequency_list=freq_list,
+                                                       temperature_list=temp_list,
                                                        plot_real_part=False)
+        legend_labels2 = [f'{mat}, {test}, {freq} Hz, {temp}°C' for mat, test, freq, temp in zip(materials_used_list, test_name_list, freq_list, temp_list)]
+        matplotlib_widget2.axis.legend(legend_labels2, fontsize=8)
+        # legend_labels2 = [f'{mat}, {test}, {freq} Hz, {temp}°C' for mat, test, freq, temp in zip(materials_used_list, test_name_list, freq_list, temp_list)]
+        # matplotlib_widget2.axis.legend(legend_labels2, fontsize=8, loc='center left', bbox_to_anchor=(1, 0.5))
         matplotlib_widget2.axis.grid()
         matplotlib_widget2.figure.canvas.draw_idle()
         matplotlib_widget2.figure.tight_layout()
@@ -1855,7 +1832,11 @@ class MainWindow(QMainWindow):
 
         database.compare_core_loss_flux_datasheet_measurement(matplotlib_widget, material=mat_name,
                                                               temperature_list=[mat_dat_temp, mat_meas_temp], measurement_name=test_name)
-
+        # TODO Review legend for some materials (PC200, DMR96A, and DMR96A2.
+        legend_labels = [f'{mat_name}, Datasheet, {mat_dat_temp}°C', f'{mat_name}, {test_name}, Measurement, {mat_meas_temp}°C']
+        matplotlib_widget.axis.legend(legend_labels, fontsize=8)
+        # legend_labels = [f'{mat_name}, Datasheet {mat_dat_temp}°C', f'{mat_name}, Measurement {test_name}, {mat_meas_temp}°C']
+        # matplotlib_widget.axis.legend(legend_labels, fontsize=8, loc='center left', bbox_to_anchor=(1, 0.5))
         matplotlib_widget.axis.grid()
         matplotlib_widget.figure.canvas.draw_idle()
         matplotlib_widget.figure.tight_layout()
@@ -2279,6 +2260,8 @@ class MainWindow(QMainWindow):
         # List all materials from database
         get_material_list = database.material_list_in_database()
         md_core_material_options = get_material_list
+        # Material data Source for permeability and permittivity
+        data_source_options = [source for source in fmt.MaterialDataSource if source != fmt.MaterialDataSource.Custom]
 
         md_winding_material_options = [key for key in fmt.wire_material_database()]
         md_winding_type_options = [self.translation_dict['litz'], self.translation_dict['solid']]
@@ -2313,6 +2296,10 @@ class MainWindow(QMainWindow):
             self.md_simulation_type_comboBox.addItem(option)
         for option in md_core_material_options:
             self.md_core_material_comboBox.addItem(option)
+        for option in data_source_options:
+            self.md_permeability_datasource_combobox.addItem(option)
+        for option in data_source_options:
+            self.md_permittivity_datasource_combobox.addItem(option)
         for option in md_winding_material_options:
             self.md_winding1_material_comboBox.addItem(option)
             self.md_winding2_material_comboBox.addItem(option)
@@ -2554,6 +2541,7 @@ class MainWindow(QMainWindow):
             self.md_core_width_lineEdit.setText(str(format_number(core["core_inner_diameter"])))
             self.md_window_height_lineEdit.setText(str(format_number(core["window_h"])))
             self.md_window_width_lineEdit.setText(str(format_number(core["window_w"])))
+
             self.md_core_width_lineEdit.setEnabled(False)
             self.md_window_height_lineEdit.setEnabled(False)
             self.md_window_width_lineEdit.setEnabled(False)
@@ -2561,6 +2549,41 @@ class MainWindow(QMainWindow):
             self.md_core_width_lineEdit.setEnabled(True)
             self.md_window_height_lineEdit.setEnabled(True)
             self.md_window_width_lineEdit.setEnabled(True)
+
+    def md_test_setup_name(self):
+        """Get test setup names from database for particular material."""
+        mat_text1 = self.md_core_material_comboBox.currentText()
+        self.md_test_name1_comboBox.clear()
+        self.md_test_name2_comboBox.clear()
+
+        names_list = []
+
+        if mat_text1:
+            names_list = database.find_measurement_names(material_name=mat_text1, datatype="complex_permeability")
+
+        for option in names_list:
+            self.md_test_name1_comboBox.addItem(option)
+            self.md_test_name2_comboBox.addItem(option)
+
+    def md_test_setup_name_enable(self):
+        """Enable or disable the test name combo box based on the data source."""
+        # material = self.md_core_material_comboBox.currentText()
+        permeability_source = self.md_permeability_datasource_combobox.currentText()
+        permittivity_source = self.md_permittivity_datasource_combobox.currentText()
+        # Hide the comboboxes and labels if it is datasheet
+        self.md_test_name1_comboBox.setVisible(permeability_source == "measurements")
+        self.md_test_name2_comboBox.setVisible(permittivity_source == "measurements")
+        self.md_test_name1_label.setVisible(permeability_source == "measurements")
+        self.md_test_name2_label.setVisible(permittivity_source == "measurements")
+
+        # if permeability_source == "measurements":
+        #     self.md_test_name1_comboBox.setEnabled(True)
+        # else:
+        #     self.md_test_name1_comboBox.setEnabled(False)
+        # if permittivity_source == "measurements":
+        #     self.md_test_name2_comboBox.setEnabled(True)
+        # else:
+        #     self.md_test_name2_comboBox.setEnabled(False)
 
     def md_winding1_set_litz_parameters_from_litz_database(self):
         """Set litz parameters from material database for winding 1 in manual design."""
@@ -3039,18 +3062,22 @@ class MainWindow(QMainWindow):
                                                             core_h=1)
 
             material_enum = fmt.Material(self.md_core_material_comboBox.currentText())
+            permeability_datasource_enum = fmt.MaterialDataSource(self.md_permeability_datasource_combobox.currentText())
+            permittivity_datasource_enum = fmt.MaterialDataSource(self.md_permittivity_datasource_combobox.currentText())
+            permeability_measurement_setup_enum = mdb.MeasurementSetup(self.md_test_name1_comboBox.currentText())
+            permittivity_measurement_setup_enum = mdb.MeasurementSetup(self.md_test_name2_comboBox.currentText())
 
             core = fmt.Core(core_type=fmt.CoreType.Single,
                             core_dimensions=core_dimensions,
                             detailed_core_model=False,
-                            material=material_enum, temperature=45, frequency=int(self.md_base_frequency_lineEdit.text()),
+                            material=material_enum, temperature=int(self.md_core_temp_lineEdit.text()), frequency=int(self.md_base_frequency_lineEdit.text()),
                             # permeability_datasource="manufacturer_datasheet",
-                            permeability_datasource=fmt.MaterialDataSource.Measurement,
+                            permeability_datasource=permeability_datasource_enum,
                             permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                            permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
-                            permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                            permeability_measurement_setup=permeability_measurement_setup_enum,
+                            permittivity_datasource=permittivity_datasource_enum,
                             permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                            permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+                            permittivity_measurement_setup=permittivity_measurement_setup_enum, mdb_verbosity=fmt.Verbosity.Silent)
 
             geo.set_core(core)
 
@@ -3175,7 +3202,7 @@ class MainWindow(QMainWindow):
             elif winding_material_name == 'Aluminium':
                 winding_material_enum = fmt.Conductivity.Aluminium
 
-            winding = fmt.Conductor(0, winding_material_enum)
+            winding = fmt.Conductor(0, winding_material_enum, winding_material_temperature=int(self.md_winding1_temp_lineEdit.text()))
             scheme1 = getattr(fmt.ConductorArrangement, self.md_winding1_scheme_comboBox.currentText())
             if self.md_winding1_type_comboBox.currentText() == self.translation_dict['solid']:
                 winding.set_solid_round_conductor(
@@ -3208,7 +3235,8 @@ class MainWindow(QMainWindow):
 
             # 1. chose simulation type
             geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer,
-                                        working_directory=self.md_working_directory_lineEdit.text())
+                                        working_directory=self.md_working_directory_lineEdit.text(),
+                                        verbosity=fmt.Verbosity.ToConsole)
 
             # -----------------------------------------------
             # Core
@@ -3217,10 +3245,26 @@ class MainWindow(QMainWindow):
                                                             window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text()),
                                                             window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text()),
                                                             core_h=0.04)
-            core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
-                            permeability_datasource=fmt.MaterialDataSource.Custom,
-                            permittivity_datasource=fmt.MaterialDataSource.Custom,
-                            detailed_core_model=False)
+            material_enum = fmt.Material(self.md_core_material_comboBox.currentText())
+            permeability_datasource_enum = fmt.MaterialDataSource(self.md_permeability_datasource_combobox.currentText())
+            permittivity_datasource_enum = fmt.MaterialDataSource(self.md_permittivity_datasource_combobox.currentText())
+            permeability_measurement_setup_enum = mdb.MeasurementSetup(self.md_test_name1_comboBox.currentText())
+            permittivity_measurement_setup_enum = mdb.MeasurementSetup(self.md_test_name2_comboBox.currentText())
+            core = fmt.Core(core_type=fmt.CoreType.Single,
+                            core_dimensions=core_dimensions,
+                            detailed_core_model=False,
+                            material=material_enum, temperature=int(self.md_core_temp_lineEdit.text()), frequency=int(self.md_base_frequency_lineEdit.text()),
+                            # permeability_datasource="manufacturer_datasheet",
+                            permeability_datasource=permeability_datasource_enum,
+                            permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                            permeability_measurement_setup=permeability_measurement_setup_enum,
+                            permittivity_datasource=permittivity_datasource_enum,
+                            permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                            permittivity_measurement_setup=permittivity_measurement_setup_enum, mdb_verbosity=fmt.Verbosity.Silent)
+            # core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
+            #                 permeability_datasource=permeability_datasource_enum,
+            #                 permittivity_datasource=permittivity_datasource_enum,
+            #                 detailed_core_model=False)
             geo.set_core(core)
             """
             geo.core.update(window_h = comma_str_to_point_float(self.md_window_height_lineEdit.text()),
@@ -3349,7 +3393,7 @@ class MainWindow(QMainWindow):
             elif winding1_material_name == 'Aluminium':
                 winding1_material_enum = fmt.Conductivity.Aluminium
 
-            winding1 = fmt.Conductor(0, winding1_material_enum)
+            winding1 = fmt.Conductor(0, winding1_material_enum, winding_material_temperature=int(self.md_winding1_temp_lineEdit.text()))
             scheme1 = getattr(fmt.ConductorArrangement, self.md_winding1_scheme_comboBox.currentText())
             if self.md_winding1_type_comboBox.currentText() == self.translation_dict['solid']:
                 winding1.set_solid_round_conductor(
@@ -3369,7 +3413,7 @@ class MainWindow(QMainWindow):
             elif winding2_material_name == 'Aluminium':
                 winding2_material_enum = fmt.Conductivity.Aluminium
 
-            winding2 = fmt.Conductor(1, winding2_material_enum)
+            winding2 = fmt.Conductor(1, winding2_material_enum, winding_material_temperature=int(self.md_winding2_temp_lineEdit.text()))
             scheme2 = getattr(fmt.ConductorArrangement, self.md_winding2_scheme_comboBox.currentText())
             if self.md_winding2_type_comboBox.currentText() == self.translation_dict['solid']:
                 winding2.set_solid_round_conductor(
@@ -3510,27 +3554,31 @@ class MainWindow(QMainWindow):
                     # just for shown one figure:
                     self.md_loss_plot_label1.setPixmap(pixmap)
                     self.md_loss_plot_label1.show()
-                # # loss labels
-                # hysteresis_label.setText(f"Core Hysteresis loss: {sweep.get('core_hyst_losses', 0)} W")
-                # eddy_current_label.setText(f"Core Eddy Current loss: {sweep.get('core_eddy_losses', 0)} W")
-                # winding1_loss_label.setText(f"Winding 1 loss: {sweep['winding1'].get('winding_losses', 0)} W")
-                # inductance1_label.setText(f"Primary Inductance: {sweep['winding1'].get('flux_over_current', [0])[0]} H")
-                # # transformer case
+                # # Show the losses with round and approximation.
+                # hysteresis_label.setText(f"Core Hysteresis loss: {sweep.get('core_hyst_losses', 0):.5f} W")
+                # eddy_current_label.setText(f"Core Eddy Current loss: {sweep.get('core_eddy_losses', 0):.5f} W")
+                # winding1_loss_label.setText(f"Winding 1 loss: {sweep['winding1'].get('winding_losses', 0):.5f} W")
+                #
+                # primary_inductance_nh = sweep['winding1'].get('flux_over_current', [0])[0] * 1e9
+                # inductance1_label.setText(f"Primary Inductance: {primary_inductance_nh:.0f} nH")
+                # # Transformer case.
                 # if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-                #     winding2_loss_label.setText(f"Winding 2 loss: {sweep['winding2'].get('winding_losses', 0)} W")
-                #     inductance2_label.setText(f"Secondary Inductance: {sweep['winding2'].get('flux_over_current', [0])[0]} H")
-                # Show the losses with round and approximation.
-                hysteresis_label.setText(f"Core Hysteresis loss: {sweep.get('core_hyst_losses', 0):.5f} W")
-                eddy_current_label.setText(f"Core Eddy Current loss: {sweep.get('core_eddy_losses', 0):.5f} W")
-                winding1_loss_label.setText(f"Winding 1 loss: {sweep['winding1'].get('winding_losses', 0):.5f} W")
+                #     secondary_inductance_nh = sweep['winding2'].get('flux_over_current', [0])[0] * 1e9
+                #     winding2_loss_label.setText(f"Winding 2 loss: {sweep['winding2'].get('winding_losses', 0):.0f} W")
+                #     inductance2_label.setText(f"Secondary Inductance: {secondary_inductance_nh:.5f} nH")
+                # Show the losses with the new format_number_with_units function.
+                hysteresis_label.setText(f"Core Hysteresis loss: {format_number_with_units(sweep.get('core_hyst_losses', 0))} W")
+                eddy_current_label.setText(f"Core Eddy Current loss: {format_number_with_units(sweep.get('core_eddy_losses', 0))} W")
+                winding1_loss_label.setText(f"Winding 1 loss: {format_number_with_units(sweep['winding1'].get('winding_losses', 0))} W")
 
                 primary_inductance_nh = sweep['winding1'].get('flux_over_current', [0])[0] * 1e9
                 inductance1_label.setText(f"Primary Inductance: {primary_inductance_nh:.0f} nH")
                 # Transformer case.
                 if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-                    secondary_inductance_nh = sweep['winding2'].get('flux_over_current', [0])[0] * 1e9
-                    winding2_loss_label.setText(f"Winding 2 loss: {sweep['winding2'].get('winding_losses', 0):.0f} W")
-                    inductance2_label.setText(f"Secondary Inductance: {secondary_inductance_nh:.5f} nH")
+                    secondary_inductance_nh = sweep['winding2'].get('flux_over_current', [0])[0]
+                    winding2_loss_label.setText(f"Winding 2 loss: {format_number_with_units(sweep['winding2'].get('winding_losses', 0))} W")
+                    inductance2_label.setText(f"Secondary Inductance: {format_number_with_units(secondary_inductance_nh, decimals=4)} H")
+
         finally:
             # Unlock the mutex to allow other operations to proceed.
             self.mutex.unlock()
@@ -3652,8 +3700,9 @@ class MainWindow(QMainWindow):
 
             mc1.calculate_inductance()
             inductance = mc1.data_matrix[:, 9]
-
-            self.Inductanceval_label.setText(f"{round(inductance[0], 10)} H")
+            # self.Inductanceval_label.setText(f"{round(inductance[0], 10)} H")
+            formatted_inductance = format_number_with_units(inductance[0], 4) + " H"
+            self.Inductanceval_label.setText(formatted_inductance)
 
             # Completed
             self.statusBar().showMessage('Inductance Value completed')
