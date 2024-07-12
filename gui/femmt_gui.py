@@ -239,8 +239,8 @@ class MainWindow(QMainWindow):
             "+-20": "+/- 20%",
             "excel": "MS Excel",
             "ToEdges": "To Edges",
-            "CenterOnHorizontalAxis": "Center On Horizontal Axis",
-            "CenterOnVerticalAxis": "Center On Vertical Axis",
+            "CenterOnVerticalAxis": "Center On Horizontal Axis",
+            "CenterOnHorizontalAxis": "Center On Vertical Axis",
             "VerticalUpward_HorizontalRightward": "Vertical Upward, Horizontal Rightward",
             "VerticalUpward_HorizontalLeftward": "Vertical Upward, Horizontal Leftward",
             "VerticalDownward_HorizontalRightward": "Vertical Downward, Horizontal Rightward",
@@ -2278,8 +2278,8 @@ class MainWindow(QMainWindow):
 
         alignment_options = [
             self.translation_dict["ToEdges"],
-            self.translation_dict["CenterOnHorizontalAxis"],
-            self.translation_dict["CenterOnVerticalAxis"]
+            self.translation_dict["CenterOnVerticalAxis"],
+            self.translation_dict["CenterOnHorizontalAxis"]
         ]
         placement_strategy_options = [
             self.translation_dict["VerticalUpward_HorizontalRightward"],

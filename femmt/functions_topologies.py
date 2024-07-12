@@ -59,7 +59,7 @@ def check_if_primary_conductor_row_fits_in_vww(vww, row_element: ConductorRow, w
 
 
 def place_center_tapped_conductor_row(vwws, row_element, row_winding_scheme_type, no_vww, primary_conductors_to_be_placed,
-                                      winding1, winding2, winding3, winding_insulations):
+                                      winding1, winding2, winding3, winding_insulations, wrap_para_type, foil_horizontal_placing_strategy=None):
     """
     Place center-tapped conductor row.
 
@@ -71,29 +71,34 @@ def place_center_tapped_conductor_row(vwws, row_element, row_winding_scheme_type
     :param winding1:
     :param winding2:
     :param winding3:
+    :param wrap_para_type: wrap parameter type
+    :param foil_horizontal_placing_strategy: strategy for placing foil horizontal windings
     :return:
     """
     if row_element.winding_tag == WindingTag.Primary:
         check_if_primary_conductor_row_fits_in_vww(vww=vwws[no_vww], row_element=row_element, winding_element=winding1, winding_insulations=winding_insulations)
         primary_conductors_to_be_placed -= row_element.number_of_conds_per_row
         if primary_conductors_to_be_placed >= 0:
-            vwws[no_vww].set_winding(winding1, row_element.number_of_conds_per_row, row_winding_scheme_type)
+            vwws[no_vww].set_winding(winding1, row_element.number_of_conds_per_row, row_winding_scheme_type, wrap_para_type=wrap_para_type)
         elif primary_conductors_to_be_placed < 0:
-            # In the last row,only th rest shall be placed
-            vwws[no_vww].set_winding(winding1, row_element.number_of_conds_per_row + primary_conductors_to_be_placed, row_winding_scheme_type)
+            # In the last row, only the rest shall be placed
+            vwws[no_vww].set_winding(winding1, row_element.number_of_conds_per_row + primary_conductors_to_be_placed, row_winding_scheme_type,
+                                     wrap_para_type=wrap_para_type)
             primary_conductors_to_be_placed = 0
 
     elif row_element.winding_tag == WindingTag.Secondary:
-        vwws[no_vww].set_winding(winding2, row_element.number_of_conds_per_row, row_winding_scheme_type)
+        vwws[no_vww].set_winding(winding2, row_element.number_of_conds_per_row, row_winding_scheme_type,
+                                 wrap_para_type=wrap_para_type, foil_horizontal_placing_strategy=foil_horizontal_placing_strategy)
 
     elif row_element.winding_tag == WindingTag.Tertiary:
-        vwws[no_vww].set_winding(winding3, row_element.number_of_conds_per_row, row_winding_scheme_type)
+        vwws[no_vww].set_winding(winding3, row_element.number_of_conds_per_row, row_winding_scheme_type,
+                                 wrap_para_type=wrap_para_type, foil_horizontal_placing_strategy=foil_horizontal_placing_strategy)
 
     return primary_conductors_to_be_placed
 
 
 def place_windings_in_vwws(vwws, winding_scheme_type, transformer_stack, primary_turns,
-                           winding1, winding2, winding3, winding_insulations):
+                           winding1, winding2, winding3, winding_insulations, wrap_para_type, foil_horizontal_placing_strategy=None):
     """
     Place windings in virtual winding windows.
 
@@ -106,6 +111,8 @@ def place_windings_in_vwws(vwws, winding_scheme_type, transformer_stack, primary
     :param winding2:
     :param winding3:
     :param winding_insulations:
+    :param wrap_para_type: wrap parameter type
+    :param foil_horizontal_placing_strategy: strategy for placing foil horizontal windings
     :return:
     """
     # Count how many virtual winding windows were set
@@ -127,7 +134,9 @@ def place_windings_in_vwws(vwws, winding_scheme_type, transformer_stack, primary
                                                                                 no_vww=set_vwws,
                                                                                 primary_conductors_to_be_placed=primary_conductors_to_be_placed,
                                                                                 winding1=winding1, winding2=winding2, winding3=winding3,
-                                                                                winding_insulations=winding_insulations)
+                                                                                winding_insulations=winding_insulations,
+                                                                                wrap_para_type=wrap_para_type,
+                                                                                foil_horizontal_placing_strategy=foil_horizontal_placing_strategy)
             set_vwws += 1
 
         elif isinstance(row_element, CenterTappedGroup):
@@ -166,7 +175,8 @@ def set_center_tapped_windings(core,
                                iso_primary_to_primary, iso_secondary_to_secondary, iso_primary_to_secondary,
                                interleaving_type: CenterTappedInterleavingType, interleaving_scheme: InterleavingSchemesFoilLitz,
                                bobbin_coil_top=None, bobbin_coil_bot=None, bobbin_coil_left=None, bobbin_coil_right=None,
-                               primary_coil_turns=None, winding_temperature: Optional[float] = None):
+                               primary_coil_turns=None, winding_temperature: Optional[float] = None, wrap_para_type=WrapParaType.FixedThickness,
+                               foil_horizontal_placing_strategy=None):
     """
     Set center tapped windings.
 
@@ -188,13 +198,15 @@ def set_center_tapped_windings(core,
     :param primary_radius:
     :param secondary_parallel_turns:
     :param secondary_thickness_foil:
-    :param bobbin_coil_right: 
-    :param bobbin_coil_left: 
-    :param bobbin_coil_bot: 
-    :param bobbin_coil_top: 
+    :param bobbin_coil_right:
+    :param bobbin_coil_left:
+    :param bobbin_coil_bot:
+    :param bobbin_coil_top:
     :param primary_coil_turns:
     :param winding_temperature: winding temperature in °C
     :type winding_temperature: Optional[float]
+    :param wrap_para_type: wrap parameter type
+    :param foil_horizontal_placing_strategy: strategy for placing foil horizontal windings
     :return:
     """
     def define_insulations():
@@ -268,7 +280,8 @@ def set_center_tapped_windings(core,
     vwws_bot, winding_scheme_type = ww_bot.split_with_stack(transformer_stack)
 
     # Place the windings in the virtual winding windows
-    vwws_bot = place_windings_in_vwws(vwws_bot, winding_scheme_type, transformer_stack, primary_turns, winding1, winding2, winding3, winding_insulations)
+    vwws_bot = place_windings_in_vwws(vwws_bot, winding_scheme_type, transformer_stack, primary_turns, winding1, winding2, winding3, winding_insulations,
+                                      wrap_para_type=wrap_para_type, foil_horizontal_placing_strategy=foil_horizontal_placing_strategy)
 
     # If "stacked-core", also set primary coil turns
     if core.core_type == CoreType.Stacked:

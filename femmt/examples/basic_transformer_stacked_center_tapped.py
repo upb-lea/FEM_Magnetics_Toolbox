@@ -121,7 +121,9 @@ def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, s
         primary_additional_bobbin=1e-3,
         winding_temperature=100,
         bobbin_coil_left=3e-3,
-        center_foil_additional_bobbin=0e-3)
+        center_foil_additional_bobbin=0e-3,
+        wrap_para_type=fmt.WrapParaType.FixedThickness,
+        foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalUpward)
 
     geo.set_insulation(insulation)
     geo.set_winding_windows([coil_window, transformer_window])

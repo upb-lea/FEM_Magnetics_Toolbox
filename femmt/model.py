@@ -77,7 +77,7 @@ class Conductor:
         else:
             raise Exception(f"Material {conductivity.name} not found in database")
 
-    def set_rectangular_conductor(self, thickness: float):
+    def set_rectangular_conductor(self, thickness: float = None):
         """Set a rectangular, solid conductor."""
         if self.conductor_is_set:
             raise Exception("Only one conductor can be set for each winding!")
@@ -766,7 +766,8 @@ class VirtualWindingWindow:
 
     def set_winding(self, conductor: Conductor, turns: int, winding_scheme: WindingScheme, alignment: Optional[Align] = None,
                     placing_strategy: Optional[ConductorDistribution] = None, zigzag: bool = False,
-                    wrap_para_type: WrapParaType = None):
+                    wrap_para_type: WrapParaType = None, foil_vertical_placing_strategy: Optional[FoilVerticalDistribution] = None,
+                    foil_horizontal_placing_strategy: Optional[FoilHorizontalDistribution] = None):
         """Set a single winding to the current virtual winding window. A single winding always contains one conductor.
 
         :param conductor: Conductor which will be set to the vww.
@@ -777,8 +778,14 @@ class VirtualWindingWindow:
         :type winding_scheme: WindingScheme
         :param placing_strategy: Placing strategy defines the way the conductors are placing in vww
         :type placing_strategy: ConductorPlacingStrategy, optional
+        :param zigzag: Zigzag movement for conductors
+        :type placing_strategy: bool, define to False
         :param wrap_para_type: Additional wrap parameter. Not always needed, defaults to None
         :type wrap_para_type: WrapParaType, optional
+        :param foil_vertical_placing_strategy: foil_vertical_placing_strategy defines the way the rectangular foil vertical conductors are placing in vww
+        :type foil_vertical_placing_strategy: FoilVerticalDistribution, optional
+        :param foil_horizontal_placing_strategy: foil_horizontal_placing_strategy defines the way the rectangular foil Horizontal conductors are placing in vww
+        :type foil_horizontal_placing_strategy: foil_horizontal_placing_strategy, optional
         """
         self.winding_type = WindingType.Single
         self.winding_scheme = winding_scheme
@@ -786,17 +793,27 @@ class VirtualWindingWindow:
         self.turns = [0] * (conductor.winding_number + 1)  # TODO: find another solution for this (is needed in mesh.py for air_stacked)
         # self.turns = [0] * (3)  # TODO: find another solution for this (is needed in mesh.py for air_stacked)
         self.placing_strategy = placing_strategy
+        self.foil_vertical_placing_strategy = foil_vertical_placing_strategy
+        self.foil_horizontal_placing_strategy = foil_horizontal_placing_strategy
         self.alignment = alignment
         self.zigzag = zigzag
         self.turns.insert(conductor.winding_number, turns)
         self.winding_is_set = True
         self.wrap_para = wrap_para_type
 
-        if alignment is not None and placing_strategy is None:
-            raise Exception("When alignment is there a placing_strategy must be set")
+        # if alignment is not None and placing_strategy is None:
+        #     raise Exception("When alignment is there a placing_strategy must be set")
+        # if alignment is not None and (placing_strategy is None and foil_vertical_placing_strategy is None and foil_horizontal_placing_strategy is None):
+        #     raise Exception("When alignment is set, at least one placing strategy must be set")
 
         if winding_scheme is WindingScheme.FoilVertical and wrap_para_type is None:
             raise Exception("When winding scheme is FoilVertical a wrap para type must be set.")
+        if winding_scheme is WindingScheme.FoilVertical and foil_vertical_placing_strategy is None:
+            raise Exception("When winding scheme is FoilVertical a foil_vertical_placing_strategy must be set ")
+        if winding_scheme is WindingScheme.FoilHorizontal and WrapParaType is None:
+            raise Exception("When winding scheme is FoilHorizontal a wrap para type must be set.")
+        if winding_scheme is WindingScheme.FoilHorizontal and foil_horizontal_placing_strategy is None:
+            raise Exception("When winding scheme is FoilHorizontal a foil_horizontal_placing_strategy must be set ")
 
     def set_interleaved_winding(self, conductor1: Conductor, turns1: int, conductor2: Conductor, turns2: int,
                                 winding_scheme: InterleavedWindingScheme):

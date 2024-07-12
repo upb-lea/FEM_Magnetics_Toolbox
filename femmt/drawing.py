@@ -716,6 +716,9 @@ class TwoDaxiSymmetric:
                         winding_scheme = virtual_winding_window.winding_scheme
                         alignment = virtual_winding_window.alignment
                         placing_strategy = virtual_winding_window.placing_strategy
+                        foil_vertical_placing_strategy = virtual_winding_window.foil_vertical_placing_strategy
+                        foil_horizontal_placing_strategy = virtual_winding_window.foil_horizontal_placing_strategy
+
                         zigzag = virtual_winding_window.zigzag
                         num = winding.winding_number
 
@@ -754,93 +757,152 @@ class TwoDaxiSymmetric:
                                     # Wrap defined number of turns and chosen thickness
                                     winding.a_cell = winding.thickness * (top_bound - bot_bound)
                                     for i in range(turns):
-                                        # CHECK if right bound is reached
-                                        if (left_bound + (i + 1) * winding.thickness + i * self.insulation.cond_cond[num][num]) <= right_bound:
-                                            # Foils
-                                            self.p_conductor[num].append([
-                                                left_bound + i * winding.thickness + i * self.insulation.cond_cond[num][num],
-                                                bot_bound,
-                                                0,
-                                                self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                left_bound + (i + 1) * winding.thickness + i * self.insulation.cond_cond[num][num],
-                                                bot_bound,
-                                                0,
-                                                self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                left_bound + i * winding.thickness + i * self.insulation.cond_cond[num][num],
-                                                top_bound,
-                                                0,
-                                                self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                left_bound + (i + 1) * winding.thickness + i * self.insulation.cond_cond[num][num],
-                                                top_bound,
-                                                0,
-                                                self.mesh_data.c_conductor[num]])
-                                            center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3],
-                                                                                   self.p_conductor[num][-2], self.p_conductor[num][-1])
-                                            self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
+                                        # Starting point of x depending on the distribution way if it is from left to right or vice versa.
+                                        if foil_vertical_placing_strategy == FoilVerticalDistribution.HorizontalRightward:
+                                            x_start = left_bound + i * winding.thickness + i * self.insulation.cond_cond[num][num]
+                                            x_move = left_bound + (i + 1) * winding.thickness + i * self.insulation.cond_cond[num][num]
+                                            if x_move > right_bound:
+                                                break
+                                        elif foil_vertical_placing_strategy == FoilVerticalDistribution.HorizontalLeftward:
+                                            x_start = right_bound - i * winding.thickness - i * self.insulation.cond_cond[num][num]
+                                            x_move = right_bound - (i + 1) * winding.thickness - i * self.insulation.cond_cond[num][num]
+                                            if x_move < left_bound:
+                                                break
+                                        # Foil
+                                        self.p_conductor[num].extend([
+                                            [x_start, bot_bound, 0, self.mesh_data.c_conductor[num]],
+                                            [x_move, bot_bound, 0, self.mesh_data.c_conductor[num]],
+                                            [x_start, top_bound, 0, self.mesh_data.c_conductor[num]],
+                                            [x_move, top_bound, 0, self.mesh_data.c_conductor[num]]
+                                        ])
+                                        # Find the center point of each turn
+                                        center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3],
+                                                                               self.p_conductor[num][-2], self.p_conductor[num][-1])
+                                        self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
+                                # Interpolate type is where the foils will have a dynamic thickness
                                 elif virtual_winding_window.wrap_para == WrapParaType.Interpolate:
                                     # Fill the allowed space in the Winding Window with a chosen number of turns
-                                    x_interpol = np.linspace(left_bound, right_bound + self.insulation.cond_cond[num][num], turns + 1)
+                                    # we need first to calculate the area of every turn
+                                    # Find the wrap turn space
+                                    winding.thickness = (right_bound - left_bound - (turns - 1) * self.insulation.cond_cond[num][num]) / turns
+                                    window_height = top_bound - bot_bound
+                                    winding.a_cell = winding.thickness * window_height
+                                    # Update MeshData with the new thickness
+                                    self.mesh_data.update_data(frequency=self.mesh_data.frequency, skin_mesh_factor=self.mesh_data.skin_mesh_factor)
                                     for i in range(turns):
-                                        # Foils
-                                        self.p_conductor[num].append([
-                                            x_interpol[i],
-                                            bot_bound,
-                                            0,
-                                            self.mesh_data.c_conductor[num]])
-                                        self.p_conductor[num].append([
-                                            x_interpol[i + 1] - self.insulation.cond_cond[num][num],
-                                            bot_bound,
-                                            0,
-                                            self.mesh_data.c_conductor[num]])
-                                        self.p_conductor[num].append([
-                                            x_interpol[i],
-                                            top_bound,
-                                            0,
-                                            self.mesh_data.c_conductor[num]])
-                                        self.p_conductor[num].append([
-                                            x_interpol[i + 1] - self.insulation.cond_cond[num][num],
-                                            top_bound,
-                                            0,
-                                            self.mesh_data.c_conductor[num]])
+                                        if foil_vertical_placing_strategy == FoilVerticalDistribution.HorizontalRightward:
+                                            # Generate interpolated positions for each turn, starting from the left and moving right
+                                            x_interpol = np.linspace(left_bound, right_bound + self.insulation.cond_cond[num][num], turns + 1)
+                                            x_start = x_interpol[i]
+                                            x_move = x_interpol[i + 1] - self.insulation.cond_cond[num][num]
+                                        elif foil_vertical_placing_strategy == FoilVerticalDistribution.HorizontalLeftward:
+                                            # Generate interpolated positions for each turn, starting from the right and moving left
+                                            x_interpol = np.linspace(right_bound, left_bound - self.insulation.cond_cond[num][num], turns + 1)
+                                            x_start = x_interpol[i]
+                                            x_move = x_interpol[i + 1] + self.insulation.cond_cond[num][num]
+                                        # Foil
+                                        self.p_conductor[num].extend([
+                                            [x_start, bot_bound, 0, self.mesh_data.c_conductor[num]],
+                                            [x_move, bot_bound, 0, self.mesh_data.c_conductor[num]],
+                                            [x_start, top_bound, 0, self.mesh_data.c_conductor[num]],
+                                            [x_move, top_bound, 0, self.mesh_data.c_conductor[num]]
+                                        ])
+                                        # Find the center point of each turn
                                         center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3],
                                                                                self.p_conductor[num][-2], self.p_conductor[num][-1])
                                         self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
+
                                 else:
                                     raise Exception(f"Unknown wrap para type {virtual_winding_window.wrap_para}")
+                                # Apply alignment
+                                if alignment == Align.ToEdges:
+                                    pass
+                                if alignment == Align.CenterOnVerticalAxis:
+                                    raise ValueError("FoilVertical Conductors can not be centered on vertical axis as they are very high")
+                                if alignment == Align.CenterOnHorizontalAxis:
+                                    min_x = min(point[0] for point in self.p_conductor[num])
+                                    max_x = max(point[0] for point in self.p_conductor[num])
+                                    occupied_width = max_x - min_x
+                                    occupied_midpoint_x = min_x + (occupied_width / 2)
+                                    window_midpoint_x = (left_bound + right_bound) / 2
+                                    adjustment_x = window_midpoint_x - occupied_midpoint_x
+                                    for i, _ in enumerate(self.p_conductor[num]):
+                                        self.p_conductor[num][i][0] += adjustment_x
+                            # Foil conductors where each conductor is very long and the conductors are expanding the y-direction
                             elif winding_scheme == WindingScheme.FoilHorizontal:
-                                # Foil conductors where each conductor is very long and the conductors are expanding the y-direction
-                                # Stack defined number of turns and chosen thickness
-                                winding.a_cell = winding.thickness * (right_bound - left_bound)
-                                for i in range(turns):
-                                    # CHECK if top bound is reached
-                                    if round(bot_bound + (i + 1) * winding.thickness + i * self.insulation.cond_cond[num][num], 6) <= round(top_bound, 6):
-                                        # stacking from the ground
-                                        self.p_conductor[num].append([
-                                            left_bound,
-                                            bot_bound + i * winding.thickness + i * self.insulation.cond_cond[num][num],
-                                            0,
-                                            self.mesh_data.c_conductor[num]])
-                                        self.p_conductor[num].append([
-                                            right_bound,
-                                            bot_bound + i * winding.thickness + i * self.insulation.cond_cond[num][num],
-                                            0,
-                                            self.mesh_data.c_conductor[num]])
-                                        self.p_conductor[num].append([
-                                            left_bound,
-                                            bot_bound + (i + 1) * winding.thickness + i * self.insulation.cond_cond[num][num],
-                                            0,
-                                            self.mesh_data.c_conductor[num]])
-                                        self.p_conductor[num].append([
-                                            right_bound,
-                                            bot_bound + (i + 1) * winding.thickness + i * self.insulation.cond_cond[num][num],
-                                            0,
-                                            self.mesh_data.c_conductor[num]])
+                                # the user can choose the thickness
+                                if virtual_winding_window.wrap_para == WrapParaType.FixedThickness:
+                                    # Find the turn space
+                                    winding.a_cell = winding.thickness * (right_bound - left_bound)
+                                    for i in range(turns):
+                                        # Starting point of y depending on the distribution way if it is from left to right or vice versa.
+                                        if foil_horizontal_placing_strategy == FoilHorizontalDistribution.VerticalUpward:
+                                            y_start = bot_bound + i * winding.thickness + i * self.insulation.cond_cond[num][num]
+                                            y_move = bot_bound + (i + 1) * winding.thickness + i * self.insulation.cond_cond[num][num]
+                                            if round(y_move, 6) > round(top_bound, 6):
+                                                break
+                                        elif foil_horizontal_placing_strategy == FoilHorizontalDistribution.VerticalDownward:
+                                            y_start = top_bound - i * winding.thickness - i * self.insulation.cond_cond[num][num]
+                                            y_move = top_bound - (i + 1) * winding.thickness - i * self.insulation.cond_cond[num][num]
+                                            if round(y_move) < round(bot_bound):
+                                                break
+                                        # Foil
+                                        self.p_conductor[num].extend([
+                                            [left_bound, y_start, 0, self.mesh_data.c_conductor[num]],
+                                            [right_bound, y_start, 0, self.mesh_data.c_conductor[num]],
+                                            [left_bound, y_move, 0, self.mesh_data.c_conductor[num]],
+                                            [right_bound, y_move, 0, self.mesh_data.c_conductor[num]]
+                                        ])
+                                        # Find the center point of each turn
                                         center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3],
                                                                                self.p_conductor[num][-2], self.p_conductor[num][-1])
                                         self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
+                                # Interpolate type is where the foils will have a dynamic thickness
+                                elif virtual_winding_window.wrap_para == WrapParaType.Interpolate:
+                                    # Turn space
+                                    winding.thickness = (top_bound - bot_bound - (turns - 1) * self.insulation.cond_cond[num][num]) / turns
+                                    window_width = right_bound - left_bound
+                                    winding.a_cell = winding.thickness * window_width
+                                    # Update MeshData with the new thickness
+                                    self.mesh_data.update_data(frequency=self.mesh_data.frequency, skin_mesh_factor=self.mesh_data.skin_mesh_factor)
+                                    for i in range(turns):
+                                        # Placing Foil horizontal rectangular conductors from bot to top
+                                        if foil_horizontal_placing_strategy == FoilHorizontalDistribution.VerticalUpward:
+                                            # Generate interpolated positions for each turn, starting from the bottom and moving top
+                                            y_interpol = np.linspace(bot_bound, top_bound + self.insulation.cond_cond[num][num], turns + 1)
+                                            y_start = y_interpol[i]
+                                            y_move = y_interpol[i + 1] - self.insulation.cond_cond[num][num]
+                                        elif foil_horizontal_placing_strategy == FoilHorizontalDistribution.VerticalDownward:
+                                            y_interpol = np.linspace(top_bound, bot_bound - self.insulation.cond_cond[num][num], turns + 1)
+                                            y_start = y_interpol[i]
+                                            y_move = y_interpol[i + 1] + self.insulation.cond_cond[num][num]
+                                        # Foil
+                                        self.p_conductor[num].extend([
+                                            [left_bound, y_start, 0, self.mesh_data.c_conductor[num]],
+                                            [right_bound, y_start, 0, self.mesh_data.c_conductor[num]],
+                                            [left_bound, y_move, 0, self.mesh_data.c_conductor[num]],
+                                            [right_bound, y_move, 0, self.mesh_data.c_conductor[num]]
+                                        ])
+                                        # Find the center point of each turn
+                                        center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3],
+                                                                               self.p_conductor[num][-2], self.p_conductor[num][-1])
+                                        self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
+
+                                # Apply alignment
+                                if alignment == Align.ToEdges:
+                                    pass
+                                if alignment == Align.CenterOnVerticalAxis:
+                                    min_y = min(point[1] for point in self.p_conductor[num])
+                                    max_y = max(point[1] for point in self.p_conductor[num])
+                                    occupied_height = max_y - min_y
+                                    occupied_midpoint_y = min_y + occupied_height / 2
+                                    window_midpoint_y = (bot_bound + top_bound) / 2
+                                    adjustment_y = window_midpoint_y - occupied_midpoint_y
+                                    for i, _ in enumerate(self.p_conductor[num]):
+                                        self.p_conductor[num][i][1] += adjustment_y
+                                if alignment == Align.CenterOnHorizontalAxis:
+                                    raise ValueError("FoilHorizontal Conductors can not be centered on horizontal axis as they are long")
+
                             else:
                                 raise Exception(f"Winding scheme {winding_scheme.name} is not implemented.")
 
@@ -960,7 +1022,7 @@ class TwoDaxiSymmetric:
                                     pass
 
                                 # Center the turns on horizontal axis
-                                elif alignment == Align.CenterOnHorizontalAxis:
+                                elif alignment == Align.CenterOnVerticalAxis:
                                     # Calculate vertical bounds of the occupied space by turns to adjust y
                                     min_y = min(point[1] for point in self.p_conductor[num])  # Find the lowest y position among all turns
                                     max_y = max(point[1] for point in self.p_conductor[num])  # Find the highest y position among all turns
@@ -977,7 +1039,7 @@ class TwoDaxiSymmetric:
                                         self.p_conductor[num][i][1] += adjustment_y
 
                                 # Center the turns on vertical axis
-                                elif alignment == Align.CenterOnVerticalAxis:
+                                elif alignment == Align.CenterOnHorizontalAxis:
                                     # Calculate horizontal bounds of the occupied space by turns to adjust x
                                     min_x = min(point[0] for point in self.p_conductor[num])  # Find the leftmost x position among all turns
                                     max_x = max(point[0] for point in self.p_conductor[num])  # Find the rightmost x position among all turns

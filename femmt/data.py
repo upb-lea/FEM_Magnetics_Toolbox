@@ -123,6 +123,8 @@ class MeshData:
     window_w: float
     windings: List["Conductor"]  # This is written as string because it is a forward import
 
+    frequency: float
+
     def __init__(self, mesh_accuracy_core: float,
                  mesh_accuracy_window: float,
                  mesh_accuracy_conductor: float,
@@ -163,6 +165,7 @@ class MeshData:
         :type skin_mesh_factor: float
         """
         self.skin_mesh_factor = skin_mesh_factor
+        self.frequency = frequency
 
         # Update Skin Depth (needed for meshing)
         if frequency is not None:
@@ -178,6 +181,11 @@ class MeshData:
                 elif self.windings[i].conductor_type == ConductorType.RoundLitz:
                     self.c_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh_accuracy_conductor
                     self.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh_accuracy_conductor
-                else:
-                    self.c_conductor[i] = self.windings[i].thickness / 4 * self.mesh_accuracy_conductor  # TODO: dynamic implementation
+                # else:
+                #     self.c_conductor[i] = self.windings[i].thickness / 4 * self.mesh_accuracy_conductor  # TODO: dynamic implementation
+                #     self.c_center_conductor[i] = self.center_factor * self.windings[i].thickness / 4 * self.mesh_accuracy_conductor
+                elif self.windings[i].conductor_type == ConductorType.RectangularSolid:
+                    if self.windings[i].thickness is None:
+                        continue  # Skip update if thickness is not set
+                    self.c_conductor[i] = self.windings[i].thickness / 4 * self.mesh_accuracy_conductor
                     self.c_center_conductor[i] = self.center_factor * self.windings[i].thickness / 4 * self.mesh_accuracy_conductor
