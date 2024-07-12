@@ -144,12 +144,12 @@ def basic_example_transformer_6_windings(onelab_folder: str = None, show_visual_
     winding6.set_litz_round_conductor(0.95e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
 
     # 7. assign windings to virtual winding windows (cells)
-    cells[0].set_winding(winding1, 7, fmt.WindingType.Single, fmt.Align.CenterOnVerticalAxis, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward)
+    cells[0].set_winding(winding1, 7, fmt.WindingType.Single, fmt.Align.CenterOnHorizontalAxis, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward)
     cells[1].set_winding(winding2, 7, fmt.WindingType.Single, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalDownward_HorizontalLeftward, zigzag=True)
-    cells[2].set_winding(winding3, 5, fmt.WindingType.Single, fmt.Align.CenterOnHorizontalAxis, fmt.ConductorDistribution.HorizontalRightward_VerticalUpward,
+    cells[2].set_winding(winding3, 5, fmt.WindingType.Single, fmt.Align.CenterOnVerticalAxis, fmt.ConductorDistribution.HorizontalRightward_VerticalUpward,
                          zigzag=True)
     cells[3].set_winding(winding4, 7, fmt.WindingType.Single, fmt.Align.ToEdges, fmt.ConductorDistribution.HorizontalLeftward_VerticalUpward)
-    cells[4].set_winding(winding5, 5, fmt.WindingType.Single, fmt.Align.CenterOnHorizontalAxis, fmt.ConductorDistribution.HorizontalLeftward_VerticalDownward)
+    cells[4].set_winding(winding5, 5, fmt.WindingType.Single, fmt.Align.CenterOnVerticalAxis, fmt.ConductorDistribution.HorizontalLeftward_VerticalDownward)
     cells[5].set_winding(winding6, 6, fmt.WindingType.Single, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalLeftward)
     geo.set_winding_windows([winding_window])
 

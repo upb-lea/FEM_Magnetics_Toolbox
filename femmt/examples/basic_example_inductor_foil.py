@@ -86,57 +86,57 @@ def basic_example_inductor_foil(onelab_folder: str = None, show_visual_outputs: 
             "scheme": fmt.WindingScheme.FoilVertical,
             "strategy": fmt.FoilVerticalDistribution.HorizontalRightward,
             "wrap_para_type": fmt.WrapParaType.FixedThickness,
-            "alignment": fmt.Align.CenterOnVerticalAxis,
-            "description": "Vertical foil with fixed thickness and horizontal rightward placement, centered on vertical axis"
+            "alignment": fmt.Align.CenterOnHorizontalAxis,
+            "description": "Vertical foil with fixed thickness and horizontal rightward placement, centered on horizontal axis"
         },
         {   # FoilVertical, move Horizontal to the left with fixed thickness
             "scheme": fmt.WindingScheme.FoilVertical,
             "strategy": fmt.FoilVerticalDistribution.HorizontalLeftward,
             "wrap_para_type": fmt.WrapParaType.FixedThickness,
-            "alignment": fmt.Align.CenterOnVerticalAxis,
-            "description": "Vertical foil with fixed thickness and horizontal leftward placement, centered on vertical axis"
+            "alignment": fmt.Align.CenterOnHorizontalAxis,
+            "description": "Vertical foil with fixed thickness and horizontal leftward placement, centered on horizontal axis"
         },
         {   # FoilVertical, move Horizontal to the right with dynamic thickness (interpolate)
             "scheme": fmt.WindingScheme.FoilVertical,
             "strategy": fmt.FoilVerticalDistribution.HorizontalRightward,
             "wrap_para_type": fmt.WrapParaType.Interpolate,
-            "alignment": fmt.Align.CenterOnVerticalAxis,
-            "description": "Vertical foil with interpolate and horizontal rightward placement, centered on vertical axis"
+            "alignment": fmt.Align.CenterOnHorizontalAxis,
+            "description": "Vertical foil with interpolate and horizontal rightward placement, centered on horizontal axis"
         },
         {   # FoilVertical, move Horizontal to the left with dynamic thickness (interpolate)
             "scheme": fmt.WindingScheme.FoilVertical,
             "strategy": fmt.FoilVerticalDistribution.HorizontalLeftward,
             "wrap_para_type": fmt.WrapParaType.Interpolate,
-            "alignment": fmt.Align.CenterOnVerticalAxis,
-            "description": "Vertical foil with interpolate and horizontal leftward placement, centered on vertical axis"
+            "alignment": fmt.Align.CenterOnHorizontalAxis,
+            "description": "Vertical foil with interpolate and horizontal leftward placement, centered on horizontal axis"
         },
         {   # FoilHorizontal, move upward with fixed thickness
             "scheme": fmt.WindingScheme.FoilHorizontal,
             "strategy": fmt.FoilHorizontalDistribution.VerticalUpward,
             "wrap_para_type": fmt.WrapParaType.FixedThickness,
-            "alignment": fmt.Align.CenterOnHorizontalAxis,
-            "description": "Horizontal foil with fixed thickness and vertical upward placement, centered on horizontal axis"
+            "alignment": fmt.Align.CenterOnVerticalAxis,
+            "description": "Horizontal foil with fixed thickness and vertical upward placement, centered on vertical axis"
         },
         {   # FoilHorizontal, move downward with fixed thickness
             "scheme": fmt.WindingScheme.FoilHorizontal,
             "strategy": fmt.FoilHorizontalDistribution.VerticalDownward,
             "wrap_para_type": fmt.WrapParaType.FixedThickness,
-            "alignment": fmt.Align.CenterOnHorizontalAxis,
-            "description": "Horizontal foil with fixed thickness and vertical downward placement, centered on horizontal axis"
+            "alignment": fmt.Align.CenterOnVerticalAxis,
+            "description": "Horizontal foil with fixed thickness and vertical downward placement, centered on vertical axis"
         },
         {   # FoilHorizontal, move upward with dynamic thickness (interpolate)
             "scheme": fmt.WindingScheme.FoilHorizontal,
             "strategy": fmt.FoilHorizontalDistribution.VerticalUpward,
             "wrap_para_type": fmt.WrapParaType.Interpolate,
-            "alignment": fmt.Align.CenterOnHorizontalAxis,
-            "description": "Horizontal foil with interpolate and vertical upward placement, centered on horizontal axis"
+            "alignment": fmt.Align.CenterOnVerticalAxis,
+            "description": "Horizontal foil with interpolate and vertical upward placement, centered on vertical axis"
         },
         {   # FoilHorizontal, move downward with dynamic thickness (interpolate)
             "scheme": fmt.WindingScheme.FoilHorizontal,
             "strategy": fmt.FoilHorizontalDistribution.VerticalDownward,
             "wrap_para_type": fmt.WrapParaType.Interpolate,
-            "alignment": fmt.Align.CenterOnHorizontalAxis,
-            "description": "Horizontal foil with interpolate and vertical downward placement, centered on horizontal axis"
+            "alignment": fmt.Align.CenterOnVerticalAxis,
+            "description": "Horizontal foil with interpolate and vertical downward placement, centered on vertical axis"
         },
         {   # FoilVertical, move Horizontal to the right with fixed thickness, to edges
             "scheme": fmt.WindingScheme.FoilVertical,

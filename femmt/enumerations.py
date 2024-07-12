@@ -191,11 +191,11 @@ class Align(IntEnum):
     ToEdges = 1
     """Conductors are placed according to the specified peripheral placing strategy without adjusting for central alignment."""
 
-    CenterOnHorizontalAxis = 2
-    """Conductors are centered across the middle line of the horizontal axis."""
-
-    CenterOnVerticalAxis = 3
+    CenterOnVerticalAxis = 2
     """Conductors are centered across the middle line of the vertical axis."""
+
+    CenterOnHorizontalAxis = 3
+    """Conductors are centered across the middle line of the horizontal axis."""
 
 class ConductorDistribution(IntEnum):
     """Defines specific strategies for placing conductors starting from the peripheral (edges) of the virtual winding window."""

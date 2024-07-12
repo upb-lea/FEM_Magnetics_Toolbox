@@ -817,9 +817,9 @@ class TwoDaxiSymmetric:
                                 # Apply alignment
                                 if alignment == Align.ToEdges:
                                     pass
-                                if alignment == Align.CenterOnHorizontalAxis:
-                                    raise ValueError("FoilVertical Conductors can not be centered horizontally as they are very high")
                                 if alignment == Align.CenterOnVerticalAxis:
+                                    raise ValueError("FoilVertical Conductors can not be centered on vertical axis as they are very high")
+                                if alignment == Align.CenterOnHorizontalAxis:
                                     min_x = min(point[0] for point in self.p_conductor[num])
                                     max_x = max(point[0] for point in self.p_conductor[num])
                                     occupied_width = max_x - min_x
@@ -891,7 +891,7 @@ class TwoDaxiSymmetric:
                                 # Apply alignment
                                 if alignment == Align.ToEdges:
                                     pass
-                                if alignment == Align.CenterOnHorizontalAxis:
+                                if alignment == Align.CenterOnVerticalAxis:
                                     min_y = min(point[1] for point in self.p_conductor[num])
                                     max_y = max(point[1] for point in self.p_conductor[num])
                                     occupied_height = max_y - min_y
@@ -900,8 +900,8 @@ class TwoDaxiSymmetric:
                                     adjustment_y = window_midpoint_y - occupied_midpoint_y
                                     for i, _ in enumerate(self.p_conductor[num]):
                                         self.p_conductor[num][i][1] += adjustment_y
-                                if alignment == Align.CenterOnVerticalAxis:
-                                    raise ValueError("FoilHorizontal Conductors can not be centered on vertical axis as they are long")
+                                if alignment == Align.CenterOnHorizontalAxis:
+                                    raise ValueError("FoilHorizontal Conductors can not be centered on horizontal axis as they are long")
 
                             else:
                                 raise Exception(f"Winding scheme {winding_scheme.name} is not implemented.")
@@ -1022,7 +1022,7 @@ class TwoDaxiSymmetric:
                                     pass
 
                                 # Center the turns on horizontal axis
-                                elif alignment == Align.CenterOnHorizontalAxis:
+                                elif alignment == Align.CenterOnVerticalAxis:
                                     # Calculate vertical bounds of the occupied space by turns to adjust y
                                     min_y = min(point[1] for point in self.p_conductor[num])  # Find the lowest y position among all turns
                                     max_y = max(point[1] for point in self.p_conductor[num])  # Find the highest y position among all turns
@@ -1039,7 +1039,7 @@ class TwoDaxiSymmetric:
                                         self.p_conductor[num][i][1] += adjustment_y
 
                                 # Center the turns on vertical axis
-                                elif alignment == Align.CenterOnVerticalAxis:
+                                elif alignment == Align.CenterOnHorizontalAxis:
                                     # Calculate horizontal bounds of the occupied space by turns to adjust x
                                     min_x = min(point[0] for point in self.p_conductor[num])  # Find the leftmost x position among all turns
                                     max_x = max(point[0] for point in self.p_conductor[num])  # Find the rightmost x position among all turns
