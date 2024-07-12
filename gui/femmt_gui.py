@@ -3700,8 +3700,7 @@ class MainWindow(QMainWindow):
 
             mc1.calculate_inductance()
             inductance = mc1.data_matrix[:, 9]
-
-            #self.Inductanceval_label.setText(f"{round(inductance[0], 10)} H")
+            # self.Inductanceval_label.setText(f"{round(inductance[0], 10)} H")
             formatted_inductance = format_number_with_units(inductance[0], 4) + " H"
             self.Inductanceval_label.setText(formatted_inductance)
 
