@@ -112,7 +112,7 @@ def core_database() -> Dict:
         "core_h": 16.2e-3,
         "core_inner_diameter": 8.8e-3,
         "window_h": 10.3e-3,
-        "window_w": 5.85e-3,
+        "window_w": (18 - 8.8) / 2 * 1e-3,
         "core_dimension_x": 20.5e-3,
         "core_dimension_y": 14.0e-3,
     }
