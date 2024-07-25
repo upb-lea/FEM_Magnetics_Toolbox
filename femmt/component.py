@@ -1143,7 +1143,6 @@ class MagneticComponent:
         if self.core.material != "custom":
             self.reluctance_model_pre_check()
 
-
     def excitation_time_domain(self, current_list: List[List[float]], time_list: List[float],
                                number_of_periods: int, ex_type: str = 'current',
                                plot_interpolation: bool = False, imposed_red_f=0):
