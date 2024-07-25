@@ -651,7 +651,7 @@ class MagneticComponent:
         """
         air_gap_area = 0
 
-        for leg_position, _, height in self.air_gaps.midpoints:
+        for leg_position, _, _ in self.air_gaps.midpoints:
             if leg_position == AirGapLegPosition.LeftLeg.value or leg_position == AirGapLegPosition.RightLeg.value:
                 # For left and right leg, same width as core outer radius minus inner radius
                 width = self.core.r_outer - self.core.r_inner
@@ -660,7 +660,6 @@ class MagneticComponent:
                 width = self.core.core_inner_diameter / 2
             else:
                 raise Exception(f"Invalid leg position tag {leg_position} used for an air gap.")
-
             air_gap_area += np.pi * (width ** 2)
 
         return air_gap_area
@@ -2175,8 +2174,7 @@ class MagneticComponent:
         core_area = self.calculate_core_cross_sectional_area()
         airgap_area = self.calculate_air_gap_area()
         # Magnetic flux density
-        b_field = flux / ( core_area + airgap_area)
-
+        b_field = flux / (core_area + airgap_area)
         # Get saturation flux density from material database
         database = mdb.MaterialDatabase()
         saturation_flux_density = database.get_saturation_flux_density(self.core.material)
