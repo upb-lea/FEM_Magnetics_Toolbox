@@ -1139,8 +1139,10 @@ class MagneticComponent:
             for num in range(len(self.windings)):
                 self.red_freq[num] = 0
 
-        # check the core saturation
-        self.reluctance_model_pre_check()
+        # check the core saturation ( It does not work for custom)
+        if self.core.material != "custom":
+            self.reluctance_model_pre_check()
+
 
     def excitation_time_domain(self, current_list: List[List[float]], time_list: List[float],
                                number_of_periods: int, ex_type: str = 'current',
