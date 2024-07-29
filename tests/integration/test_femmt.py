@@ -2398,22 +2398,22 @@ def test_basic_inductor_time_domain(temp_folder):
     """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.experimental_inductor_time_domain.basic_example_inductor_time_domain(onelab_folder=onelab_folder,
-                                                                                 show_visual_outputs=False,
-                                                                                 is_test=True)
+                                                                                        show_visual_outputs=False,
+                                                                                        is_test=True)
 
 def test_basic_transformer_time_domain(temp_folder):
     """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.experimental_transformer_time_domain.basic_example_transformer_time_domain(onelab_folder=onelab_folder,
-                                                                                       show_visual_outputs=False,
-                                                                                       is_test=True)
+                                                                                              show_visual_outputs=False,
+                                                                                              is_test=True)
 
 def test_basic_transformer_3_windings_time_domain(temp_folder):
     """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.experimental_transformer_three_winding_time_domain.basic_example_transformer_three_windings_time_domain(onelab_folder=onelab_folder,
-                                                                                           show_visual_outputs=False,
-                                                                                           is_test=True)
+                                                                                                                           show_visual_outputs=False,
+                                                                                                                           is_test=True)
 def test_advanced_example_inductor_sweep(temp_folder):
     """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
