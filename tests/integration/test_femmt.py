@@ -17,8 +17,9 @@ import femmt.examples.basic_inductor_foil_vertical
 import femmt.examples.basic_transformer_n_winding
 import femmt.examples.advanced_inductor_sweep
 import femmt.examples.basic_transformer_5_windings
-import femmt.examples.basic_inductor_time_domain
-import femmt.examples.basic_transformer_time_domain
+import femmt.examples.experimental_inductor_time_domain
+import femmt.examples.experimental_transformer_time_domain
+import femmt.examples.experimental_transformer_three_winding_time_domain
 import femmt.examples.advanced_inductor_air_gap_sweep
 import femmt.examples.component_study.transformer_component_study
 import femmt.examples.basic_transformer_excitation_sweep
@@ -2396,21 +2397,21 @@ def test_basic_example_transformer_5_windings(temp_folder):
 def test_basic_inductor_time_domain(temp_folder):
     """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_inductor_time_domain.basic_example_inductor_time_domain(onelab_folder=onelab_folder,
+    femmt.examples.experimental_inductor_time_domain.basic_example_inductor_time_domain(onelab_folder=onelab_folder,
                                                                                  show_visual_outputs=False,
                                                                                  is_test=True)
 
 def test_basic_transformer_time_domain(temp_folder):
     """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer_time_domain.basic_example_transformer_time_domain(onelab_folder=onelab_folder,
+    femmt.examples.experimental_transformer_time_domain.basic_example_transformer_time_domain(onelab_folder=onelab_folder,
                                                                                        show_visual_outputs=False,
                                                                                        is_test=True)
 
 def test_basic_transformer_3_windings_time_domain(temp_folder):
     """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer_three_winding.basic_example_transformer_three_winding(onelab_folder=onelab_folder,
+    femmt.examples.experimental_transformer_three_winding_time_domain.basic_example_transformer_three_windings_time_domain(onelab_folder=onelab_folder,
                                                                                            show_visual_outputs=False,
                                                                                            is_test=True)
 def test_advanced_example_inductor_sweep(temp_folder):

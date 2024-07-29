@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+### Added
+- Winding schemes for square and foil windings
+
+### Changed
+- give time domain simulation examples the prefix 'experimental_' to avoid misunderstandings
+
+### Fixed
+- Add winding insulation to the inductor optimization example
+- Fixed many GUI issues. GUI is still experimental
+
+
 ## [0.5.4] - 2024-07-01
 ### Fixed
 - Require materialdatabase 0.3.0 for full materials compatibility 
