@@ -1380,7 +1380,8 @@ class MagneticComponent:
 
             start_time = time.time()
             self.calculate_and_write_freq_domain_log()  # TODO: reuse center tapped
-            self.log_reluctance_calculations()
+            if self.core.core_type == CoreType.Single:
+                self.log_reluctance_calculations()
             logging_time = time.time() - start_time
             if show_fem_simulation_results:
                 self.visualize()
@@ -1396,7 +1397,8 @@ class MagneticComponent:
             self.generate_load_litz_approximation_parameters()
             self.simulate()
             self.calculate_and_write_freq_domain_log()  # TODO: reuse center tapped
-            self.log_reluctance_calculations()
+            if self.core.core_type == CoreType.Single:
+                self.log_reluctance_calculations()
             if show_fem_simulation_results:
                 self.visualize()
 
