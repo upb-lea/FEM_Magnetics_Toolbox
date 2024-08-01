@@ -637,7 +637,7 @@ class MagneticComponent:
         :return: Cross-sectional area of the core.
         :rtype: float
         """
-        total_core_reluctance, total_length = self.calculate_core_reluctance()
+        core_reluctance, core_part_reluctance, total_length = self.calculate_core_reluctance()
         core_volume = self.calculate_core_volume()
         cross_sectional_area = core_volume / total_length
         return cross_sectional_area
@@ -1380,6 +1380,7 @@ class MagneticComponent:
 
             start_time = time.time()
             self.calculate_and_write_freq_domain_log()  # TODO: reuse center tapped
+            self.log_reluctance_calculations()
             logging_time = time.time() - start_time
             if show_fem_simulation_results:
                 self.visualize()
@@ -1395,6 +1396,7 @@ class MagneticComponent:
             self.generate_load_litz_approximation_parameters()
             self.simulate()
             self.calculate_and_write_freq_domain_log()  # TODO: reuse center tapped
+            self.log_reluctance_calculations()
             if show_fem_simulation_results:
                 self.visualize()
 
@@ -2015,7 +2017,7 @@ class MagneticComponent:
     def calculate_core_reluctance(self):
         """Calculate the core reluctance."""
         length = []
-        reluctance = []
+        core_part_reluctance = []
 
         def get_width(part_number):
             """
@@ -2035,7 +2037,7 @@ class MagneticComponent:
             if not sorted_midpoints:
                 subpart_length = self.core.window_h
                 subpart_reluctance = fr.r_core_tablet_2(subpart_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
-                reluctance.append(subpart_reluctance)
+                core_part_reluctance.append(subpart_reluctance)
                 length.append(subpart_length)
             else:
                 # Calculate the subpart lengths and reluctance
@@ -2044,12 +2046,12 @@ class MagneticComponent:
                     subpart_1_1_length = sorted_midpoints[0][1] + self.core.window_h / 2 - sorted_midpoints[0][2] / 2
                     length.append(subpart_1_1_length)
                     subpart1_1_reluctance = fr.r_core_tablet_2(subpart_1_1_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
-                    reluctance.append(subpart1_1_reluctance)
+                    core_part_reluctance.append(subpart1_1_reluctance)
                     # subpart 2: top left subpart
                     subpart_1_2_length = self.core.window_h / 2 - sorted_midpoints[-1][1] - sorted_midpoints[-1][2] / 2
                     length.append(subpart_1_2_length)
                     subpart1_2_reluctance = fr.r_core_tablet_2(subpart_1_1_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
-                    reluctance.append(subpart1_2_reluctance)
+                    core_part_reluctance.append(subpart1_2_reluctance)
                 else:
                     for i in range(len(sorted_midpoints) - 1):
                         if i == 0:
@@ -2057,7 +2059,7 @@ class MagneticComponent:
                             subpart_length = sorted_midpoints[i + 1][1] - sorted_midpoints[i][1]
                             subpart_width = self.core.core_inner_diameter / 2
                             subpart_reluctance = fr.r_core_tablet_2(subpart_length, subpart_width, self.core.mu_r_abs)
-                            reluctance.append(subpart_reluctance)
+                            core_part_reluctance.append(subpart_reluctance)
                             length.append(subpart_length)
                         else:
                             # Intermediate segments between air gaps
@@ -2068,7 +2070,7 @@ class MagneticComponent:
                             subpart_length = air_gap_2_position - air_gap_2_height / 2 - (air_gap_1_position + air_gap_1_height / 2)
                             subpart_width = get_width(i + 2)
                             subpart_reluctance = fr.r_core_tablet_2(subpart_length, subpart_width, self.core.mu_r_abs)
-                            reluctance.append(subpart_reluctance)
+                            core_part_reluctance.append(subpart_reluctance)
                             length.append(subpart_length)
 
             # subpart3: bottom and top mid-subpart. It has the inner, outer corners and winding window section
@@ -2091,7 +2093,7 @@ class MagneticComponent:
                                  (self.core.core_inner_diameter, self.core.window_w, self.core.mu_r_abs, self.core.core_inner_diameter / 4) * 2)
             subpart1_3_reluctance = corner_reluctance + window_reluctance
             # total reluctance
-            reluctance.append(subpart1_3_reluctance)
+            core_part_reluctance.append(subpart1_3_reluctance)
             # total length
             subpart_1_3_length = length_inner + length_outer + length_window
             length.append(subpart_1_3_length)
@@ -2101,15 +2103,15 @@ class MagneticComponent:
             subpart_1_4_radius_eff = np.sqrt(self.core.r_outer ** 2 - self.core.r_inner ** 2)
             subpart1_4_reluctance = fr.r_core_tablet_2(subpart_1_4_length, subpart_1_4_radius_eff, self.core.mu_r_abs)
             # subpart1_4_reluctance = fr.r_core_tablet(subpart_1_4_length, self.core.r_outer, self.core.mu_r_abs, self.core.r_inner)
-            reluctance.append(subpart1_4_reluctance)
+            core_part_reluctance.append(subpart1_4_reluctance)
             length.append(subpart_1_4_length)
 
-            total_core_reluctance = np.sum(reluctance)
+            core_reluctance = np.sum(core_part_reluctance)
             total_length = np.sum(length)
-            return total_core_reluctance, total_length
+            return core_reluctance, core_part_reluctance, total_length
             # return np.sum(reluctance), np.sum(length)
 
-    def air_gaps_reluctance(self):
+    def air_gaps_reluctance_1(self):
         """
         Calculate the air-gap reluctance for a single simulation with single/multiple air-gaps.
 
@@ -2145,16 +2147,14 @@ class MagneticComponent:
 
             air_gap_reluctances.append(reluctance)
 
-        return air_gap_reluctances
+        return np.sum(air_gap_reluctances)
 
-    def air_gaps_reluctance_single_simulation(self):
+    def air_gaps_reluctance_2(self):
         """
         Calculate the air-gap reluctance for a single simulation with single/multiple air-gaps.
 
         Method according to the following paper:
         ["A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
-
-        It is called when the excitation is single.
         """
         airgap_reluctance = []
 
@@ -2180,7 +2180,7 @@ class MagneticComponent:
                     if len(sorted_midpoints) == 1:
                         tablet_height = self.core.window_h - height
                     else:
-                        tablet_height = (sorted_midpoints[1][1] - sorted_midpoints[0][1]) / 2
+                        tablet_height = ((sorted_midpoints[1][1] - sorted_midpoints[1][2] / 2) - (sorted_midpoints[0][1] + sorted_midpoints[0][2] / 2)) / 2
                     reluctance = fr.r_air_gap_round_inf([height], [self.core.core_inner_diameter], [tablet_height])
                     airgap_reluctance.append(reluctance[0])
 
@@ -2190,27 +2190,84 @@ class MagneticComponent:
                     if len(sorted_midpoints) == 1:
                         tablet_height = self.core.window_h - height
                     else:
-                        tablet_height = (sorted_midpoints[-1][1] - sorted_midpoints[-2][1]) / 2
+                        tablet_height = ((sorted_midpoints[-1][1] - sorted_midpoints[-1][2] / 2) - (sorted_midpoints[-2][1] + sorted_midpoints[-2][2] / 2)) / 2
                     reluctance = fr.r_air_gap_round_inf([height], [self.core.core_inner_diameter], [tablet_height])
                     airgap_reluctance.append(reluctance[0])
 
                 # Air gap in the middle
                 else:
-                    tablet_heights = []
-                    if i > 0:
-                        tablet_height_1 = ((sorted_midpoints[i][1] - sorted_midpoints[i][2] / 2
-                                            ) - (sorted_midpoints[i - 1][1] + sorted_midpoints[i - 1][2] / 2)) / 2
-                        tablet_heights.append(tablet_height_1)
-                    if i < len(sorted_midpoints) - 1:
-                        tablet_height_2 = ((sorted_midpoints[i + 1][1] - sorted_midpoints[i + 1][2] / 2
-                                            ) - (sorted_midpoints[i][1] + sorted_midpoints[i][2] / 2)) / 2
-                        tablet_heights.append(tablet_height_2)
-                        tablet_height_lower = tablet_heights[0]
-                        tablet_height_upper = tablet_heights[1]
+                    if len(sorted_midpoints) == 1:
+                        tablet_height_lower = sorted_midpoints[0][1] + self.core.window_h / 2 - sorted_midpoints[0][2] / 2
+                        tablet_height_upper = self.core.window_h / 2 - sorted_midpoints[-1][1] - sorted_midpoints[-1][2] / 2
                         reluctance = fr.r_air_gap_round_round([height], [self.core.core_inner_diameter], [tablet_height_upper], [tablet_height_lower])
                         airgap_reluctance.append(reluctance[0])
+                    else:
+                        if i == 0:
+                            # First middle air gap
+                            tablet_height_lower = (sorted_midpoints[i][1] + self.core.window_h / 2 - sorted_midpoints[i][2] / 2) / 2
+                            tablet_height_upper = ((sorted_midpoints[i + 1][1] - sorted_midpoints[i + 1][2] / 2
+                                                    ) - (sorted_midpoints[i][1] + sorted_midpoints[i][2] / 2)) / 2
+                        elif i == len(sorted_midpoints) - 1:
+                            # Last middle air gap
+                            tablet_height_lower = ((sorted_midpoints[i][1] - sorted_midpoints[i][2] / 2
+                                                    ) - (sorted_midpoints[i - 1][1] + sorted_midpoints[i - 1][2] / 2)) / 2
+                            tablet_height_upper = (self.core.window_h / 2 - sorted_midpoints[i][1] - sorted_midpoints[i][2] / 2) / 2
+                        else:
+                            # Intermediate middle air gap
+                            tablet_height_lower = ((sorted_midpoints[i][1] - sorted_midpoints[i][2] / 2
+                                                    ) - (sorted_midpoints[i - 1][1] + sorted_midpoints[i - 1][2] / 2)) / 2
+                            tablet_height_upper = ((sorted_midpoints[i + 1][1] - sorted_midpoints[i + 1][2] / 2
+                                                    ) - (sorted_midpoints[i][1] + sorted_midpoints[i][2] / 2)) / 2
 
-        return np.sum(airgap_reluctance)
+                        reluctance = fr.r_air_gap_round_round([height], [self.core.core_inner_diameter], [tablet_height_upper], [tablet_height_lower])
+                        airgap_reluctance.append(reluctance[0])
+        total_airgap_reluctance = np.sum(airgap_reluctance)
+
+        return total_airgap_reluctance, airgap_reluctance
+
+    def log_reluctance_calculations(self):
+        """
+        Log the reluctance calculations for each part of the core and air gaps.
+
+        The log will include:
+        - Reluctance for each core part.
+        - Reluctance for each air gap.
+        - Total reluctance for the core.
+        - Total reluctance for the air gaps.
+        - Overall total reluctance.
+        """
+        reluctance_log = {
+            "core_sections": [],
+            "air_gaps": [],
+            "total_core_reluctance": 0.0,
+            "total_air_gap_reluctance": 0.0,
+            "overall_total_reluctance": 0.0
+        }
+
+        # Calculate core reluctance and log each part
+        total_core_reluctance, core_part_reluctance, total_length = self.calculate_core_reluctance()
+        for i, rel in enumerate(core_part_reluctance):
+            reluctance_log["core_sections"].append({
+                "core_reluctance_part": i,
+                "reluctance": rel
+            })
+        reluctance_log["total_core_reluctance"] = total_core_reluctance
+
+        # Calculate air gap reluctance and log each part
+        total_air_gap_reluctance, air_gap_reluctances = self.air_gaps_reluctance_2()
+        for i, rel in enumerate(air_gap_reluctances):
+            reluctance_log["air_gaps"].append({
+                "air_gap": i,
+                "reluctance": rel
+            })
+        reluctance_log["total_air_gap_reluctance"] = total_air_gap_reluctance
+
+        # Calculate overall total reluctance
+        reluctance_log["overall_total_reluctance"] = total_core_reluctance + total_air_gap_reluctance
+
+        # Save the reluctance log as a JSON file
+        with open(self.file_data.reluctance_log_path, "w+", encoding='utf-8') as outfile:
+            json.dump(reluctance_log, outfile, indent=2, ensure_ascii=False)
 
     def reluctance_model_pre_check(self, saturation_threshold: float = 0.7):
         """
@@ -2219,43 +2276,43 @@ class MagneticComponent:
         :param saturation_threshold: Threshold for saturation (default is 70%).
         """
         # Reluctances
-        total_core_reluctance, total_length = self.calculate_core_reluctance()
-        # airgap_reluctance = self.air_gaps_reluctance()
-        airgap_reluctance = self.air_gaps_reluctance_single_simulation()
+        core_reluctance, core_part_reluctance, total_length = self.calculate_core_reluctance()
+        # airgap_reluctance = self.air_gaps_reluctance_1()
+        total_airgap_reluctance, airgap_reluctance = self.air_gaps_reluctance_2()
 
         # Calculate the total reluctance
-        reluctance = total_core_reluctance + airgap_reluctance
+        reluctance = core_reluctance + total_airgap_reluctance
 
         # Calculate MMF (Magnetomotive Force)
         total_mmf = 0
         for winding_number in range(len(self.windings)):
             turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
                                                       winding_number=winding_number)
-            total_mmf += self.current[0] * turns
+            total_mmf += self.current[winding_number] * turns
 
         # Calculate Flux (Φ = MMF / Reluctance)
-        flux = total_mmf / reluctance
+        total_flux = total_mmf / reluctance
         # Area
         core_area = self.calculate_core_cross_sectional_area()
-        airgap_area = self.calculate_airgap_cross_sectional_area()
+
         # Magnetic flux density
-        b_field = flux / (core_area + airgap_area)
+        if self.air_gaps.midpoints:
+            airgap_area = self.calculate_airgap_cross_sectional_area()
+            b_field = total_flux / (core_area + airgap_area)
+        else:
+            b_field = total_flux / core_area
         # Get saturation flux density from material database
         database = mdb.MaterialDatabase()
         saturation_flux_density = database.get_saturation_flux_density(self.core.material)
 
         # # Check for saturation and raise error if B-field exceeds threshold
-        # if b_field > saturation_threshold * saturation_flux_density:
-        #     raise ValueError(
-        #         f"Core saturation detected! B-field ({b_field} T) exceeds {saturation_threshold * 100}% of the saturation flux density"
-        #         f" ({saturation_flux_density} T).")
         if abs(b_field) > saturation_threshold * saturation_flux_density:
             raise ValueError(
                 f"Core saturation detected! B-field ({abs(b_field)} T) exceeds {saturation_threshold * 100}% of the saturation flux density"
                 f" ({saturation_flux_density} T).")
-        print(b_field)
-        print(flux)
-        print(reluctance)
+        print(f"B-field: {b_field}")
+        print(f"Flux: {total_flux}")
+        print(f"Total Reluctance: {reluctance}")
         print("Reluctance model pre-check passed.")
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
