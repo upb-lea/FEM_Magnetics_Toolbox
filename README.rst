@@ -73,7 +73,7 @@ Experimental features (under development)
 * Component features:
     * Reluctance module is currently working for a single optimization example and not fully implemented yet.
 * Solver features:
-    * Time domain solver
+    * Time domain solver is experimental
 * Optimization:
     * Advanced optimization algorithms by connecting to `optuna <https://github.com/optuna/optuna>`__
 * GUI:
