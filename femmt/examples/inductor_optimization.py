@@ -768,7 +768,8 @@ class AutomatedDesign:
                            (final_data_matrix[:, self.param["window_w"]] - (self.left_core_insulation + self.right_core_insulation)))
 
         data_matrix = final_data_matrix[
-            np.where((final_data_matrix[:, self.param["no_of_turns"]] * np.pi * final_data_matrix[:, self.param["conductor_radius"]] ** 2) < \
+            np.where((final_data_matrix[:, self.param["no_of_turns"]] * np.pi * \
+                      (final_data_matrix[:, self.param["conductor_radius"]] + self.inner_winding_insulation / 2) ** 2) < \
                      (self.winding_factor * (window_area - insulation_area)))]
 
         return data_matrix
