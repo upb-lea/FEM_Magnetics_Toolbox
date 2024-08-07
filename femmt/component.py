@@ -2043,37 +2043,27 @@ class MagneticComponent:
                 length.append(subpart_length)
             else:
                 # Calculate the subpart lengths and reluctance
-                if len(sorted_midpoints) == 1:
-                    # subpart 1: bot left subpart
-                    subpart_1_1_length = sorted_midpoints[0][1] + self.core.window_h / 2 - sorted_midpoints[0][2] / 2
-                    length.append(subpart_1_1_length)
-                    subpart1_1_reluctance = fr.r_core_tablet_2(subpart_1_1_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
-                    core_part_reluctance.append(subpart1_1_reluctance)
-                    # subpart 2: top left subpart
-                    subpart_1_2_length = self.core.window_h / 2 - sorted_midpoints[-1][1] - sorted_midpoints[-1][2] / 2
-                    length.append(subpart_1_2_length)
-                    subpart1_2_reluctance = fr.r_core_tablet_2(subpart_1_1_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
-                    core_part_reluctance.append(subpart1_2_reluctance)
-                else:
-                    for i in range(len(sorted_midpoints) - 1):
-                        if i == 0:
-                            # First segment from the bottom to the first air gap
-                            subpart_length = sorted_midpoints[i + 1][1] - sorted_midpoints[i][1]
-                            subpart_width = self.core.core_inner_diameter / 2
-                            subpart_reluctance = fr.r_core_tablet_2(subpart_length, subpart_width, self.core.mu_r_abs)
-                            core_part_reluctance.append(subpart_reluctance)
-                            length.append(subpart_length)
-                        else:
-                            # Intermediate segments between air gaps
-                            air_gap_1_position = sorted_midpoints[i][1]
-                            air_gap_1_height = sorted_midpoints[i][2]
-                            air_gap_2_position = sorted_midpoints[i + 1][1]
-                            air_gap_2_height = sorted_midpoints[i + 1][2]
-                            subpart_length = air_gap_2_position - air_gap_2_height / 2 - (air_gap_1_position + air_gap_1_height / 2)
-                            subpart_width = get_width(i + 2)
-                            subpart_reluctance = fr.r_core_tablet_2(subpart_length, subpart_width, self.core.mu_r_abs)
-                            core_part_reluctance.append(subpart_reluctance)
-                            length.append(subpart_length)
+                # subpart 1: bot left subpart
+                subpart_1_1_length = sorted_midpoints[0][1] + self.core.window_h / 2 - sorted_midpoints[0][2] / 2
+                length.append(subpart_1_1_length)
+                subpart1_1_reluctance = fr.r_core_tablet_2(subpart_1_1_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
+                core_part_reluctance.append(subpart1_1_reluctance)
+                # subpart 2: top left subpart
+                subpart_1_2_length = self.core.window_h / 2 - sorted_midpoints[-1][1] - sorted_midpoints[-1][2] / 2
+                length.append(subpart_1_2_length)
+                subpart1_2_reluctance = fr.r_core_tablet_2(subpart_1_1_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
+                core_part_reluctance.append(subpart1_2_reluctance)
+                for i in range(len(sorted_midpoints) - 1):
+                    # Intermediate segments between air gaps
+                    air_gap_1_position = sorted_midpoints[i][1]
+                    air_gap_1_height = sorted_midpoints[i][2]
+                    air_gap_2_position = sorted_midpoints[i + 1][1]
+                    air_gap_2_height = sorted_midpoints[i + 1][2]
+                    subpart_length = air_gap_2_position - air_gap_2_height / 2 - (air_gap_1_position + air_gap_1_height / 2)
+                    subpart_width = get_width(i + 2)
+                    subpart_reluctance = fr.r_core_tablet_2(subpart_length, subpart_width, self.core.mu_r_abs)
+                    core_part_reluctance.append(subpart_reluctance)
+                    length.append(subpart_length)
 
             # subpart3: bottom and top mid-subpart. It has the inner, outer corners and winding window section
             # The area of the inner, and outer corners (top and bottom) is approximated by taking the mean cross-sectional area
