@@ -745,6 +745,16 @@ def r_core_tablet(tablet_height, tablet_radius, mu_r_abs, core_inner_diameter):
     """
     return np.log(tablet_radius / (core_inner_diameter / 2)) / (2 * np.pi * mu_0 * mu_r_abs * tablet_height)
 
+def r_core_tablet_2(tablet_height, tablet_radius, mu_r_abs):
+    """
+    Calculate the magnetic resistance of the core tablet.
+
+    :param tablet_height: tablet height
+    :param tablet_radius: tablet radius
+    :param mu_r_abs: relative permeability (mu_r) of the core material from datasheet
+    """
+    return tablet_height / (np.pi * mu_0 * mu_r_abs * tablet_radius ** 2)
+
 
 def r_core_top_bot_radiant(core_inner_diameter, window_w, mu_r_abs, core_top_bot_height):
     """
