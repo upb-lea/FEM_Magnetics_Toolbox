@@ -1640,7 +1640,8 @@ class MagneticComponent:
         self.excitation_sweep(frequency_list, current_list_list, phi_deg_list_list, inductance_dict=inductance_dict,
                               core_hyst_loss=p_hyst_core_parts)
 
-    def stackec_core_center_tapped_pre_study(self, time_current_vectors: List[List[List[float]]], plot_waveforms: bool = False,
+
+    def stacked_core_center_tapped_pre_study(self, time_current_vectors: List[List[List[float]]], plot_waveforms: bool = False,
                                              fft_filter_value_factor: float = 0.01) -> Dict:
         """
         Generate the current waveforms needed for the center_tapped_study().
