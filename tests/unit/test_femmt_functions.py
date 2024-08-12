@@ -24,7 +24,22 @@ def test_fft():
     with pytest.raises(ValueError):
         femmt.fft(example_waveform, mode='deg')
         femmt.fft(example_waveform, mode='rad')
-        femmt.fft(example_waveform, mode='unallowed_mode')
+        femmt.fft(example_waveform, mode='not_allowed_mode')
+
+def test_time_current_vector_to_fft_excitation():
+    """Unittest to calculate the excitation sweep parameters for a given waveform vector."""
+    example_waveform_1 = np.array([[0, 1.34e-3, 3.14e-3, 4.48e-3, 6.28e-3], [-175.69, 103.47, 175.69, -103.47, -175.69]])
+    example_waveform_2 = np.array([[0, 1.34e-3, 3.14e-3, 4.48e-3, 6.28e-3], [175.69, -103.47, -175.69, 103.47, 175.69]])
+
+    frequency_list, current_list_list, phi_deg_list_list = femmt.time_current_vector_to_fft_excitation(
+        [example_waveform_1, example_waveform_2], fft_filter_value_factor=0.01)
+
+    assert frequency_list == pytest.approx([159, 477, 795, 1113, 1749], rel=1e-3)
+    current_result_list_list = [[169.5, 169.5], [26.7, 26.7], [2.96, 2.96], [5.41, 5.41], [1.95, 1.95]]
+    phase_deg_result_list_list = [[-141.929, 38.070], [160.372, -19.627], [-143.702, 36.297], [-178.106, 1.89], [-156.705, 23.29]]
+    for count, _ in enumerate(current_list_list):
+        assert current_list_list[count] == pytest.approx(current_result_list_list[count], rel=4e-3)
+        assert phi_deg_list_list[count] == pytest.approx(phase_deg_result_list_list[count], rel=3e-3)
 
 def test_find_common_frequencies():
     """Unittest to figure out common frequencies in different current waveforms."""
