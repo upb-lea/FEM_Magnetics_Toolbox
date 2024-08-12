@@ -1640,11 +1640,14 @@ class MagneticComponent:
         self.excitation_sweep(frequency_list, current_list_list, phi_deg_list_list, inductance_dict=inductance_dict,
                               core_hyst_loss=p_hyst_core_parts)
 
+    def stacked_core_pre_study(self, time_current_vectors: List[List[List[float]]], plot_waveforms: bool = False, fft_filter_value_factor: float = 0.01):
+        """Generate the current waveforms needed for the stacked_core_study()."""
+        pass
 
     def stacked_core_center_tapped_pre_study(self, time_current_vectors: List[List[List[float]]], plot_waveforms: bool = False,
                                              fft_filter_value_factor: float = 0.01) -> Dict:
         """
-        Generate the current waveforms needed for the center_tapped_study().
+        Generate the current waveforms needed for the stacked_core_center_tapped_study().
 
         As magnetizing currents are often non-sinusoidal, some corrections in the simulation current waveforms
         are needed. This function calculates the new current waveforms for the center tapped study to get
@@ -1746,55 +1749,6 @@ class MagneticComponent:
 
             return center_tapped_time_current_vectors
 
-        def linear_loss_excitation(time_current_vectors: List[List[List[float]]],
-                                   fft_filter_value_factor: float = 0.01):
-            """
-            Perform FFT to get the primary and secondary currents to calculate the wire losses.
-
-            These losses can be 'linear added' to get the total winding losses.
-
-            :param time_current_vectors: primary and secondary current waveforms over time
-            :type time_current_vectors: List[List[List[float]]]
-            :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default]
-                removes all amplitudes below 1 % of the maximum amplitude from the result-frequency list
-            :type fft_filter_value_factor: float
-            """
-            # winding losses
-            frequency_current_phase_deg_list = []
-            # collect winding losses simulation input parameters
-            for time_current_vector in time_current_vectors:
-                [frequency_list, amplitude, phi_rad] = ff.fft(time_current_vector, mode='time',
-                                                              filter_value_factor=fft_filter_value_factor)
-                phi_deg = np.rad2deg(phi_rad)
-                frequency_current_phase_deg_list.append([frequency_list, amplitude, phi_deg])
-
-            # check if all frequency vectors include the same frequencies
-            # WORKAROUND: if any frequency is not included in one of the vectors it is
-            # added with amplitude  = 0 and phase = 0
-            # TODO: recalculate the fft at the "missing frequencies and add their values...
-            all_frequencies = set()
-            for count in range(len(frequency_current_phase_deg_list) - 1):
-                if not np.array_equal(frequency_current_phase_deg_list[count][0],
-                                      frequency_current_phase_deg_list[count + 1][0]):
-                    # raise ValueError("Frequency vectors for different currents are not the same!")
-                    # print("Frequency vectors for different currents are not the same!")
-                    all_frequencies = all_frequencies | set(frequency_current_phase_deg_list[count][0]) | set(
-                        frequency_current_phase_deg_list[count + 1][0])
-                    # print(f"Original: {frequency_current_phase_deg_list = }")
-
-            for frequency in list(all_frequencies):
-                for count in range(0, len(frequency_current_phase_deg_list)):
-                    if frequency not in frequency_current_phase_deg_list[count][0]:
-                        ii = np.searchsorted(frequency_current_phase_deg_list[count][0], frequency)
-                        frequency_current_phase_deg_list[count][0] = np.insert(
-                            frequency_current_phase_deg_list[count][0], ii, frequency)
-                        frequency_current_phase_deg_list[count][1] = np.insert(
-                            frequency_current_phase_deg_list[count][1], ii, 0)
-                        frequency_current_phase_deg_list[count][2] = np.insert(
-                            frequency_current_phase_deg_list[count][2], ii, 0)
-            # print(f"Corrected: {frequency_current_phase_deg_list = }")
-            return frequency_list, frequency_current_phase_deg_list
-
         center_tapped_study_excitation = {
             "hysteresis": {
                 "frequency": None,
@@ -1836,8 +1790,7 @@ class MagneticComponent:
 
         # calculate hysteresis losses in the xfmr
         xfmr_scale = 1.7
-        center_tapped_study_excitation["hysteresis"]["transformer"]["current_amplitudes"] = list(
-            np.array(hyst_loss_amplitudes) * xfmr_scale)
+        center_tapped_study_excitation["hysteresis"]["transformer"]["current_amplitudes"] = list(np.array(hyst_loss_amplitudes) * xfmr_scale)
         center_tapped_study_excitation["hysteresis"]["transformer"]["current_phases_deg"] = hyst_loss_phases_deg
 
         # calculate hysteresis losses in the choke
@@ -1849,8 +1802,7 @@ class MagneticComponent:
 
         # Linear Loss Excitation
         time_current_vectors = split_time_current_vectors_center_tapped(time_current_vectors)
-        frequency_list, frequency_current_phase_deg_list = linear_loss_excitation(time_current_vectors,
-                                                                                  fft_filter_value_factor)
+        frequency_list, current_list_list, phi_deg_list_list = ff.time_current_vector_to_fft_excitation(time_current_vectors, fft_filter_value_factor)
 
         if plot_waveforms:
             i_1 = hyst_loss_amplitudes[0] * np.cos(
@@ -1868,17 +1820,6 @@ class MagneticComponent:
             plt.legend()
             plt.show()
 
-        # transfer format from fft()-output to excitation_sweep()-input
-        current_list_list = []
-        phi_deg_list_list = []
-        for count_frequency, _ in enumerate(frequency_list):
-            currents_single_frequency = []
-            phi_deg_single_frequency = []
-            for count_current, _ in enumerate(time_current_vectors):
-                currents_single_frequency.append(frequency_current_phase_deg_list[count_current][1][count_frequency])
-                phi_deg_single_frequency.append(frequency_current_phase_deg_list[count_current][2][count_frequency])
-            current_list_list.append(currents_single_frequency)
-            phi_deg_list_list.append(phi_deg_single_frequency)
         center_tapped_study_excitation["linear_losses"]["frequencies"] = list(frequency_list)
         center_tapped_study_excitation["linear_losses"]["current_amplitudes"] = current_list_list
         center_tapped_study_excitation["linear_losses"]["current_phases_deg"] = phi_deg_list_list

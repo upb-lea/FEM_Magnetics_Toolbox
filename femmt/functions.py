@@ -1760,5 +1760,60 @@ def convert_air_gap_corner_points_to_center_and_distance(corner_points):
     return centers, heights
 
 
+def time_current_vector_to_fft_excitation(time_current_vectors: List[List[List[float]]], fft_filter_value_factor: float = 0.01):
+    """
+    Perform FFT to get the primary and secondary currents e.g. to calculate the wire losses.
+
+    For further calculations e.g. calculating wire losses, the single frequencies can be 'linear added' to get the total winding losses.
+
+    :param time_current_vectors: primary and secondary current waveforms over time
+    :type time_current_vectors: List[List[List[float]]]
+    :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default]
+        removes all amplitudes below 1 % of the maximum amplitude from the result-frequency list
+    :type fft_filter_value_factor: float
+    """
+    # winding losses
+    frequency_current_phase_deg_list = []
+    # collect winding losses simulation input parameters
+    for time_current_vector in time_current_vectors:
+        [frequency_list, amplitude, phi_rad] = fft(time_current_vector, mode='time', filter_value_factor=fft_filter_value_factor)
+        phi_deg = np.rad2deg(phi_rad)
+        frequency_current_phase_deg_list.append([frequency_list, amplitude, phi_deg])
+
+    # check if all frequency vectors include the same frequencies
+    # WORKAROUND: if any frequency is not included in one of the vectors it is
+    # added with amplitude  = 0 and phase = 0
+    # TODO: recalculate the fft at the "missing frequencies and add their values...
+    all_frequencies = set()
+    for count in range(len(frequency_current_phase_deg_list) - 1):
+        if not np.array_equal(frequency_current_phase_deg_list[count][0], frequency_current_phase_deg_list[count + 1][0]):
+            all_frequencies = all_frequencies | set(frequency_current_phase_deg_list[count][0]) | set(
+                frequency_current_phase_deg_list[count + 1][0])
+
+    for frequency in list(all_frequencies):
+        for count in range(0, len(frequency_current_phase_deg_list)):
+            if frequency not in frequency_current_phase_deg_list[count][0]:
+                ii = np.searchsorted(frequency_current_phase_deg_list[count][0], frequency)
+                frequency_current_phase_deg_list[count][0] = np.insert(
+                    frequency_current_phase_deg_list[count][0], ii, frequency)
+                frequency_current_phase_deg_list[count][1] = np.insert(
+                    frequency_current_phase_deg_list[count][1], ii, 0)
+                frequency_current_phase_deg_list[count][2] = np.insert(
+                    frequency_current_phase_deg_list[count][2], ii, 0)
+
+    # transfer format from fft()-output to excitation_sweep()-input
+    current_list_list = []
+    phi_deg_list_list = []
+    for count_frequency, _ in enumerate(frequency_list):
+        currents_single_frequency = []
+        phi_deg_single_frequency = []
+        for count_current, _ in enumerate(time_current_vectors):
+            currents_single_frequency.append(frequency_current_phase_deg_list[count_current][1][count_frequency])
+            phi_deg_single_frequency.append(frequency_current_phase_deg_list[count_current][2][count_frequency])
+        current_list_list.append(currents_single_frequency)
+        phi_deg_list_list.append(phi_deg_single_frequency)
+    return frequency_list, current_list_list, phi_deg_list_list
+
+
 if __name__ == '__main__':
     pass
