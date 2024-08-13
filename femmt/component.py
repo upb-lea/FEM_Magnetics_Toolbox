@@ -1683,28 +1683,6 @@ class MagneticComponent:
             }
         }
         """
-
-        def hysteresis_loss_excitation(input_time_current_vectors: List[List[List[float]]]):
-            """
-            Collect the peak current and the corresponding phase shift for the fundamental frequency for all windings.
-
-            Results are used for calculating the hysteresis losses by another function.
-            In case of a center-tapped transformer, halfing the amplitues will be done by split_hysteresis_loss_excitation_center_tapped.
-
-            :param input_time_current_vectors: e.g. [[time_vec, i_primary_vec], [time_vec, i_secondary_vec]]
-            :type input_time_current_vectors: List[List[List[float]]]
-            """
-            # collect simulation input parameters from time_current_vectors
-            hyst_loss_amplitudes = []
-            hyst_loss_phases_deg = []
-            hyst_frequency = 1 / (input_time_current_vectors[0][0][-1])
-            for time_current_vector in input_time_current_vectors:
-                # collect hysteresis loss simulation input parameters
-                hyst_loss_amplitudes.append(fr.max_value_from_value_vec(time_current_vector[1])[0])
-                hyst_loss_phases_deg.append(
-                    fr.phases_deg_from_time_current(time_current_vector[0], time_current_vector[1])[0])
-            return hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg
-
         def split_hysteresis_loss_excitation_center_tapped(hyst_frequency: List, hyst_loss_amplitudes: List, hyst_loss_phases_deg: List):
             """
             Split the last winding (2nd) peak current into half and add a 3rd winding with the same value.
@@ -1749,7 +1727,7 @@ class MagneticComponent:
 
             return center_tapped_time_current_vectors
 
-        center_tapped_study_excitation = {
+        stacked_center_tapped_study_excitation = {
             "hysteresis": {
                 "frequency": None,
                 "transformer": {
@@ -1770,10 +1748,10 @@ class MagneticComponent:
 
         # Hysteresis Loss Excitation
         time_current_vectors[1][1] = time_current_vectors[1][1] * (-1)
-        hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = hysteresis_loss_excitation(time_current_vectors)
+        hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = ff.hysteresis_current_excitation(time_current_vectors)
         hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = split_hysteresis_loss_excitation_center_tapped(
             hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg)
-        center_tapped_study_excitation["hysteresis"]["frequency"] = hyst_frequency
+        stacked_center_tapped_study_excitation["hysteresis"]["frequency"] = hyst_frequency
 
         if plot_waveforms:
             i_1 = hyst_loss_amplitudes[0] * np.cos(
@@ -1790,15 +1768,15 @@ class MagneticComponent:
 
         # calculate hysteresis losses in the xfmr
         xfmr_scale = 1.7
-        center_tapped_study_excitation["hysteresis"]["transformer"]["current_amplitudes"] = list(np.array(hyst_loss_amplitudes) * xfmr_scale)
-        center_tapped_study_excitation["hysteresis"]["transformer"]["current_phases_deg"] = hyst_loss_phases_deg
+        stacked_center_tapped_study_excitation["hysteresis"]["transformer"]["current_amplitudes"] = list(np.array(hyst_loss_amplitudes) * xfmr_scale)
+        stacked_center_tapped_study_excitation["hysteresis"]["transformer"]["current_phases_deg"] = hyst_loss_phases_deg
 
         # calculate hysteresis losses in the choke
         choke_hyst_loss_amplitudes = hyst_loss_amplitudes
         choke_hyst_loss_amplitudes[1] = choke_hyst_loss_amplitudes[0] * 7
         choke_hyst_loss_amplitudes[2] = choke_hyst_loss_amplitudes[0] * 7
-        center_tapped_study_excitation["hysteresis"]["choke"]["current_amplitudes"] = choke_hyst_loss_amplitudes
-        center_tapped_study_excitation["hysteresis"]["choke"]["current_phases_deg"] = [0, 180, 180]
+        stacked_center_tapped_study_excitation["hysteresis"]["choke"]["current_amplitudes"] = choke_hyst_loss_amplitudes
+        stacked_center_tapped_study_excitation["hysteresis"]["choke"]["current_phases_deg"] = [0, 180, 180]
 
         # Linear Loss Excitation
         time_current_vectors = split_time_current_vectors_center_tapped(time_current_vectors)
@@ -1820,11 +1798,11 @@ class MagneticComponent:
             plt.legend()
             plt.show()
 
-        center_tapped_study_excitation["linear_losses"]["frequencies"] = list(frequency_list)
-        center_tapped_study_excitation["linear_losses"]["current_amplitudes"] = current_list_list
-        center_tapped_study_excitation["linear_losses"]["current_phases_deg"] = phi_deg_list_list
+        stacked_center_tapped_study_excitation["linear_losses"]["frequencies"] = list(frequency_list)
+        stacked_center_tapped_study_excitation["linear_losses"]["current_amplitudes"] = current_list_list
+        stacked_center_tapped_study_excitation["linear_losses"]["current_phases_deg"] = phi_deg_list_list
 
-        return center_tapped_study_excitation
+        return stacked_center_tapped_study_excitation
 
     def stacked_core_center_tapped_study(self, center_tapped_study_excitation, number_primary_coil_turns: int = None,
                                          non_sine_hysteresis_correction: bool = False):
