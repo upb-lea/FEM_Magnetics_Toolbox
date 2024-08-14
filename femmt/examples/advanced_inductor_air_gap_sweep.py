@@ -9,7 +9,16 @@ if not os.path.exists(os.path.join(os.path.dirname(__file__), "sweep_examples"))
 
 
 def basic_example_sweep(onelab_folder: Optional[str] = None, show_visual_outputs: bool = True, is_test: bool = False):
-    """Advanced example to demonstrate an air gap sweep for an inductor."""
+    """
+    Advanced example to demonstrate an air gap sweep for an inductor.
+
+    :param onelab_folder: onelab folder path
+    :type onelab_folder: str
+    :param show_visual_outputs: True to show visual outputs (simulation results)
+    :type show_visual_outputs: bool
+    :param is_test: True for pytest usage. Defaults to False.
+    :type is_test: bool
+    """
     # In this sweep an inductor with variable air gap height is simulated
     air_gap_heights = [0.0020, 0.0010, 0.0005, 0.000025, 0.0000125]
 

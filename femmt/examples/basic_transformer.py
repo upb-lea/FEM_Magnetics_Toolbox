@@ -4,7 +4,16 @@ import os
 
 
 def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
-    """Run the example code for the transformer."""
+    """
+    Run the example code for the transformer.
+
+    :param onelab_folder: onelab folder path
+    :type onelab_folder: str
+    :param show_visual_outputs: True to show visual outputs (simulation results)
+    :type show_visual_outputs: bool
+    :param is_test: True for pytest usage. Defaults to False.
+    :type is_test: bool
+    """
 
     def example_thermal_simulation(show_thermal_visual_outputs: bool = True, flag_insulation: bool = True):
         # Thermal simulation:

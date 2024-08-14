@@ -480,6 +480,9 @@ class StackedTransformerOptimization:
     def run_garbage_collector(study: optuna.Study, _):
         """Run the garbage collector to prevent high memory consumption.
 
+        :param study: optuna study
+        :type study: optuna.Study
+
         as seen so far, a typical study needs 50.000 to 500.000 trials to have good results when performing
         the optimization. In the range above 200.000 trials, the RAM has a high occupancy rate.
         in case of running 10 or more cores, the garbage collector will run each 10.000 trial

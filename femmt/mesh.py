@@ -1610,9 +1610,11 @@ class Mesh:
             # mshopt gmsh.model.mesh.embed(0, stray_path_mesh_optimizer, 2, plane_surface_core[2])
 
     def forward_meshing(self, p_cond):
-        """In this function multiple techniques in order to raise the mesh density at certain points are applied.
+        """
+        In this function multiple techniques in order to raise the mesh density at certain points are applied.
 
-        :return:
+        :param p_cond:
+        :type p_cond:
         """
         def point_is_in_conductor(x, y, p1, p2, p3, p4, p5):
             x_values = [p1[0], p2[0], p3[0], p4[0], p5[0]]
@@ -1806,8 +1808,24 @@ class Mesh:
 
     def rectangular_conductor_center_points(self):
         """Add center points for rectangular conductors for better meshing."""
-        def calculate_center_points(left_bound, right_bound, top_bound, bottom_bound, center_point, min_distance):
-            """Calculate the coordinates for the new center points."""
+        def calculate_center_points(left_bound: float, right_bound: float, top_bound: float, bottom_bound: float,
+                                    center_point: List, min_distance: float):
+            """
+            Calculate the coordinates for the new center points.
+
+            :param left_bound: left bound
+            :type left_bound: float
+            :param right_bound: right bound
+            :type right_bound: float
+            :param top_bound: top bound
+            :type top_bound: float
+            :param bottom_bound: bottom bound
+            :type bottom_bound: float
+            :param center_point: center point
+            :type center_point: List
+            :param min_distance: minimum distance
+            :type min_distance: float
+            """
             # As upper bound use a maximum of 10 points per direction
             number_of_points_left = int(abs(center_point[0] - left_bound)/min_distance)
             number_of_points_right = int(abs(right_bound - center_point[0])/min_distance)

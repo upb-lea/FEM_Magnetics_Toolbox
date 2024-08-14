@@ -15,14 +15,31 @@ import femmt.thermal.thermal_functions as thermal_f
 from femmt.thermal.thermal_classes import ConstraintPro, FunctionPro, GroupPro, ParametersPro, PostOperationPro
 from femmt.data import FileData
 
-def create_case(boundary_regions, boundary_physical_groups, boundary_temperatures, boundary_flags, k_case,
+def create_case(boundary_regions: Dict, boundary_physical_groups: Dict, boundary_temperatures: Dict,
+                boundary_flags: Dict, k_case: float,
                 function_pro: FunctionPro, parameters_pro: ParametersPro, group_pro: GroupPro,
                 constraint_pro: ConstraintPro):
     """
     Set boundary conditions and material parameters for the case around the core.
 
-    TODO Set docstring
-
+    :param boundary_regions:
+    :type boundary_regions: Dict
+    :param boundary_physical_groups:
+    :type boundary_physical_groups: Dict
+    :param boundary_flags: Dict with flags to turn-on or turn-off the boundary conditions of the case
+    :type boundary_flags: Dict
+    :param k_case: Thermal conductivity of the case
+    :type k_case: float
+    :param function_pro: function.pro file
+    :type function_pro: FunctionPro
+    :param parameters_pro: parameters.pro file
+    :type parameters_pro: ParametersPro
+    :param group_pro: group.pro file
+    :type group_pro: GroupPro
+    :param constraint_pro: constraint.pro file
+    :type constraint_pro: ConstraintPro
+    :param boundary_temperatures: Boundary temperatures as a dictionary
+    :type boundary_temperatures: Dict
     """
     group_pro.add_regions(boundary_regions)
     parameters_pro.add_to_parameters(boundary_temperatures)
@@ -49,15 +66,37 @@ def create_case(boundary_regions, boundary_physical_groups, boundary_temperature
 
 
 def create_insulation(insulation_tag, k_iso, function_pro: FunctionPro, group_pro: GroupPro):
-    """Create insulations for thermal simulation."""
+    """
+    Create insulations for thermal simulation.
+
+    :param insulation_tag:
+    :type insulation_tag:
+    :param k_iso: Thermal conductivity of the insulation
+    :type k_iso: float
+    :param function_pro: function.pro file
+    :type function_pro: FunctionPro
+    :param group_pro: group.pro file
+    :type group_pro: GroupPro
+    """
     k_iso = {"insulation": k_iso}
 
     function_pro.add_dicts(k_iso, None)
     group_pro.add_regions({"insulation": insulation_tag})
 
 
-def create_background(background_tag, k_air, function_pro: FunctionPro, group_pro: GroupPro):
-    """Create simulation background."""
+def create_background(background_tag, k_air: float, function_pro: FunctionPro, group_pro: GroupPro):
+    """
+    Create simulation background.
+
+    :param background_tag:
+    :type background_tag:
+    :param k_air: Thermal conductivity of the background (labeled as 'air')
+    :type k_air: float
+    :param function_pro: function.pro file
+    :type function_pro: FunctionPro
+    :param group_pro: group.pro file
+    :type group_pro: GroupPro
+    """
     k_air = {"air": k_air}
 
     function_pro.add_dicts(k_air, None)
@@ -119,9 +158,25 @@ def create_core_and_air_gaps(core_tags: list, k_core: float, core_area: list, co
     group_pro.add_regions(regions)
     function_pro.add_dicts(k, q_vol)
 
-def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, wire_distances,
+def create_windings(winding_tags: List, k_windings: float, winding_losses, conductor_radii: List[float], wire_distances: List[List[float]],
                     function_pro: FunctionPro, group_pro: GroupPro):
-    """Create windings for the thermal simulation."""
+    """Create windings for the thermal simulation.
+
+    :param winding_tags:
+    :type winding_tags: List
+    :param k_windings: Thermal conductivity of windings
+    :type k_windings: float
+    :param winding_losses: List of winding losses
+    :type winding_losses: List
+    :param conductor_radii: List of conductor radius
+    :type conductor_radii: List
+    :param wire_distances: List of wire distances per winding
+    :type wire_distances: List[List[float]]
+    :param function_pro: function.pro file
+    :type function_pro: FunctionPro
+    :param group_pro: group.pro file
+    :type group_pro: GroupPro
+    """
     q_vol = {}
     k = {}
     regions = {}

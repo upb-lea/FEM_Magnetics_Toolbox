@@ -32,8 +32,13 @@ class MyJSONEncoder(json.JSONEncoder):
     https://python-forum.io/thread-35245.html
     """
 
-    def default(self, o):
-        """Transform the dictionary to a .json file."""
+    def default(self, o: Dict):
+        """
+        Transform the dictionary to a .json file.
+
+        :param o: Dictionary to transform
+        :type o: Dict
+        """
         try:
             return o.tolist()  # works with any object that has .tolist() method
         except AttributeError:
@@ -42,8 +47,15 @@ class MyJSONEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, o)
 
 
-def result_file_dict_to_dto(result_file_dict):
-    """Translate the result file dictionary to a data transfer object (DTO)."""
+def result_file_dict_to_dto(result_file_dict: Dict) -> ItoSingleResultFile:
+    """
+    Translate the result file dictionary to a data transfer object (DTO).
+
+    :param result_file_dict: dictionary to translate to the DTO structure
+    :type result_file_dict: Dict
+    :return: DTO
+    :rtype: ItoSingleResultFile
+    """
     result_file_dto = ItoSingleResultFile(
         case=result_file_dict["case"],
         air_gap_top=result_file_dict["air_gap_top"],
@@ -190,8 +202,15 @@ class IntegratedTransformerOptimization:
             # initial optimization
             #############################
             @staticmethod
-            def brute_force_calculation(config_file: ItoSingleInputConfig):
-                """Brute force calculation for the integrated transformer."""
+            def brute_force_calculation(config_file: ItoSingleInputConfig) -> List:
+                """
+                Brute force calculation for the integrated transformer.
+
+                :param config_file: configuration file
+                :type config_file: ItoSingleInputConfig
+                :return: List of valid designs
+                :rtype: List
+                """
                 case_number = 0
 
                 # 0. Empty folder
@@ -1044,7 +1063,16 @@ class IntegratedTransformerOptimization:
 
         @staticmethod
         def filter_loss_list(valid_design_list: List[ItoSingleResultFile], factor_min_dc_losses: float = 1.2) -> List[ItoSingleResultFile]:
-            """Remove designs with too high losses compared to the minimum losses."""
+            """
+            Remove designs with too high losses compared to the minimum losses.
+
+            :param valid_design_list: list of valid DTOs
+            :type valid_design_list: List[ItoSingleResultFile]
+            :param factor_min_dc_losses: filter factor for the minimum dc losses
+            :type factor_min_dc_losses: float
+            :returns: list with removed objects (too small air gaps)
+            :rtype: List[ItoSingleResultFile]
+            """
             # figure out pareto front
             # pareto_volume_list, pareto_core_hyst_list, pareto_dto_list = self.pareto_front(volume_list, core_hyst_loss_list, valid_design_list)
 
@@ -1075,8 +1103,17 @@ class IntegratedTransformerOptimization:
             return filtered_design_dto_list
 
         @staticmethod
-        def filter_max_air_gap_length(dto_list_to_filter: List[ItoSingleResultFile], max_air_gap_length=1e-6) -> List[ItoSingleResultFile]:
-            """Remove designs with a too large air gap."""
+        def filter_max_air_gap_length(dto_list_to_filter: List[ItoSingleResultFile], max_air_gap_length: float = 1e-6) -> List[ItoSingleResultFile]:
+            """
+            Remove designs with a too large air gap.
+
+            :param dto_list_to_filter: list of DTOs to filter for too small air gaps
+            :type dto_list_to_filter: List[ItoSingleResultFile]
+            :param max_air_gap_length: minimum air gap length
+            :type max_air_gap_length: float
+            :returns: list with removed objects (too small air gaps)
+            :rtype: List[ItoSingleResultFile]
+            """
             filtered_dtos = []
             for dto in dto_list_to_filter:
                 if dto.air_gap_middle < max_air_gap_length and dto.air_gap_top < max_air_gap_length and dto.air_gap_bot < max_air_gap_length:
@@ -1084,8 +1121,17 @@ class IntegratedTransformerOptimization:
             return filtered_dtos
 
         @staticmethod
-        def filter_min_air_gap_length(dto_list_to_filter: List[ItoSingleResultFile], min_air_gap_length=1e-6) -> List[ItoSingleResultFile]:
-            """Remove designs with a too small air gap."""
+        def filter_min_air_gap_length(dto_list_to_filter: List[ItoSingleResultFile], min_air_gap_length: float = 1e-6) -> List[ItoSingleResultFile]:
+            """
+            Remove designs with a too small air gap.
+
+            :param dto_list_to_filter: list of DTOs to filter for too small air gaps
+            :type dto_list_to_filter: List[ItoSingleResultFile]
+            :param min_air_gap_length: minimum air gap length
+            :type min_air_gap_length: float
+            :returns: list with removed objects (too small air gaps)
+            :rtype: List[ItoSingleResultFile]
+            """
             filtered_dtos = []
             for dto in dto_list_to_filter:
                 if dto.air_gap_middle > min_air_gap_length and dto.air_gap_top > min_air_gap_length and dto.air_gap_bot > min_air_gap_length:
@@ -1197,17 +1243,30 @@ class IntegratedTransformerOptimization:
 
         @staticmethod
         def simulate(config_dto: ItoSingleInputConfig, simulation_dto_list: List[ItoSingleResultFile], visualize: bool = False):
-            """Perform the FEM simulation."""
+            """
+            Perform the FEM simulation.
+
+            :param config_dto: Configuration DTO (data transfer object)
+            :type config_dto: ItoSingleInputConfig
+            :param simulation_dto_list: List of DTOs to simulate
+            :type simulation_dto_list: List[ItoSingleResultFile]
+            :param visualize: True to visualize the results.
+            :type visualize: bool
+            """
             femmt.integrated_transformer_fem_simulations_from_result_dtos(config_dto, simulation_dto_list, visualize)
 
         @staticmethod
-        def filter_loss(fem_simulations_dict_list: List[Dict]):
-            """Future use placeholder. Filter the pareto-front."""
-            return fem_simulations_dict_list
-
-        @staticmethod
         def filter_loss_list(fem_simulations_dict_list: List[Dict], factor_min_dc_losses: float = 0.5) -> List[Dict]:
-            """Remove too high losses from the given dictionary."""
+            """
+            Remove too high losses from the given dictionary.
+
+            :param fem_simulations_dict_list: List of dictionaries to filter
+            :type fem_simulations_dict_list: List[Dict]
+            :param factor_min_dc_losses: factor of the minimum dc losses to filter
+            :type factor_min_dc_losses: float
+            :return: filtered dictionary list
+            :rtype: List[Dict]
+            """
             # figure out pareto front
             # pareto_volume_list, pareto_core_hyst_list, pareto_dto_list = self.pareto_front(volume_list, core_hyst_loss_list, valid_design_list)
 
@@ -1324,7 +1383,14 @@ class IntegratedTransformerOptimization:
 
         @staticmethod
         def save_filtered_results(filtered_dict_list: List[Dict], working_directory: str):
-            """Save filtered FEM simulation results to hard disk."""
+            """
+            Save filtered FEM simulation results to hard disk.
+
+            :param filtered_dict_list: list of dictionaries to store
+            :type filtered_dict_list: List[Dict]
+            :param working_directory: working directory of the optimization
+            :param working_directory: str
+            """
             for _, result_log in enumerate(filtered_dict_list):
                 json_filepath = os.path.join(working_directory, "02_fem_simulation_results_filtered", f"case_{result_log['case']}.json")
 
@@ -1336,7 +1402,16 @@ class IntegratedTransformerOptimization:
 
         @staticmethod
         def simulation(config_dto: ItoSingleInputConfig, result_log_dict_list: List[Dict], visualize: bool = False):
-            """Perform a thermal simulation."""
+            """
+            Perform a thermal simulation.
+
+            :param config_dto: Configuration DTO (data transfer object)
+            :type config_dto: ItoSingleInputConfig
+            :param result_log_dict_list: list of result log dictionaries
+            :type result_log_dict_list: List[Dict]
+            :param visualize: True to visualize the results.
+            :type visualize: bool
+            """
             all_filtered_reluctance_dtos = femmt.IntegratedTransformerOptimization.ReluctanceModel.load_filtered_results(
                 config_dto.working_directory)
 
@@ -1353,7 +1428,12 @@ class IntegratedTransformerOptimization:
 
         @staticmethod
         def load_unfiltered_simulations(working_directory: str) -> List[Dict]:
-            """Load all simulations."""
+            """
+            Load all simulations from a given working directory.
+
+            :param working_directory: directory to load
+            :type working_directory: str
+            """
             filepath = os.path.join(working_directory, "03_fem_thermal_simulation_results")
 
             return femmt.IntegratedTransformerOptimization.FemSimulation.load(filepath)

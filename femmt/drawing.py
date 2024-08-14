@@ -72,7 +72,12 @@ class TwoDaxiSymmetric:
         self.r_outer = core.r_outer
 
     def femmt_print(self, text: str):
-        """Print text to terminal or to log-file, dependent on the current verbosity."""
+        """
+        Print text to terminal or to log-file, dependent on the current verbosity.
+
+        :param text: text to print
+        :type text: str
+        """
         if not self.verbosity == Verbosity.Silent:
             self.logger.info(text)
 
@@ -256,8 +261,13 @@ class TwoDaxiSymmetric:
                          0, self.mesh_data.c_air_gaps]
             self.p_close_air_gaps = [top_point, bot_point]
 
-    def draw_conductors(self, draw_top_down=True):
-        """Draw every conductor type based on the virtual_winding_window bounds."""
+    def draw_conductors(self, draw_top_down: bool = True):
+        """
+        Draw every conductor type based on the virtual_winding_window bounds.
+
+        :param draw_top_down: True to draw from top to bottom
+        :type draw_top_down: bool
+        """
         for winding_window in self.winding_windows:
             for virtual_winding_window in winding_window.virtual_winding_windows:
                 # Get bounds from virtual winding window
@@ -1578,7 +1588,18 @@ class TwoDaxiSymmetric:
 
     @staticmethod
     def get_center_of_rect(p1: List[float], p2: List[float], p3: List[float], p4: List[float]):
-        """Get center point of a rectangular conductor."""
+        """
+        Get center point of a rectangular conductor.
+
+        :param p1: Point 1 as a x,y-List
+        :type p1: List[float]
+        :param p2: Point 1 as a x,y-List
+        :type p2: List[float]
+        :param p3: Point 1 as a x,y-List
+        :type p3: List[float]
+        :param p4: Point 1 as a x,y-List
+        :type p4: List[float]
+        """
         x_list = [p1[0], p2[0], p3[0], p4[0]]
         y_list = [p1[1], p2[1], p3[1], p4[1]]
 

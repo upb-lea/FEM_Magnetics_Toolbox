@@ -1,7 +1,7 @@
 """Classes for thermal simulation."""
 
 # Python standard libraries
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 
 class ConstraintPro:
@@ -23,8 +23,13 @@ class ConstraintPro:
         for constraint in more_constraints:
             self.boundary_constraints.append(constraint)
 
-    def create_file(self, file_path):
-        """Create file."""
+    def create_file(self, file_path: str):
+        """
+        Create the constraint.pro file.
+
+        :param file_path: file path
+        :type file_path: str
+        """
         with open(file_path, "w") as fd:
             fd.write("Constraint {\n  { Name Temperature ;\n\tCase {\n")
             for bc in self.boundary_constraints:
@@ -44,8 +49,17 @@ class GroupPro:
         """Add given regions to the group."""
         self.regions.update(more_regions)
 
-    def create_file(self, file_path, air_gaps_enabled=False, insulation_enabled=False):
-        """Create some onelab specific result files."""
+    def create_file(self, file_path: str , air_gaps_enabled: bool = False, insulation_enabled: bool = False):
+        """
+        Create some onelab specific result files.
+
+        :param file_path: file path
+        :type file_path: str
+        :param air_gaps_enabled: "True" to enable air gaps
+        :type air_gaps_enabled: bool
+        :param insulation_enabled: "True" to enable insulations
+        :type insulation_enabled: bool
+        """
         with open(file_path, "w") as fd:
             fd.write("Group {\n")
             for key, value in self.regions.items():
@@ -103,8 +117,15 @@ class FunctionPro:
         self.q_vol = {}
 
     @staticmethod
-    def dict_as_function_str(name, dct):
-        """Write dictionary as a string."""
+    def dict_as_function_str(name: str, dct: Dict):
+        """
+        Write dictionary as a string.
+
+        :param name: name
+        :type name: str
+        :param dct: Dictionary
+        :type dct: Dict
+        """
         dict_as_str = ""
         for key, value in dct.items():
             dict_as_str += f"\t{name}[{key}] = {value};\n"
@@ -112,14 +133,28 @@ class FunctionPro:
         return dict_as_str
 
     def add_dicts(self, k, q_vol):
-        """Order is important: k, qVol."""
+        """
+        updates a key  to the given conductivity and q_vol attributes.
+
+        Order is important: k, qVol.
+        :param k: conductivity
+        :type k: float
+        :param q_vol:
+        :type q_vol: float
+
+        """
         if k is not None:
             self.k.update(k)
         if q_vol is not None:
             self.q_vol.update(q_vol)
 
-    def create_file(self, file_path):
-        """Create .pro file."""
+    def create_file(self, file_path: str):
+        """
+        Create .pro file.
+
+        :param file_path: File path to generate the .pro file
+        :type file_path: str
+        """
         with open(file_path, 'w') as fd:
             fd.write("Function {\n")
             fd.write(FunctionPro.dict_as_function_str("k", self.k))
@@ -148,7 +183,15 @@ class PostOperationPro:
 
     def add_on_elements_of_statement(self, field, region, file_name, formatting=None, depth=None,
                                      name=None, append=False):
-        """Add elements to a statement for post-operations."""
+        """
+        Add elements to a statement for post-operations.
+
+        :param field:
+        :type field:
+        :param region:
+        :type region:
+
+        """
         format_str = ""
         depth_str = ""
         name_str = ""
@@ -167,8 +210,13 @@ class PostOperationPro:
         self.statements.append(
             f"Print [ {field}, OnElementsOf {region}, {format_str}{depth_str}{name_str}File {append_str}\"{file_name}\"];")
 
-    def create_file(self, file_path):
-        """Create file."""
+    def create_file(self, file_path: str):
+        """
+        Create file.
+
+        :param file_path: file path
+        :type file_path: str
+        """
         with open(file_path, 'w') as fd:
             fd.write("PostOperation map UsingPost The {\n")
             for statement in self.statements:

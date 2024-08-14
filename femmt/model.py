@@ -78,7 +78,12 @@ class Conductor:
             raise Exception(f"Material {conductivity.name} not found in database")
 
     def set_rectangular_conductor(self, thickness: float = None):
-        """Set a rectangular, solid conductor."""
+        """
+        Set a rectangular, solid conductor.
+
+        :param thickness: thickness of the rectangular conductor in m
+        :type thickness: float
+        """
         if self.conductor_is_set:
             raise Exception("Only one conductor can be set for each winding!")
 
@@ -89,7 +94,14 @@ class Conductor:
         self.conductor_radius = 1  # Revisit
 
     def set_solid_round_conductor(self, conductor_radius: float, conductor_arrangement: Optional[ConductorArrangement]):
-        """Set a solid round conductor."""
+        """
+        Set a solid round conductor.
+
+        :param conductor_radius: conductor radius in m
+        :type conductor_radius: float
+        :param conductor_arrangement: conductor arrangement (Square / SquareFullWidth / Hexagonal)
+        :type conductor_arrangement: Optional[ConductorArrangement]
+        """
         if self.conductor_is_set:
             raise Exception("Only one conductor can be set for each winding!")
 
@@ -428,8 +440,17 @@ class Core:
         if self.permittivity["datasource"] == MaterialDataSource.ManufacturerDatasheet:
             self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material, attribute="resistivity")
 
-    def update_core_material_pro_file(self, frequency, electro_magnetic_folder, plot_interpolation: bool = False):
-        """Update the pro file for the solver depending on the frequency of the upcoming simulation."""
+    def update_core_material_pro_file(self, frequency: int, electro_magnetic_folder: str, plot_interpolation: bool = False):
+        """
+        Update the pro file for the solver depending on the frequency of the upcoming simulation.
+
+        :param frequency: Frequency in Hz
+        :type frequency: int
+        :param electro_magnetic_folder: electro magnetic results filepath
+        :type electro_magnetic_folder: str
+        :param plot_interpolation: True to plot the interpolation results for the material parameters
+        :type plot_interpolation: bool
+        """
         if self.mdb_verbosity == Verbosity.ToConsole:
             print(f"{self.permeability['datasource']=}")
         self.material_database.permeability_data_to_pro_file(temperature=self.temperature, frequency=frequency,
@@ -646,8 +667,13 @@ class Insulation:
         self.flag_insulation = flag_insulation
         self.max_aspect_ratio = max_aspect_ratio
 
-    def set_flag_insulation(self, flag):  # to differentiate between the simulation with and without insulation
-        """Set the self.flag_insulation key."""
+    def set_flag_insulation(self, flag: bool):  # to differentiate between the simulation with and without insulation
+        """
+        Set the self.flag_insulation key.
+
+        :param flag: True to enable the insulation
+        :type flag: bool
+        """
         self.flag_insulation = flag
 
     def add_winding_insulations(self, inner_winding_insulation: List[List[float]]):
@@ -849,7 +875,17 @@ class VirtualWindingWindow:
                                   isolation_primary_to_primary: float,
                                   isolation_secondary_to_secondary: float,
                                   isolation_primary_to_secondary: float):
-        """Set a center tapped winding scheme."""
+        """
+        Set a center tapped winding scheme.
+
+        :param conductor1: set the conductor for winding 1
+        :type conductor1: Conductor
+        :param conductor2: set the conductor for winding 2
+        :type conductor2: Conductor
+        :param conductor3: set the conductor for winding 3
+        :type conductor3: Conductor
+        :
+        """
         # TODO: center tapped is following line allowed to set winding insulation this way?
         # self.winding_insulation = define_center_tapped_insulation(primary_to_primary=2e-4,
         #                                                           secondary_to_secondary=2e-4,

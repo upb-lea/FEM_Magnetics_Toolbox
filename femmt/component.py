@@ -216,13 +216,29 @@ class MagneticComponent:
         self.simulation_name = simulation_name
 
     def femmt_print(self, text: str):
-        """Print text to terminal or to log-file, dependent on the current verbosity."""
+        """
+        Print text to terminal or to log-file, dependent on the current verbosity.
+
+        :param text: text to print
+        :type text: str
+        """
         if self.verbosity != Verbosity.Silent:
             self.logger.info(text)
 
     def update_mesh_accuracies(self, mesh_accuracy_core: float, mesh_accuracy_window: float,
                                mesh_accuracy_conductor, mesh_accuracy_air_gaps: float):
-        """Update mesh accuracies for core, windows, conductors and air gaps."""
+        """
+        Update mesh accuracies for core, windows, conductors and air gaps.
+
+        :param mesh_accuracy_core: mesh accuracy of the core
+        :type mesh_accuracy_core: float
+        :param mesh_accuracy_window: mesh accuracy of the winding window
+        :type mesh_accuracy_window: float
+        :param mesh_accuracy_conductor: mesh accuracy of the conductors
+        :type mesh_accuracy_conductor: float
+        :param mesh_accuracy_air_gaps: mesh accuracy of the air gaps
+        :type mesh_accuracy_air_gaps: float
+        """
         self.mesh_data.mesh_accuracy_core = mesh_accuracy_core
         self.mesh_data.mesh_accuracy_window = mesh_accuracy_window
         self.mesh_data.mesh_accuracy_conductor = mesh_accuracy_conductor
@@ -700,12 +716,15 @@ class MagneticComponent:
             heights = [point[2] for point in self.air_gaps.midpoints]
         core_parts_volumes = []
 
-        def get_width(part_number):
+        def get_width(part_number: int):
             """
             If there is a stray path, calculate width based on its starting index and part number.
 
             part_number is the core_part_i+2; means that if the start_index is 0, the stray path is in core_part_2
             if the start_index is 1, the stray path is in core_part_3 and so on
+
+            :param part_number: core_part_i+2
+            :type part_number: int
             """
             if self.stray_path and part_number == self.stray_path.start_index + 2:
                 return self.stray_path.length

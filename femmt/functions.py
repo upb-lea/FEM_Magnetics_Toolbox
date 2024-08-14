@@ -441,8 +441,13 @@ def conductivity_temperature(material: str, temperature: float) -> float:
     return sigma_temperature
 
 
-def create_folders(*args) -> None:
-    """Create folders for every given folder path (if it does not exist)."""
+def create_folders(*args: str) -> None:
+    """
+    Create folders for every given folder path (if it does not exist).
+
+    :param args: Folder names
+    :type args: str
+    """
     for folder in list(args):
         if not os.path.exists(folder):
             os.mkdir(folder)
@@ -706,9 +711,22 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
     return np.array([f_out, x_out, phi_rad_out])
 
 
-def plot_fourier_coefficients(frequency_list, amplitude_list, phi_rad_list, sample_factor: int = 1000,
-                              figure_directory: str = None):
-    """Plot fourier coefficients in a visual figure."""
+def plot_fourier_coefficients(frequency_list: List, amplitude_list: List, phi_rad_list: List,
+                              sample_factor: int = 1000, figure_directory: str = None):
+    """
+    Plot fourier coefficients in a visual figure.
+
+    :param frequency_list: List of frequencies in Hz
+    :type frequency_list: List
+    :param amplitude_list: List of amplitudes in A
+    :type amplitude_list: List
+    :param phi_rad_list: List of angles in rad
+    :type phi_rad_list: List
+    :param sample_factor: sample factor
+    :type sample_factor: int
+    :param figure_directory: directory of figure to save
+    :type figure_directory: str
+    """
     # dc and ac handling
     nonzero_frequencies = [f for f in frequency_list if f != 0]
     if nonzero_frequencies:
@@ -972,8 +990,17 @@ def create_physical_group(dim, entities, name):
     return tag
 
 
-def visualize_simulation_results(simulation_result_file_path: str, store_figure_file_path: str, show_plot=True) -> None:
-    """Visualize the simulation results by a figure."""
+def visualize_simulation_results(simulation_result_file_path: str, store_figure_file_path: str, show_plot: bool = True) -> None:
+    """
+    Visualize the simulation results by a figure.
+
+    :param simulation_result_file_path: file path for the simulation results
+    :type simulation_result_file_path: str
+    :param store_figure_file_path: file path for the figure to store
+    :type store_figure_file_path: str
+    :param show_plot: True to show the plot
+    :type show_plot: bool
+    """
     with open(simulation_result_file_path, "r") as fd:
         loaded_results_dict = json.loads(fd.read())
 
@@ -1049,8 +1076,17 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
 
     return loaded_results_dict
 
-def point_is_in_rect(x, y, rect):
-    """Check if a given x-y point is inside a rectangular field (e.g. inside a conductor)."""
+def point_is_in_rect(x: float, y: float, rect: List):
+    """
+    Check if a given x-y point is inside a rectangular field (e.g. inside a conductor).
+
+    :param x: x coordinate of the point to check
+    :type x: float
+    :param y: y coordinate of the point to check
+    :type y: float
+    :param rect: rectangular
+    :type rect: List
+    """
     # x, y of the point
     # List of 4 points given as tuples with (x, y) in the order top-right, top-left, bottom-right, bottom-left
 
@@ -1060,8 +1096,17 @@ def point_is_in_rect(x, y, rect):
     return False
 
 
-def get_number_of_turns_of_winding(winding_windows, windings: List, winding_number: int):
-    """Get the number of turns of a winding."""
+def get_number_of_turns_of_winding(winding_windows: List, windings: List, winding_number: int):
+    """
+    Get the number of turns of a winding.
+
+    :param winding_windows: List of winding windows
+    :type winding_windows: List
+    :param windings: List of windings
+    :type windings: List
+    :param winding_number: number of winding
+    :type winding_number: int
+    """
     turns = 0
     for ww in winding_windows:
         for vww in ww.virtual_winding_windows:
@@ -1245,8 +1290,19 @@ def wave_vector(f: float, complex_permeability: complex, complex_permittivity: c
     return omega * np.sqrt(complex_permeability * complex_equivalent_permittivity)
 
 
-def axial_wavelength(f, complex_permeability, complex_permittivity, conductivity):
-    """Calculate the axial wavelength for a given frequency."""
+def axial_wavelength(f: float, complex_permeability: float, complex_permittivity: float, conductivity: float):
+    """
+    Calculate the axial wavelength for a given frequency.
+
+    :param f: Frequency in Hz
+    :type f: float
+    :param complex_permeability: complex permeability
+    :type complex_permeability: float
+    :param complex_permittivity: complex permittivity
+    :type complex_permittivity: float
+    :param conductivity: electrical conductivity
+    :type conductivity: float
+    """
     k = wave_vector(f, complex_permeability, complex_permittivity, conductivity)
     return 2 * np.pi / k.real
 
@@ -1288,8 +1344,17 @@ def check_mqs_condition(radius: float, frequency: float, complex_permeability: f
             print(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance}")
 
 
-def create_open_circuit_excitation_sweep(I0, n, frequency):
-    """Create a circuit excitation sweep with the other windings unloaded."""
+def create_open_circuit_excitation_sweep(I0: float, n: float, frequency: float) -> List[List[float]]:
+    """
+    Create a circuit excitation sweep with the other windings unloaded.
+
+    :param I0: current in A
+    :type I0: float
+    :param n: turns ratio n
+    :type n: float
+    :param frequency: Frequency in Hz
+    :type frequency: float
+    """
     frequencies = [frequency] * n
     currents = [[0] * n for _ in range(n)]
     phases = [[180] * n for _ in range(n)]
@@ -1380,8 +1445,17 @@ def get_mean_coupling_factors(coupling_matrix: np.array):
     return mean_coupling_factors
 
 
-def get_inductance_matrix(self_inductances, mean_coupling_factors, coupling_matrix):
-    """Get the inductance matrix from self_inductances, mean_coupling_factors and the coupling_matrix."""
+def get_inductance_matrix(self_inductances: np.array, mean_coupling_factors: np.array, coupling_matrix: np.array):
+    """
+    Get the inductance matrix from self_inductances, mean_coupling_factors and the coupling_matrix.
+
+    :param self_inductances: matrix with self inductances in H
+    :type self_inductances: np.array
+    :param mean_coupling_factors: mean coupling factors
+    :type mean_coupling_factors: np.array
+    :param coupling_matrix: matrix with coupling factors
+    :type coupling_matrix: np.array
+    """
     inductance_matrix = [[None] * len(mean_coupling_factors) for _ in range(len(mean_coupling_factors))]
     for x in range(0, len(coupling_matrix)):
         for y in range(0, len(coupling_matrix)):
@@ -1563,8 +1637,14 @@ def visualize_inductance_matrix_coefficients(inductance_matrix: np.array, silent
         print(string_to_print)
 
 
-def visualize_inductance_matrix(inductance_matrix, silent: bool):
-    """Visualize the inductance matrix in the terminal.
+def visualize_inductance_matrix(inductance_matrix: np.array, silent: bool) -> None:
+    """
+    Visualize the inductance matrix in the terminal.
+
+    :param inductance_matrix: inductance matrix in H
+    :type inductance_matrix: np.array
+    :param silent: True for no output
+    :type silent: bool
 
     e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
     """

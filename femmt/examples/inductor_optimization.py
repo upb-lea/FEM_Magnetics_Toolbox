@@ -916,7 +916,11 @@ class AutomatedDesign:
         return return_data_matrix
 
     def fem_simulation(self, count=None):
-        """Perform FEM simulation of the design cases. Save the result in the given working directory for later analysis."""
+        """
+        Perform FEM simulation of the design cases. Save the result in the given working directory for later analysis.
+
+
+        """
         start_time = time.time()
 
         data_files = []

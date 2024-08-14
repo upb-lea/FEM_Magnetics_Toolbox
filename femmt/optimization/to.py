@@ -392,7 +392,12 @@ class TransformerOptimization:
 
     @staticmethod
     def run_garbage_collector(study: optuna.Study, _):
-        """Run the garbage collector."""
+        """
+        Run the garbage collector.
+
+        :param study: optuna study
+        :type study: optuna.Study
+        """
         if len(study.trials) % 10000 == 0:
             # Run the garbage collector to prevent high memory consumption.
             # as seen so far, a typical study needs 50.000 to 500.000 trials to have good results when performing

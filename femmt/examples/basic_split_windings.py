@@ -2,8 +2,19 @@
 import femmt as fmt
 import os
 
-def run_transformer_vvw_split_examples(num_windings, onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
-    """Run the example code for the transformer."""
+def run_transformer_vvw_split_examples(num_windings: int, onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
+    """
+    Run the example code for the transformer.
+
+    :param num_windings: Number of windings to simulate
+    :type num_windings: int
+    :param onelab_folder: onelab folder path
+    :type onelab_folder: str
+    :param show_visual_outputs: True to show visual outputs (simulation results)
+    :type show_visual_outputs: bool
+    :param is_test: True for pytest usage. Defaults to False.
+    :type is_test: bool
+    """
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
     if not os.path.exists(example_results_folder):
         os.mkdir(example_results_folder)

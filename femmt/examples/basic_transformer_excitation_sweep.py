@@ -9,7 +9,16 @@ if not os.path.exists(example_results_folder):
 
 # Create Object
 def basic_example_transformer_excitation_sweep(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
-    """Run the example code for the transformer excitation sweep."""
+    """
+    Run the example code for the transformer excitation sweep.
+
+    :param onelab_folder: onelab folder path
+    :type onelab_folder: str
+    :param show_visual_outputs: True to show visual outputs (simulation results)
+    :type show_visual_outputs: bool
+    :param is_test: True for pytest usage. Defaults to False.
+    :type is_test: bool
+    """
     # 0: choose frequencies, amplitude and phases to sweep
     frequencies = [100000, 200000]
     current_amplitudes = [[4, 14.5], [2, 6]]

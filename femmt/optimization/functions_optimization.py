@@ -78,7 +78,12 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
     annot.set_visible(False)
 
     def update_annot(ind):
-        """Create popover annotations in 2d plot."""
+        """
+        Create popover annotations in 2d plot.
+
+        :param ind:
+        :type ind:
+        """
         pos = sc.get_offsets()[ind["ind"][0]]
         annot.xy = pos
         text = ""
@@ -111,7 +116,12 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
         annot.get_bbox_patch().set_alpha(0.8)
 
     def hover(event):
-        """Event that is triggered when mouse is hovered. Shows text annotation over data point closest to mouse."""
+        """
+        Event that is triggered when mouse is hovered. Shows text annotation over data point closest to mouse.
+
+        :param event: triggered event
+        :type event:
+        """
         vis = annot.get_visible()
         if event.inaxes == ax:
             cont, ind = sc.contains(event)

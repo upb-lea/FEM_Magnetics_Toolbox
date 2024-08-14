@@ -827,38 +827,6 @@ class MainWindow(QMainWindow):
         matplotlib_widget.figure.tight_layout()
         matplotlib_widget.axis.grid()
 
-        def update_annot(ind):
-            """Create popover annotations in 2d plot."""
-            pos = sc.get_offsets()[ind["ind"][0]]
-            annot.xy = pos
-            text = ""
-            if z_label is None and inductance_value is None:
-                text = "case: {}\n{}: {}\n{}:{}". \
-                    format(" ".join([names[n] for n in ind["ind"]]),
-                           x_label, " ".join([x_value_str[n] for n in ind["ind"]]),
-                           y_label, " ".join([y_value_str[n] for n in ind["ind"]]))
-            elif z_label is not None and inductance_value is None:
-                text = "case: {}\n{}: {}\n{}:{}\n{}:{}". \
-                    format(" ".join([names[n] for n in ind["ind"]]),
-                           x_label, " ".join([x_value_str[n] for n in ind["ind"]]),
-                           y_label, " ".join([y_value_str[n] for n in ind["ind"]]),
-                           z_label, " ".join([z_value_str[n] for n in ind["ind"]]))
-            elif z_label is None and inductance_value is not None:
-                text = "case: {}\n{}: {}\n{}:{}\n{}:{}". \
-                    format(" ".join([names[n] for n in ind["ind"]]),
-                           x_label, " ".join([x_value_str[n] for n in ind["ind"]]),
-                           y_label, " ".join([y_value_str[n] for n in ind["ind"]]),
-                           l_label, " ".join([l_value_str[n] for n in ind["ind"]]))
-            else:
-                text = "case: {}\n{}: {}\n{}:{}\n{}:{}\n{}:{}". \
-                    format(" ".join([names[n] for n in ind["ind"]]),
-                           x_label, " ".join([x_value_str[n] for n in ind["ind"]]),
-                           y_label, " ".join([y_value_str[n] for n in ind["ind"]]),
-                           z_label, " ".join([z_value_str[n] for n in ind["ind"]]),
-                           l_label, " ".join([l_value_str[n] for n in ind["ind"]]))
-            annot.set_text(text)
-            annot.get_bbox_patch().set_alpha(0.4)
-
     @handle_errors
     def automated_design_func(self, matplotlib_widget: MatplotlibWidget):
         """Create to accept input parameters from the definitions tab, to create matrix with all input combinations.
@@ -1204,7 +1172,12 @@ class MainWindow(QMainWindow):
             raise RuntimeError(f"Error during loading: {str(e)}") from e
 
     def check_onelab_config(self, geo: fmt.MagneticComponent):
-        """Check the onlab configuration to enter or read the onelab filepath."""
+        """
+        Check the onlab configuration to enter or read the onelab filepath.
+
+        :param geo: Geometry object (MagneticComponent)
+        :type geo: fmt.MagneticComponent
+        """
         # Ask for onelab path (if no config file exists)
         if not os.path.isfile(geo.file_data.config_path):
             onelab_path_dialog = OnelabPathDialog()
@@ -3667,7 +3640,13 @@ class MainWindow(QMainWindow):
 
     @handle_errors
     def therm_simulation(self, *args, **kwargs):
-        """Implement the thermal simulation."""
+        """Implement the thermal simulation.
+
+        :param args:
+        :type args:
+        :param kwargs:
+        :type kwargs:
+        """
         # Thermal simulation:
         # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the given magnetic component
         # In order to use the thermal simulation, thermal conductivities for each material can be entered as well as a boundary temperature
@@ -3799,16 +3778,6 @@ class MainWindow(QMainWindow):
         # Because the isolations inside the winding window are not implemented in femm simulation.
         # The validation only works when the isolations for the FEMMT thermal simulation are turned off.
         # geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right, case_gap_bot)
-
-def clear_layout(layout):
-    """Clear the layout."""
-    while layout.count():
-        child = layout.takeAt(0)
-        if isinstance(child, QtWidgets.QSpacerItem):
-            layout.removeItem(child)  # for spacer item
-        elif child.widget() or child:  # child for comboBoxType and child.widget() for custom class types
-            child.widget().deleteLater()
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

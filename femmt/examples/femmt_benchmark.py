@@ -49,8 +49,13 @@ class SingleBenchmark:
         self.working_directory = working_directory
         self.model = model
 
-    def benchmark_simulation(self, inductor_frequency):
-        """Start the simulation for a single benchmark."""
+    def benchmark_simulation(self, inductor_frequency: int):
+        """
+        Start the simulation for a single benchmark.
+
+        :param inductor_frequency: frequency in Hz
+        :type inductor_frequency: int
+        """
         # Simulate
         self.high_level_geo_gen_time, self.generate_hybrid_mesh_time = self.model.create_model(freq=inductor_frequency, pre_visualize_geometry=False,
                                                                                                save_png=False, benchmark=True)
@@ -742,8 +747,13 @@ def benchmark_winding_window_rasterization(folder):
     plt.legend(fontsize=font_size_default)
     plt.show()
 
-def general_comparison(folder):
-    """Comparison with and without meshing techniques."""
+def general_comparison(folder: str):
+    """
+    Comparison with and without meshing techniques.
+
+    :param folder: file path to folder
+    :type folder: str
+    """
     mesh_accuracies = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
     # mesh_accuracies = [0.4, 0.5, 1]
     frequency = 270000

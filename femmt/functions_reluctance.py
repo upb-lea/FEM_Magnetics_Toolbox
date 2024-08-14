@@ -114,6 +114,13 @@ def power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(
         Note: The [0] in the return for only handling the result itself to the output, not the error.
 
         Note: function parameter names differ from outer parameters to avoid 'shadows name from outer scope'.
+
+        :param cylinder_radius: cylinder radius in m
+        :type clylinder_radius: Union[float, np.array]
+        :param flux_in_cylinder: flux in Wb inside the cylinder
+        :type flux_in_cylinder: Union[float, np.array]
+        :param height_of_cylinder: height of the cylinder in m
+        :type height_of_cylinder: Union[float, np.array]
         """
         mu_r_imag = np.interp(flux_density_cylinder_envelope(cylinder_radius, flux_in_cylinder, height_of_cylinder),
                               flux_density_data_vec, mu_r_imag_data_vec)
@@ -397,7 +404,8 @@ def calculate_inductance_matrix(reluctance_matrix: Union[float, np.array], windi
     return np.matmul(np.matmul(np.transpose(winding_matrix), reluctance_matrix_invert), winding_matrix)
 
 
-def calculate_flux_matrix(reluctance_matrix, winding_matrix, current_matrix):
+def calculate_flux_matrix(reluctance_matrix: Union[float, np.array], winding_matrix: Union[float, np.array],
+                          current_matrix: Union[float, np.array]) -> Union[float, np.array]:
     """
     Calculate the flux for e.g. an integrated transformer.
 
@@ -412,6 +420,13 @@ def calculate_flux_matrix(reluctance_matrix, winding_matrix, current_matrix):
 
     returns flux matrix e.g.
     flux_matrix = [ [flux_1], [flux_2] ]
+
+    :param reluctance_matrix: matrix of transformer reluctance
+    :type reluctance_matrix: Union[float, np.array]
+    :param winding_matrix: matrix of transformer windings
+    :type winding_matrix: Union[float, np.array]
+    :return: inductance matrix in H
+    :rtype: Union[float, np.array]
     """
     if np.ndim(reluctance_matrix) == 0:
         reluctance_matrix_invert = 1 / reluctance_matrix
@@ -421,8 +436,13 @@ def calculate_flux_matrix(reluctance_matrix, winding_matrix, current_matrix):
     return np.matmul(np.matmul(reluctance_matrix_invert, winding_matrix), current_matrix)
 
 
-def time_vec_current_vec_from_time_current_vec(time_current_vec):
-    """Split a time-current vector into time and current vector."""
+def time_vec_current_vec_from_time_current_vec(time_current_vec: List[List[float]]):
+    """
+    Split a time-current vector into time and current vector.
+
+    :param time_current_vec: [time_vector, current_vector]
+    :type time_current_vec: List[List[float]]
+    """
     return time_current_vec[0], time_current_vec[1]
 
 
@@ -460,7 +480,23 @@ def flux_vec_from_current_vec(current_vec_1, current_vec_2, winding_matrix, indu
 
 
 def visualize_current_and_flux(time, flux_top_vec, flux_bot_vec, flux_stray_vec, current_1_vec, current_2_vec):
-    """Visualize current and flux over time."""
+    """
+    Visualize current and flux over time for the integrated transformer.
+
+    :param time: time vector
+    :type time: Union[List, np.array]
+    :param flux_top_vec: flux vector in top core part
+    :type flux_top_vec: Union[List, np.array]
+    :param flux_bot_vec: flux vector in bottom core part
+    :type flux_bot_vec: Union[List, np.array]
+    :param flux_stray_vec: flux vector in stray core part
+    :type flux_stray_vec: Union[List, np.array]
+    :param current_1_vec: current vector of winding 1
+    :type current_1_vec: Union[List, np.array]
+    :param current_2_vec: current vector of winding 2
+    :type current_2_vec: Union[List, np.array]
+
+    """
     figure, axis = plt.subplots(2, figsize=(4, 4))
 
     axis[0].plot(time, current_1_vec, label=r"$I_{\mathrm{in}}$")
@@ -664,9 +700,23 @@ def r_air_gap_round_round(air_gap_total_height: Union[float, np.array], core_inn
     return r_air_gap
 
 
-def r_air_gap_round_round_sct(air_gap_total_height, core_inner_diameter,
-                              core_height_upper, core_height_lower, target_reluctance):
-    """Calculate the air gap length of a round-round structure by a given target reluctance."""
+def r_air_gap_round_round_sct(air_gap_total_height: Union[float, np.array], core_inner_diameter: Union[float, np.array],
+                              core_height_upper: Union[float, np.array], core_height_lower: Union[float, np.array],
+                              target_reluctance: Union[float, np.array]) -> Union[float, np.array]:
+    """
+    Calculate the air gap length of a round-round structure by a given target reluctance.
+
+    :param air_gap_total_height: total height in m of all air gaps
+    :type air_gap_total_height: Union[float, np.array]
+    :param core_inner_diameter: core inner diameter in m
+    :type core_inner_diameter: Union[float, np.array]
+    :param target_reluctance: target reluctance
+    :type target_reluctance: Union[float, np.array]
+    :param core_height_upper: height of upper core part in m
+    :type core_height_upper: Union[float, np.array]
+    :param core_height_lower: height of lower core part in m
+    :type core_height_lower: Union[float, np.array]
+    """
     return r_air_gap_round_round(air_gap_total_height, core_inner_diameter, core_height_upper, core_height_lower) - \
         target_reluctance
 
@@ -700,8 +750,20 @@ def r_air_gap_round_inf(air_gap_total_height: Union[float, np.array], core_inner
     return r_air_gap
 
 
-def r_air_gap_round_inf_sct(air_gap_total_height, core_inner_diameter, core_height, target_reluctance):
-    """Calculate the air gap length of a round infinite structure by a given target reluctance."""
+def r_air_gap_round_inf_sct(air_gap_total_height: Union[float, np.array], core_inner_diameter: Union[float, np.array],
+                            core_height: Union[float, np.array], target_reluctance: Union[float, np.array]) -> Union[float, np.array]:
+    """
+    Calculate the air gap length of a round infinite structure by a given target reluctance.
+
+    :param air_gap_total_height: total height in m of all air gaps
+    :type air_gap_total_height: Union[float, np.array]
+    :param core_inner_diameter: core inner diameter in m
+    :type core_inner_diameter: Union[float, np.array]
+    :param target_reluctance: target reluctance
+    :type target_reluctance: Union[float, np.array]
+    :param core_height: height of core in m
+    :type core_height: Union[float, np.array]
+    """
     return r_air_gap_round_inf(air_gap_total_height, core_inner_diameter, core_height) - target_reluctance
 
 
@@ -798,9 +860,23 @@ def r_air_gap_tablet_cyl(tablet_height: Union[float, np.array], air_gap_total_he
     return r_air_gap
 
 
-def r_air_gap_tablet_cylinder_sct(air_gap_total_height, core_inner_diameter,
-                                  tablet_height, window_w, target_reluctance):
-    """Calculate the air gap length of a table cylinder by a given target reluctance."""
+def r_air_gap_tablet_cylinder_sct(air_gap_total_height: Union[float, np.array], core_inner_diameter: Union[float, np.array],
+                                  tablet_height: Union[float, np.array], window_w: Union[float, np.array],
+                                  target_reluctance: Union[float, np.array]) -> Union[float, np.array]:
+    """
+    Calculate the air gap length of a table cylinder by a given target reluctance.
+
+    :param air_gap_total_height: total height in m of all air gaps
+    :type air_gap_total_height: Union[float, np.array]
+    :param core_inner_diameter: core inner diameter in m
+    :type core_inner_diameter: Union[float, np.array]
+    :param tablet_height: height of tablet in m
+    :type tablet_height: Union[float, np.array]
+    :param window_w: window width in m
+    :type window_w: Union[float, np.array]
+    :param target_reluctance: target reluctance
+    :type target_reluctance: Union[float, np.array]
+    """
     return r_air_gap_tablet_cyl(tablet_height, air_gap_total_height, core_inner_diameter, window_w) - target_reluctance
 
 
