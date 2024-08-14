@@ -33,6 +33,9 @@ jobs:
           
             pip install ruff
             ruff check $(git ls-files '*.py')
+          
+            pip install pylint
+            pylint $(git ls-files '*.py')
 
       - name: install femmt package
         run: |
