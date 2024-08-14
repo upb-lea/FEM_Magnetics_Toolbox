@@ -7,7 +7,7 @@ from typing import Optional
 
 # femmt libraries
 from femmt.dtos import *
-from femmt.model import WindingWindow, Conductor, Insulation
+from femmt.model import WindingWindow, Conductor, Insulation, Core, VirtualWindingWindow
 from femmt.functions_drawing import *
 from femmt.functions_model import define_center_tapped_insulation
 
@@ -17,7 +17,7 @@ def create_stacked_winding_windows(core: Core, insulation: Insulation) -> (Windi
     Create stacked winding windows.
 
     :param core: Core class
-    :type core: Core
+    :type core: femmt.Core
     :param insulation: Insulation class
     :type insulation: Insulation
     :return: winding_window_top, winding_window_bot

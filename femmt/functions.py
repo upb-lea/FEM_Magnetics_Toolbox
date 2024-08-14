@@ -1407,14 +1407,14 @@ def visualize_flux_linkages(flux_linkages: List, silent: bool) -> None:
         print(string_to_print)
 
 
-def visualize_self_inductances(self_inductances: List | np.array, flux_linkages: list | np.array, silent: bool) -> None:
+def visualize_self_inductances(self_inductances: Union[List, np.array], flux_linkages: Union[List, np.array], silent: bool) -> None:
     """
     Print the self-inductances to the terminal (or file-) output.
 
     :param self_inductances: self-inductances in H in a list or numpy array
-    :type self_inductances: List | np.array
+    :type self_inductances: Union[List, np.array]
     :param flux_linkages: flux linkages
-    :type flux_linkages: list | np.array
+    :type flux_linkages: Union[List, np.array]
     :param silent: True for no output
     :type silent: bool
     """
