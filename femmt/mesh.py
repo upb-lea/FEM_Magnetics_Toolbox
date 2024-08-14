@@ -991,8 +991,15 @@ class Mesh:
                     if i != len(l_bound_air) - 1:  # last run
                         self.l_bound_tmp.append(l_bound_core[-i - 1])
 
-    def visualize(self, visualize_before, save_png):
-        """Visualize the geometry or the FEM simulation result."""
+    def visualize(self, visualize_before: bool, save_png: bool):
+        """
+        Visualize the geometry or the FEM simulation result.
+
+        :param visualize_before: True to visualize the geometry before meshing
+        :type visualize_before: bool
+        :param save_png: True to save a .png figure of the visualized geometry
+        :type save_png: bool
+        """
         # Colorize model and show it if needed
         # mesh generation
         color_scheme = ff.colors_femmt_default

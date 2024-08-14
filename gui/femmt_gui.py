@@ -3779,6 +3779,7 @@ class MainWindow(QMainWindow):
         # The validation only works when the isolations for the FEMMT thermal simulation are turned off.
         # geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right, case_gap_bot)
 
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setStyle('Fusion')

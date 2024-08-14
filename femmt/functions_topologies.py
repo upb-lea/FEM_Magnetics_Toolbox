@@ -195,9 +195,9 @@ def place_windings_in_vwws(vwws: list, winding_scheme_type: list, transformer_st
             vwws[set_vwws].set_center_tapped_winding(conductor1=winding1, turns1=turns1,
                                                      conductor2=winding2, turns2=turns2,
                                                      conductor3=winding3, turns3=turns2,
-                                                     isolation_primary_to_primary=winding_insulations.primary_to_primary,
-                                                     isolation_secondary_to_secondary=winding_insulations.secondary_to_secondary,
-                                                     isolation_primary_to_secondary=winding_insulations.primary_to_secondary)
+                                                     insulation_primary_to_primary=winding_insulations.primary_to_primary,
+                                                     insulation_secondary_to_secondary=winding_insulations.secondary_to_secondary,
+                                                     insulation_primary_to_secondary=winding_insulations.primary_to_secondary)
 
             set_vwws += 1
 

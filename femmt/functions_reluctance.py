@@ -98,7 +98,8 @@ def power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(
         """
         return flux_in_cylinder / (2 * np.pi * cylinder_radius * height_of_cylinder)
 
-    def power_loss_density_cylinder_envelope(cylinder_radius, flux_in_cylinder, height_of_cylinder):
+    def power_loss_density_cylinder_envelope(cylinder_radius: Union[float, np.array], flux_in_cylinder: Union[float, np.array],
+                                             height_of_cylinder: Union[float, np.array]) -> Union[float, np.array]:
         """
         Helper-function, what is used as a function to integrate by scipy.integrate.quad.
 
@@ -116,7 +117,7 @@ def power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(
         Note: function parameter names differ from outer parameters to avoid 'shadows name from outer scope'.
 
         :param cylinder_radius: cylinder radius in m
-        :type clylinder_radius: Union[float, np.array]
+        :type cylinder_radius: Union[float, np.array]
         :param flux_in_cylinder: flux in Wb inside the cylinder
         :type flux_in_cylinder: Union[float, np.array]
         :param height_of_cylinder: height of the cylinder in m
@@ -427,6 +428,8 @@ def calculate_flux_matrix(reluctance_matrix: Union[float, np.array], winding_mat
     :type winding_matrix: Union[float, np.array]
     :return: inductance matrix in H
     :rtype: Union[float, np.array]
+    :param current_matrix: matrix of currents in A
+    :type current_matrix: Union[float, np.array]
     """
     if np.ndim(reluctance_matrix) == 0:
         reluctance_matrix_invert = 1 / reluctance_matrix

@@ -2258,7 +2258,8 @@ def test_transformer_integrated_core_fixed_loss_angle(fixture_transformer_integr
     Integration test to validate the magnetoquasistatic simulation and the thermal simulation.
 
     :param fixture_transformer_integrated_core_fixed_loss_angle: fixture for the integrated transformer
-    :type fixture_transformer_integrated_core_fixed_loss_angle: pytest.fixture"""
+    :type fixture_transformer_integrated_core_fixed_loss_angle: pytest.fixture
+    """
     test_result_log, thermal_result_log, geometry_result_log, material_result_log = fixture_transformer_integrated_core_fixed_loss_angle
 
     assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
@@ -2349,7 +2350,8 @@ def test_simulation_inductor_time_domain(fixture_inductor_time_domain: pytest.fi
     Integration test to validate the magnetoquasistatic simulation.
 
     :param fixture_inductor_time_domain: fixture for the inductor time domain simulation
-    :type fixture_inductor_time_domain: pytest.fixture"""
+    :type fixture_inductor_time_domain: pytest.fixture
+    """
     test_result_log, geometry_result_log, material_result_log = fixture_inductor_time_domain
 
     assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
@@ -2414,7 +2416,8 @@ def test_transformer_3_windings_time_domain(fixture_transformer_3_windings_time_
 
 def test_load_files(temp_folder: pytest.fixture, fixture_inductor_core_material_database: pytest.fixture,
                     fixture_inductor_core_fixed_loss_angle: pytest.fixture, fixture_inductor_core_fixed_loss_angle_dc: pytest.fixture,
-                    fixture_inductor_core_fixed_loss_angle_litz_wire: pytest.fixture, fixture_inductor_core_fixed_loss_angle_foil_horizontal: pytest.fixture,                    fixture_inductor_core_fixed_loss_angle_foil_vertical,
+                    fixture_inductor_core_fixed_loss_angle_litz_wire: pytest.fixture, fixture_inductor_core_fixed_loss_angle_foil_horizontal: pytest.fixture,
+                    fixture_inductor_core_fixed_loss_angle_foil_vertical: pytest.fixture,
                     fixture_transformer_core_fixed_loss_angle: pytest.fixture, fixture_transformer_interleaved_core_fixed_loss_angle: pytest.fixture,
                     fixture_transformer_integrated_core_fixed_loss_angle: pytest.fixture
                     ):

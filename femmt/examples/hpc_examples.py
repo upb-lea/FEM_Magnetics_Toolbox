@@ -116,8 +116,13 @@ def custom_hpc(parameters: Dict):
     model.create_model(freq=250000, pre_visualize_geometry=False)
     model.single_simulation(freq=250000, current=current, phi_deg=phi_deg, show_fem_simulation_results=False)
 
-def parallel_simulation_study(averaging_count):
-    """Perform several parallel simulations."""
+def parallel_simulation_study(averaging_count: int):
+    """
+    Perform several parallel simulations.
+
+    :param averaging_count: number of simulations to average the time
+    :type averaging_count: int
+    """
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
     parallel_results_folder = os.path.join(example_results_folder, "parallel")
     study_results_folder = os.path.join(parallel_results_folder, "study")

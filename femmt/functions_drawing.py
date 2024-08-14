@@ -245,11 +245,30 @@ def get_set_of_integers_from_string_list(string_list):
     return integer_list
 
 
-def stack_order_from_interleaving_scheme(interleaving_scheme: InterleavingSchemesFoilLitz, stack_order,
-                                         primary_additional_bobbin, center_foil_additional_bobbin,
+def stack_order_from_interleaving_scheme(interleaving_scheme: InterleavingSchemesFoilLitz, stack_order: List,
+                                         primary_additional_bobbin: float, center_foil_additional_bobbin: float,
                                          primary_row: ConductorRow, secondary_row: ConductorRow,
-                                         tertiary_row: ConductorRow, isolations: ThreeWindingIsolation):
-    """Get the stack order from a given interleaving scheme."""
+                                         tertiary_row: ConductorRow, insulations: ThreeWindingIsolation):
+    """
+    Get the stack order from a given interleaving scheme.
+
+    :param interleaving_scheme: interleaving scheme
+    :type interleaving_scheme: InterleavingSchemesFoilLitz
+    :param stack_order: order of the stack
+    :type stack_order: List
+    :param primary_additional_bobbin: primary additional bobbin thickness in m in the center
+    :type primary_additional_bobbin: float
+    :param center_foil_additional_bobbin: additional bobbin thickness in m for the center foil
+    :type center_foil_additional_bobbin: float
+    :param primary_row: row of primary conductors
+    :type primary_row: ConductorRow
+    :param secondary_row: row of secondary conductors
+    :type secondary_row: ConductorRow
+    :param tertiary_row: row of tertiary conductors
+    :type tertiary_row: ConductorRow
+    :param insulations: insulation distances from the ThreeWindingIsolation class
+    :type insulations: ThreeWindingIsolation
+    """
     # Init the winding counters (needed for vertical insulation adjustments)
     number_of_primary_rows, number_of_secondary_rows, number_of_tertiary_rows = 0, 0, 0
 
@@ -290,7 +309,7 @@ def stack_order_from_interleaving_scheme(interleaving_scheme: InterleavingScheme
             temp_row.additional_bobbin = primary_additional_bobbin
 
             if temp_row.number_of_conds_per_row < max_primary_conductors_per_row:
-                temp_row.additional_bobbin += temp_row.row_height/2 + isolations.primary_to_primary/2
+                temp_row.additional_bobbin += temp_row.row_height / 2 + insulations.primary_to_primary / 2
             stack_order.append(temp_row)
             number_of_primary_rows += 1
 
@@ -445,8 +464,13 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
         return ConductorStack(number_of_groups=0, number_of_single_rows=number_of_single_rows, order=stack_order)
 
 
-def get_number_of_turns_in_groups(stack):
-    """Get the number of turns in one center tapped stack for Type A winding scheme. Experimental."""
+def get_number_of_turns_in_groups(stack: ConductorStack):
+    """
+    Get the number of turns in one center tapped stack for Type A winding scheme. Experimental.
+
+    :param stack: conductor stack
+    :type stack: ConductorStack
+    """
     turns1 = 0
     turns2 = 0
 
@@ -481,15 +505,25 @@ def is_even(x: int):
 
 
 def center(l_list: List):
-    """Return the center index of a list. Rounds off."""
+    """
+    Return the center index of a list. Rounds off.
+
+    :param l_list: list to return the center index
+    :type l_list: List
+    """
     return int(len(l_list) / 2)
 
 
-def mix_x_and_i(input_x, input_i):
+def mix_x_and_i(input_x: List, input_i: List):
     """General usage to interleave windings. One winding could be input_x and the other input_i. Experimental.
 
     Example: 16 primary windings (input_x), 3 secondary windings (input_i).
     Tries to fit these windings symmetric into the winding window.
+
+    :param input_x: List of e.g. primary windings
+    :type input_x: List
+    :param input_i: List of e.g. secondary windings
+    :type input_i: List
     """
     len_x = len(input_x)
     len_i = len(input_i)

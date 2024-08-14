@@ -20,8 +20,13 @@ class FileData:
         self.onelab_folder_path: Optional[str] = None
 
     @staticmethod
-    def create_folders(*args) -> None:
-        """Create folders for every given folder path (if it does not exist)."""
+    def create_folders(*args: str) -> None:
+        """
+        Create folders for every given folder path (if it does not exist).
+
+        :param args: Folder names
+        :type args: str
+        """
         for folder in list(args):
             if not os.path.exists(folder):
                 os.mkdir(folder)

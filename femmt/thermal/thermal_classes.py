@@ -49,7 +49,7 @@ class GroupPro:
         """Add given regions to the group."""
         self.regions.update(more_regions)
 
-    def create_file(self, file_path: str , air_gaps_enabled: bool = False, insulation_enabled: bool = False):
+    def create_file(self, file_path: str, air_gaps_enabled: bool = False, insulation_enabled: bool = False):
         """
         Create some onelab specific result files.
 
@@ -134,7 +134,7 @@ class FunctionPro:
 
     def add_dicts(self, k, q_vol):
         """
-        updates a key  to the given conductivity and q_vol attributes.
+        Update a key  to the given conductivity and q_vol attributes.
 
         Order is important: k, qVol.
         :param k: conductivity

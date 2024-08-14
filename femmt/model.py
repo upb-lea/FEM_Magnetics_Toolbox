@@ -118,6 +118,17 @@ class Conductor:
         Set a round conductor made of litz wire.
 
         Only 3 of the 4 parameters are needed. The other one needs to be none.
+
+        :param conductor_radius: conductor radius in m
+        :type conductor_radius: Optional[float]
+        :param number_strands: number of strands inside the litz wire
+        :type number_strands: Optional[int]
+        :param strand_radius: radius of a single strand in m
+        :type strand_radius: Optional[float]
+        :param fill_factor: fill factor of the litz wire
+        :type fill_factor: Optional[float]
+        :param conductor_arrangement: conductor arrangement (Square, SquareFullWidth, Hexagonal)
+        :type conductor_arrangement: ConductorArrangement
         """
         if self.conductor_is_set:
             raise Exception("Only one conductor can be set for each winding!")
@@ -872,9 +883,9 @@ class VirtualWindingWindow:
                                   conductor1: Conductor, turns1: int,
                                   conductor2: Conductor, turns2: int,
                                   conductor3: Conductor, turns3: int,
-                                  isolation_primary_to_primary: float,
-                                  isolation_secondary_to_secondary: float,
-                                  isolation_primary_to_secondary: float):
+                                  insulation_primary_to_primary: float,
+                                  insulation_secondary_to_secondary: float,
+                                  insulation_primary_to_secondary: float):
         """
         Set a center tapped winding scheme.
 
@@ -884,14 +895,25 @@ class VirtualWindingWindow:
         :type conductor2: Conductor
         :param conductor3: set the conductor for winding 3
         :type conductor3: Conductor
-        :
+        :param insulation_primary_to_primary: primary to primary insulation in m
+        :type insulation_primary_to_primary: float
+        :param insulation_primary_to_secondary: primary to secondary insulation in m
+        :type insulation_primary_to_secondary: float
+        :param insulation_secondary_to_secondary: secondary to secondary insulation in m
+        :type insulation_secondary_to_secondary: float
+        :param turns1: number of turns for winding 1
+        :type turns1: int
+        :param turns2: number of turns for winding 2
+        :type turns2: int
+        :param turns3: number of turns for winding 3
+        :type turns3: int
         """
         # TODO: center tapped is following line allowed to set winding insulation this way?
         # self.winding_insulation = define_center_tapped_insulation(primary_to_primary=2e-4,
         #                                                           secondary_to_secondary=2e-4,
         #                                                           primary_to_secondary=5e-4)
-        self.winding_insulation = [isolation_primary_to_primary, isolation_secondary_to_secondary,
-                                   isolation_primary_to_secondary]
+        self.winding_insulation = [insulation_primary_to_primary, insulation_secondary_to_secondary,
+                                   insulation_primary_to_secondary]
         self.winding_type = WindingType.CenterTappedGroup
         self.winding_scheme = None  # TODO: center tapped maybe add vertical or sth. like this
         self.windings = [conductor1, conductor2, conductor3]
