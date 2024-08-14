@@ -64,19 +64,28 @@ def create_background(background_tag, k_air, function_pro: FunctionPro, group_pr
     group_pro.add_regions({"air": background_tag})
 
 
-def create_core_and_air_gaps(core_tags, k_core, core_area, core_parts_losses, air_gaps_tag, k_air_gaps,
+def create_core_and_air_gaps(core_tags: list, k_core: float, core_area: list, core_parts_losses: list,
+                             air_gaps_tag, k_air_gaps: float,
                              function_pro: FunctionPro, group_pro: GroupPro):
     """
     Create core and air gaps configurations with associated thermal properties.
 
     :param core_tags: Tags identifying different parts of the core.
+    :type core_tags: list
     :param k_core: Thermal conductivity of the core.
+    :type k_core: float
     :param core_area: Areas of different core parts.
+    :type core_area: list
     :param core_parts_losses: losses in different core parts.
+    :type core_parts_losses: list
     :param air_gaps_tag: Tag identifying the air gaps.
+    :type air_gaps_tag:
     :param k_air_gaps: Thermal conductivity of the air gaps.
+    :type k_air_gaps: float
     :param function_pro: Object to manage function properties.
+    :type function_pro: FunctionPro
     :param group_pro: Object to manage group properties.
+    :type group_pro: GroupPro
     """
     # Initialize dictionaries for volumetric heat flux, thermal conductivity, and region
     q_vol = {}  # Dictionary to hold volumetric heat flux for each core part
@@ -149,15 +158,37 @@ def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, w
     group_pro.add_regions(regions)
 
 
-def create_post_operation(thermal_file_path, thermal_influx_file_path, thermal_material_file_path, sensor_points_file,
-                          core_file, insulation_file, winding_file, windings, core_parts, print_sensor_values,
-                          post_operation_pro: PostOperationPro, flag_insulation):
+def create_post_operation(thermal_file_path: str, thermal_influx_file_path: str, thermal_material_file_path: str,
+                          sensor_points_file: str, core_file: str, insulation_file: str, winding_file: str,
+                          windings: list, core_parts: list, print_sensor_values: bool,
+                          post_operation_pro: PostOperationPro, flag_insulation: bool):
     """
     Configure post-operation properties for a thermal simulation.
 
-    :param ...: (Include detailed description for each parameter as needed)
+    :param thermal_file_path: Thermal file path
+    :type thermal_file_path: str
+    :param thermal_influx_file_path: Thermal influx file path
+    :type thermal_influx_file_path: str
+    :param thermal_material_file_path: Thermal material file path
+    :type thermal_material_file_path: str
+    :param sensor_points_file: Sensor points file name
+    :type sensor_points_file: str
+    :param core_file: Core file name
+    :type core_file: str
+    :param insulation_file: Insulation file name
+    :type insulation_file: str
+    :param winding_file: Winding file name
+    :type winding_file: str
+    :param windings: Windings in a list
+    :type windings: list
+    :param core_parts: Core parts in a list
+    :type core_parts: list
+    :param print_sensor_values: True to print the sensor values
+    :type print_sensor_values: bool
     :param post_operation_pro: Object to manage post-operation properties.
+    :type post_operation_pro: PostOperationPro
     :param flag_insulation: Flag indicating the presence of insulation.
+    :type flag_insulation: bool
     """
     # Add pos file generation
     post_operation_pro.add_on_elements_of_statement("T", "Total", thermal_file_path)
@@ -323,6 +354,8 @@ def post_operation(case_volume: float, output_file: str, sensor_points_file: str
     :type insulation_file: str
     :param winding_file: filepath with all the mesh-cell temperatures of the winding
     :type winding_file: str
+    :param flag_insulation: True to consider the insulation for the thermal simulation
+    :type flag_insulation: bool
     """
     # Extract sensor_points
     sensor_point_values = None
@@ -444,8 +477,7 @@ def run_thermal(file_data: FileData, tags_dict: Dict, thermal_conductivity_dict:
     :param print_sensor_values:
     :param silent: True for silent mode (no terminal outputs)
     :param case_volume: volume of the case in m³
-
-    :return: -
+    :param bool flag_insulation: True to add the insulation to the thermal simulation
     """
     # Get paths
     onelab_folder_path = file_data.onelab_folder_path

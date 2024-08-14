@@ -511,12 +511,7 @@ def pm_core_inner_diameter_calculator(inner_core_diameter: float, hole_diameter:
 
 
 def install_pyfemm_if_missing() -> None:
-    """
-    Installs femm-software pip package in case of running on Windows machine. Windows users only.
-
-    :return: None
-
-    """
+    """Installs femm-software pip package in case of running on Windows machine. Windows users only."""
     required = {'pyfemm'}
     installed = {pkg.key for pkg in pkg_resources.working_set}
     missing = required - installed
@@ -527,92 +522,6 @@ def install_pyfemm_if_missing() -> None:
         python = sys.executable
         subprocess.check_call([python, '-m', 'pip', 'install', *missing], stdout=subprocess.DEVNULL)
         print("'pyfemm' is now installed!")
-
-
-def inner_points(a, b, input_points):
-    """
-    Return the input points that have a common coordinate as the two interval borders a and b.
-
-    Use case: Air gap generation. Helps to generate the core structure form class AirGap.
-
-    :param a: first point
-    :param b: second point
-    :param input_points:
-
-    :return:
-
-    """
-    [min_point, max_point] = [None, None]
-    output = input_points
-    dim = None
-    # Find equal dimension
-    for i in range(0, 3):
-        if a[i] == b[i] and a[i] != 0:
-            dim = i
-    if dim is None:
-        raise Exception("Given points do not have a common dimension")
-    n = 0
-    while n < output.shape[0]:
-        if a[dim] != output[n, dim]:
-            output = np.delete(output, n, 0)
-        else:
-            n += 1
-    if output.shape[0] == 0:
-        raise Exception("Not implemented Error: No air gaps between interval borders")
-    if output.shape[0] % 2 == 1:
-        raise Exception("Odd number of input points")
-    if dim == 2:
-        raise Exception("Not implemented Error: Only 2D is implemented")
-    dim2 = (dim + 1) % 2
-    if output.shape[0] >= 2:
-        argmax = np.argmax(output[:, dim2])
-        output = np.delete(output, argmax, 0)
-        argmin = np.argmin(output[:, dim2])
-        output = np.delete(output, argmin, 0)
-        # if output.shape[0] == 0:
-        # print("Only one air gap in this leg. No island needed.")
-    return output
-
-# TODO Is this function even used?
-def min_max_inner_points(a, b, input_points):
-    """
-    Return the input points that have a common coordinate and the minimum distance from the interval borders.
-
-    :param a: first point
-    :param b: second point
-    :param input_points:
-
-    :return:
-
-    """
-    [min_point, max_point] = [None, None]
-    buffer = input_points
-    dim = None
-    # Find equal dimension
-    for i in range(0, 3):
-        if a[i] == b[i] and a[i] != 0:
-            dim = i
-    if dim is None:
-        raise Exception("Given points do not have a common dimension")
-    n = 0
-    while n < buffer.shape[0]:
-        if a[dim] != buffer[n, dim]:
-            buffer = np.delete(buffer, n, 0)
-        else:
-            n += 1
-    if buffer.shape[0] == 0:
-        print("No air gaps between interval borders")
-    if buffer.shape[0] % 2 == 1:
-        raise Exception("Odd number of input points")
-    if dim == 2:
-        raise Exception("Not implemented Error: Only 2D is implemented")
-    dim2 = (dim + 1) % 2
-    if buffer.shape[0] >= 2:
-        argmax = np.argmax(buffer[:, 1])
-        max_point = buffer[argmax]
-        argmin = np.argmin(buffer[:, 1])
-        min_point = buffer[argmin]
-    return [min_point, max_point]
 
 def litz_calculate_number_strands(n_layers: int) -> int:
     """
@@ -860,9 +769,6 @@ def compare_fft_list(input_data_list: list, sample_factor: int = 1000, mode: str
     :type f0: float
     :param sample_factor: samle factor, defaults to 1000
     :type sample_factor: int
-
-    :return: plot
-
     """
     out = []
     for count, _ in enumerate(input_data_list):
@@ -895,8 +801,6 @@ def store_as_npy_in_directory(dir_path: str, file_name: str, numpy_data) -> None
     :type file_name: str
     :param numpy_data: numpy array
     :type numpy_data:
-    :return: None
-    :rtype: None
     """
     if not os.path.isdir(dir_path):
         os.mkdir(dir_path)
@@ -921,11 +825,12 @@ def get_dicts_with_keys_and_values(data, **kwargs) -> Dict:
     return valid_data
 
 
-def get_dict_with_unique_keys(data, *keys) -> Dict:
+def get_dict_with_unique_keys(data: list[dict], *keys) -> Dict:
     """
     Return a dictionary out of a list of dictionaries which contains the given key(s).
 
     :param data: list of dicts
+    :type data: list[dict]
     :param keys: keys in dicts
     :return:
     """
@@ -1502,12 +1407,14 @@ def visualize_flux_linkages(flux_linkages: List, silent: bool) -> None:
         print(string_to_print)
 
 
-def visualize_self_inductances(self_inductances: List, flux_linkages, silent: bool) -> None:
+def visualize_self_inductances(self_inductances: List | np.array, flux_linkages: list | np.array, silent: bool) -> None:
     """
     Print the self-inductances to the terminal (or file-) output.
 
-    :param self_inductances: self-inductances in a list
-    :type self_inductances: List
+    :param self_inductances: self-inductances in H in a list or numpy array
+    :type self_inductances: List | np.array
+    :param flux_linkages: flux linkages
+    :type flux_linkages: list | np.array
     :param silent: True for no output
     :type silent: bool
     """
@@ -1633,12 +1540,13 @@ def visualize_mutual_inductances(self_inductances: List, coupling_factors: List,
         print(string_to_print)
 
 
-def visualize_inductance_matrix_coefficients(inductance_matrix, silent: bool):
+def visualize_inductance_matrix_coefficients(inductance_matrix: np.array, silent: bool):
     """Visualize the inductance matrix coefficients in the terminal.
 
     e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
 
     :param inductance_matrix: inductance matrix of transformer
+    :type inductance_matrix: np.array
     :param silent: False to show the terminal output
     :type silent: bool
     """
@@ -1737,12 +1645,14 @@ def calculate_rms(squared_integral: float, time_steps: List[float]) -> float:
     return np.sqrt(mean_square)  # Take the square root to get RMS value
 
 
-def convert_air_gap_corner_points_to_center_and_distance(corner_points):
+def convert_air_gap_corner_points_to_center_and_distance(corner_points: list) -> list:
     """
     Convert the list-defined air_gap_corner_points from a "two_d_axi" object to center points and lengths as to separate lists.
 
     :param corner_points: in usage of magnetic component -> "self.two_d_axi.p_air_gaps.tolist()"
-    :return:
+    :type corner_points: list
+    :returns: centers and heights of the air gaps
+    :rtype: list
     """
     centers = []
     heights = []

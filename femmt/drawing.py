@@ -77,11 +77,7 @@ class TwoDaxiSymmetric:
             self.logger.info(text)
 
     def draw_outer(self):
-        """
-        Draws the outer points of the main core (single core).
-
-        :return:
-        """
+        """Draws the outer points of the main core (single core)."""
         # Outer Core
         # (A_zyl=2pi*r*h => h=0.5r=0.25core_w <=> ensure A_zyl=A_core on the tiniest point)
         self.p_outer[0][:] = [-self.r_outer, -self.core.core_h / 2, 0, self.mesh_data.c_core]

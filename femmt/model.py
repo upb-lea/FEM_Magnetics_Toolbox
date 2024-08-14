@@ -786,6 +786,8 @@ class VirtualWindingWindow:
         :type foil_vertical_placing_strategy: FoilVerticalDistribution, optional
         :param foil_horizontal_placing_strategy: foil_horizontal_placing_strategy defines the way the rectangular foil Horizontal conductors are placing in vww
         :type foil_horizontal_placing_strategy: foil_horizontal_placing_strategy, optional
+        :param alignment: List of alignments: ToEdges, CenterOnVerticalAxis, CenterOnHorizontalAxis
+        :type alignment: Optional[Align]
         """
         self.winding_type = WindingType.Single
         self.winding_scheme = winding_scheme
@@ -1003,6 +1005,14 @@ class WindingWindow:
         :type vertical_split_factor: float, optional
         :return: Tuple containing the virtual winding windows
         :rtype: Tuple[VirtualWindingWindow]
+        :param top_bobbin: top bobbin thickness in m
+        :type top_bobbin: float
+        :param bot_bobbin: bottom bobbin thickness in m
+        :type bot_bobbin: float
+        :param left_bobbin: left bobbin thickness in m
+        :type left_bobbin: float
+        :param right_bobbin: right bobbin thickness in m
+        :type right_bobbin: float
         """
         self.split_type = split_type
 

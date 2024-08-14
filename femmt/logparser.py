@@ -169,10 +169,11 @@ class FEMMTLogParser:
         return log_files
 
     @staticmethod
-    def parse_complex(data):
+    def parse_complex(data: list):
         """Return complex number if data is list with two elements.
 
         :param data: List of 2 values or single value
+        :type data: list
         :return: Either float or complex value
         """
         if isinstance(data, list):

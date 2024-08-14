@@ -85,8 +85,6 @@ class IntegratedTransformerOptimization:
 
         :param valid_design_list:
         :type valid_design_list: List[ItoSingleResultFile]
-        :return: Plot
-        :rtype: None
         """
         volume_list = []
         core_hyst_loss_list = []
@@ -106,11 +104,12 @@ class IntegratedTransformerOptimization:
 
     # Very slow for many data points.  Fastest for many costs, most readable
     @staticmethod
-    def is_pareto_efficient_dumb(costs):
+    def is_pareto_efficient_dumb(costs: np.array) -> np.array:
         """
         Find the pareto-efficient points.
 
         :param costs: An (n_points, n_costs) array
+        :type costs: np.array
         :return: A (n_points, ) boolean array, indicating whether each point is Pareto efficient
         """
         is_efficient = np.ones(costs.shape[0], dtype=bool)
@@ -500,12 +499,17 @@ class IntegratedTransformerOptimization:
                 return valid_design_list
 
             @staticmethod
-            def t2_calculate_reluctance_matrix(t2_inductance_matrix, t2_winding_matrix, t2_winding_matrix_transpose):
+            def t2_calculate_reluctance_matrix(t2_inductance_matrix: np.array, t2_winding_matrix: np.array, t2_winding_matrix_transpose: np.array):
                 """
                 Calculate the inductance matrix out of reluctance matrix and winding matrix.
 
                 :param t2_inductance_matrix: matrix of transformer inductance
+                :type t2_inductance_matrix: np.array
                 :param t2_winding_matrix: matrix of transformer windings
+                :type t2_winding_matrix: np.array
+                :param t2_winding_matrix_transpose: transponsed winding matrix
+                :type t2_winding_matrix_transpose: np.array
+
                 :return: reluctance matrix
 
                 winding matrix e.g.
@@ -605,7 +609,7 @@ class IntegratedTransformerOptimization:
             ##############################
 
             @staticmethod
-            def objective(trial, config: ItoSingleInputConfig,
+            def objective(trial: optuna.Trial, config: ItoSingleInputConfig,
                           target_and_fixed_parameters: ItoTargetAndFixedParameters) -> Tuple:
                 """
                 Objective function to optimize.
@@ -618,6 +622,7 @@ class IntegratedTransformerOptimization:
 
 
                 :param trial: parameter suggesting by optuna
+                :type trial: optuna.Trial
                 :param config: input configuration file
                 :type config: ItoSingleInputConfig
                 :param target_and_fixed_parameters: target and fix parameters
@@ -1241,8 +1246,6 @@ class IntegratedTransformerOptimization:
 
             :param result_log_dict_list: list of result_log dicts
             :type result_log_dict_list: str
-            :return: Plot
-            :rtype: None
             """
             data_dict_list = []
 

@@ -1049,7 +1049,7 @@ class Mesh:
 
     def generate_hybrid_mesh(self, color_scheme: Dict = ff.colors_femmt_default, colors_geometry: Dict = ff.colors_geometry_femmt_default,
                              visualize_before: bool = False,
-                             save_png: bool = True, refine=0, alternative_error=0):
+                             save_png: bool = True, refine=0, alternative_error=0) -> None:
         """
         Generate the hybird mesh.
 
@@ -1059,8 +1059,6 @@ class Mesh:
             - adaptive refinement [future TODO]
                 - with the help of mesh-size-fields/background meshes
                 - with an appropriate local error metric
-
-        :return:
         """
         self.femmt_print("Hybrid Mesh Generation in Gmsh")
         # Clear gmsh

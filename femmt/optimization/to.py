@@ -100,13 +100,14 @@ class TransformerOptimization:
         return target_and_fix_parameters
 
     @staticmethod
-    def objective(trial, config: ToSingleInputConfig,
+    def objective(trial: int, config: ToSingleInputConfig,
                   target_and_fixed_parameters: ToTargetAndFixedParameters,
                   number_objectives: int, show_geometries: bool = False, process_number: int = 1):
         """
         Objective for optuna optimization.
 
         :param trial: optuna trail objective. Used by optuna
+        :type trial: int
         :param config: simulation configuration file
         :type config: ToSingleInputConfig
         :param target_and_fixed_parameters: contains pre-calculated values

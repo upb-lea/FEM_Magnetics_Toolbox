@@ -738,12 +738,14 @@ class MainWindow(QMainWindow):
 
     #  **************************** Automated design tab ************************************************************  #
 
-    def plot_volume_loss(self, data_matrix, matplotlib_widget):
+    def plot_volume_loss(self, data_matrix, matplotlib_widget: MatplotlibWidget):
         """
         Plot estimated normalised volume vs loss graph from reluctance model results.
 
         :param data_matrix: Matrix containing the design parameters
         :type data_matrix: array
+        :param matplotlib_widget: Widget
+        :type matplotlib_widget: MatplotlibWidget
         """
         # Clear the previous plot
         matplotlib_widget.axis.clear()
@@ -758,7 +760,7 @@ class MainWindow(QMainWindow):
         # Refresh the canvas
         matplotlib_widget.canvas.draw()
 
-    def plot_2d(self, matplotlib_widget, x_value: list, y_value: list, x_label: str, y_label: str, title: str,
+    def plot_2d(self, matplotlib_widget: MatplotlibWidget, x_value: list, y_value: list, x_label: str, y_label: str, title: str,
                 plot_color: str,
                 z_value: list = None,
                 z_label: str = None, inductance_value: list = None, annotations: list = None):
@@ -785,6 +787,8 @@ class MainWindow(QMainWindow):
         :type annotations: list
         :param plot_color: Color of the plot (the colors are based on 'fmt.colors_femmt_default')
         :type annotations: str
+        :param matplotlib_widget: Matplotlib widget
+        :type matplotlib_widget: MatplotlibWidget
         """
         if annotations is None:
             names = [str(x) for x in list(range(len(x_value)))]
@@ -856,12 +860,13 @@ class MainWindow(QMainWindow):
             annot.get_bbox_patch().set_alpha(0.4)
 
     @handle_errors
-    def automated_design_func(self, matplotlib_widget):
+    def automated_design_func(self, matplotlib_widget: MatplotlibWidget):
         """Create to accept input parameters from the definitions tab, to create matrix with all input combinations.
 
         A call is being made to the reluctance model to filter out the cases for FEM simulation.
 
         :param matplotlib_widget: To plot volume vs loss in reluctance models tab
+        :type matplotlib_widget: MatplotlibWidget
         """
         # ########################################   {DESIGN PARAMETERS}   #################################################
         # Hide the progressBar if it exists.
@@ -1068,11 +1073,12 @@ class MainWindow(QMainWindow):
             raise RuntimeError(f"Error during simulation: {str(e)}") from e
 
     @handle_errors
-    def automated_design_fem_sim(self, matplotlib_widget):
+    def automated_design_fem_sim(self, matplotlib_widget: MatplotlibWidget):
         """
         Run the fem simulations of the filtered cases from reluctance models tab. Plot the volume vs loss in FEM simulations tab.
 
         :param matplotlib_widget: To plot volume vs loss in FEM simulations tab
+        :type matplotlib_widget: MatplotlibWidget
         """
         # ##########################################   {FEM_SIMULATION}   ##################################################
         try:
@@ -1145,11 +1151,12 @@ class MainWindow(QMainWindow):
         # self.progressBar.hide()
 
     @handle_errors
-    def load_designs(self, matplotlib_widget):
+    def load_designs(self, matplotlib_widget: MatplotlibWidget):
         """
          Plot the volume vs loss from the already run files of FEM simulations from the directory path, in the Load(results) tab.
 
         :param matplotlib_widget: To plot volume vs loss in the Load(results) tab
+        :type matplotlib_widget: MatplotlibWidget
         """
         try:
             # hide the progressBar.
@@ -1433,12 +1440,7 @@ class MainWindow(QMainWindow):
         self.aut_litz2_data_listWidget.selectAll()
 
     def aut_initialize_controls(self) -> None:
-        """
-        Initialize the combo boxes with pre-defined values.
-
-        :return: None
-        :rtype: None
-        """
+        """Initialize the combo boxes with pre-defined values."""
         aut_simulation_type_options = [self.translation_dict['inductor']]
         aut_winding_material_options = [key for key in fmt.wire_material_database()]
         aut_winding_type_options = [self.translation_dict['litz'], self.translation_dict['solid']]
@@ -1529,8 +1531,6 @@ class MainWindow(QMainWindow):
 
         :param implicit_type_from_combo_box: input type to implicit
         :type implicit_type_from_combo_box: str
-        :return: None
-        :rtype: None
         """
         if implicit_type_from_combo_box == self.translation_dict['implicit_litz_radius']:
             self.aut_winding1_strands_lineEdit.setEnabled(True)
@@ -1554,8 +1554,6 @@ class MainWindow(QMainWindow):
 
         :param wire_type_from_combot_box: wire type
         :type wire_type_from_combot_box: str
-        :return: None
-        :rtype: None
         """
         self.aut_winding1_change_litz_implicit(self.aut_winding1_implicit_litz_comboBox.currentText())
         if wire_type_from_combot_box == self.translation_dict['litz']:
@@ -1583,8 +1581,6 @@ class MainWindow(QMainWindow):
 
         :param simulation_type_from_combo_box:
         :type simulation_type_from_combo_box: str
-        :return: None
-        :rtype: None
         """
         if simulation_type_from_combo_box == self.translation_dict['inductor']:
             self.aut_winding2_enable(False)
@@ -1603,8 +1599,6 @@ class MainWindow(QMainWindow):
 
         :param status: True / False
         :type status: bool
-        :return: None
-        :rtype: None
         """
         # set winding definitions of winding 2 (enable and visible)
         self.aut_winding2_material_comboBox.setEnabled(status)
@@ -1642,14 +1636,19 @@ class MainWindow(QMainWindow):
 
     #  **************************** Database tab ********************************************************************  #
 
-    def datupdateraph1(self, matplotlib_widget1, matplotlib_widget2, matplotlib_widget3, matplotlib_widget4):
+    def datupdateraph1(self, matplotlib_widget1: MatplotlibWidget, matplotlib_widget2: MatplotlibWidget, matplotlib_widget3: MatplotlibWidget,
+                       matplotlib_widget4: MatplotlibWidget):
         """
         Datasheet-datasheet plot.
 
         :param matplotlib_widget1: for the first plot of relative power loss vs B
+        :type matplotlib_widget1: MatplotlibWidget
         :param matplotlib_widget2: for the second plot of relative power loss vs temperature
+        :type matplotlib_widget2: MatplotlibWidget
         :param matplotlib_widget3: for the third plot of relative power loss vs frequency
+        :type matplotlib_widget3: MatplotlibWidget
         :param matplotlib_widget4: for the fourth plot of B vs H
+        :type matplotlib_widget4: MatplotlibWidget
         """
         # Hide the progressBar if it exists.
         try:
@@ -1725,12 +1724,14 @@ class MainWindow(QMainWindow):
         # Datasheet-Datasheet is finished
         self.statusBar().showMessage('Datasheet-Datasheet completed')
 
-    def datupdateraph2(self, matplotlib_widget1, matplotlib_widget2):
+    def datupdateraph2(self, matplotlib_widget1: MatplotlibWidget, matplotlib_widget2: MatplotlibWidget):
         """
         Measurement-Measurement plot.
 
         :param matplotlib_widget1: Fot the first plot of uR/u0 vs B
+        :type matplotlib_widget1: MatplotlibWidget
         :param matplotlib_widget2: for the second plot of uR/u0 vs B
+        :type matplotlib_widget2: MatplotlibWidget
         """
         # Hide the progressBar if it exists.
         try:
@@ -1804,10 +1805,11 @@ class MainWindow(QMainWindow):
         # Measurement-Measurement is finished
         self.statusBar().showMessage('Measurement-Measurement completed')
 
-    def datupdateraph3(self, matplotlib_widget):
+    def datupdateraph3(self, matplotlib_widget: MatplotlibWidget):
         """Datasheet-Measurement plot.
 
         :param matplotlib_widget: To plot relative power loss vs B
+        :type matplotlib_widget: MatplotlibWidget
         """
         # Hide the progressBar if it exists.
         try:
@@ -2249,12 +2251,7 @@ class MainWindow(QMainWindow):
     #  **************************** Manual design tab initializations ***********************************************  #
 
     def md_initialize_controls(self) -> None:
-        """
-        Initialize the combo boxes with pre-defined values.
-
-        :return: None
-        :rtype: None
-        """
+        """Initialize the combo boxes with pre-defined values."""
         md_simulation_type_options = [self.translation_dict['inductor'], self.translation_dict['transformer']]
         # md_core_material_options = ['N95', 'N49', 'N87']
         # List all materials from database
@@ -2341,8 +2338,6 @@ class MainWindow(QMainWindow):
 
         :param simulation_type_from_combo_box:
         :type simulation_type_from_combo_box: str
-        :return: None
-        :rtype: None
         """
         if simulation_type_from_combo_box == self.translation_dict['inductor']:
             self.md_winding2_enable(False)
@@ -2369,8 +2364,6 @@ class MainWindow(QMainWindow):
 
         :param status: True / False
         :type status: bool
-        :return: None
-        :rtype: None
         """
         # set winding definitions of winding 2 (enable and visible)
         self.md_winding2_material_comboBox.setEnabled(status)
@@ -2412,12 +2405,7 @@ class MainWindow(QMainWindow):
         self.md_isolation_s2p_label.setVisible(status)
 
     def md_change_winding_scheme(self) -> None:
-        """
-        Update the visibility of winding scheme-related controls based on the selected winding scheme and simulation type.
-
-        :return: None
-        :rtype: None
-        """
+        """Update the visibility of winding scheme-related controls based on the selected winding scheme and simulation type."""
         # Handle Winding 1
         if self.md_winding1_scheme_comboBox.currentText() in [self.translation_dict["hexa"], self.translation_dict["SquareFullWidth"]]:
             self.md_scheme_enable(False, 1)
@@ -2441,8 +2429,6 @@ class MainWindow(QMainWindow):
         :param winding_number: 1 and 2
         :type status: bool
         :type winding_number: int
-        :return: None
-        :rtype: None
         """
         if winding_number == 1:
             # Set visibility for schemes in winding 1 controls
@@ -2617,8 +2603,6 @@ class MainWindow(QMainWindow):
 
         :param implicit_type_from_combo_box: input type to implicit
         :type implicit_type_from_combo_box: str
-        :return: None
-        :rtype: None
         """
         if implicit_type_from_combo_box == self.translation_dict['implicit_litz_radius']:
             self.md_winding1_strands_lineEdit.setEnabled(True)
@@ -2642,8 +2626,6 @@ class MainWindow(QMainWindow):
 
         :param wire_type_from_combot_box: wire type
         :type wire_type_from_combot_box: str
-        :return: None
-        :rtype: None
         """
         self.md_winding1_change_litz_implicit(self.md_winding1_implicit_litz_comboBox.currentText())
         if wire_type_from_combot_box == self.translation_dict['litz']:
@@ -2695,8 +2677,6 @@ class MainWindow(QMainWindow):
 
         :param implicit_type_from_combo_box: input type to implicit
         :type implicit_type_from_combo_box: str
-        :return: None
-        :rtype: None
         """
         if implicit_type_from_combo_box == self.translation_dict['implicit_litz_radius']:
             self.md_winding2_strands_lineEdit.setEnabled(True)
@@ -2720,8 +2700,6 @@ class MainWindow(QMainWindow):
 
         :param wire_type_from_combot_box: wire type
         :type wire_type_from_combot_box: str
-        :return: None
-        :rtype: None
         """
         self.md_winding2_change_litz_implicit(self.md_winding2_implicit_litz_comboBox.currentText())
         if wire_type_from_combot_box == self.translation_dict['litz']:
@@ -2747,8 +2725,6 @@ class MainWindow(QMainWindow):
 
         :param air_gap_count_from_combo_box: Number of editable air gaps
         :type air_gap_count_from_combo_box: str
-        :return: None
-        :rtype: None
         """
         self.md_air_gap_placement_method_comboBox.setEnabled(False)
         self.md_air_gap_1_enable(False)
@@ -2774,8 +2750,6 @@ class MainWindow(QMainWindow):
 
         :param air_gap_placement_from_combo_box: Air gap placement method
         :type air_gap_placement_from_combo_box: str
-        :return: None
-        :rtype: None
         """
         if air_gap_placement_from_combo_box == self.translation_dict['manually']:
             md_air_gap_placement_text = 'Position'
@@ -2793,8 +2767,6 @@ class MainWindow(QMainWindow):
 
         :param status: True for enable fields, False for disable fields
         :type status: bool
-        :return: None
-        :rtype: None
         """
         self.md_air_gap_1_length_lineEdit.setEnabled(status)
         self.md_air_gap_1_position_lineEdit.setEnabled(status)
@@ -2809,8 +2781,6 @@ class MainWindow(QMainWindow):
 
         :param status: True for enable fields, False for disable fields
         :type status: bool
-        :return: None
-        :rtype: None
         """
         self.md_air_gap_2_length_lineEdit.setEnabled(status)
         self.md_air_gap_2_position_lineEdit.setEnabled(status)
@@ -2825,8 +2795,6 @@ class MainWindow(QMainWindow):
 
         :param status: True for enable fields, False for disable fields
         :type status: bool
-        :return: None
-        :rtype: None
         """
         self.md_air_gap_3_length_lineEdit.setEnabled(status)
         self.md_air_gap_3_position_lineEdit.setEnabled(status)
@@ -2841,8 +2809,6 @@ class MainWindow(QMainWindow):
 
         :param status: True for enable fields, False for disable fields
         :type status: bool
-        :return: None
-        :rtype: None
         """
         self.md_air_gap_4_length_lineEdit.setEnabled(status)
         self.md_air_gap_4_position_lineEdit.setEnabled(status)
@@ -2857,8 +2823,6 @@ class MainWindow(QMainWindow):
 
         :param status: True for enable fields, False for disable fields
         :type status: bool
-        :return: None
-        :rtype: None
         """
         self.md_air_gap_5_length_lineEdit.setEnabled(status)
         self.md_air_gap_5_position_lineEdit.setEnabled(status)
@@ -2906,9 +2870,6 @@ class MainWindow(QMainWindow):
         Generate visual graphics for the input signals.
 
         Generates a graphic. This graphic is read and inserted to the gui.
-
-        :return: None
-        :rtype: None
         """
         winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, \
             winding2_phi_rad_list = self.md_get_frequency_lists()
@@ -3450,12 +3411,7 @@ class MainWindow(QMainWindow):
 
     @handle_errors
     def md_action_run_simulation(self, *args, **kwargs) -> None:
-        """
-        Read all input parameters from the fields. Run the simulation in dependence of input fields.
-
-        :return: None
-        :rtype: None
-        """
+        """Read all input parameters from the fields. Run the simulation in dependence of input fields."""
         # Try to acquire the mutex. If it's already locked by another operation, show a message and return.
         if not self.mutex.tryLock():
             # self.statusBar().showMessage('Another operation is in progress. Please wait...')

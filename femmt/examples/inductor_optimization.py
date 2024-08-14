@@ -28,7 +28,7 @@ def load_from_single_file(working_directory: str, file_name: str):
     """
     Load from a single FEM simulation case for checking the result in detail.
 
-    param working_directory: Working directory where all the simulated cases have been saved
+    :param working_directory: Working directory where all the simulated cases have been saved
     from the automated design
     :type working_directory: str
     :param file_name: Log file which needs to be simulated (e.g. 'case1344.json')
@@ -67,7 +67,7 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
     """
     Visualize data in 2d plot with popover next to mouse position.
 
-    param x_value: Data points for x-axis
+    :param x_value: Data points for x-axis
     :type x_value: list
     :param y_value: Data points for y-axis
     :type y_value: list
@@ -186,7 +186,7 @@ def plot_3d(x_value: list, y_value: list, z_value: list, x_label: str, y_label: 
     """
     Visualize data in 3d plot with popover next to mouse position.
 
-    param x_value: Data points for x-axis
+    :param x_value: Data points for x-axis
     :type x_value: list
     :param y_value: Data points for y-axis
     :type y_value: list
@@ -312,7 +312,7 @@ def filter_after_fem(inductance: list, total_loss: list, total_volume: list, tot
     """
     Filter the FEM simulated data based on the inductance tolerance.
 
-    param inductance: Inductance read from FEM simulation cases[in Henry]
+    :param inductance: Inductance read from FEM simulation cases[in Henry]
     :type inductance: list
     :param total_loss: total_loss (hysteresis + winding) read from FEM simulation cases[in Watt]
     :type total_loss: list
@@ -1037,7 +1037,7 @@ class AutomatedDesign:
         """
         Add columns to the given matrix.
 
-        param data_matrix: Matrix containing the design parameters
+        :param data_matrix: Matrix containing the design parameters
         :type data_matrix: ndarray
         :param column_value: Column to be added
         :type column_value: ndarray

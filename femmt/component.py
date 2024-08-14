@@ -541,6 +541,8 @@ class MagneticComponent:
         :type color_scheme: Dict
         :param colors_geometry: definition for e.g. core is grey, winding is orange, ...
         :type colors_geometry: Dict
+        :param benchmark: Benchmark simulation (stop time). Defaults to False.
+        :type benchmark: bool
         """
         if self.core is None:
             raise Exception("A core class needs to be added to the magnetic component")
@@ -597,8 +599,6 @@ class MagneticComponent:
         Is called before a simulation.
         Loads the permittivity from the material database (measurement or datasheet) and calculates the
         resonance ratio = diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance
-
-        :return: None
         """
         if self.frequency != 0:
             if self.core.permittivity["datasource"] == "measurements" or self.core.permittivity[
@@ -1110,16 +1110,12 @@ class MagneticComponent:
         """
         Excites the electromagnetic problem in the time domain with specified current and time settings.
 
-        :param frequency: The frequency of the excitation in Hz.
-        :type frequency: float
         :param current_list: A nested list containing current values for each time step and winding.
         :type current_list: List[List[float]]
         :param time_list: A nested list containing the corresponding time values for each current value.
         :type time_list: List[float]
         :param number_of_periods: The total number of periods within the provided time period of simulation.
         :type number_of_periods: int
-        :param phase_deg_list: Current phases in degrees according to the current amplitudes (according to windings).
-        :type phase_deg_list: List
         :param ex_type: Excitation type. 'current' implemented only. Future use may include 'voltage' and 'current_density'.
         :type ex_type: str
         :param plot_interpolation: If True, plot the interpolation between the provided current values.
@@ -1266,9 +1262,10 @@ class MagneticComponent:
 
     def overwrite_conductors_with_air(self, physical_surfaces_to_overwrite: list):
         """
-        EXPERIMENTAL.
+        EXPERIMENTAL. Overwrite conductors with air. Danger. Use with care.
 
-        :return:
+        :param physical_surfaces_to_overwrite: List of physical surfaces to overwrite
+        :type physical_surfaces_to_overwrite: list
         """
         if True:
             with open(os.path.join(os.path.join(self.file_data.e_m_mesh_file)), "r") as mesh_file:
@@ -1285,7 +1282,8 @@ class MagneticComponent:
         """
         Overwrite conductors made of air with real conductors. Experimental. Danger, use with care.
 
-        :return:
+        :param physical_surfaces_to_overwrite: List of physical surfaces to overwrite
+        :type physical_surfaces_to_overwrite: list
         """
         if True:
             with open(os.path.join(os.path.join(self.file_data.e_m_mesh_file)), "r") as mesh_file:
@@ -1311,6 +1309,8 @@ class MagneticComponent:
         :type phi_deg: List[float]
         :param show_fem_simulation_results: Set to True to show the simulation results after the simulation has finished
         :type show_fem_simulation_results: bool
+        :param benchmark: Benchmark simulation (stop time). Defaults to False.
+        :type benchmark: bool
         """
         # negative currents are not allowed and lead to wrong simulation results. Check for this.
         # this message appears before meshing and before simulation
@@ -1369,20 +1369,20 @@ class MagneticComponent:
         """
         Start a time_domain  electromagnetic ONELAB simulation.
 
-        :param plot_interpolation:
-        :param freq: frequency to simulate
-        :type freq: float
-        :param current_period_vec: current to simulate
+        :param plot_interpolation: Plot interpolation for the used material between the given data from the material database
+        :type plot_interpolation: bool
+        :param current_period_vec: current to simulate in a vector for all windings.
+        :type current_period_vec: List[List[float]]
         :param time_period_vec: time list
+        :type time_period_vec: List[float]
         :param number_of_periods: periods (1, 2, 3,...)
-        :param phi_deg: phase angle in degree
-        :type phi_deg: List[float]
+        :type number_of_periods: int
         :param show_fem_simulation_results: Set to True to show the simulation results after the simulation has finished
         :type show_fem_simulation_results: bool
         :param show_rolling_average: set to True to show the dynamic average
         :type show_rolling_average: bool
         :param rolling_avg_window_size: how many data points used in each calculation of the average
-        :param benchmark: ....
+        :param benchmark: Benchmark simulation (stop time). Defaults to False.
         :type benchmark: bool
 
         """
@@ -1484,6 +1484,10 @@ class MagneticComponent:
         :param core_hyst_loss: List with hysteresis list. If given, the hysteresis losses in this function be
             overwritten in the result log.
         :type core_hyst_loss: List
+        :param excitation_meshing_type: MeshOnlyLowestFrequency / MeshOnlyHighestFrequency / MeshEachFrequency
+        :type excitation_meshing_type: ExcitationMeshingType
+        :param skin_mesh_factor: Define the fineness of the mesh
+        :type skin_mesh_factor: float
         """
         # negative currents are not allowed and lead to wrong simulation results. Check for this.
         # this message appears before meshing and before simulation
@@ -1884,17 +1888,18 @@ class MagneticComponent:
 
         return center_tapped_study_excitation
 
-    def stacked_core_center_tapped_study(self, center_tapped_study_excitation, number_primary_coil_turns: int = None,
-                                         non_sine_hysteresis_correction: bool = False):
+    def stacked_core_center_tapped_study(self, center_tapped_study_excitation: dict, number_primary_coil_turns: int = None,
+                                         non_sine_hysteresis_correction: bool = False) -> None:
         """
         Comprehensive component analysis for center tapped transformers with dedicated choke.
 
         :param non_sine_hysteresis_correction: True to enable the non-sinusoidal hysteresis correction factor
-        :param center_tapped_study_excitation:
+        :type non_sine_hysteresis_correction: bool
+        :param center_tapped_study_excitation: Dictionary with frequencies and currents
+        :type center_tapped_study_excitation: dict
         :param number_primary_coil_turns: number of primary coil turns. Needed due to a special trick to get the
             transformer losses without effect of the choke
         :type number_primary_coil_turns: int
-        :return:
         """
 
         def factor_triangular_hysteresis_loss_iGSE(D, alpha):
@@ -3019,7 +3024,7 @@ class MagneticComponent:
 
         return log
 
-    def log_coordinates_description(self):
+    def log_coordinates_description(self) -> None:
         """
         Log a coordinates-based geometry description.
 
@@ -3033,8 +3038,6 @@ class MagneticComponent:
         Following pairs of lists need to match each other in their order.
         - p_air_gap_center and distances_air_gap
         - p_cond_center and radius_cond
-
-        :return:
         """
         coordinates_dict = {
             "core_type": "",
@@ -3105,14 +3108,12 @@ class MagneticComponent:
             with open(self.file_data.material_log_path, "w+", encoding='utf-8') as outfile:
                 json.dump(material_dict, outfile, indent=2, ensure_ascii=False)
 
-    def log_material_properties(self):
+    def log_material_properties(self) -> None:
         """
         Log material properties.
 
         Read material properties from core_materials_temp.pro and write results to log_material.json.
         Reading the .pro files ensures that the real simulation input data is logged.
-
-        :return:
         """
         # only write the log of the material in case of a core_materials_temp.pro exists.
         # e.g. it does not exist in case of a fixed loss angle (custom material).
@@ -3674,7 +3675,6 @@ class MagneticComponent:
         Allow reference simulations with the 2D open source electromagnetic FEM tool FEMM.
 
         Helpful to validate changes (especially in the Prolog Code).
-
         Blockprop <--> Group Convention:
                                             Ferrite := 0
                                             Air := 1
@@ -3684,9 +3684,17 @@ class MagneticComponent:
                                             Winding n := n+1
 
         :param sign:
-        :param non_visualize:
-        :param freq:
-        :param current:
+        :type sign:
+        :param non_visualize: Open FEMM or not
+        :type non_visualize: int
+        :param freq: Frequency in Hz
+        :type freq: float
+        :param current: Current in A
+        :type current: float
+        :param mesh_size: Mesh size
+        :type mesh_size: float
+        :param mesh_size_conductor: Conductor mesh size
+        :type mesh_size_conductor: float
         """
         automesh = 1 if mesh_size == 0.0 else 0
         automesh_conductor = 1 if mesh_size_conductor == 0.0 else 0
