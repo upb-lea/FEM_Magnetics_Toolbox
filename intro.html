@@ -2110,18 +2110,42 @@ The conductor with the lowest winding number (starting from 0) will be treated a
 <span class="sig-name descname"><span class="pre">set_litz_round_conductor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conductor_radius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_strands</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strand_radius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conductor_arrangement</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ConductorArrangement</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.Conductor.set_litz_round_conductor" title="Link to this definition"></a></dt>
 <dd><p>Set a round conductor made of litz wire.</p>
 <p>Only 3 of the 4 parameters are needed. The other one needs to be none.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>conductor_radius</strong> (<em>Optional</em><em>[</em><em>float</em><em>]</em>) – conductor radius in m</p></li>
+<li><p><strong>number_strands</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em>) – number of strands inside the litz wire</p></li>
+<li><p><strong>strand_radius</strong> (<em>Optional</em><em>[</em><em>float</em><em>]</em>) – radius of a single strand in m</p></li>
+<li><p><strong>fill_factor</strong> (<em>Optional</em><em>[</em><em>float</em><em>]</em>) – fill factor of the litz wire</p></li>
+<li><p><strong>conductor_arrangement</strong> (<em>ConductorArrangement</em>) – conductor arrangement (Square, SquareFullWidth, Hexagonal)</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="femmt.Conductor.set_rectangular_conductor">
 <span class="sig-name descname"><span class="pre">set_rectangular_conductor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">thickness</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.Conductor.set_rectangular_conductor" title="Link to this definition"></a></dt>
 <dd><p>Set a rectangular, solid conductor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>thickness</strong> (<em>float</em>) – thickness of the rectangular conductor in m</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="femmt.Conductor.set_solid_round_conductor">
 <span class="sig-name descname"><span class="pre">set_solid_round_conductor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conductor_radius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conductor_arrangement</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ConductorArrangement</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.Conductor.set_solid_round_conductor" title="Link to this definition"></a></dt>
 <dd><p>Set a solid round conductor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>conductor_radius</strong> (<em>float</em>) – conductor radius in m</p></li>
+<li><p><strong>conductor_arrangement</strong> (<em>Optional</em><em>[</em><em>ConductorArrangement</em><em>]</em>) – conductor arrangement (Square / SquareFullWidth / Hexagonal)</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -2474,8 +2498,18 @@ is irrelevant.</p>
 <p>Contains different functions, used by the whole FEMMT functions.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="femmt.functions.axial_wavelength">
-<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">axial_wavelength</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">complex_permeability</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">complex_permittivity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conductivity</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.functions.axial_wavelength" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">axial_wavelength</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">complex_permeability</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">complex_permittivity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conductivity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.functions.axial_wavelength" title="Link to this definition"></a></dt>
 <dd><p>Calculate the axial wavelength for a given frequency.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>f</strong> (<em>float</em>) – Frequency in Hz</p></li>
+<li><p><strong>complex_permeability</strong> (<em>float</em>) – complex permeability</p></li>
+<li><p><strong>complex_permittivity</strong> (<em>float</em>) – complex permittivity</p></li>
+<li><p><strong>conductivity</strong> (<em>float</em>) – electrical conductivity</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -2754,14 +2788,28 @@ Switched-Mode Power Converter’ 2013.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="femmt.functions.create_folders">
-<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">create_folders</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#femmt.functions.create_folders" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">create_folders</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#femmt.functions.create_folders" title="Link to this definition"></a></dt>
 <dd><p>Create folders for every given folder path (if it does not exist).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>args</strong> (<em>str</em>) – Folder names</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="femmt.functions.create_open_circuit_excitation_sweep">
-<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">create_open_circuit_excitation_sweep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">I0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frequency</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.functions.create_open_circuit_excitation_sweep" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">create_open_circuit_excitation_sweep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">I0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frequency</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#femmt.functions.create_open_circuit_excitation_sweep" title="Link to this definition"></a></dt>
 <dd><p>Create a circuit excitation sweep with the other windings unloaded.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>I0</strong> (<em>float</em>) – current in A</p></li>
+<li><p><strong>n</strong> (<em>float</em>) – turns ratio n</p></li>
+<li><p><strong>frequency</strong> (<em>float</em>) – Frequency in Hz</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -2942,8 +2990,17 @@ Note: count 1 is DC component, count 2 is the fundamental frequency</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="femmt.functions.get_inductance_matrix">
-<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">get_inductance_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self_inductances</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mean_coupling_factors</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coupling_matrix</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.functions.get_inductance_matrix" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">get_inductance_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self_inductances</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mean_coupling_factors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coupling_matrix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">array</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.functions.get_inductance_matrix" title="Link to this definition"></a></dt>
 <dd><p>Get the inductance matrix from self_inductances, mean_coupling_factors and the coupling_matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>self_inductances</strong> (<em>np.array</em>) – matrix with self inductances in H</p></li>
+<li><p><strong>mean_coupling_factors</strong> (<em>np.array</em>) – mean coupling factors</p></li>
+<li><p><strong>coupling_matrix</strong> (<em>np.array</em>) – matrix with coupling factors</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -2959,8 +3016,17 @@ Note: count 1 is DC component, count 2 is the fundamental frequency</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="femmt.functions.get_number_of_turns_of_winding">
-<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">get_number_of_turns_of_winding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">winding_windows</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">windings</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">winding_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.functions.get_number_of_turns_of_winding" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">get_number_of_turns_of_winding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">winding_windows</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">windings</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">winding_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.functions.get_number_of_turns_of_winding" title="Link to this definition"></a></dt>
 <dd><p>Get the number of turns of a winding.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>winding_windows</strong> (<em>List</em>) – List of winding windows</p></li>
+<li><p><strong>windings</strong> (<em>List</em>) – List of windings</p></li>
+<li><p><strong>winding_number</strong> (<em>int</em>) – number of winding</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -3058,8 +3124,19 @@ Note: count 1 is DC component, count 2 is the fundamental frequency</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="femmt.functions.plot_fourier_coefficients">
-<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">plot_fourier_coefficients</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frequency_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amplitude_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi_rad_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure_directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.functions.plot_fourier_coefficients" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">plot_fourier_coefficients</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frequency_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amplitude_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi_rad_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure_directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.functions.plot_fourier_coefficients" title="Link to this definition"></a></dt>
 <dd><p>Plot fourier coefficients in a visual figure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>frequency_list</strong> (<em>List</em>) – List of frequencies in Hz</p></li>
+<li><p><strong>amplitude_list</strong> (<em>List</em>) – List of amplitudes in A</p></li>
+<li><p><strong>phi_rad_list</strong> (<em>List</em>) – List of angles in rad</p></li>
+<li><p><strong>sample_factor</strong> (<em>int</em>) – sample factor</p></li>
+<li><p><strong>figure_directory</strong> (<em>str</em>) – directory of figure to save</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -3084,8 +3161,17 @@ Note: count 1 is DC component, count 2 is the fundamental frequency</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="femmt.functions.point_is_in_rect">
-<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">point_is_in_rect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rect</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.functions.point_is_in_rect" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">point_is_in_rect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rect</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.functions.point_is_in_rect" title="Link to this definition"></a></dt>
 <dd><p>Check if a given x-y point is inside a rectangular field (e.g. inside a conductor).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>float</em>) – x coordinate of the point to check</p></li>
+<li><p><strong>y</strong> (<em>float</em>) – y coordinate of the point to check</p></li>
+<li><p><strong>rect</strong> (<em>List</em>) – rectangular</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -3156,8 +3242,16 @@ Note: count 1 is DC component, count 2 is the fundamental frequency</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="femmt.functions.visualize_inductance_matrix">
-<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">visualize_inductance_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inductance_matrix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">silent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.functions.visualize_inductance_matrix" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">visualize_inductance_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inductance_matrix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">silent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#femmt.functions.visualize_inductance_matrix" title="Link to this definition"></a></dt>
 <dd><p>Visualize the inductance matrix in the terminal.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>inductance_matrix</strong> (<em>np.array</em>) – inductance matrix in H</p></li>
+<li><p><strong>silent</strong> (<em>bool</em>) – True for no output</p></li>
+</ul>
+</dd>
+</dl>
 <p>e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)</p>
 </dd></dl>
 
@@ -3254,8 +3348,17 @@ Note: count 1 is DC component, count 2 is the fundamental frequency</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="femmt.functions.visualize_simulation_results">
-<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">visualize_simulation_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simulation_result_file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_figure_file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#femmt.functions.visualize_simulation_results" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">visualize_simulation_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simulation_result_file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_figure_file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_plot</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#femmt.functions.visualize_simulation_results" title="Link to this definition"></a></dt>
 <dd><p>Visualize the simulation results by a figure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>simulation_result_file_path</strong> (<em>str</em>) – file path for the simulation results</p></li>
+<li><p><strong>store_figure_file_path</strong> (<em>str</em>) – file path for the figure to store</p></li>
+<li><p><strong>show_plot</strong> (<em>bool</em>) – True to show the plot</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
