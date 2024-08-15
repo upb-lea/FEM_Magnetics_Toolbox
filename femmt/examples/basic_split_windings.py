@@ -20,7 +20,7 @@ def run_transformer_vvw_split_examples(num_windings: int, onelab_folder: str = N
         os.mkdir(example_results_folder)
 
     # Working directory can be set arbitrarily
-    working_directory_group_folder = os.path.join(example_results_folder, "basic_split_windings")
+    working_directory = os.path.join(example_results_folder, os.path.splitext(os.path.basename(__file__))[0])
     if not os.path.exists(working_directory_group_folder):
         os.mkdir(working_directory_group_folder)
 

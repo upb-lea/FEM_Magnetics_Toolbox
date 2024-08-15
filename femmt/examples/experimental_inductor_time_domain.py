@@ -21,7 +21,7 @@ def basic_example_inductor_time_domain(onelab_folder: str = None, show_visual_ou
         os.mkdir(example_results_folder)
 
     # Working directory can be set arbitrarily
-    working_directory = os.path.join(example_results_folder, "inductor")
+    working_directory = os.path.join(example_results_folder, os.path.splitext(os.path.basename(__file__))[0])
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 

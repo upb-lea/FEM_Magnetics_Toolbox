@@ -25,7 +25,7 @@ def basic_example_transformer_excitation_sweep(onelab_folder: str = None, show_v
     phases = [[0, 176], [0, 163]]
 
     # Example for a transformer with multiple virtual winding windows.
-    working_directory = os.path.join(example_results_folder, "transformer_sweep")
+    working_directory = os.path.join(example_results_folder, os.path.splitext(os.path.basename(__file__))[0])
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 

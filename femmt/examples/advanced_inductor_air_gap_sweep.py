@@ -25,7 +25,7 @@ def basic_example_sweep(onelab_folder: Optional[str] = None, show_visual_outputs
         os.mkdir(example_results_folder)
 
     # Working directory can be set arbitrarily
-    working_directory = os.path.join(example_results_folder, "advanced_inductor_air_gap_sweep")
+    working_directory = os.path.join(example_results_folder, os.path.splitext(os.path.basename(__file__))[0])
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 

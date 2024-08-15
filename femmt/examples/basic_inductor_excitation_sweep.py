@@ -25,7 +25,7 @@ def basic_example_inductor_excitation_sweep(onelab_folder: str = None, show_visu
     phases = [[0], [179]]
 
     # Working directory can be set arbitrarily
-    working_directory = os.path.join(example_results_folder, "basic_inductor_excitation_sweep")
+    working_directory = os.path.join(example_results_folder, os.path.splitext(os.path.basename(__file__))[0])
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
