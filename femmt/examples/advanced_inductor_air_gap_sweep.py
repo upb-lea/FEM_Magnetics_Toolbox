@@ -4,10 +4,6 @@ import femmt as fmt
 import os
 from typing import Optional
 
-if not os.path.exists(os.path.join(os.path.dirname(__file__), "sweep_examples")):
-    os.mkdir(os.path.join(os.path.dirname(__file__), "sweep_examples"))
-
-
 def basic_example_sweep(onelab_folder: Optional[str] = None, show_visual_outputs: bool = True, is_test: bool = False):
     """
     Advanced example to demonstrate an air gap sweep for an inductor.
@@ -24,14 +20,19 @@ def basic_example_sweep(onelab_folder: Optional[str] = None, show_visual_outputs
 
     working_directories = []
 
-    example_results_folder = os.path.join(os.path.dirname(__file__), "example_results", "sweep_examples")
+    example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
     if not os.path.exists(example_results_folder):
         os.mkdir(example_results_folder)
+
+    # Working directory can be set arbitrarily
+    working_directory = os.path.join(example_results_folder, os.path.splitext(os.path.basename(__file__))[0])
+    if not os.path.exists(working_directory):
+        os.mkdir(working_directory)
 
     for i, height in enumerate(air_gap_heights):
         # In order to save the results for every simulation the working directory is changed
         # Working directory can be set arbitrarily
-        directory = os.path.join(example_results_folder, f"air_gap_{i}")
+        directory = os.path.join(working_directory, f"air_gap_{i}")
         if not directory:
             os.mkdir(directory)
 
@@ -83,13 +84,13 @@ def basic_example_sweep(onelab_folder: Optional[str] = None, show_visual_outputs
     logs = fmt.FEMMTLogParser.get_log_files_from_working_directories(working_directories)
     log_parser = fmt.FEMMTLogParser(logs)
 
-    # In this case the self inductivity of winding1 will be analyzed
-    inductivities = []
+    # In this case the self inductance of winding1 will be analyzed
+    inductance_list = []
     for _, data in log_parser.data.items():
-        inductivities.append(data.sweeps[0].windings[0].flux_over_current)
+        inductance_list.append(data.sweeps[0].windings[0].flux_over_current)
 
     if not is_test:
-        plt.plot(air_gap_heights, inductivities, "ro")
+        plt.plot(air_gap_heights, inductance_list, "ro")
         plt.title("Air gap height sweep")
         plt.xlabel("air gap height")
         plt.ylabel("self inductance")

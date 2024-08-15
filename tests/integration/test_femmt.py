@@ -14,6 +14,7 @@ import femmt.examples.basic_transformer_center_tapped
 import femmt.examples.basic_transformer_stacked
 import femmt.examples.basic_transformer_stacked_center_tapped
 import femmt.examples.basic_inductor_foil_vertical
+import femmt.examples.basic_inductor_foil
 import femmt.examples.basic_transformer_n_winding
 import femmt.examples.advanced_inductor_sweep
 import femmt.examples.basic_transformer_5_windings
@@ -2614,6 +2615,19 @@ def test_basic_example_inductor_foil_vertical(temp_folder: pytest.fixture):
     femmt.examples.basic_inductor_foil_vertical.basic_example_inductor_foil_vertical(onelab_folder=onelab_folder,
                                                                                      show_visual_outputs=False,
                                                                                      is_test=True)
+
+
+def test_basic_example_inductor_foil(temp_folder: pytest.fixture):
+    """
+    Integration test to the basic example file.
+
+    :param temp_folder: temporary folder path and onelab filepath
+    :type temp_folder: pytest.fixture
+    """
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_inductor_foil.basic_example_inductor_foil(onelab_folder=onelab_folder,
+                                                                   show_visual_outputs=False,
+                                                                   is_test=True)
 
 
 def test_basic_example_transformer_n_winding(temp_folder: pytest.fixture):

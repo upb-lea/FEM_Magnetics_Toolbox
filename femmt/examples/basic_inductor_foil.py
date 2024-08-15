@@ -85,7 +85,7 @@ def basic_example_inductor_foil(onelab_folder: str = None, show_visual_outputs: 
         os.mkdir(example_results_folder)
 
     # Example for a transformer with multiple virtual winding windows.
-    working_directory = os.path.join(example_results_folder, "inductor_foil")
+    working_directory = os.path.join(example_results_folder, os.path.splitext(os.path.basename(__file__))[0])
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
@@ -208,7 +208,7 @@ def basic_example_inductor_foil(onelab_folder: str = None, show_visual_outputs: 
     for config in configurations:
         print(f"Running configuration: {config['description']}")
 
-        # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
+        # Set is_gui = True so FEMMT won't ask for the onelab path if no config is found.
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
                                     verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
 
@@ -254,9 +254,9 @@ def basic_example_inductor_foil(onelab_folder: str = None, show_visual_outputs: 
 
         geo.create_model(freq=100000, pre_visualize_geometry=show_visual_outputs, save_png=False)
 
-        # geo.single_simulation(freq=100000, current=[3], show_fem_simulation_results=show_visual_outputs)
+        geo.single_simulation(freq=100000, current=[3], show_fem_simulation_results=show_visual_outputs)
 
-        # example_thermal_simulation(show_visual_outputs, flag_insulation=True)
+        example_thermal_simulation(show_visual_outputs, flag_insulation=True)
 
 
 if __name__ == "__main__":

@@ -84,7 +84,7 @@ def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, s
     if not os.path.exists(example_results_folder):
         os.mkdir(example_results_folder)
 
-    working_directory = os.path.join(example_results_folder, "stacked-center-tapped-transformer")
+    working_directory = os.path.join(example_results_folder, os.path.splitext(os.path.basename(__file__))[0])
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 

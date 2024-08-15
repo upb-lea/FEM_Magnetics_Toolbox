@@ -25,7 +25,7 @@ def basic_example_inductor_excitation_sweep(onelab_folder: str = None, show_visu
     phases = [[0], [179]]
 
     # Working directory can be set arbitrarily
-    working_directory = os.path.join(example_results_folder, "inductor_sweep")
+    working_directory = os.path.join(example_results_folder, os.path.splitext(os.path.basename(__file__))[0])
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
@@ -54,8 +54,6 @@ def basic_example_inductor_excitation_sweep(onelab_folder: str = None, show_visu
                     permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
                     permittivity_measurement_setup="LEA_LK")
 
-    # mu_rel=3000, phi_mu_deg=10,
-    # sigma=0.5)
     geo.set_core(core)
 
     # 3. set air gap parameters
