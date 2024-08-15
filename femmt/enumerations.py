@@ -338,6 +338,7 @@ class MeasurementSetup(str, Enum):
     LEA_MTB_small_signal = "LEA_MTB_small_signal"
     LEA_LK = "LEA_LK"
     ManufacturerDatasheet = "datasheet"
+    MagNet = "MagNet"
 
 
 class Material(str, Enum):
@@ -346,6 +347,7 @@ class Material(str, Enum):
     N49 = "N49"
     N87 = "N87"
     N95 = "N95"
+    _3C95 = "3C95"
     PC200 = "PC200"
     custom_material = "custom_material"
     DMR96A = "DMR96A"
