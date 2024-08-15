@@ -86,7 +86,7 @@ def basic_example_inductor_foil_vertical(onelab_folder: str = None, show_visual_
         os.mkdir(example_results_folder)
 
     # Example for a transformer with multiple virtual winding windows.
-    working_directory = os.path.join(example_results_folder, "inductor_foil_vertical")
+    working_directory = os.path.join(example_results_folder, "basic_inductor_foil_vertical")
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 

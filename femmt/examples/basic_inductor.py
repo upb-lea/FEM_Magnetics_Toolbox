@@ -86,7 +86,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
         os.mkdir(example_results_folder)
 
     # Working directory can be set arbitrarily
-    working_directory = os.path.join(example_results_folder, "inductor")
+    working_directory = os.path.join(example_results_folder, "basic_inductor")
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
@@ -119,8 +119,6 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
                     permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
                     permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
 
-    # mu_rel=3000, phi_mu_deg=10,
-    # sigma=0.5)
     geo.set_core(core)
 
     # 3. set air gap parameters

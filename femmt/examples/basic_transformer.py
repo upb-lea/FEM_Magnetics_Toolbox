@@ -85,7 +85,7 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
         os.mkdir(example_results_folder)
 
     # Example for a transformer with multiple virtual winding windows.
-    working_directory = os.path.join(example_results_folder, "transformer")
+    working_directory = os.path.join(example_results_folder, "basic_transformer")
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 

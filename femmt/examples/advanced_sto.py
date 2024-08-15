@@ -10,6 +10,14 @@ import optuna.samplers
 # femmt libraries
 import femmt as fmt
 
+example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
+if not os.path.exists(example_results_folder):
+    os.mkdir(example_results_folder)
+
+# Working directory can be set arbitrarily
+working_directory = os.path.join(example_results_folder, "advanced_sto")
+if not os.path.exists(working_directory):
+    os.mkdir(working_directory)
 
 core_database = fmt.core_database()
 pq3230 = core_database["PQ 32/30"]
@@ -64,8 +72,7 @@ dab_transformer_config = fmt.StoSingleInputConfig(
     insulations=sto_insulations,
 
     # misc
-    working_directory=os.path.join(os.path.dirname(__file__), "example_results",
-                                   "optuna_stacked_transformer_optimization"),
+    working_directory=working_directory,
     fft_filter_value_factor=0.05,
     mesh_accuracy=0.8,
 
