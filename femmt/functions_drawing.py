@@ -11,19 +11,23 @@ from femmt import *
 from femmt.dtos import *
 
 
-def number_of_rows(row: ConductorRow):
+def number_of_rows(row: ConductorRow) -> int:
     """
     Get the number of rows needed to place some conductors in a given winding window.
 
-    :return:
+    :param row: ConductorRow DTO
+    :type row: ConductorRow
+    :return: number of rows
+    :rtype: int
     """
     number_rows = int(row.number_of_conds_per_winding / row.number_of_conds_per_row) + \
                      (row.number_of_conds_per_winding % row.number_of_conds_per_row > 0)
     return number_rows
 
 
-def single_row(number_of_conds_per_winding, window_width, winding_tag: WindingTag, conductor_type: ConductorType,
-               thickness=None, radius=None, cond_cond_isolation=None, additional_bobbin=0):
+def single_row(number_of_conds_per_winding: int, window_width: float, winding_tag: WindingTag, conductor_type: ConductorType,
+               thickness: Optional[float] = None, radius: Optional[float] = None, cond_cond_isolation=None,
+               additional_bobbin: float = 0) -> ConductorRow:
     """
     Define a full row of the defined conductor in the specified window width.
 
@@ -31,6 +35,23 @@ def single_row(number_of_conds_per_winding, window_width, winding_tag: WindingTa
     place horizontally next to each other, as possible.
     It is assumed, that the row fits into the winding window. A later control
     is needed.
+
+    :param number_of_conds_per_winding: number of conductors per winding
+    :type number_of_conds_per_winding: int
+    :param window_width: window width in meter
+    :type window_width: float
+    :param winding_tag: winding tag (Primary / Secondary / Tertiary)
+    :type winding_tag: WindingTag
+    :param conductor_type: conductor type (RoundSolid / RoundLitz / RectangularSolid)
+    :type conductor_type: ConductorType
+    :param thickness: Optional[float]
+    :type thickness: Optional[float]
+    :param radius: radius in meter
+    :type radius: Optional[float]
+    :param cond_cond_isolation: distance between two conductors in meter
+    :type cond_cond_isolation: float
+    :param additional_bobbin: extra bobbin inner distance in meter
+    :type additional_bobbin: float
     :return:
     """
     # Create ConductorRow dataclass
@@ -62,6 +83,10 @@ def check_secondary_and_tertiary_are_the_same(secondary_row: ConductorRow, terti
     """
     Define the single rows relate to a center-tapped transformer.
 
+    :param secondary_row: row of secondary conductors
+    :type secondary_row: ConductorRow
+    :param tertiary_row: row of tertiary conductors
+    :type tertiary_row: ConductorRow
     :return:
     """
     if secondary_row.row_height == tertiary_row.row_height and \
@@ -105,10 +130,25 @@ def check_secondary_and_tertiary_are_the_same(secondary_row: ConductorRow, terti
 #             if type(top_row
 
 
-def group_center_tapped(primary_number_of_rows, secondary_number_of_rows,
+def group_center_tapped(primary_number_of_rows: int, secondary_number_of_rows: int,
                         primary_row, secondary_row, tertiary_row,
                         isolations: ThreeWindingIsolation):
-    """Group center tapped windings."""
+    """
+    Group center tapped windings.
+
+    :param primary_number_of_rows: number of primary rows
+    :type primary_number_of_rows: int
+    :param secondary_number_of_rows: number of secondary rows
+    :type secondary_number_of_rows: int
+    :param primary_row: row of primary conductors
+    :type primary_row: ConductorRow
+    :param secondary_row: row of secondary conductors
+    :type secondary_row: ConductorRow
+    :param tertiary_row: row of tertiary conductors
+    :type tertiary_row: ConductorRow
+    :param isolations: isolation DTO
+    :type isolations: ThreeWindingIsolation
+    """
     group = CenterTappedGroup(primary_number_of_rows=None, secondary_number_of_rows=None,
                               primary_rest=None, secondary_rest=None, stack=None)
     # TODO: rests do not really belong into each group but only once
@@ -153,8 +193,15 @@ def group_center_tapped(primary_number_of_rows, secondary_number_of_rows,
     return group
 
 
-def get_height_of_group(group: CenterTappedGroup):
-    """Return the total height of thr conductors and insulation."""
+def get_height_of_group(group: CenterTappedGroup) -> float:
+    """
+    Return the total height of thr conductors and insulation.
+
+    :param group: center tapped group
+    :type group: CenterTappedGroup
+    :return: height of the group
+    :rtype: float
+    """
     total_height = 0
     for row_element in group.stack:
         if isinstance(row_element, ConductorRow):
@@ -164,8 +211,16 @@ def get_height_of_group(group: CenterTappedGroup):
     return total_height
 
 
-def add_tertiary_winding_to_stack(stack_order_without_tertiary, tertiary_row_to_be_added):
-    """Add tertiary winding to stack."""
+def add_tertiary_winding_to_stack(stack_order_without_tertiary: List[ConductorRow],
+                                  tertiary_row_to_be_added: List[ConductorRow]):
+    """
+    Add tertiary winding to stack.
+
+    :param stack_order_without_tertiary: list of ConductorRows
+    :type stack_order_without_tertiary: List[ConductorRow]
+    :param tertiary_row_to_be_added: list of ConductorRows
+    :type tertiary_row_to_be_added: List[ConductorRow]
+    """
     secondary_tags = []
     number_of_added_tertiaries = 0
     for i, obj in enumerate(stack_order_without_tertiary):
@@ -178,8 +233,15 @@ def add_tertiary_winding_to_stack(stack_order_without_tertiary, tertiary_row_to_
 
 
 # Insert insulations into the stack_order
-def insert_insulations_to_stack(stack_order, isolations: ThreeWindingIsolation):
-    """Insert insulations to a stack."""
+def insert_insulations_to_stack(stack_order: List, isolations: ThreeWindingIsolation):
+    """
+    Insert insulations to a stack.
+
+    :param stack_order: order of the stack
+    :type stack_order: List
+    :param isolations: isolations according to the ThreeWindingIsolation class
+    :type isolations: ThreeWindingIsolation
+    """
     # Which insulation is needed depends on the bot and top row neighbours
     # TODO: insert insulations into the stack depending on isolation matrix
 
@@ -230,10 +292,13 @@ def insert_insulations_to_stack(stack_order, isolations: ThreeWindingIsolation):
     # print(f"{insulation_tags = }")
 
 
-def get_set_of_integers_from_string_list(string_list):
+def get_set_of_integers_from_string_list(string_list: List[str]):
     """Get the list of the set of integers in a list of strings.
 
     Used by winding_scheme key.
+
+    :param string_list:
+    :type string_list: List[str]
     """
     integer_list = []
     for single_string in string_list:
@@ -316,12 +381,30 @@ def stack_order_from_interleaving_scheme(interleaving_scheme: InterleavingScheme
     return number_of_primary_rows, number_of_secondary_rows, number_of_tertiary_rows
 
 
-def adjust_vertical_insulation_center_tapped_stack(interleaving_scheme, primary_row, secondary_row, tertiary_row,
-                                                   primary_additional_bobbin, center_foil_additional_bobbin,
-                                                   isolations, available_height):
+def adjust_vertical_insulation_center_tapped_stack(interleaving_scheme: InterleavingSchemesFoilLitz, primary_row: ConductorRow,
+                                                   secondary_row: ConductorRow, tertiary_row: ConductorRow,
+                                                   primary_additional_bobbin: float, center_foil_additional_bobbin: float,
+                                                   isolations: ThreeWindingIsolation, available_height: float):
     """Adjust the vertical insulation of a center tapped stack.
 
     The insulation is equally distributed.
+
+    :param primary_row: primary row according to the ConductorRow class
+    :type primary_row: ConductorRow
+    :param secondary_row: secondary row according to the ConductorRow class
+    :type secondary_row: ConductorRow
+    :param tertiary_row: tertiary row according to the ConductorRow class
+    :type tertiary_row: ConductorRow
+    :param isolations: isolations according to the ThreeWindingIsolation class
+    :type isolations: ThreeWindingIsolation
+    :param available_height: available height in meter
+    :type available_height: float
+    :param primary_additional_bobbin: additional bobbin thickness in meter
+    :type primary_additional_bobbin: float
+    :param center_foil_additional_bobbin: additional bobbin in meter for the center foil
+    :type center_foil_additional_bobbin: float
+    :param interleaving_scheme: interleaving scheme (e.g. ter_3_4_ter_sec_4_3_sec / ter_4_3_ter_sec_3_4_sec / ...)
+    :type interleaving_scheme: InterleavingSchemesFoilLitz
     """
     # Initial stacking with predefined minimum insulations
     initial_stack_order = []
@@ -359,11 +442,31 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
                                     interleaving_type: CenterTappedInterleavingType,
                                     interleaving_scheme: InterleavingSchemesFoilLitz,
                                     primary_additional_bobbin: float, center_foil_additional_bobbin: float):
-    """Define the vertical stacking of previously defined ConductorRows.
+    """
+    Define the vertical stacking of previously defined ConductorRows.
 
     IMPORTANT DEFINITION: the rows are calculated without taking into account
     any vertical insulation. Only the horizontal insulation from conductors
     of the same WindingTag is taken into account in ConductorRow definition.
+
+    :param primary_row: primary row according to the ConductorRow class
+    :type primary_row: ConductorRow
+    :param secondary_row: secondary row according to the ConductorRow class
+    :type secondary_row: ConductorRow
+    :param tertiary_row: tertiary row according to the ConductorRow class
+    :type tertiary_row: ConductorRow
+    :param isolations: isolations according to the ThreeWindingIsolation class
+    :type isolations: ThreeWindingIsolation
+    :param available_height: available height in meter
+    :type available_height: float
+    :param interleaving_type: custom / TypeA / TypeB / TypeC / TypeD
+    :type interleaving_type: CenterTappedInterleavingType
+    :param interleaving_scheme: interleaving scheme (e.g. ter_3_4_ter_sec_4_3_sec / ter_4_3_ter_sec_3_4_sec / ...)
+    :type interleaving_scheme: InterleavingSchemesFoilLitz
+    :param primary_additional_bobbin: additional bobbin thickness in meter
+    :type primary_additional_bobbin: float
+    :param center_foil_additional_bobbin: additional bobbin in meter for the center foil
+    :type center_foil_additional_bobbin: float
     """
     if not check_secondary_and_tertiary_are_the_same(secondary_row, tertiary_row):
         print("Secondary and tertiary winding are not defined similar. "

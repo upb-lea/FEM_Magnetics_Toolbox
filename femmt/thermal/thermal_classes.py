@@ -14,12 +14,26 @@ class ConstraintPro:
         self.boundary_constraints = []
 
     @staticmethod
-    def create_boundary_if_string(flag, region, value):
-        """Create the boundary region."""
+    def create_boundary_if_string(flag: int, region: int, value: float):
+        """
+        Create the boundary region.
+
+        :param flag: flag as an integer
+        :type flag: int
+        :param region:
+        :type region: int
+        :param value: value to write in the file
+        :type value: float
+        """
         return f"\t\tIf({flag}==1)\n\t\t\t{{ Region {region} ; Type Assign; Value {value} ; }}\n\t\tEndIf\n"
 
-    def add_boundary_constraint(self, more_constraints):
-        """Add boundary constraint."""
+    def add_boundary_constraint(self, more_constraints: List):
+        """
+        Add boundary constraint.
+
+        :param more_constraints: constraints
+        :type more_constraints: List
+        """
         for constraint in more_constraints:
             self.boundary_constraints.append(constraint)
 
@@ -45,8 +59,13 @@ class GroupPro:
     def __init__(self):
         self.regions = {}
 
-    def add_regions(self, more_regions):
-        """Add given regions to the group."""
+    def add_regions(self, more_regions: Dict):
+        """
+        Add given regions to the group.
+
+        :param more_regions:
+        :type more_regions: Dict
+        """
         self.regions.update(more_regions)
 
     def create_file(self, file_path: str, air_gaps_enabled: bool = False, insulation_enabled: bool = False):
@@ -85,8 +104,13 @@ class ParametersPro:
     def __init__(self):
         self.parameters = {}
 
-    def add_to_parameters(self, more_parameters):
-        """Add more_parameters to existing parameters."""
+    def add_to_parameters(self, more_parameters: Dict):
+        """
+        Add more_parameters to existing parameters.
+
+        :param more_parameters:
+        :type more_parameters: Dict
+        """
         self.parameters.update(more_parameters)
 
     def create_file(self, file_path: str):
@@ -170,8 +194,25 @@ class PostOperationPro:
     def __init__(self):
         self.statements = []
 
-    def add_on_point_statement(self, field, x, y, formatting, file_name, point_name, append=False):
-        """Add x,y point to statement, what is written to the .pro file."""
+    def add_on_point_statement(self, field, x: float, y: float, formatting, file_name: str, point_name: str, append: bool = False):
+        """
+        Add x,y point to statement, what is written to the .pro file.
+
+        :param field:
+        :type field:
+        :param x: x coordinate
+        :type x: float
+        :param y: y coordinate
+        :type y: float
+        :param formatting:
+        :type formatting:
+        :param file_name: file name
+        :type file_name: str
+        :param point_name: point name
+        :type point_name: str
+        :param append:
+        :type append: bool
+        """
         format_str = ""
         if formatting is not None:
             format_str = f"Format {formatting}, "
@@ -181,7 +222,7 @@ class PostOperationPro:
         self.statements.append(
             f"Print [ {field}, OnPoint {{{x}, {y}, 0}}, {format_str}Name \"{point_name}\", File {append_str}\"{file_name}\" ];")
 
-    def add_on_elements_of_statement(self, field, region, file_name, formatting=None, depth=None,
+    def add_on_elements_of_statement(self, field, region, file_name: str, formatting=None, depth=None,
                                      name=None, append=False):
         """
         Add elements to a statement for post-operations.
@@ -190,7 +231,16 @@ class PostOperationPro:
         :type field:
         :param region:
         :type region:
-
+        :param file_name:
+        :type file_name: str
+        :param formatting:
+        :type formatting:
+        :param depth:
+        :type depth:
+        :param name:
+        :type name:
+        :param append:
+        :type append:
         """
         format_str = ""
         depth_str = ""
