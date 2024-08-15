@@ -2420,7 +2420,14 @@ class MainWindow(QMainWindow):
 
     @handle_errors
     def md_gmsh_pre_visualisation(self, *args, **kwargs):
-        """Pre-visualize when update preview button is pressed in the definitions tab."""
+        """
+        Pre-visualize when update preview button is pressed in the definitions tab.
+
+        :param args:
+        :type args:
+        :param kwargs:
+        :type kwargs:
+        """
         if not self.mutex.tryLock():  # Try to acquire the mutex. If it's already locked by another operation, show a message and return.
             # raise RuntimeWarning("Another operation is in progress. Please close gmsh.")
             QMessageBox.warning(self, "Warning", "Another operation is in progress. Please close gmsh Window.")
@@ -3384,7 +3391,14 @@ class MainWindow(QMainWindow):
 
     @handle_errors
     def md_action_run_simulation(self, *args, **kwargs) -> None:
-        """Read all input parameters from the fields. Run the simulation in dependence of input fields."""
+        """
+        Read all input parameters from the fields. Run the simulation in dependence of input fields.
+
+        :param args:
+        :type args:
+        :param kwargs:
+        :type kwargs:
+        """
         # Try to acquire the mutex. If it's already locked by another operation, show a message and return.
         if not self.mutex.tryLock():
             # self.statusBar().showMessage('Another operation is in progress. Please wait...')
@@ -3514,7 +3528,14 @@ class MainWindow(QMainWindow):
 
     @handle_errors
     def inductancecalc(self, *args, **kwargs):
-        """Calculate inductance from given geometries."""
+        """
+        Calculate inductance from given geometries.
+
+        :param args:
+        :type args:
+        :param kwargs:
+        :type kwargs:
+        """
         # check if the necessary fields are not empty
         self.validate_fields()
         try:

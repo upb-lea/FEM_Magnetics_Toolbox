@@ -98,7 +98,12 @@ class Mesh:
         self.gmsh_log = file_paths.gmsh_log
 
     def femmt_print(self, text: str):
-        """Print text to terminal or to log-file, dependent on the current verbosity."""
+        """
+        Print text to terminal or to log-file, dependent on the current verbosity.
+
+        :param text: text to print
+        :type text: str
+        """
         if not self.verbosity == Verbosity.Silent:
             self.logger.info(text)
 
@@ -166,7 +171,26 @@ class Mesh:
                     p_core: list, p_island: list,
                     l_bound_core: list, l_core_air: list, l_bound_air: list, l_air_gaps_air: list,
                     curve_loop_island: list, curve_loop_air_gaps: list):
-        """Set a single core with one physical winding window."""
+        """
+        Set a single core with one physical winding window.
+
+        :param p_core: points for the core
+        :type p_core: List
+        :param p_island: points for the island
+        :type p_island: list
+        :param l_bound_core: list of bounds for the core
+        :type l_bound_core: list
+        :param l_bound_air: list of bounds for the air
+        :type l_bound_air: list
+        :param curve_loop_island: closed loop for islands
+        :type curve_loop_island: list
+        :param curve_loop_air_gaps: closed loop for air gaps
+        :type curve_loop_air_gaps: list
+        :param l_core_air: list of lines between core and air
+        :type l_core_air: list
+        :param l_air_gaps_air: list of lines between air gaps and air
+        :type l_air_gaps_air: list
+        """
         # Points
         # (index refers to sketch)
 
@@ -422,7 +446,21 @@ class Mesh:
             self.plane_surface_air_gaps.append(gmsh.model.geo.addPlaneSurface([curve_loop]))
 
     def modular_stacked_core(self, p_core: list, l_bound_core: list, l_core_air: list, l_bound_air: list, l_core_core: list):
-        """Generate the modular stacked core."""
+        """
+        Generate the modular stacked core.
+
+        :param p_core: points of the core
+        :type p_core: list
+        :param l_bound_air: list of the air gap lines that define the model boundary
+        :type l_bound_air: list
+        :param l_core_air: list of lines between the core and air
+        :type l_core_air: list
+        :param l_core_core: list of lines between core and core
+        :type l_core_core: list
+        :param l_bound_core: list of the core lines that define the model boundary
+        :type l_bound_core: list
+
+        """
         # Points
         # (index refers to sketch)
         from operator import itemgetter
@@ -648,7 +686,16 @@ class Mesh:
         self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([curve_loop_core_top]))
 
     def conductors(self, p_cond: list, l_cond: list, curve_loop_cond: list):
-        """Generate the conductors."""
+        """
+        Generate the conductors.
+
+        :param p_cond: points of the conductor
+        :type p_cond: list
+        :param l_cond: list of lines for the conductor
+        :type l_cond: list
+        :param curve_loop_cond: closed loop for conductors
+        :type curve_loop_cond: list
+        """
         # Conductors
         p_cond_center = []  # List for center points which are later embed in the model
 
@@ -728,11 +775,15 @@ class Mesh:
             for i, center_point in enumerate(center_points):
                 gmsh.model.mesh.embed(0, [center_point], 2, self.plane_surface_cond[num][i])
 
-    def insulations_core_cond(self, p_iso_core: list):
+    def insulations_core_cond(self, p_iso_core: list) -> List:
         """
         Set the rectangular electrical insulation between conductors and core.
 
+        :param p_iso_core:
+        :type p_iso_core: List
+
         :return:
+        :rtype: list
         """
         # Insulations
         # Core to Windings
@@ -759,7 +810,20 @@ class Mesh:
         return curve_loop_iso_core
 
     def air_single(self, l_core_air: list, l_air_gaps_air: list, curve_loop_air: list, curve_loop_cond: list, curve_loop_iso_core: list):
-        """Generate gmsh entities (points, lines, closed loops and planes) and draw the air gaps for the single core."""
+        """
+        Generate gmsh entities (points, lines, closed loops and planes) and draw the air gaps for the single core.
+
+        :param l_core_air: list of lines between core and air
+        :type l_core_air: list
+        :param l_air_gaps_air: list of lines between air gaps and air
+        :type l_air_gaps_air: list
+        :param curve_loop_cond: closed loop for conductors
+        :type curve_loop_cond: list
+        :param curve_loop_air: closed loop for air
+        :type curve_loop_air: list
+        :param curve_loop_iso_core: closed loop for core
+        :type curve_loop_iso_core: list
+        """
         # Air
         # Points are partwise double designated
 
@@ -814,8 +878,17 @@ class Mesh:
         # else:
         #     self.plane_surface_air.append(gmsh.model.geo.addPlaneSurface(curve_loop_air + flatten_curve_loop_cond))
 
-    def air_stacked(self, l_core_air: list, l_bound_air, curve_loop_cond: list):
-        """Generate gmsh entities (points, lines, closed loops and planes) and draw the air gaps for the stacked core."""
+    def air_stacked(self, l_core_air: list, l_bound_air: List, curve_loop_cond: list):
+        """
+        Generate gmsh entities (points, lines, closed loops and planes) and draw the air gaps for the stacked core.
+
+        :param l_core_air: line
+        :type l_core_air: List
+        :param l_bound_air:
+        :type l_bound_air: List
+        :param curve_loop_cond:
+        :type curve_loop_cond: List
+        """
         # Air
         # Points are partwise double designated
 
@@ -919,6 +992,17 @@ class Mesh:
 
         Default case is for air gaps in the inner core.
         The else-case, for outer air gaps is unused for air gaps in the inner core.
+
+        :param p_core: points of the core
+        :type p_core: list
+        :param p_region: points of the region
+        :type p_region: list
+        :param l_bound_air: list of the air gap lines that define the model boundary
+        :type l_bound_air: list
+        :param l_bound_core: list of the core lines that define the model boundary
+        :type l_bound_core: list
+        :param l_region: list of lines of regions
+        :type l_region: list
         """
         # Boundary
         if self.core.core_type == CoreType.Single:
@@ -1066,6 +1150,20 @@ class Mesh:
             - adaptive refinement [future TODO]
                 - with the help of mesh-size-fields/background meshes
                 - with an appropriate local error metric
+
+
+        :param colors_geometry: colors of the geometry
+        :type colors_geometry: Dict
+        :param color_scheme: color scheme
+        :type color_scheme: Dict
+        :param visualize_before: visualize geometry before FEM simulation
+        :type visualize_before: bool
+        :param save_png: True to save a .png figure
+        :type save_png: bool
+        :param refine:
+        :type refine: int
+        :param alternative_error:
+        :type alternative_error:
         """
         self.femmt_print("Hybrid Mesh Generation in Gmsh")
         # Clear gmsh
@@ -1133,8 +1231,13 @@ class Mesh:
         # -> Save file as geo: File extension must be *.geo_unrolled
         gmsh.write(self.model_geo_file)
 
-    def generate_electro_magnetic_mesh(self, refine=0):
-        """Generate the mesh for the electro magnetic FEM simulation."""
+    def generate_electro_magnetic_mesh(self, refine: int = 0):
+        """
+        Generate the mesh for the electro magnetic FEM simulation.
+
+        :param refine:
+        :type refine: int
+        """
         self.femmt_print("Electro Magnetic Mesh Generation in Gmsh (write physical entities)")
 
         self.PN_BOUND = 111111
@@ -1257,8 +1360,24 @@ class Mesh:
             with open(self.gmsh_log, "w") as fd:
                 fd.write(text)
 
-    def generate_thermal_mesh(self, case_gap_top, case_gap_right, case_gap_bot, color_scheme, colors_geometry, visualize_before):
-        """Generate the mesh for the thermal FEM simulation."""
+    def generate_thermal_mesh(self, case_gap_top: float, case_gap_right: float, case_gap_bot: float,
+                              color_scheme: Dict, colors_geometry: Dict, visualize_before: bool) -> None:
+        """
+        Generate the mesh for the thermal FEM simulation.
+
+        :param case_gap_top: gap length in meter on the top of the case
+        :type case_gap_top: float
+        :param case_gap_right: gap length in meter on the right side of the case
+        :type case_gap_right: float
+        :param case_gap_bot: gap length in meter on the bottom of the case
+        :type case_gap_bot: float
+        :param color_scheme: color scheme
+        :type color_scheme: Dict
+        :param colors_geometry: colors of the geometry
+        :type colors_geometry: Dict
+        :param visualize_before: True to visualize geometry before performing the simulation
+        :type visualize_before: bool
+        """
         self.femmt_print("Thermal Mesh Generation in Gmsh (write physical entities)")
 
         gmsh.open(self.model_geo_file)
@@ -1563,8 +1682,13 @@ class Mesh:
 
         gmsh.write(self.thermal_mesh_file)
 
-    def inter_conductor_meshing(self, p_cond):
-        """To be defined."""
+    def inter_conductor_meshing(self, p_cond: List):
+        """
+        To be defined.
+
+        :param p_cond:
+        :type p_cond: List
+        """
         p_inter = None
         for ww in self.model.winding_windows:
             for vww in ww.virtual_winding_windows:

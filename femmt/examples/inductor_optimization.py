@@ -131,7 +131,12 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
     annot.set_visible(False)
 
     def update_annot(ind):
-        """Create popover annotations in 2d plot."""
+        """
+        Create popover annotations in 2d plot.
+
+        :param ind:
+        :type ind:
+        """
         pos = sc.get_offsets()[ind["ind"][0]]
         annot.xy = pos
         text = ""
@@ -164,7 +169,12 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
         annot.get_bbox_patch().set_alpha(0.8)
 
     def hover(event):
-        """Event that is triggered when mouse is hovered. Shows text annotation over data point closest to mouse."""
+        """
+        Event that is triggered when mouse is hovered. Shows text annotation over data point closest to mouse.
+
+        :param event:
+        :type event:
+        """
         vis = annot.get_visible()
         if event.inaxes == ax:
             cont, ind = sc.contains(event)
@@ -239,13 +249,13 @@ def plot_3d(x_value: list, y_value: list, z_value: list, x_label: str, y_label: 
     ax.scatter(X[:, 0], X[:, 1], X[:, 2], c='#%02x%02x%02x' % fmt.colors_femmt_default[plot_color],
                depthshade=True, picker=True)
 
-    def distance(point, event):
+    def distance(point: np.array, event):
         """Return distance between mouse position and given data point.
 
-        Args:
-        ----
-            point (np.array): np.array of shape (3,), with x,y,z in data coordinates
-            event (MouseEvent): mouse event (which contains mouse position in .x and .xdata)
+        :param point: np.array of shape (3,), with x,y,z in data coordinates
+        :type point: np.array
+        :param event: mouse event (which contains mouse position in .x and .xdata)
+        :type event: MouseEvent
 
         Returns:
         -------
@@ -260,13 +270,13 @@ def plot_3d(x_value: list, y_value: list, z_value: list, x_label: str, y_label: 
 
         return np.sqrt((x3 - event.x) ** 2 + (y3 - event.y) ** 2)
 
-    def calc_closest_datapoint(array_of_points, mouse_event):
+    def calc_closest_datapoint(array_of_points: np.array, mouse_event):
         """Calculate which data point is closest to the mouse position.
 
-        Args:
-        ----
-        array_of_points (np.array): array of points, of shape (numPoints, 3)
-        mouse_event (MouseEvent): mouse event (containing mouse position)
+        :param array_of_points: array of points, of shape (numPoints, 3)
+        :type array_of_points: np.array
+        :param mouse_event: mouse event (containing mouse position)
+        :type mouse_event: MouseEvent
 
         Returns:
         -------
@@ -276,16 +286,13 @@ def plot_3d(x_value: list, y_value: list, z_value: list, x_label: str, y_label: 
         distances = [distance(X_modified[i, 0:3], mouse_event) for i in range(X_modified.shape[0])]
         return np.argmin(distances)
 
-    def annotate_plot(array_of_points, index):
+    def annotate_plot(array_of_points: np.array, index: int) -> None:
         """Create popover label in 3d chart.
 
-        Args:
-        ----
-        array_of_points (np.array): array of points, of shape (numPoints, 3)
-        index (int): index (into points array X) of item which should be printed
-        Returns:
-        -------
-        None
+        :param array_of_points: array of points, of shape (numPoints, 3)
+        :type array_of_points: np.array
+        :param index: index (into points array X) of item which should be printed
+        :type index: int
         """
         # If we have previously displayed another label, remove it first
         if hasattr(annotate_plot, 'label'):
@@ -300,7 +307,12 @@ def plot_3d(x_value: list, y_value: list, z_value: list, x_label: str, y_label: 
         fig.canvas.draw()
 
     def on_mouse_motion(event):
-        """Event that is triggered when mouse is moved. Shows text annotation over data point closest to mouse."""
+        """
+        Event that is triggered when mouse is moved. Shows text annotation over data point closest to mouse.
+
+        :param event:
+        :type event:
+        """
         closestIndex = calc_closest_datapoint(X, event)
         annotate_plot(X, closestIndex)
 
@@ -349,8 +361,8 @@ def load_fem_simulation_results(working_directory: str):
     """
     Load FEM simulation results from given working directory.
 
-    param working_directory: Sets the working directory
-    :type fem_simulation_results_directory: str
+    :param working_directory: working directory
+    :type working_directory: str
     """
     working_directories = []
     labels = []
@@ -573,8 +585,13 @@ class AutomatedDesign:
         self.data_matrix_5 = self.filter_reluctance_pareto_front_tolerance(self.data_matrix_4)
         self.data_matrix_fem = self.data_matrix_5
 
-    def set_up_folder_structure(self, working_directory):
-        """Set up the folder structure for the inductor optimization."""
+    def set_up_folder_structure(self, working_directory: str):
+        """
+        Set up the folder structure for the inductor optimization.
+
+        :param working_directory: working directory
+        :type working_directory: str
+        """
         if working_directory is None:
             caller_filename = inspect.stack()[1].filename
             working_directory = os.path.join(os.path.dirname(caller_filename),
@@ -648,24 +665,24 @@ class AutomatedDesign:
         return core_inner_diameter_list, window_h_list, window_w_list, litz_conductor_r, litz_strand_r, litz_strand_n, \
             litz_fill_factor, mu_r_abs, mult_air_gap_type_list
 
-    def filter_reluctance_target_inductance(self, data_matrix):
+    def filter_reluctance_target_inductance(self, data_matrix: np.array):
         """
         Filter out design cases which are in between the given goal inductance tolerance band.
 
-        :param data_matrix: Matrix containing the design parameters
-        :type data_matrix: ndarray
+        :param data_matrix: multi-dimensional matrix containing sweep parameters for the inductor optimization
+        :type data_matrix: np.array
         """
         data_matrix = data_matrix[np.where((data_matrix[:, self.param["inductance"]] > ((100 - self.goal_inductance_percent_tolerance) / 100) * \
                                             self.goal_inductance) & (data_matrix[:, self.param["inductance"]] < \
                                                                      ((100 + self.goal_inductance_percent_tolerance) / 100) * self.goal_inductance))]
         return data_matrix
 
-    def filter_reluctance_flux_saturation(self, data_matrix):
+    def filter_reluctance_flux_saturation(self, data_matrix: np.array):
         """
         Filter out design cases based on the maximum magnetic flux allowed in the magnetic core.
 
-        param data_matrix: Matrix containing the design parameters
-        :type data_matrix: ndarray
+        :param data_matrix: multi-dimensional matrix containing sweep parameters for the inductor optimization
+        :type data_matrix: np.array
         """
         # Dictionary to store {initial_permeability: 'Material_name'} to map material_name during FEM iteration
         b_sat_dict = {}
@@ -867,8 +884,13 @@ class AutomatedDesign:
 
         return data_matrix
 
-    def pareto_front_from_data_matrix(self, data_matrix):
-        """Get the pareto front from the data matrix."""
+    def pareto_front_from_data_matrix(self, data_matrix: np.array):
+        """
+        Get the pareto front from the data matrix.
+
+        :param data_matrix: multi-dimensional matrix containing sweep parameters for the inductor optimization
+        :type data_matrix: np.array
+        """
         total_loss_vec = data_matrix[:, self.param["total_loss"]]
         core_2daxi_total_volume_vec = data_matrix[:, self.param["total_volume"]]
 
@@ -896,8 +918,15 @@ class AutomatedDesign:
 
         return np.array(x_pareto_vec), np.array(y_pareto_vec)
 
-    def filter_reluctance_pareto_front_tolerance(self, data_matrix, factor_min_dc_losses: float = 1):
-        """Filter all reluctance calculations to see the pareto front."""
+    def filter_reluctance_pareto_front_tolerance(self, data_matrix: np.array, factor_min_dc_losses: float = 1):
+        """
+        Filter all reluctance calculations to see the pareto front.
+
+        :param data_matrix: multi-dimensional matrix containing sweep parameters for the inductor optimization
+        :type data_matrix: np.array
+        :param factor_min_dc_losses: factor to filter from the minimum dc losses
+        :type factor_min_dc_losses: float
+        """
         total_loss_vec = data_matrix[:, self.param["total_loss"]]
         total_volume_vec = data_matrix[:, self.param["total_volume"]]
 

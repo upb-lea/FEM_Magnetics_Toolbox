@@ -443,8 +443,8 @@ disable=all
 # either give multiple identifier separated by comma (,) or put this option
 # multiple time (only on the command line, not in the configuration file where
 # it should appear only once). See also the "--disable" option for examples.
-enable=multiple-constructor-doc, missing-raises-doc, redundant-returns-doc, redundant-yields-doc, missing-return-doc, missing-return-type-doc, missing-yield-type-doc, missing-param-doc, missing-type-doc, differing-param-doc, differing-type-doc,
-
+enable=missing-any-param-doc, multiple-constructor-doc, missing-raises-doc, redundant-returns-doc, redundant-yields-doc, missing-return-doc, missing-return-type-doc, missing-yield-type-doc, missing-param-doc, missing-type-doc, differing-param-doc, differing-type-doc
+accept-no-param-doc = false
 
 [METHOD_ARGS]
 

@@ -982,8 +982,17 @@ def calculate_cylinder_volume(cylinder_diameter: float, cylinder_height: float):
     return (cylinder_diameter / 2) ** 2 * np.pi * cylinder_height
 
 
-def create_physical_group(dim, entities, name):
-    """Greate a physical group, what is used inside ONELAB."""
+def create_physical_group(dim: int, entities: int, name: str):
+    """
+    Greate a physical group, what is used inside ONELAB.
+
+    :param dim: dim inside onelab
+    :type dim: int
+    :param entities: entity inside onelab
+    :type entities: int
+    :param name: name
+    :type name: str
+    """
     tag = gmsh.model.addPhysicalGroup(dim, entities)
     gmsh.model.setPhysicalName(dim, tag, name)
 
