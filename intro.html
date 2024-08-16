@@ -1397,6 +1397,29 @@ presenting details on the temperatures observed across core components, windings
 materials. It quantifies the minimum, maximum, and mean temperatures for each identified section, offering
 a comprehensive view of thermal results.</p></li>
 </ul>
+<p>Following table gives an overview over the units of the parameters:</p>
+<table class="docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><strong>Name:</strong></p></td>
+<td><p>Frequency</p></td>
+<td><p>Power Loss</p></td>
+<td><p>Magnetic Flux</p></td>
+<td><p>Voltage</p></td>
+<td><p>Current</p></td>
+<td><p>Inductance</p></td>
+<td><p>Resistance</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Unit:</strong></p></td>
+<td><p>Hertz</p></td>
+<td><p>Watt</p></td>
+<td><p>Weber</p></td>
+<td><p>Volt</p></td>
+<td><p>Ampere</p></td>
+<td><p>Henry</p></td>
+<td><p>Ohm</p></td>
+</tr>
+</tbody>
+</table>
 <section id="example-result-log">
 <h3><span class="sectnum">2.10.1 </span>Example Result Log<a class="headerlink" href="#example-result-log" title="Link to this heading"></a></h3>
 <p>In this subsection, showcase examples of result logs generated from simulations are shown in two distinct domains:
@@ -1457,10 +1480,10 @@ the frequency domain and the time domain. Each domain provides unique insights i
 <li><p><strong>single_sweeps</strong>: This array contains data for each frequency sweep performed during the simulation.
 Each entry in the array represents a set of results for a specific frequency.</p>
 <ul class="simple">
-<li><p><strong>f</strong>: The frequency at which the sweep was conducted, measured in Hertz (Hz).</p></li>
+<li><p><strong>f</strong>: The frequency at which the sweep was conducted.</p></li>
 <li><p><strong>winding1</strong> and <strong>winding2</strong>: These sections provide detailed results for each winding, including:</p>
 <ul>
-<li><p><strong>turn_losses</strong>: The power losses in each turn of the winding.</p></li>
+<li><p><strong>turn_losses</strong>: The power losses (consisting of DC-, Proximity- and Skin-losses) in each turn of the winding.</p></li>
 <li><p><strong>flux</strong>: The magnetic flux linked with the winding. The array
 contains two values, representing the real and imaginary parts of the flux, respectively.</p></li>
 <li><p><strong>flux_over_current</strong>: This metric signifies the flux linkage per unit of current and is presented as a complex number,
