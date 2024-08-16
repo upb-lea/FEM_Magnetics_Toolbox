@@ -5,7 +5,16 @@ import os
 
 
 def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
-    """Run the example code for the inductor."""
+    """
+    Run the example code for the inductor.
+
+    :param onelab_folder: onelab folder path
+    :type onelab_folder: str
+    :param show_visual_outputs: True to show visual outputs (simulation results)
+    :type show_visual_outputs: bool
+    :param is_test: True for pytest usage. Defaults to False.
+    :type is_test: bool
+    """
 
     def example_thermal_simulation(show_thermal_visual_outputs: bool = True, flag_insulation: bool = True):
         # Thermal simulation:
@@ -77,7 +86,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
         os.mkdir(example_results_folder)
 
     # Working directory can be set arbitrarily
-    working_directory = os.path.join(example_results_folder, "inductor")
+    working_directory = os.path.join(example_results_folder, os.path.splitext(os.path.basename(__file__))[0])
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
@@ -110,8 +119,6 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
                     permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
                     permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
 
-    # mu_rel=3000, phi_mu_deg=10,
-    # sigma=0.5)
     geo.set_core(core)
 
     # 3. set air gap parameters

@@ -4,7 +4,7 @@ It contains multiple benchmarking functions in order to analyse the runtime and 
 """
 
 # Python standard libraries
-from typing import List
+from typing import List, Optional
 from dataclasses import dataclass
 import os
 import json
@@ -49,8 +49,13 @@ class SingleBenchmark:
         self.working_directory = working_directory
         self.model = model
 
-    def benchmark_simulation(self, inductor_frequency):
-        """Start the simulation for a single benchmark."""
+    def benchmark_simulation(self, inductor_frequency: int):
+        """
+        Start the simulation for a single benchmark.
+
+        :param inductor_frequency: frequency in Hz
+        :type inductor_frequency: int
+        """
         # Simulate
         self.high_level_geo_gen_time, self.generate_hybrid_mesh_time = self.model.create_model(freq=inductor_frequency, pre_visualize_geometry=False,
                                                                                                save_png=False, benchmark=True)
@@ -97,8 +102,13 @@ class Benchmark:
     def __init__(self, benchmarks):
         self.benchmarks = benchmarks
 
-    def to_json(self, file_path):
-        """Export the benchmark results to a .json file."""
+    def to_json(self, file_path: str):
+        """
+        Export the benchmark results to a .json file.
+
+        :param file_path: path to file
+        :type file_path: str
+        """
         output = {
             "averages": {
                 "create_model_time": np.mean([x.create_model_time for x in self.benchmarks]),
@@ -131,8 +141,22 @@ class Benchmark:
 # ------ Generic Functions ------
 
 
-def create_model(working_directory, mesh_accuracies=None, aspect_ratio=10, wwr_enabled=True, number_of_conductors: int = 9):
-    """Create the model for benchmark."""
+def create_model(working_directory: str, mesh_accuracies=Optional[MeshAccuracies], aspect_ratio: float = 10,
+                 wwr_enabled: bool = True, number_of_conductors: int = 9):
+    """
+    Create the model for benchmark.
+
+    :param working_directory: working directory
+    :type working_directory: str
+    :param mesh_accuracies: mesh accuracy class
+    :type mesh_accuracies: MeshAccuracies
+    :param wwr_enabled: True to enable the winding window rasterization (WWR). Defaults to True.
+    :type wwr_enabled: bool
+    :param aspect_ratio: aspect ratio of the insulation
+    :type aspect_ratio: float
+    :param number_of_conductors: number of conductors to create
+    :type number_of_conductors: int
+    """
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
     inductor_frequency = 270000
@@ -180,8 +204,27 @@ def create_model(working_directory, mesh_accuracies=None, aspect_ratio=10, wwr_e
     return geo
 
 
-def create_rectangular_conductor_model(working_directory, mesh_accuracies, thickness, center_factor, left_bound_delta=None, wwr_enabled=True, aspect_ratio=10):
-    """Create a model with rectangular condutors."""
+def create_rectangular_conductor_model(working_directory: str, mesh_accuracies: MeshAccuracies, thickness: float,
+                                       center_factor: float, left_bound_delta: float = None, wwr_enabled: bool = True,
+                                       aspect_ratio: float = 10):
+    """
+    Create a model with rectangular conductors.
+
+    :param working_directory: working directory
+    :type working_directory: str
+    :param mesh_accuracies: mesh accuracy class
+    :type mesh_accuracies: MeshAccuracies
+    :param thickness: thickness of the rectangular conductor in m
+    :type thickness: float
+    :param center_factor:
+    :type center_factor: float
+    :param left_bound_delta: Offset between core and insulation in m
+    :type left_bound_delta: float
+    :param wwr_enabled: True to enable the winding window rasterization (WWR). Defaults to True.
+    :type wwr_enabled: bool
+    :param aspect_ratio: aspect ratio of the insulation
+    :type aspect_ratio: float
+    """
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
     inductor_frequency = 270000
@@ -256,8 +299,19 @@ def create_rectangular_conductor_model(working_directory, mesh_accuracies, thick
 
     return geo
 
-def plot_mesh_over_precision(benchmarks, x_list, x_label, title):
-    """Plot the mesh over precision."""
+def plot_mesh_over_precision(benchmarks, x_list: List, x_label: str, title: str):
+    """
+    Plot the mesh over precision.
+
+    :param benchmarks:
+    :type benchmarks:
+    :param x_list: list with simulation numbers
+    :type x_list: List
+    :param x_label: x-label for the plot
+    :type x_label: str
+    :param title: title for the plot
+    :type title: str
+    """
     total_losses = [bm.total_losses for bm in benchmarks]
     self_inductance = [np.sqrt(bm.flux_over_current[0]**2+bm.flux_over_current[1]**2) for bm in benchmarks]
     execution_times = [bm.execution_time for bm in benchmarks]
@@ -290,7 +344,12 @@ def plot_mesh_over_precision(benchmarks, x_list, x_label, title):
 # ------ Benchmarks ------
 
 def benchmark_rectangular_conductor_offset(working_directory):
-    """Benchmark the conductor offset."""
+    """
+    Benchmark the conductor offset.
+
+    :param working_directory: working directory
+    :type working_directory: str
+    """
     left_bound_deltas = np.linspace(0.001, 0.005, num=5)
     default_mesh_accuracy = 0.5
     thickness = 0.0015
@@ -340,8 +399,13 @@ def benchmark_rectangular_conductor_offset(working_directory):
     plt.show()
 
 
-def benchmark_rectangular_conductor(working_directory):
-    """Benchmark mesh accuracies inside a rectangular condutor."""
+def benchmark_rectangular_conductor(working_directory: str):
+    """
+    Benchmark mesh accuracies inside a rectangular condutor.
+
+    :param working_directory: working directory
+    :type working_directory: str
+    """
     # mesh_accuracies = np.arange(0.1, 1, step=0.1)
     # mesh_accuracies_conductor = np.linspace(0.001, 0.00005, num=10)
     default_mesh_accuracy = 0.4
@@ -411,8 +475,13 @@ def benchmark_rectangular_conductor(working_directory):
     plt.show()
 
 
-def benchmark_different_mesh_accuracies(working_directory):
-    """Simulate for different mesh accuracies and benchmark the results."""
+def benchmark_different_mesh_accuracies(working_directory: str):
+    """
+    Simulate for different mesh accuracies and benchmark the results.
+
+    :param working_directory: working directory
+    :type working_directory: str
+    """
     # comparison_data = {
     #    # Data from simulation with 0.05 mesh accuracy (everywhere) and no wwr and no insulations
     #    "total_losses": 7.681125170876381,
@@ -523,7 +592,12 @@ def benchmark_different_mesh_accuracies(working_directory):
     plt.show()
 
 def benchmark_aspect_ratios(folder: str):
-    """Create a benchmark for the different insulation_deltas. Opens a plot in the end."""
+    """
+    Create a benchmark for the different insulation_deltas. Opens a plot in the end.
+
+    :param folder: filepath to folder to store results
+    :type folder: str
+    """
     aspect_ratios = np.arange(0, 10, step=1)
     frequency = 270000
     benchmarks = []
@@ -538,7 +612,12 @@ def benchmark_aspect_ratios(folder: str):
     plot_mesh_over_precision(benchmarks, aspect_ratios, "aspect ratio", "Benchmark: Different aspect ratios")
 
 def benchmark_mesh_accuracy(folder: str):
-    """Create a benchmark for the different mesh_accuracies. Opens a plot at the end."""
+    """
+    Create a benchmark for the different mesh_accuracies. Opens a plot at the end.
+
+    :param folder: filepath to folder to store results
+    :type folder: str
+    """
     mesh_accuracies = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1]
     # mesh_accuracies = [1]
     frequency = 270000 
@@ -669,8 +748,15 @@ def benchmark_mesh_accuracy(folder: str):
     plt.legend()
     plt.show()
 
-def single_benchmark(benchmark_results_folder, frequency):
-    """Run many simulations of the same model and writes the execution times as well as a multiple other measured times in a log file."""
+def single_benchmark(benchmark_results_folder: str, frequency: int):
+    """
+    Run many simulations of the same model and writes the execution times as well as a multiple other measured times in a log file.
+
+    :param benchmark_results_folder: result folder for the benchmarks
+    :type benchmark_results_folder: str
+    :param frequency: frequency in Hz
+    :type frequency: int
+    """
     benchmark_results_file = os.path.join(benchmark_results_folder, "benchmark_test_without_insulation_bug.json")
     benchmarks = []
 
@@ -684,8 +770,8 @@ def single_benchmark(benchmark_results_folder, frequency):
     benchmark.to_json(benchmark_results_file)
 
 
-def benchmark_winding_window_rasterization(folder):
-    """Introduce different winding counts to benachmark the winding window rasterization."""
+def benchmark_winding_window_rasterization():
+    """Introduce different winding counts to benchmark the winding window rasterization."""
     numbers_of_conductors = np.arange(2, 10, step=2)
     # numbers_of_conductors = [1]
     benchmarks_no_wwr = []
@@ -742,8 +828,13 @@ def benchmark_winding_window_rasterization(folder):
     plt.legend(fontsize=font_size_default)
     plt.show()
 
-def general_comparison(folder):
-    """Comparison with and without meshing techniques."""
+def general_comparison(folder: str):
+    """
+    Comparison with and without meshing techniques.
+
+    :param folder: file path to folder
+    :type folder: str
+    """
     mesh_accuracies = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
     # mesh_accuracies = [0.4, 0.5, 1]
     frequency = 270000

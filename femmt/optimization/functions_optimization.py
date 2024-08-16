@@ -15,7 +15,7 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
     """
     Visualize data in 2d plot with popover next to mouse position.
 
-    param x_value: Data points for x-axis
+    :param x_value: Data points for x-axis
     :type x_value: list
     :param y_value: Data points for y-axis
     :type y_value: list
@@ -78,7 +78,12 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
     annot.set_visible(False)
 
     def update_annot(ind):
-        """Create popover annotations in 2d plot."""
+        """
+        Create popover annotations in 2d plot.
+
+        :param ind:
+        :type ind:
+        """
         pos = sc.get_offsets()[ind["ind"][0]]
         annot.xy = pos
         text = ""
@@ -111,7 +116,12 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
         annot.get_bbox_patch().set_alpha(0.8)
 
     def hover(event):
-        """Event that is triggered when mouse is hovered. Shows text annotation over data point closest to mouse."""
+        """
+        Event that is triggered when mouse is hovered. Shows text annotation over data point closest to mouse.
+
+        :param event: triggered event
+        :type event:
+        """
         vis = annot.get_visible()
         if event.inaxes == ax:
             cont, ind = sc.contains(event)
@@ -129,15 +139,18 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
     plt.show()
 
 # Faster than is_pareto_efficient_simple, but less readable.
-def is_pareto_efficient(costs, return_mask=True):
+def is_pareto_efficient(costs: np.array, return_mask: bool = True):
     """
     Find the pareto-efficient points.
 
     :param costs: An (n_points, n_costs) array
+    :type costs: np.array
     :param return_mask: True to return a mask
+    :type return_mask: bool
     :return: An array of indices of pareto-efficient points.
         If return_mask is True, this will be an (n_points, ) boolean array
         Otherwise it will be a (n_efficient_points, ) integer array of indices.
+    :rtype: np.array
     """
     is_efficient = np.arange(costs.shape[0])
     n_points = costs.shape[0]

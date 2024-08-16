@@ -100,13 +100,14 @@ class TransformerOptimization:
         return target_and_fix_parameters
 
     @staticmethod
-    def objective(trial, config: ToSingleInputConfig,
+    def objective(trial: int, config: ToSingleInputConfig,
                   target_and_fixed_parameters: ToTargetAndFixedParameters,
                   number_objectives: int, show_geometries: bool = False, process_number: int = 1):
         """
         Objective for optuna optimization.
 
         :param trial: optuna trail objective. Used by optuna
+        :type trial: int
         :param config: simulation configuration file
         :type config: ToSingleInputConfig
         :param target_and_fixed_parameters: contains pre-calculated values
@@ -391,7 +392,12 @@ class TransformerOptimization:
 
     @staticmethod
     def run_garbage_collector(study: optuna.Study, _):
-        """Run the garbage collector."""
+        """
+        Run the garbage collector.
+
+        :param study: optuna study
+        :type study: optuna.Study
+        """
         if len(study.trials) % 10000 == 0:
             # Run the garbage collector to prevent high memory consumption.
             # as seen so far, a typical study needs 50.000 to 500.000 trials to have good results when performing

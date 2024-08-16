@@ -1,6 +1,10 @@
 """Test different winding options."""
-import femmt as fmt
+# python libraries
 import os
+from typing import Dict, List
+
+
+import femmt as fmt
 inductor_combinations = [
     {
         "Name": "Single RoundSolid Hexagonal",
@@ -72,8 +76,15 @@ transformer_combinations = [
     },
 ]
 
-def run_inductor_simulations(working_directory, combinations):
-    """Run the simulations to test several winding options for the inductor."""
+def run_inductor_simulations(working_directory: str, combinations: List[Dict]):
+    """
+    Run the simulations to test several winding options for the inductor.
+
+    :param working_directory: working directory
+    :type working_directory: str
+    :param combinations: combinations to simulate in a dictionary which are stored in a list
+    :type combinations: List
+    """
     not_working = []
     for combination in combinations:
         geo = fmt.MagneticComponent(fmt.ComponentType.Inductor, working_directory, True)
@@ -124,8 +135,15 @@ def run_inductor_simulations(working_directory, combinations):
     print(not_working)
 
 
-def run_transformer_simulations(working_directory, combinations):
-    """Run the simulations to test several winding options for the transformer."""
+def run_transformer_simulations(working_directory: str, combinations: List[Dict]):
+    """
+    Run the simulations to test several winding options for the transformer.
+
+    :param working_directory: working directory
+    :type working_directory: str
+    :param combinations: combinations to simulate in a dictionary which are stored in a list
+    :type combinations: List
+    """
     not_working = []
     for combination in combinations:
         geo = fmt.MagneticComponent(fmt.ComponentType.Transformer, working_directory, True)
