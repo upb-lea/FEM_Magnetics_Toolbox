@@ -265,7 +265,7 @@ class Core:
         if self.core_type == CoreType.Stacked:
             self.window_h_bot = core_dimensions.window_h_bot
             self.window_h_top = core_dimensions.window_h_top
-            self.core_h = self.window_h_bot + 2 * self.core_thickness
+            self.core_h = self.window_h_bot + (3 * self.core_thickness) + self.window_h_top
             self.number_core_windows = 4
 
         if detailed_core_model:
@@ -584,6 +584,13 @@ class AirGaps:
             self.number += 1
 
         elif self.method == AirGapMethod.Stacked:
+            # Error check for air gap height exceeding core section height
+            if stacked_position == StackedPosition.Top and height > self.core.window_h_top:
+                raise ValueError(f"Air gap height ({height} m) exceeds the available top core section height "
+                                 f"({self.core.window_h_top} m).")
+            elif stacked_position == StackedPosition.Bot and height > self.core.window_h_bot:
+                raise ValueError(f"Air gap height ({height} m) exceeds the available bottom core section height "
+                                 f"({self.core.window_h_bot} m).")
             # set midpoints
             # TODO: handle top and bot
             if stacked_position == StackedPosition.Bot:
