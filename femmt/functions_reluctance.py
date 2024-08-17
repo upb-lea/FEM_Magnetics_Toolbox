@@ -964,11 +964,16 @@ def r_core_tablet(tablet_height: Union[float, np.array], tablet_radius: Union[fl
 
 def r_core_tablet_2(tablet_height, tablet_radius, mu_r_abs):
     """
-    Calculate the magnetic resistance of the core tablet.
+     Calculate the magnetic resistance (reluctance) of the core tablet.
 
-    :param tablet_height: tablet height
-    :param tablet_radius: tablet radius
-    :param mu_r_abs: relative permeability (mu_r) of the core material from datasheet
+    :param tablet_height: The height of the core tablet.
+    :type tablet_height: float
+    :param tablet_radius: The radius of the core tablet.
+    :type tablet_radius: float
+    :param mu_r_abs: The absolute relative permeability (mu_r) of the core material.
+    :type mu_r_abs: float
+    :return: The magnetic reluctance of the core tablet.
+    :rtype: float
     """
     return tablet_height / (np.pi * mu_0 * mu_r_abs * tablet_radius ** 2)
 

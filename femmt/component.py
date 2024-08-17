@@ -2029,10 +2029,12 @@ class MagneticComponent:
 
         def get_width(part_number):
             """
-            If there is a stray path, calculate width based on its starting index and part number.
+            Determine the width of the core section based on the part number and stray path information.
 
-            part_number is the core_part_i+2; means that if the start_index is 0, the stray path is in core_part_2
-            if the start_index is 1, the stray path is in core_part_3 and so on
+            :param part_number: The index representing the core part (core_part_i+2).
+            :type part_number: int
+            :return: The width of the core section. If the part has a stray path, return its length; otherwise, return the core's inner diameter divided by 2.
+            :rtype: float
             """
             if self.stray_path and part_number == self.stray_path.start_index + 2:
                 return self.stray_path.length
