@@ -7,13 +7,22 @@ import os
 
 
 def advanced_example_inductor_sweep(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
-    """Advanced example to show an excitation sweep of multiple frequencies for an inductor."""
+    """
+    Advanced example to show an excitation sweep of multiple frequencies for an inductor.
+
+    :param onelab_folder: onelab folder path
+    :type onelab_folder: str
+    :param show_visual_outputs: True to show visual outputs (simulation results)
+    :type show_visual_outputs: bool
+    :param is_test: True for pytest usage. Defaults to False.
+    :type is_test: bool
+    """
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
     if not os.path.exists(example_results_folder):
         os.mkdir(example_results_folder)
 
     # Working directory can be set arbitrarily
-    working_directory = os.path.join(example_results_folder, "reso_inductor")
+    working_directory = os.path.join(example_results_folder, os.path.splitext(os.path.basename(__file__))[0])
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
@@ -28,7 +37,6 @@ def advanced_example_inductor_sweep(onelab_folder: str = None, show_visual_outpu
     inductor_frequency = 5e5
 
     # 2. set core parameters
-    # core_db = fmt.core_database()["PQ 40/40"]
     core_db = fmt.core_database()["PQ 50/50"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
                                                     window_w=core_db["window_w"],
@@ -38,9 +46,6 @@ def advanced_example_inductor_sweep(onelab_folder: str = None, show_visual_outpu
     core = fmt.Core(core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
                     material=mdb.Material.N95, temperature=30, frequency=inductor_frequency,
-                    # permeability_datasource="manufacturer_datasheet",
-                    # permeability_datasource=fmt.MaterialDataSource.Custom, mu_r_abs=2000, phi_mu_deg=1,
-
                     permeability_datasource=fmt.MaterialDataSource.Measurement,
                     permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
                     permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,

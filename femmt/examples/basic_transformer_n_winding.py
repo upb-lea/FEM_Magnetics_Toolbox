@@ -5,7 +5,16 @@ import os
 
 def basic_example_transformer_n_winding(onelab_folder: str = None, show_visual_outputs: bool = True,
                                         is_test: bool = False):
-    """Run the example code for the three-winding transformer."""
+    """
+    Run the example code for the three-winding transformer.
+
+    :param onelab_folder: onelab folder path
+    :type onelab_folder: str
+    :param show_visual_outputs: True to show visual outputs (simulation results)
+    :type show_visual_outputs: bool
+    :param is_test: True for pytest usage. Defaults to False.
+    :type is_test: bool
+    """
     def example_thermal_simulation(show_thermal_visual_outputs: bool = True, flag_insulation: bool = True):
         # Thermal simulation:
         # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the
@@ -76,7 +85,7 @@ def basic_example_transformer_n_winding(onelab_folder: str = None, show_visual_o
         os.mkdir(example_results_folder)
 
     # Example for a transformer with multiple virtual winding windows.
-    working_directory = os.path.join(example_results_folder, "n-winding-transformer")
+    working_directory = os.path.join(example_results_folder, os.path.splitext(os.path.basename(__file__))[0])
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 

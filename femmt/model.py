@@ -78,7 +78,12 @@ class Conductor:
             raise Exception(f"Material {conductivity.name} not found in database")
 
     def set_rectangular_conductor(self, thickness: float = None):
-        """Set a rectangular, solid conductor."""
+        """
+        Set a rectangular, solid conductor.
+
+        :param thickness: thickness of the rectangular conductor in m
+        :type thickness: float
+        """
         if self.conductor_is_set:
             raise Exception("Only one conductor can be set for each winding!")
 
@@ -89,7 +94,14 @@ class Conductor:
         self.conductor_radius = 1  # Revisit
 
     def set_solid_round_conductor(self, conductor_radius: float, conductor_arrangement: Optional[ConductorArrangement]):
-        """Set a solid round conductor."""
+        """
+        Set a solid round conductor.
+
+        :param conductor_radius: conductor radius in m
+        :type conductor_radius: float
+        :param conductor_arrangement: conductor arrangement (Square / SquareFullWidth / Hexagonal)
+        :type conductor_arrangement: Optional[ConductorArrangement]
+        """
         if self.conductor_is_set:
             raise Exception("Only one conductor can be set for each winding!")
 
@@ -106,6 +118,17 @@ class Conductor:
         Set a round conductor made of litz wire.
 
         Only 3 of the 4 parameters are needed. The other one needs to be none.
+
+        :param conductor_radius: conductor radius in m
+        :type conductor_radius: Optional[float]
+        :param number_strands: number of strands inside the litz wire
+        :type number_strands: Optional[int]
+        :param strand_radius: radius of a single strand in m
+        :type strand_radius: Optional[float]
+        :param fill_factor: fill factor of the litz wire
+        :type fill_factor: Optional[float]
+        :param conductor_arrangement: conductor arrangement (Square, SquareFullWidth, Hexagonal)
+        :type conductor_arrangement: ConductorArrangement
         """
         if self.conductor_is_set:
             raise Exception("Only one conductor can be set for each winding!")
@@ -428,8 +451,17 @@ class Core:
         if self.permittivity["datasource"] == MaterialDataSource.ManufacturerDatasheet:
             self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material, attribute="resistivity")
 
-    def update_core_material_pro_file(self, frequency, electro_magnetic_folder, plot_interpolation: bool = False):
-        """Update the pro file for the solver depending on the frequency of the upcoming simulation."""
+    def update_core_material_pro_file(self, frequency: int, electro_magnetic_folder: str, plot_interpolation: bool = False):
+        """
+        Update the pro file for the solver depending on the frequency of the upcoming simulation.
+
+        :param frequency: Frequency in Hz
+        :type frequency: int
+        :param electro_magnetic_folder: electro magnetic results filepath
+        :type electro_magnetic_folder: str
+        :param plot_interpolation: True to plot the interpolation results for the material parameters
+        :type plot_interpolation: bool
+        """
         if self.mdb_verbosity == Verbosity.ToConsole:
             print(f"{self.permeability['datasource']=}")
         self.material_database.permeability_data_to_pro_file(temperature=self.temperature, frequency=frequency,
@@ -653,8 +685,13 @@ class Insulation:
         self.flag_insulation = flag_insulation
         self.max_aspect_ratio = max_aspect_ratio
 
-    def set_flag_insulation(self, flag):  # to differentiate between the simulation with and without insulation
-        """Set the self.flag_insulation key."""
+    def set_flag_insulation(self, flag: bool):  # to differentiate between the simulation with and without insulation
+        """
+        Set the self.flag_insulation key.
+
+        :param flag: True to enable the insulation
+        :type flag: bool
+        """
         self.flag_insulation = flag
 
     def add_winding_insulations(self, inner_winding_insulation: List[List[float]]):
@@ -793,6 +830,8 @@ class VirtualWindingWindow:
         :type foil_vertical_placing_strategy: FoilVerticalDistribution, optional
         :param foil_horizontal_placing_strategy: foil_horizontal_placing_strategy defines the way the rectangular foil Horizontal conductors are placing in vww
         :type foil_horizontal_placing_strategy: foil_horizontal_placing_strategy, optional
+        :param alignment: List of alignments: ToEdges, CenterOnVerticalAxis, CenterOnHorizontalAxis
+        :type alignment: Optional[Align]
         """
         self.winding_type = WindingType.Single
         self.winding_scheme = winding_scheme
@@ -851,16 +890,37 @@ class VirtualWindingWindow:
                                   conductor1: Conductor, turns1: int,
                                   conductor2: Conductor, turns2: int,
                                   conductor3: Conductor, turns3: int,
-                                  isolation_primary_to_primary: float,
-                                  isolation_secondary_to_secondary: float,
-                                  isolation_primary_to_secondary: float):
-        """Set a center tapped winding scheme."""
+                                  insulation_primary_to_primary: float,
+                                  insulation_secondary_to_secondary: float,
+                                  insulation_primary_to_secondary: float):
+        """
+        Set a center tapped winding scheme.
+
+        :param conductor1: set the conductor for winding 1
+        :type conductor1: Conductor
+        :param conductor2: set the conductor for winding 2
+        :type conductor2: Conductor
+        :param conductor3: set the conductor for winding 3
+        :type conductor3: Conductor
+        :param insulation_primary_to_primary: primary to primary insulation in m
+        :type insulation_primary_to_primary: float
+        :param insulation_primary_to_secondary: primary to secondary insulation in m
+        :type insulation_primary_to_secondary: float
+        :param insulation_secondary_to_secondary: secondary to secondary insulation in m
+        :type insulation_secondary_to_secondary: float
+        :param turns1: number of turns for winding 1
+        :type turns1: int
+        :param turns2: number of turns for winding 2
+        :type turns2: int
+        :param turns3: number of turns for winding 3
+        :type turns3: int
+        """
         # TODO: center tapped is following line allowed to set winding insulation this way?
         # self.winding_insulation = define_center_tapped_insulation(primary_to_primary=2e-4,
         #                                                           secondary_to_secondary=2e-4,
         #                                                           primary_to_secondary=5e-4)
-        self.winding_insulation = [isolation_primary_to_primary, isolation_secondary_to_secondary,
-                                   isolation_primary_to_secondary]
+        self.winding_insulation = [insulation_primary_to_primary, insulation_secondary_to_secondary,
+                                   insulation_primary_to_secondary]
         self.winding_type = WindingType.CenterTappedGroup
         self.winding_scheme = None  # TODO: center tapped maybe add vertical or sth. like this
         self.windings = [conductor1, conductor2, conductor3]
@@ -1010,6 +1070,14 @@ class WindingWindow:
         :type vertical_split_factor: float, optional
         :return: Tuple containing the virtual winding windows
         :rtype: Tuple[VirtualWindingWindow]
+        :param top_bobbin: top bobbin thickness in m
+        :type top_bobbin: float
+        :param bot_bobbin: bottom bobbin thickness in m
+        :type bot_bobbin: float
+        :param left_bobbin: left bobbin thickness in m
+        :type left_bobbin: float
+        :param right_bobbin: right bobbin thickness in m
+        :type right_bobbin: float
         """
         self.split_type = split_type
 

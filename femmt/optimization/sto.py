@@ -101,12 +101,13 @@ class StackedTransformerOptimization:
         return target_and_fix_parameters
 
     @staticmethod
-    def objective(trial, config: StoSingleInputConfig,
+    def objective(trial: optuna.Trial, config: StoSingleInputConfig,
                   target_and_fixed_parameters: StoTargetAndFixedParameters,
                   number_objectives: int, show_geometries: bool = False, process_number: int = 1):
         """Objective for optuna optimization.
 
         :param trial: optuna trail objective. Used by optuna
+        :type trial: optuna.Trial
         :param config: simulation configuration file
         :type config: StoSingleInputConfig
         :param target_and_fixed_parameters: contains pre-calculated values
@@ -478,6 +479,9 @@ class StackedTransformerOptimization:
     @staticmethod
     def run_garbage_collector(study: optuna.Study, _):
         """Run the garbage collector to prevent high memory consumption.
+
+        :param study: optuna study
+        :type study: optuna.Study
 
         as seen so far, a typical study needs 50.000 to 500.000 trials to have good results when performing
         the optimization. In the range above 200.000 trials, the RAM has a high occupancy rate.
@@ -922,14 +926,6 @@ class StackedTransformerOptimization:
         :type config: StoSingleInputConfig
         :param number_trial: number of trial to simulate
         :type number_trial: int
-        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default]
-            removes all amplitudes below 1 % of the maximum amplitude from the result-frequency list
-        :type fft_filter_value_factor: float
-        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter,
-            except performing thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
-        :type mesh_accuracy: float
-        :param show_simulation_results: visualize the simulation results of the FEM simulation
-        :type show_simulation_results: bool
         """
         target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
 

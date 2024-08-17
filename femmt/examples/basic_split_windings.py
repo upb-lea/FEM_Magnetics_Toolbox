@@ -2,11 +2,27 @@
 import femmt as fmt
 import os
 
-def run_transformer_vvw_split_examples(num_windings, onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
-    """Run the example code for the transformer."""
+def run_transformer_vvw_split_examples(num_windings: int, onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
+    """
+    Run the example code for the transformer.
+
+    :param num_windings: Number of windings to simulate
+    :type num_windings: int
+    :param onelab_folder: onelab folder path
+    :type onelab_folder: str
+    :param show_visual_outputs: True to show visual outputs (simulation results)
+    :type show_visual_outputs: bool
+    :param is_test: True for pytest usage. Defaults to False.
+    :type is_test: bool
+    """
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
     if not os.path.exists(example_results_folder):
         os.mkdir(example_results_folder)
+
+    # Working directory can be set arbitrarily
+    working_directory_group_folder = os.path.join(example_results_folder, os.path.splitext(os.path.basename(__file__))[0])
+    if not os.path.exists(working_directory_group_folder):
+        os.mkdir(working_directory_group_folder)
 
     def setup_simulation(working_directory, horizontal_split_factors, vertical_split_factors):
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
@@ -70,26 +86,26 @@ def run_transformer_vvw_split_examples(num_windings, onelab_folder: str = None, 
 
     if num_windings == 2:
         # Run with vertical split
-        working_directory = os.path.join(example_results_folder, "2-windings-vertical-split-only")
+        working_directory = os.path.join(working_directory_group_folder, "2-windings-vertical-split-only")
         setup_simulation(working_directory, horizontal_split_factors=[], vertical_split_factors=[[0.5]])
 
         # Run with horizontal split
-        working_directory = os.path.join(example_results_folder, "2-windings-horizontal-split-only")
+        working_directory = os.path.join(working_directory_group_folder, "2-windings-horizontal-split-only")
         setup_simulation(working_directory, horizontal_split_factors=[0.5], vertical_split_factors=[])
 
     elif num_windings == 3:
-        working_directory = os.path.join(example_results_folder, "3-windings-vertical-split-only")
+        working_directory = os.path.join(working_directory_group_folder, "3-windings-vertical-split-only")
         setup_simulation(working_directory, horizontal_split_factors=[], vertical_split_factors=[[0.33, 0.66]])
 
-        working_directory = os.path.join(example_results_folder, "3-windings-horizontal-split-only")
+        working_directory = os.path.join(working_directory_group_folder, "3-windings-horizontal-split-only")
         setup_simulation(working_directory, horizontal_split_factors=[0.33, 0.66], vertical_split_factors=[])
 
     elif num_windings == 5:
-        working_directory = os.path.join(example_results_folder, "5-windings")
+        working_directory = os.path.join(working_directory_group_folder, "5-windings")
         setup_simulation(working_directory, horizontal_split_factors=[0.48, 0.75], vertical_split_factors=[[0.5], [0.5], None])
 
     elif num_windings == 6:
-        working_directory = os.path.join(example_results_folder, "6-windings")
+        working_directory = os.path.join(working_directory_group_folder, "6-windings")
         setup_simulation(working_directory, horizontal_split_factors=[0.48, 0.75], vertical_split_factors=[[0.5], [0.5], [0.5]])
 
     else:

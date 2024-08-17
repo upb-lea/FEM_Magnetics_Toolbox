@@ -5,7 +5,16 @@ import numpy as np
 from typing import Optional
 
 def transformer_component_study(onelab_folder: Optional[str] = None, show_visual_outputs: bool = True, is_test: bool = False):
-    """Perform a component study."""
+    """
+    Perform a component study.
+
+    :param onelab_folder: onelab folder path
+    :type onelab_folder: str
+    :param show_visual_outputs: True to show visual outputs (simulation results)
+    :type show_visual_outputs: bool
+    :param is_test: True for pytest usage. Defaults to False.
+    :type is_test: bool
+    """
     switching_frequency = 180000
 
     # max efficient

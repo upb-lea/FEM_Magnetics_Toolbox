@@ -20,8 +20,13 @@ class FileData:
         self.onelab_folder_path: Optional[str] = None
 
     @staticmethod
-    def create_folders(*args) -> None:
-        """Create folders for every given folder path (if it does not exist)."""
+    def create_folders(*args: str) -> None:
+        """
+        Create folders for every given folder path (if it does not exist).
+
+        :param args: Folder names
+        :type args: str
+        """
         for folder in list(args):
             if not os.path.exists(folder):
                 os.mkdir(folder)
@@ -41,7 +46,12 @@ class FileData:
 
     @staticmethod
     def clean_folder_structure(folder_path: str):
-        """Clean all files from a folder structure. The folder structure remains intact."""
+        """
+        Clean all files from a folder structure. The folder structure remains intact.
+
+        :param folder_path: folder path to clean up
+        :type folder_path: str
+        """
         try:
             for root, _, files in os.walk(folder_path):
                 for file in files:
@@ -144,7 +154,16 @@ class MeshData:
         self.center_factor = 4
 
     def update_spatial_data(self, core_w: float, window_w: float, windings: List["Conductor"]):
-        """Update geometry data of the core of the magnetic component."""
+        """
+        Update geometry data of the core of the magnetic component.
+
+        :param core_w: core width
+        :type core_w: float
+        :param window_w: window width
+        :type window_w: float
+        :param windings: list of windings
+        :type windings: List["Conductor"]
+        """
         self.core_w = core_w
         self.window_w = window_w
         self.windings = windings

@@ -5,13 +5,22 @@ import os
 # from matplotlib import pyplot as plt
 import numpy as np
 def basic_example_transformer_time_domain(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
-    """Demonstrate how to simulate a two winding transformer in time domain."""
+    """
+    Demonstrate how to simulate a two winding transformer in time domain.
+
+    :param onelab_folder: onelab folder path
+    :type onelab_folder: str
+    :param show_visual_outputs: True to show visual outputs (simulation results)
+    :type show_visual_outputs: bool
+    :param is_test: True for pytest usage. Defaults to False.
+    :type is_test: bool
+    """
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
     if not os.path.exists(example_results_folder):
         os.mkdir(example_results_folder)
 
     # Example for a transformer with multiple virtual winding windows.
-    working_directory = os.path.join(example_results_folder, "transformer")
+    working_directory = os.path.join(example_results_folder, os.path.splitext(os.path.basename(__file__))[0])
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
@@ -20,7 +29,7 @@ def basic_example_transformer_time_domain(onelab_folder: str = None, show_visual
                                 component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
                                 verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
 
-    # This line is for automated pytest running on github only. Please ignore this line!
+    # This line is for automated pytest running on GitHub only. Please ignore this line!
     if onelab_folder is not None:
         geo.file_data.onelab_folder_path = onelab_folder
 

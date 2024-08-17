@@ -13,8 +13,11 @@ def calculate_heat_flux_round_wire(power, wire_radius, wire_distance):
     Calculate teat flux for round wire.
 
     :param power: losses in Watts
+    :type power: float
     :param wire_radius: wire thickness in m
-    :param wire_distance:
+    :type wire_radius: float
+    :param wire_distance: length of the wire
+    :type wire_distance: float
     """
     # Power density for volumes W/m^3
     volume = 2 * np.pi**2 * wire_radius**2 * wire_distance

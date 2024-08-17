@@ -9,14 +9,23 @@ if not os.path.exists(example_results_folder):
 
 # Create Object
 def basic_example_inductor_excitation_sweep(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
-    """Run the example code for the inductor excitation sweep."""
+    """
+    Run the example code for the inductor excitation sweep.
+
+    :param onelab_folder: onelab folder path
+    :type onelab_folder: str
+    :param show_visual_outputs: True to show visual outputs (simulation results)
+    :type show_visual_outputs: bool
+    :param is_test: True for pytest usage. Defaults to False.
+    :type is_test: bool
+    """
     # 0: choose frequencies, amplitude and phases to sweep
     frequencies = [100000, 200000]
     current_amplitudes = [[10], [4]]
     phases = [[0], [179]]
 
     # Working directory can be set arbitrarily
-    working_directory = os.path.join(example_results_folder, "inductor_sweep")
+    working_directory = os.path.join(example_results_folder, os.path.splitext(os.path.basename(__file__))[0])
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
@@ -45,8 +54,6 @@ def basic_example_inductor_excitation_sweep(onelab_folder: str = None, show_visu
                     permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
                     permittivity_measurement_setup="LEA_LK")
 
-    # mu_rel=3000, phi_mu_deg=10,
-    # sigma=0.5)
     geo.set_core(core)
 
     # 3. set air gap parameters

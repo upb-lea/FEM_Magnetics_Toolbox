@@ -139,7 +139,28 @@ def integrated_transformer_fem_simulation_from_result_dto(config_dto: ItoSingleI
                                                           phase_deg_1: float,
                                                           phase_deg_2: float,
                                                           visualize: bool = False):
-    """FEM simulation for the integrated transformer from a result DTO."""
+    """
+    FEM simulation for the integrated transformer from a result DTO.
+
+    :param config_dto: configuration DTO (data transfer object)
+    :type config_dto: ItoSingleInputConfig
+    :param dto: data transfer object to simulate
+    :type dto: ItoSingleResultFile
+    :param fem_working_directory: working directory (very useful for parallel simulations)
+    :type fem_working_directory: str
+    :param fundamental_frequency: fundamental frequency in Hz
+    :type fundamental_frequency: float
+    :param i_peak_1: peak current of winding 1
+    :type i_peak_1: float
+    :param i_peak_2: peak current of winding 2
+    :type i_peak_2: float
+    :param phase_deg_1: phase in degree of winding 1
+    :type phase_deg_1: float
+    :param phase_deg_2: phase in degree of winding 2
+    :type phase_deg_2: float
+    :param visualize: True to visualize the results
+    :type visualize: bool
+    """
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
                                 working_directory=fem_working_directory,
@@ -230,7 +251,16 @@ def integrated_transformer_fem_simulations_from_result_dtos(config_dto: ItoSingl
                                                             simulation_dto_list: List[ItoSingleResultFile],
                                                             visualize: bool = False,
                                                             ):
-    """FEM simulation for the integrated transformer from a result DTO."""
+    """
+    FEM simulation for the integrated transformer from a result DTO.
+
+    :param config_dto: configuration DTO (data transfer object)
+    :type config_dto: ItoSingleInputConfig
+    :param simulation_dto_list: List of simulation DTOs to perform the FEM simulation
+    :type simulation_dto_list: List[ItoSingleResultFile]
+    :param visualize: True to visualize the results
+    :type visualize: bool
+    """
     ito_target_and_fixed_parameters_dto = fmt.optimization.IntegratedTransformerOptimization.calculate_fix_parameters(
         config_dto)
 
@@ -274,7 +304,16 @@ def integrated_transformer_fem_simulations_from_result_dtos(config_dto: ItoSingl
 def integrated_transformer_fem_thermal_simulations_from_result_dtos(
         config_dto: ItoSingleInputConfig, simulation_dto_list: List[ItoSingleResultFile],
         visualize: bool = False):
-    """Thermal FEM simulation for the integrated transformer from a result DTO."""
+    """
+    Thermal FEM simulation for the integrated transformer from a result DTO.
+
+    :param config_dto: configuration DTO (data transfer object)
+    :type config_dto: ItoSingleInputConfig
+    :param simulation_dto_list: List of simulation DTOs to perform thermal FEM simulation
+    :type simulation_dto_list: List[ItoSingleResultFile]
+    :param visualize: True to visualize the results
+    :type visualize: bool
+    """
     ito_target_and_fixed_parameters_dto = fmt.optimization.IntegratedTransformerOptimization.calculate_fix_parameters(
         config_dto)
 

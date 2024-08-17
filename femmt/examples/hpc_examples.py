@@ -51,8 +51,12 @@ def create_parallel_example_transformer() -> fmt.MagneticComponent:
 def create_parallel_example_inductor(inductor_frequency: int, air_gap_height: float = 0.0005, air_gap_position: int = 50) -> fmt.MagneticComponent:
     """Create an example model which is used for the parallel execution example. This does implement a simple inductor with given inductor_frequency.
 
-    :param inductor_frequency: Frequency for the inductor.
+    :param inductor_frequency: Frequency for the inductor in Hz
     :type inductor_frequency: int
+    :param air_gap_height: height of the air gap in m
+    :type air_gap_height: float
+    :param air_gap_position: Position of the air gap in percent
+    :type air_gap_position: int
     """ 
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=None,  # Can be set to None since it will be overwritten anyway
                                 clean_previous_results=False, verbosity=fmt.Verbosity.ToFile)
@@ -112,8 +116,13 @@ def custom_hpc(parameters: Dict):
     model.create_model(freq=250000, pre_visualize_geometry=False)
     model.single_simulation(freq=250000, current=current, phi_deg=phi_deg, show_fem_simulation_results=False)
 
-def parallel_simulation_study(averaging_count):
-    """Perform several parallel simulations."""
+def parallel_simulation_study(averaging_count: int):
+    """
+    Perform several parallel simulations.
+
+    :param averaging_count: number of simulations to average the time
+    :type averaging_count: int
+    """
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
     parallel_results_folder = os.path.join(example_results_folder, "parallel")
     study_results_folder = os.path.join(parallel_results_folder, "study")
