@@ -632,34 +632,15 @@ class MagneticComponent:
     # Miscellaneous
     def calculate_core_cross_sectional_area(self):
         """
-        Calculate the cross-sectional area of the core.
+        Calculate the effective cross-sectional area of the core using the core inner diameter.
 
         :return: Cross-sectional area of the core.
         :rtype: float
         """
-        core_reluctance, core_part_reluctance, total_length = self.calculate_core_reluctance()
-        core_volume = self.calculate_core_volume()
-        cross_sectional_area = core_volume / total_length
+        # Calculate the cross-sectional area using the inner diameter of the core
+        width = self.core.core_inner_diameter / 2
+        cross_sectional_area = np.pi * (width ** 2)
         return cross_sectional_area
-
-    def calculate_airgap_cross_sectional_area(self):
-        """
-        Calculate the cross-sectional area of air gap.
-
-        :return: air gap area.
-        :rtype: float
-        """
-        for leg_position, _, _ in self.air_gaps.midpoints:
-            if leg_position == AirGapLegPosition.LeftLeg.value or leg_position == AirGapLegPosition.RightLeg.value:
-                # For left and right leg, same width as core outer radius minus inner radius
-                width = self.core.r_outer - self.core.r_inner
-            elif leg_position == AirGapLegPosition.CenterLeg.value:
-                # For center leg, the width as core inner diameter divided by 2
-                width = self.core.core_inner_diameter / 2
-            else:
-                raise Exception(f"Invalid leg position tag {leg_position} used for an air gap.")
-            air_gap_area = np.pi * (width ** 2)
-        return air_gap_area
 
     def calculate_core_volume_with_air(self) -> float:
         """Calculate the volume of the core including air.
@@ -2285,14 +2266,11 @@ class MagneticComponent:
         # Calculate Flux (Φ = MMF / Reluctance)
         total_flux = total_mmf / reluctance
         # Area
-        core_area = self.calculate_core_cross_sectional_area()
+        core_cross_sectional_area = self.calculate_core_cross_sectional_area()
 
         # Magnetic flux density
-        if self.air_gaps.midpoints:
-            airgap_area = self.calculate_airgap_cross_sectional_area()
-            b_field = total_flux / (core_area + airgap_area)
-        else:
-            b_field = total_flux / core_area
+        b_field = total_flux / core_cross_sectional_area
+
         # Get saturation flux density from material database
         database = mdb.MaterialDatabase()
         saturation_flux_density = database.get_saturation_flux_density(self.core.material)
