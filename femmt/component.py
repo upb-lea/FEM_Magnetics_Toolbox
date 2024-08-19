@@ -1663,9 +1663,108 @@ class MagneticComponent:
         self.excitation_sweep(frequency_list, current_list_list, phi_deg_list_list, inductance_dict=inductance_dict,
                               core_hyst_loss=p_hyst_core_parts)
 
-    def stacked_core_pre_study(self, time_current_vectors: List[List[List[float]]], plot_waveforms: bool = False, fft_filter_value_factor: float = 0.01):
-        """Generate the current waveforms needed for the stacked_core_study()."""
-        pass
+    def stacked_core_study_excitation(self, time_current_vectors: List[List[List[float]]], transfer_ratio_n: float,
+                                      plot_waveforms: bool = False, fft_filter_value_factor: float = 0.01, ):
+        """
+        Generate the current waveforms needed for the stacked_core_study().
+
+        Note the counting arrow system from the documentation to define the time_current_vectors.
+        The transfer_ratio_n is used to neglect the transformer loss part when the hysteresis loss part of the inductor is calculated.
+
+        :param time_current_vectors: time-current vectors for primary and secondary, e.g. [[time, current_prim], [time, current_sec]]
+        :type time_current_vectors: List[List[List[float]]]
+        :param plot_waveforms: True to watch the pre-calculated waveforms
+        :type plot_waveforms: bool
+        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all
+            amplitudes below 1 % of the maximum amplitude from the result-frequency list
+        :type fft_filter_value_factor: float
+        :param transfer_ratio_n: transformer transfer ratio n
+        :type transfer_ratio_n: float
+        """
+        stacked_core_study_excitation = {
+            "hysteresis": {
+                "frequency": None,
+                "transformer": {
+                    "current_amplitudes": None,
+                    "current_phases_deg": None
+                },
+                "choke": {
+                    "current_amplitudes": None,
+                    "current_phases_deg": None
+                }
+            },
+            "linear_losses": {
+                "frequencies": None,
+                "current_amplitudes": None,
+                "current_phases_deg": None
+            }
+        }
+
+        # Hysteresis Loss Excitation
+        hyst_frequency, hyst_current_amplitudes, hyst_phases_deg = ff.hysteresis_current_excitation(time_current_vectors)
+        stacked_core_study_excitation["hysteresis"]["frequency"] = hyst_frequency
+
+        i_1 = hyst_current_amplitudes[0] * np.cos(
+            time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_phases_deg[0]))
+        i_2 = hyst_current_amplitudes[1] * np.cos(
+            time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_phases_deg[1]))
+
+        i_mag_sine_primary_from_sines = i_1 + i_2 / transfer_ratio_n
+
+        if plot_waveforms:
+            plt.plot(time_current_vectors[0][0], i_1, label="i_1 sine peak reconstruction for hyst. losses", color='red', linestyle='--')
+            plt.plot(time_current_vectors[0][0], time_current_vectors[0][1], label='i_1 original', color='red')
+            plt.plot(time_current_vectors[0][0], i_2, label="i_2 sine peak reconstruction for hyst. losses", color='blue', linestyle='--')
+            plt.plot(time_current_vectors[1][0], time_current_vectors[1][1], label='i_1 original', color='blue')
+            plt.xlabel("time / s")
+            plt.ylabel("current / A")
+            plt.title("hysteresis peak amplitudes")
+            plt.grid()
+            plt.legend()
+            plt.show()
+
+        # calculate hysteresis losses in the xfmr
+        # calculate the peak of the magnetisation current
+        i_mag_original_primary = time_current_vectors[0][1] + time_current_vectors[1][1] / transfer_ratio_n
+        i_mag_sine_primary_from_original_frequency, i_mag_sine_primary_from_original_amplitude, i_mag_sine_primary_from_original_phase_deg = (
+            ff.hysteresis_current_excitation([[time_current_vectors[0][0], i_mag_original_primary]]))
+
+        if plot_waveforms:
+            # calculate the i_mag on the secondary side
+            i_mag_sec_sine_reconstructed = i_mag_sine_primary_from_original_amplitude[0] * np.cos(
+                time_current_vectors[0][0] * 2 * np.pi * i_mag_sine_primary_from_original_frequency - np.deg2rad(i_mag_sine_primary_from_original_phase_deg[0]))
+            plt.plot(time_current_vectors[0][0], i_mag_original_primary, color='red', label='Original i_mag')
+            plt.plot(time_current_vectors[0][0], i_mag_sec_sine_reconstructed, color='red', linestyle='--', label="Reconstructed sine wave i_mag")
+
+            plt.plot(time_current_vectors[0][0], i_mag_sine_primary_from_sines, label='i_mag sine primary from sines')
+            plt.xlabel("time / s")
+            plt.ylabel("current / A")
+            plt.title("Magnetization current on primary side")
+            plt.grid()
+            plt.legend()
+            plt.show()
+
+        xfmr_scale = i_mag_sine_primary_from_original_amplitude[0] / np.max(i_mag_sine_primary_from_sines)
+        print(f"{xfmr_scale=}")
+        stacked_core_study_excitation["hysteresis"]["transformer"]["current_amplitudes"] = list(np.array(hyst_current_amplitudes) * xfmr_scale)
+        stacked_core_study_excitation["hysteresis"]["transformer"]["current_phases_deg"] = hyst_phases_deg
+
+        # create the currents that are needed for the hysteresis loss simulation in the choke
+        # To get the inductor part losses only, currents of the transformer are set to the same value with a phase shift of 180 degree.
+        # This results in no transformer flux and therefore in no transformer hysteresis losses
+        choke_hyst_excitation_amplitudes = hyst_current_amplitudes
+        choke_hyst_excitation_amplitudes[1] = choke_hyst_excitation_amplitudes[0] * transfer_ratio_n
+        stacked_core_study_excitation["hysteresis"]["choke"]["current_amplitudes"] = choke_hyst_excitation_amplitudes
+        stacked_core_study_excitation["hysteresis"]["choke"]["current_phases_deg"] = [0, 180]
+
+        # Linear Loss Excitation
+        frequency_list, current_list_list, phi_deg_list_list = ff.time_current_vector_to_fft_excitation(time_current_vectors, fft_filter_value_factor)
+
+        stacked_core_study_excitation["linear_losses"]["frequencies"] = list(frequency_list)
+        stacked_core_study_excitation["linear_losses"]["current_amplitudes"] = current_list_list
+        stacked_core_study_excitation["linear_losses"]["current_phases_deg"] = phi_deg_list_list
+
+        return stacked_core_study_excitation
 
     def stacked_core_center_tapped_pre_study(self, time_current_vectors: List[List[List[float]]], plot_waveforms: bool = False,
                                              fft_filter_value_factor: float = 0.01) -> Dict:
@@ -1676,7 +1775,7 @@ class MagneticComponent:
         are needed. This function calculates the new current waveforms for the center tapped study to get
         inductance values and so on.
 
-        :param time_current_vectors: time-current vectors for primary and secondary
+        :param time_current_vectors: time-current vectors for primary and secondary, e.g. [[time, current_prim], [time, current_sec]]
         :type time_current_vectors: List[List[List[float]]]
         :param plot_waveforms: True to watch the pre-calculated waveforms
         :type plot_waveforms: bool

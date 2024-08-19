@@ -20,6 +20,7 @@ import numpy as np
 from femmt.constants import *
 from femmt.enumerations import ConductorType
 from femmt.dtos import *
+import femmt.functions_reluctance as fr
 
 colors_femmt_default = {"blue": (28, 113, 216),
                         'red': (192, 28, 40),
@@ -1819,21 +1820,27 @@ def hysteresis_current_excitation(input_time_current_vectors: List[List[List[flo
     Collect the peak current and the corresponding phase shift for the fundamental frequency for all windings.
 
     Results are used for calculating the hysteresis losses by another function.
-    In case of a center-tapped transformer, halfing the amplitues will be done by split_hysteresis_loss_excitation_center_tapped.
+    In case of a center-tapped transformer, halving the amplitudes will be done by split_hysteresis_loss_excitation_center_tapped.
 
     :param input_time_current_vectors: e.g. [[time_vec, i_primary_vec], [time_vec, i_secondary_vec]]
     :type input_time_current_vectors: List[List[List[float]]]
+    :raises ValueError: if time vector does not start at zero seconds.
+    :return: hyst_frequency, hyst_current_amplitudes, hyst_phases_deg, e.g. 200400.80170764355 [6.13, 26.65] [49.13, 229.49]
+    :rtype: List[List[float]]
     """
+    if input_time_current_vectors[0][0][0] != 0:
+        raise ValueError("time must start at 0 seconds!")
+
     # collect simulation input parameters from time_current_vectors
-    hyst_loss_amplitudes = []
-    hyst_loss_phases_deg = []
+    hyst_current_amplitudes = []
+    hyst_phases_deg = []
     hyst_frequency = 1 / (input_time_current_vectors[0][0][-1])
     for time_current_vector in input_time_current_vectors:
         # collect hysteresis loss simulation input parameters
-        hyst_loss_amplitudes.append(fr.max_value_from_value_vec(time_current_vector[1])[0])
-        hyst_loss_phases_deg.append(
+        hyst_current_amplitudes.append(fr.max_value_from_value_vec(time_current_vector[1])[0])
+        hyst_phases_deg.append(
             fr.phases_deg_from_time_current(time_current_vector[0], time_current_vector[1])[0])
-    return hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg
+    return hyst_frequency, hyst_current_amplitudes, hyst_phases_deg
 
 
 if __name__ == '__main__':
