@@ -1664,7 +1664,7 @@ class MagneticComponent:
                               core_hyst_loss=p_hyst_core_parts)
 
     def stacked_core_study_excitation(self, time_current_vectors: List[List[List[float]]], transfer_ratio_n: float,
-                                      plot_waveforms: bool = False, fft_filter_value_factor: float = 0.01, ):
+                                      plot_waveforms: bool = False, fft_filter_value_factor: float = 0.01):
         """
         Generate the current waveforms needed for the stacked_core_study().
 
@@ -1745,7 +1745,6 @@ class MagneticComponent:
             plt.show()
 
         xfmr_scale = i_mag_sine_primary_from_original_amplitude[0] / np.max(i_mag_sine_primary_from_sines)
-        print(f"{xfmr_scale=}")
         stacked_core_study_excitation["hysteresis"]["transformer"]["current_amplitudes"] = list(np.array(hyst_current_amplitudes) * xfmr_scale)
         stacked_core_study_excitation["hysteresis"]["transformer"]["current_phases_deg"] = hyst_phases_deg
 
@@ -1765,6 +1764,87 @@ class MagneticComponent:
         stacked_core_study_excitation["linear_losses"]["current_phases_deg"] = phi_deg_list_list
 
         return stacked_core_study_excitation
+
+    def stacked_core_study(self, number_primary_coil_turns: int,
+                           time_current_vectors: List[List[List[float]]],
+                           plot_waveforms: bool = False, fft_filter_value_factor: float = 0.01) -> None:
+        """
+        Comprehensive component analysis for the 2 winding stacked transformers with dedicated choke.
+
+        The result log contains inductance values and hysteresis losses.
+
+        :param number_primary_coil_turns: number of primary coil turns. Needed due to a special trick to get the
+            transformer losses without effect of the choke
+        :type number_primary_coil_turns: int
+                :param time_current_vectors: time-current vectors for primary and secondary, e.g. [[time, current_prim], [time, current_sec]]
+        :type time_current_vectors: List[List[List[float]]]
+        :param plot_waveforms: True to watch the pre-calculated waveforms
+        :type plot_waveforms: bool
+        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all
+            amplitudes below 1 % of the maximum amplitude from the result-frequency list
+        :type fft_filter_value_factor: float
+        """
+        hyst_frequency, _, _ = ff.hysteresis_current_excitation(time_current_vectors)
+        # get the inductance
+        inductance_dict = self.get_inductances(I0=1, skin_mesh_factor=1, op_frequency=hyst_frequency, silent=self.silent)
+
+        study_excitation = self.stacked_core_study_excitation(time_current_vectors, plot_waveforms=plot_waveforms,
+                                                              fft_filter_value_factor=fft_filter_value_factor,
+                                                              transfer_ratio_n=inductance_dict["n_conc"])
+
+        # Initialize the hysteresis losses with zero
+        # Note: To calculate the hysteresis losses, two steps are performed:
+        #       * transformer loss calculation (therefore, the current in the inductor is set to zero).
+        #       * inductor loss calculation
+
+        p_hyst_core_parts = [0, 0, 0, 0, 0]
+
+        # From here, the hysteresis of transformer is calculated
+        ps_primary_coil_turns = [150000 + i for i in range(number_primary_coil_turns)]
+        self.overwrite_conductors_with_air(ps_primary_coil_turns)
+        self.excitation(frequency=study_excitation["hysteresis"]["frequency"],
+                        amplitude_list=study_excitation["hysteresis"]["transformer"]["current_amplitudes"],
+                        phase_deg_list=study_excitation["hysteresis"]["transformer"]["current_phases_deg"],
+                        plot_interpolation=False)
+        self.write_simulation_parameters_to_pro_files()
+        self.generate_load_litz_approximation_parameters()
+        self.simulate()
+        self.calculate_and_write_freq_domain_log()  # TODO: reuse center tapped
+
+        # read the log of the transformer losses
+        log = self.read_log()
+        for core_part in [1, 2, 3, 4]:
+            core_part_hyst_loss = log['single_sweeps'][0]['core_parts'][f'core_part_{core_part}']['hyst_losses']
+            p_hyst_core_parts[core_part - 1] += core_part_hyst_loss
+        # Now, p_hyst_core_parts includes the full transformer losses.
+
+        # From here on, inductor losses are calculated
+        # Therefore, the first done overwrite of inductor conductors is restored
+        self.overwrite_air_conductors_with_conductors(list(np.array(ps_primary_coil_turns) + 1000000))
+        self.excitation(frequency=study_excitation["hysteresis"]["frequency"],
+                        amplitude_list=study_excitation["hysteresis"]["choke"]["current_amplitudes"],
+                        phase_deg_list=study_excitation["hysteresis"]["choke"]["current_phases_deg"],
+                        plot_interpolation=False)
+        self.write_simulation_parameters_to_pro_files()
+        self.generate_load_litz_approximation_parameters()
+        self.simulate()
+        self.calculate_and_write_freq_domain_log()  # TODO: reuse center tapped
+
+        # read the log of the inductor losses
+        log = self.read_log()
+        for core_part in [3, 4, 5]:
+            core_part_hyst_loss = log['single_sweeps'][0]['core_parts'][f'core_part_{core_part}']['hyst_losses']
+            p_hyst_core_parts[core_part - 1] += core_part_hyst_loss
+        # p_hyst_core_parts includes now the transformer losses and the inductor losses
+
+        # calculate the winding losses # TODO: avoid meshing twice
+        # Note: As the result log is now re-written, the before calculated p_hyst_core_parts is added into this
+        # result-log also the inductance dict is externally inserted into the final result log.
+        # The final result log is written after this simulation
+        self.excitation_sweep(study_excitation["linear_losses"]["frequencies"],
+                              study_excitation["linear_losses"]["current_amplitudes"],
+                              study_excitation["linear_losses"]["current_phases_deg"],
+                              inductance_dict=inductance_dict, core_hyst_loss=p_hyst_core_parts)
 
     def stacked_core_center_tapped_pre_study(self, time_current_vectors: List[List[List[float]]], plot_waveforms: bool = False,
                                              fft_filter_value_factor: float = 0.01) -> Dict:
