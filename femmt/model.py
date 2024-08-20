@@ -288,7 +288,7 @@ class Core:
         if self.core_type == CoreType.Stacked:
             self.window_h_bot = core_dimensions.window_h_bot
             self.window_h_top = core_dimensions.window_h_top
-            self.core_h = self.window_h_bot + (3 * self.core_thickness) + self.window_h_top
+            self.core_h = self.window_h_bot + 2 * self.core_thickness
             self.number_core_windows = 4
 
         if detailed_core_model:
