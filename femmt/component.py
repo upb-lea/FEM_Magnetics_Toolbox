@@ -1600,7 +1600,8 @@ class MagneticComponent:
         self.calculate_and_write_freq_domain_log(number_frequency_simulations=len(frequency_list), current_amplitude_list=current_list_list,
                                                  frequencies=frequency_list, phase_deg_list=phi_deg_list_list,
                                                  core_hyst_losses=core_hyst_loss)
-        self.log_reluctance_calculations()
+        if self.core.core_type == CoreType.Single:
+            self.log_reluctance_calculations()
 
         if show_last_fem_simulation:
             self.write_simulation_parameters_to_pro_files()
