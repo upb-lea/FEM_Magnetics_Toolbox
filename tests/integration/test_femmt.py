@@ -1613,7 +1613,7 @@ def fixture_transformer_5_windings(temp_folder: pytest.fixture):
 
         # 8. perform an FEM simulation
         geo.create_model(freq=100000, pre_visualize_geometry=False)
-        geo.single_simulation(freq=100000, current=[1.625, 6.9, 4.9, 0.5, 1],
+        geo.single_simulation(freq=100000, current=[1.625, 6.0, 4.9, 0.5, 1],
                               phi_deg=[0, 180, 180, 90, 89], show_fem_simulation_results=False)
 
         # Thermal simulation:
