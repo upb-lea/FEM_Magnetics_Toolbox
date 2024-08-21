@@ -91,7 +91,7 @@ def basic_example_transformer_5_windings(onelab_folder: str = None, show_visual_
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
-                                verbosity=fmt.Verbosity.Silent, is_gui=is_test)
+                                verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
     if onelab_folder is not None:
@@ -159,7 +159,7 @@ def basic_example_transformer_5_windings(onelab_folder: str = None, show_visual_
 
     # 8. perform an FEM simulation
     geo.create_model(freq=100000, pre_visualize_geometry=show_visual_outputs)
-    geo.single_simulation(freq=100000, current=[1.625, 6.9, 4.9, 0.5, 1],
+    geo.single_simulation(freq=100000, current=[1.625, 6.0, 4.9, 0.5, 1],
                           phi_deg=[0, 180, 180, 90, 89], show_fem_simulation_results=show_visual_outputs)
 
     # 9. prepare and start thermal simulation
