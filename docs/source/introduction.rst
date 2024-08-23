@@ -3,6 +3,12 @@
 FEMMT development version (for developers only)
 ------------------------------------------------------------
 
+.. note::
+
+    If you want to make changes to the code of FEMMT (e.g. to fix a bug), you should read this section carefully.
+
+    If you simply want to use this toolbox as a user (simulating magnetic components), skip this section.
+
 This is the latest development version with the latest features. Note:
 You may need to install `git <https://git-scm.com/downloads>`__.
 Also have a look at the `developers notes </developers_notes.md>`__.
@@ -78,13 +84,6 @@ at first, but will be simplified in the future:
 Please note, the GUI is experimental.
 
 |image_gui_definition|
-
-FEMM Validation (for developers only)
---------------------------------------
-
-For verification purposes a FEMM model can be created in FEMMT. To do this
-FEMM needs to be installed as well as the FEMM python package.
-The functionality is limited, e.g. the air gaps are limited to the 'center'-type. Other types, like 'percent' are not implemented.
 
 
 .. |image_femmt_screenshot| image:: ../images/FEMMT_Screenshot.png
