@@ -461,6 +461,9 @@ results during the time domain simulation.
                                 show_fem_simulation_results=True,
                                 show_rolling_average=False,                                rolling_avg_window_size=50)
 
+.. note::
+
+    Gmsh windows open at various points in the simulations, e.g. to display the geometry or simulation results. To continue (e.g. to start the simulation from the geometry view), simply close the window.
 
 The results should look like this:
 
