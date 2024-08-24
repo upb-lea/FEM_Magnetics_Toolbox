@@ -1610,6 +1610,7 @@ class MagneticComponent:
         if show_last_fem_simulation:
             self.write_simulation_parameters_to_pro_files()
             self.visualize()
+        self.femmt_print(f"The electromagnetic results are stored here: {self.file_data.e_m_results_log_path}")
 
     def component_study(self, time_current_vectors: List[List[List[float]]], fft_filter_value_factor: float = 0.01):
         """
@@ -1872,6 +1873,8 @@ class MagneticComponent:
                               study_excitation["linear_losses"]["current_amplitudes"],
                               study_excitation["linear_losses"]["current_phases_deg"],
                               inductance_dict=inductance_dict, core_hyst_loss=p_hyst_core_parts)
+
+
 
     def stacked_core_center_tapped_pre_study(self, time_current_vectors: List[List[List[float]]], plot_waveforms: bool = False,
                                              fft_filter_value_factor: float = 0.01) -> Dict:
