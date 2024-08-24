@@ -89,11 +89,12 @@ class MagneticComponent:
         # Variable to set silent mode
         self.verbosity = verbosity
         self.logger = logging.getLogger("FEMMTLogger")
+        logging.basicConfig(format='%(levelname)s,%(asctime)s:%(message)s', encoding='utf-8')
         self.logger.setLevel(logging.INFO)
         if not gmsh.isInitialized():
             gmsh.initialize()
 
-        if not verbosity == Verbosity.ToConsole:
+        if verbosity != Verbosity.ToConsole:
             gmsh.option.setNumber("General.Terminal", 0)
             self.silent = True
 
@@ -347,6 +348,8 @@ class MagneticComponent:
         }
 
         thermal_simulation.run_thermal(**thermal_parameters)
+        self.femmt_print(f"The electromagnetic results are stored here: {self.file_data.e_m_results_log_path}")
+        self.femmt_print(f"The thermal results are stored here: {self.file_data.results_folder_path}/results_thermal.json")
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Setup
@@ -1401,6 +1404,7 @@ class MagneticComponent:
                 self.log_reluctance_calculations()
             if show_fem_simulation_results:
                 self.visualize()
+        self.femmt_print(f"The electromagnetic results are stored here: {self.file_data.e_m_results_log_path}")
 
     def time_domain_simulation(self, current_period_vec: List[List[float]], time_period_vec: List[float],
                                number_of_periods: int,
