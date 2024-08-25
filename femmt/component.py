@@ -2210,9 +2210,11 @@ class MagneticComponent:
             core_part_reluctances.append(core_part4_reluctance)
             length.append(core_part4_length)
 
+            # Total
             core_reluctance = np.sum(core_part_reluctances)
             total_length = np.sum(length)
             return core_reluctance, core_part_reluctances, total_length
+
         # Stacked core
         elif self.core.core_type == CoreType.Stacked:
             # Core parts lie in the center leg (bottom window)
@@ -2231,21 +2233,6 @@ class MagneticComponent:
             length.append(core_part3_length)
             core_part3_reluctance = fr.r_core_tablet_2(core_part3_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
             core_part_reluctances.append(core_part3_reluctance)
-            # # fourth part (lies between the two wining windows)
-            # # it is divided into 2 sub-parts ( one leis in the center leg and the other in the window section)
-            # # subpart5_1 lies in the center leg
-            # subpart4_1_length = self.core.core_inner_diameter / 4
-            # length.append(subpart4_1_length)
-            # subpart4_1_reluctance = fr.r_core_tablet_2(subpart4_1_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
-            # # subpart5_2 lies in the window section
-            # subpart4_2_length = self.core.window_w
-            # length.append(subpart4_2_length)
-            # subpart4_2_reluctance = fr.r_core_top_bot_radiant(self.core.core_inner_diameter, subpart4_2_length,
-            #                                                     self.core.mu_r_abs, self.core.core_inner_diameter / 4)
-            # # sum them to get the core part 4
-            # core_part4_reluctance = subpart4_1_reluctance + subpart4_2_reluctance
-            # core_part_reluctances.append(core_part4_reluctance)
-
             # core part 4 (inner and outer corners and window section)
             # In stacked core, there are inner corners, outer corners , and window sections above and below the bottom and top windows
             # So it is multiplied by 3
@@ -2284,6 +2271,7 @@ class MagneticComponent:
             core_part_reluctances.append(core_part6_reluctance)
             length.append(core_part6_length)
 
+            # Total
             core_reluctance = np.sum(core_part_reluctances)
             total_length = np.sum(length)
             return core_reluctance, core_part_reluctances, total_length
