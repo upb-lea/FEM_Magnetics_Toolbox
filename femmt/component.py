@@ -1380,8 +1380,8 @@ class MagneticComponent:
 
             start_time = time.time()
             self.calculate_and_write_freq_domain_log()  # TODO: reuse center tapped
-            if self.core.core_type == CoreType.Single:
-                self.log_reluctance_calculations()
+            # if self.core.core_type == CoreType.Single:
+            self.log_reluctance_calculations()
             logging_time = time.time() - start_time
             if show_fem_simulation_results:
                 self.visualize()
@@ -1397,8 +1397,8 @@ class MagneticComponent:
             self.generate_load_litz_approximation_parameters()
             self.simulate()
             self.calculate_and_write_freq_domain_log()  # TODO: reuse center tapped
-            if self.core.core_type == CoreType.Single:
-                self.log_reluctance_calculations()
+            # if self.core.core_type == CoreType.Single:
+            self.log_reluctance_calculations()
             if show_fem_simulation_results:
                 self.visualize()
 
@@ -1600,8 +1600,8 @@ class MagneticComponent:
         self.calculate_and_write_freq_domain_log(number_frequency_simulations=len(frequency_list), current_amplitude_list=current_list_list,
                                                  frequencies=frequency_list, phase_deg_list=phi_deg_list_list,
                                                  core_hyst_losses=core_hyst_loss)
-        if self.core.core_type == CoreType.Single:
-            self.log_reluctance_calculations()
+        # if self.core.core_type == CoreType.Single:
+        self.log_reluctance_calculations()
 
         if show_last_fem_simulation:
             self.write_simulation_parameters_to_pro_files()
@@ -2125,55 +2125,59 @@ class MagneticComponent:
     def calculate_core_reluctance(self):
         """Calculate the core reluctance."""
         length = []
-        core_part_reluctance = []
-
-        def get_radius(part_number):
-            """
-            Determine the width of the core section based on the part number and stray path information.
-
-            :param part_number: The index representing the core part (core_part_i+2).
-            :type part_number: int
-            :return: The width of the core section. If the part has a stray path, return its length; otherwise, return the core's inner diameter divided by 2.
-            :rtype: float
-            """
-            if self.stray_path and part_number == self.stray_path.start_index + 2:
-                return self.stray_path.length
-            return self.core.core_inner_diameter / 2
+        core_part_reluctances = []
+        sorted_midpoints = sorted(self.air_gaps.midpoints, key=lambda x: x[1]) if self.air_gaps.midpoints else []
 
         if self.core.core_type == CoreType.Single:
-            sorted_midpoints = sorted(self.air_gaps.midpoints, key=lambda x: x[1]) if self.air_gaps.midpoints else []
 
             # If no air gaps, calculate reluctance for the whole left part
             if not sorted_midpoints:
-                subpart_length = self.core.window_h
-                subpart_reluctance = fr.r_core_tablet_2(subpart_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
-                core_part_reluctance.append(subpart_reluctance)
-                length.append(subpart_length)
+                core_part_length = self.core.window_h
+                core_part_reluctance = fr.r_core_tablet_2(core_part_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
+                core_part_reluctances.append(core_part_reluctance)
+                length.append(core_part_length)
             else:
                 # Calculate the subpart lengths and reluctance
-                # subpart 1: bot left subpart
-                subpart_1_1_length = sorted_midpoints[0][1] + self.core.window_h / 2 - sorted_midpoints[0][2] / 2
-                length.append(subpart_1_1_length)
-                subpart1_1_reluctance = fr.r_core_tablet_2(subpart_1_1_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
-                core_part_reluctance.append(subpart1_1_reluctance)
-                # subpart 2: top left subpart
-                subpart_1_2_length = self.core.window_h / 2 - sorted_midpoints[-1][1] - sorted_midpoints[-1][2] / 2
-                length.append(subpart_1_2_length)
-                subpart1_2_reluctance = fr.r_core_tablet_2(subpart_1_2_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
-                core_part_reluctance.append(subpart1_2_reluctance)
+                # subpart 1: bot left part
+                core_part1_length = sorted_midpoints[0][1] + self.core.window_h / 2 - sorted_midpoints[0][2] / 2
+                length.append(core_part1_length)
+                core_part1_reluctance = fr.r_core_tablet_2(core_part1_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
+                core_part_reluctances.append(core_part1_reluctance)
+                # subpart 2: top left part
+                core_part2_length = self.core.window_h / 2 - sorted_midpoints[-1][1] - sorted_midpoints[-1][2] / 2
+                length.append(core_part2_length)
+                core_part2_reluctance = fr.r_core_tablet_2(core_part2_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
+                core_part_reluctances.append(core_part2_reluctance)
                 for i in range(len(sorted_midpoints) - 1):
                     # Intermediate segments between air gaps
                     air_gap_1_position = sorted_midpoints[i][1]
                     air_gap_1_height = sorted_midpoints[i][2]
                     air_gap_2_position = sorted_midpoints[i + 1][1]
                     air_gap_2_height = sorted_midpoints[i + 1][2]
-                    subpart_length = air_gap_2_position - air_gap_2_height / 2 - (air_gap_1_position + air_gap_1_height / 2)
-                    subpart_width = get_radius(i + 2)
-                    subpart_reluctance = fr.r_core_tablet_2(subpart_length, subpart_width, self.core.mu_r_abs)
-                    core_part_reluctance.append(subpart_reluctance)
-                    length.append(subpart_length)
+                    core_part_length = air_gap_2_position - air_gap_2_height / 2 - (air_gap_1_position + air_gap_1_height / 2)
+                    # Dynamic Radius Calculation based on the current segment
+                    if self.stray_path and i + 2 == self.stray_path.start_index + 2:
+                        # If dealing with a stray path, calculate radius accordingly
+                        radius_center_leg = self.core.core_inner_diameter / 2
+                        radius_window_section = self.stray_path.length - radius_center_leg
 
-            # subpart3: bottom and top mid-subpart. It has the inner, outer corners and winding window section
+                        # First part (center leg section)
+                        core_part1_reluctance = fr.r_core_tablet_2(core_part_length, radius_center_leg, self.core.mu_r_abs)
+                        core_part_reluctances.append(core_part1_reluctance)
+                        length.append(core_part_length)
+
+                        # Second part (window section)
+                        core_part2_reluctance = fr.r_core_top_bot_radiant(self.core.core_inner_diameter, radius_window_section,
+                                                                          self.core.mu_r_abs, core_part_length)
+                        core_part_reluctances.append(core_part2_reluctance)
+                        length.append(core_part_length)
+                    else:
+                        core_part_radius = self.core.core_inner_diameter / 2
+                        core_part_reluctance = fr.r_core_tablet_2(core_part_length, core_part_radius, self.core.mu_r_abs)
+                        core_part_reluctances.append(core_part_reluctance)
+                        length.append(core_part_length)
+
+            # core_part3: bottom and top mid-subpart. It has the inner, outer corners and winding window section
             # The area of the inner, and outer corners (top and bottom) is approximated by taking the mean cross-sectional area
             # The length over the area of the winding window section will be approximated to log(r_inner/core_inner_diameter/2) / 2 *pi * core_inner_diameter/4
             # This is taken from Appendix B of book "E. C. Snelling. Soft Ferrites, Properties and Applications. 2nd edition. Butterworths, 1988"
@@ -2190,26 +2194,99 @@ class MagneticComponent:
             # winding window
             length_window = self.core.window_w
             window_reluctance = (fr.r_core_top_bot_radiant
-                                 (self.core.core_inner_diameter, self.core.window_w, self.core.mu_r_abs, self.core.core_inner_diameter / 4) * 2)
-            subpart1_3_reluctance = corner_reluctance + window_reluctance
+                                 (self.core.core_inner_diameter, length_window, self.core.mu_r_abs, self.core.core_inner_diameter / 4) * 2)
+            core_part3_reluctance = corner_reluctance + window_reluctance
             # total reluctance
-            core_part_reluctance.append(subpart1_3_reluctance)
+            core_part_reluctances.append(core_part3_reluctance)
             # total length
-            subpart_1_3_length = length_inner + length_outer + length_window
-            length.append(subpart_1_3_length)
+            core_part3_length = length_inner + length_outer + length_window
+            length.append(core_part3_length)
 
             # subpart 4: right subpart
-            subpart_1_4_length = self.core.window_h
-            subpart_1_4_radius_eff = np.sqrt(self.core.r_outer ** 2 - self.core.r_inner ** 2)
-            subpart1_4_reluctance = fr.r_core_tablet_2(subpart_1_4_length, subpart_1_4_radius_eff, self.core.mu_r_abs)
+            core_part4_length = self.core.window_h
+            core_part4_radius_eff = np.sqrt(self.core.r_outer ** 2 - self.core.r_inner ** 2)
+            core_part4_reluctance = fr.r_core_tablet_2(core_part4_length, core_part4_radius_eff, self.core.mu_r_abs)
             # subpart1_4_reluctance = fr.r_core_tablet(subpart_1_4_length, self.core.r_outer, self.core.mu_r_abs, self.core.r_inner)
-            core_part_reluctance.append(subpart1_4_reluctance)
-            length.append(subpart_1_4_length)
+            core_part_reluctances.append(core_part4_reluctance)
+            length.append(core_part4_length)
 
-            core_reluctance = np.sum(core_part_reluctance)
+            core_reluctance = np.sum(core_part_reluctances)
             total_length = np.sum(length)
-            return core_reluctance, core_part_reluctance, total_length
-            # return np.sum(reluctance), np.sum(length)
+            return core_reluctance, core_part_reluctances, total_length
+        # Stacked core
+        elif self.core.core_type == CoreType.Stacked:
+            # Core parts lie in the center leg (bottom window)
+            # first part (top left in the bottom window)
+            core_part1_length = self.core.window_h_bot / 2 - sorted_midpoints[0][2] / 2
+            length.append(core_part1_length)
+            core_part1_reluctance = fr.r_core_tablet_2(core_part1_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
+            core_part_reluctances.append(core_part1_reluctance)
+            # second part (top left in the bottom window)
+            core_part2_length = self.core.window_h_bot / 2 - sorted_midpoints[0][2] / 2
+            length.append(core_part2_length)
+            core_part2_reluctance = fr.r_core_tablet_2(core_part2_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
+            core_part_reluctances.append(core_part2_reluctance)
+            # third part (top left of the top winding window)
+            core_part3_length = self.core.window_h_top - sorted_midpoints[1][2]
+            length.append(core_part3_length)
+            core_part3_reluctance = fr.r_core_tablet_2(core_part3_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
+            core_part_reluctances.append(core_part3_reluctance)
+            # # fourth part (lies between the two wining windows)
+            # # it is divided into 2 sub-parts ( one leis in the center leg and the other in the window section)
+            # # subpart5_1 lies in the center leg
+            # subpart4_1_length = self.core.core_inner_diameter / 4
+            # length.append(subpart4_1_length)
+            # subpart4_1_reluctance = fr.r_core_tablet_2(subpart4_1_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
+            # # subpart5_2 lies in the window section
+            # subpart4_2_length = self.core.window_w
+            # length.append(subpart4_2_length)
+            # subpart4_2_reluctance = fr.r_core_top_bot_radiant(self.core.core_inner_diameter, subpart4_2_length,
+            #                                                     self.core.mu_r_abs, self.core.core_inner_diameter / 4)
+            # # sum them to get the core part 4
+            # core_part4_reluctance = subpart4_1_reluctance + subpart4_2_reluctance
+            # core_part_reluctances.append(core_part4_reluctance)
+
+            # core part 4 (inner and outer corners and window section)
+            # In stacked core, there are inner corners, outer corners , and window sections above and below the bottom and top windows
+            # So it is multiplied by 3
+            # inner corners
+            s_1 = (self.core.core_inner_diameter / 2) - (self.core.core_inner_diameter / (2 * np.sqrt(2)))
+            length_inner = (np.pi / 4) * (s_1 + (self.core.core_inner_diameter / 8))
+            inner_reluctance = fr.r_core_round(self.core.core_inner_diameter, length_inner, self.core.mu_r_abs) * 3
+            # outer corners
+            s_2 = np.sqrt(((self.core.r_inner ** 2) + (self.core.r_outer ** 2)) / 2) - self.core.r_inner
+            length_outer = (np.pi / 4) * (s_2 + (self.core.core_inner_diameter / 8))
+            outer_reluctance = fr.r_core_round(self.core.core_inner_diameter, length_outer, self.core.mu_r_abs) * 3
+            # corners reluctance
+            corner_reluctance = inner_reluctance + outer_reluctance
+            # winding window
+            length_window = self.core.window_w
+            window_reluctance = (fr.r_core_top_bot_radiant(self.core.core_inner_diameter, length_window,
+                                                           self.core.mu_r_abs, self.core.core_inner_diameter / 4) * 3)
+            core_part4_reluctance = corner_reluctance + window_reluctance
+            # total reluctance
+            core_part_reluctances.append(core_part4_reluctance)
+            # total length
+            core_part4_length = length_inner + length_outer + length_window
+            length.append(core_part4_length)
+
+            # core part 5: right part of the bottom window
+            core_part5_length = self.core.window_h_bot
+            core_part5_radius_eff = np.sqrt(self.core.r_outer ** 2 - self.core.r_inner ** 2)
+            core_part5_reluctance = fr.r_core_tablet_2(core_part5_length, core_part5_radius_eff, self.core.mu_r_abs)
+            core_part_reluctances.append(core_part5_reluctance)
+            length.append(core_part5_length)
+
+            # core part 6: right part of the top window
+            core_part6_length = self.core.window_h_top
+            core_part6_radius_eff = np.sqrt(self.core.r_outer ** 2 - self.core.r_inner ** 2)
+            core_part6_reluctance = fr.r_core_tablet_2(core_part6_length, core_part6_radius_eff, self.core.mu_r_abs)
+            core_part_reluctances.append(core_part6_reluctance)
+            length.append(core_part6_length)
+
+            core_reluctance = np.sum(core_part_reluctances)
+            total_length = np.sum(length)
+            return core_reluctance, core_part_reluctances, total_length
 
     def air_gaps_reluctance(self):
         """
@@ -2226,26 +2303,56 @@ class MagneticComponent:
         air_gap_reluctances = []
 
         for air_gap in self.air_gaps.midpoints:
-            position = air_gap[1] + self.core.window_h / 2
             height = air_gap[2]
+            core_height_upper = 0  # Initialize
+            core_height_lower = 0
+            if self.core.core_type == CoreType.Single:
+                position = air_gap[1] + self.core.window_h / 2
 
-            core_height_upper = self.core.window_h - position - (height / 2)
-            core_height_lower = position - (height / 2)
+                core_height_upper = self.core.window_h - position - (height / 2)
+                core_height_lower = position - (height / 2)
 
-            core_height_upper = max(core_height_upper, 0)
-            core_height_lower = max(core_height_lower, 0)
+                core_height_upper = max(core_height_upper, 0)
+                core_height_lower = max(core_height_lower, 0)
 
-            # Ensure core heights are not zero
-            if core_height_upper == 0 and core_height_lower == 0:
-                raise ValueError("Both core_height_upper and core_height_lower cannot be zero simultaneously")
+                # Ensure core heights are not zero
+                if core_height_upper == 0 and core_height_lower == 0:
+                    raise ValueError("Both core_height_upper and core_height_lower cannot be zero simultaneously")
 
-            # Calculate reluctance based on whether core heights are zero
-            if core_height_upper == 0 or core_height_lower == 0:
-                reluctance = fr.r_air_gap_round_inf(height, self.core.core_inner_diameter, core_height_lower + core_height_upper)
-            else:
-                reluctance = fr.r_air_gap_round_round(height, self.core.core_inner_diameter, core_height_upper, core_height_lower)
+                # Calculate reluctance based on whether core heights are zero
+                if core_height_upper == 0 or core_height_lower == 0:
+                    reluctance = fr.r_air_gap_round_inf(height, self.core.core_inner_diameter, core_height_lower + core_height_upper)
+                else:
+                    reluctance = fr.r_air_gap_round_round(height, self.core.core_inner_diameter, core_height_upper, core_height_lower)
 
-            air_gap_reluctances.append(reluctance)
+                air_gap_reluctances.append(reluctance)
+
+            elif self.core.core_type == CoreType.Stacked:
+                # air gap in the bottom window
+                if air_gap == self.air_gaps.midpoints[0]:
+                    position = air_gap[1] + self.core.window_h_bot / 2
+                    core_height_upper = self.core.window_h_bot - position - (height / 2)
+                    core_height_lower = position - (height / 2)
+                # air gap in the top window
+                elif air_gap == self.air_gaps.midpoints[1]:
+                    core_height_upper = self.core.window_h_top - height
+                    core_height_lower = 0
+
+                core_height_upper = max(core_height_upper, 0)
+                core_height_lower = max(core_height_lower, 0)
+
+                # Ensure core heights are not zero
+                if core_height_upper == 0 and core_height_lower == 0:
+                    raise ValueError("Both core_height_upper and core_height_lower cannot be zero simultaneously")
+
+                # Calculate reluctance based on whether core heights are zero
+                if core_height_upper == 0 or core_height_lower == 0:
+                    reluctance = fr.r_air_gap_round_inf(height, self.core.core_inner_diameter, core_height_lower + core_height_upper)
+                else:
+                    reluctance = fr.r_air_gap_round_round(height, self.core.core_inner_diameter, core_height_upper, core_height_lower)
+
+                air_gap_reluctances.append(reluctance)
+
         total_airgap_reluctance = np.sum(air_gap_reluctances)
 
         return total_airgap_reluctance, air_gap_reluctances
