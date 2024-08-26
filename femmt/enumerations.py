@@ -356,6 +356,7 @@ class MeasurementSetup(str, Enum):
     LEA_MTB_small_signal = "LEA_MTB_small_signal"
     LEA_LK = "LEA_LK"
     ManufacturerDatasheet = "datasheet"
+    MagNet = "MagNet"
 
 
 class Material(str, Enum):
