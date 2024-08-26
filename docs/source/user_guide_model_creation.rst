@@ -461,6 +461,9 @@ results during the time domain simulation.
                                 show_fem_simulation_results=True,
                                 show_rolling_average=False,                                rolling_avg_window_size=50)
 
+.. note::
+
+    Gmsh windows open at various points in the simulations, e.g. to display the geometry or simulation results. To continue (e.g. to start the simulation from the geometry view), simply close the window.
 
 The results should look like this:
 
@@ -669,6 +672,15 @@ the user can find the ``log_electro_magnetic.json`` and ``results_thermal.json``
   materials. It quantifies the minimum, maximum, and mean temperatures for each identified section, offering
   a comprehensive view of thermal results.
 
+Following table gives an overview over the units of the parameters:
+
++-----------+-----------+------------+---------------+---------+---------+------------+------------+
+| **Name:** | Frequency | Power Loss | Magnetic Flux | Voltage | Current | Inductance | Resistance |
++-----------+-----------+------------+---------------+---------+---------+------------+------------+
+| **Unit:** |   Hertz   |    Watt    |     Weber     |  Volt   |  Ampere |   Henry    |    Ohm     |
++-----------+-----------+------------+---------------+---------+---------+------------+------------+
+
+
 Example Result Log
 ~~~~~~~~~~~~~~~~~~
 
@@ -735,11 +747,11 @@ Here is an example of how the outcomes of frequency domain simulation are struct
 - **single_sweeps**: This array contains data for each frequency sweep performed during the simulation.
   Each entry in the array represents a set of results for a specific frequency.
 
-  - **f**: The frequency at which the sweep was conducted, measured in Hertz (Hz).
+  - **f**: The frequency at which the sweep was conducted.
 
   - **winding1** and **winding2**: These sections provide detailed results for each winding, including:
 
-    - **turn_losses**: The power losses in each turn of the winding.
+    - **turn_losses**: The power losses (consisting of DC-, Proximity- and Skin-losses) in each turn of the winding.
     - **flux**: The magnetic flux linked with the winding. The array
       contains two values, representing the real and imaginary parts of the flux, respectively.
     - **flux_over_current**: This metric signifies the flux linkage per unit of current and is presented as a complex number,

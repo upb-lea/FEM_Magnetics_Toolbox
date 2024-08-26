@@ -15,19 +15,19 @@ Stable features
 
 * Component features:
     * 2D axi-symmetric cylindrical simplification
-    * `Inductor </femmt/examples/basic_inductor.py>`__, `2-winding transformer </femmt/examples/basic_transformer.py>`__, `n-winding transformer </femmt/examples/basic_transformer_6_windings.py>`__
+    * `Inductor <../../femmt/examples/basic_inductor.py>`__, `2-winding transformer <../../femmt/examples/basic_transformer.py>`__, `n-winding transformer <../../femmt/examples/basic_transformer_6_windings.py>`__
     * Arbitrary (distributed) air gap positioning in center leg
     * Variety of winding interleaving schemes
     * Special geometries:
-        * `Center tapped transformer </femmt/examples/basic_transformer_center_tapped.py>`__
-        * `Magnetic shunt </femmt/examples/basic_transformer_integrated.py>`__ (transformer with integrated inductor)
-        * `Stacked core </femmt/examples/basic_transformer_stacked.py>`__ (transformer with integrated inductor)
+        * `Center tapped transformer <../../femmt/examples/basic_transformer_center_tapped.py>`__
+        * `Magnetic shunt <../../femmt/examples/basic_transformer_integrated.py>`__ (transformer with integrated inductor)
+        * `Stacked core <../../femmt/examples/basic_transformer_stacked.py>`__ (transformer with integrated inductor)
     * Round litz wire
     * Round and rectangular solid wires
     * Different winding schemes (hexagonal, left/right, top/down, ...)
     * Parallel connection of solid wires
     * Insulation distances (winding2core, winding2winding)
-    * Many `examples </femmt/examples/>`__. to learn and understand FEMMT
+    * Many `examples <../../femmt/examples/>`__. to learn and understand FEMMT
     * Databases
          * Litz wire database
          * Core geometry database
@@ -123,7 +123,7 @@ This toolbox is able to build a complete FEM simulation from simple
 Python code. The following figure shows the Python code on the left and
 the corresponding FEM simulation on the right. |FEMMT_Screenshot|
 
-To run a minimal example please have a look at the `examples </femmt/examples/>`__.
+To run a minimal example please have a look at the `examples <../../femmt/examples/>`__.
 
 GUI (Experimental)
 -------------------
@@ -134,7 +134,7 @@ at first, but will be simplified in the future:
 * Download the complete repository via ``Code`` -> ``Download ZIP`` and unpack it.
 * Or clone the repository
 * Install the development version of femmt using ``pip install -e .``
-* Run python ``.../path-to_femmt/femmt/gui/femmt_gui.py``
+* Run python ``.../path-to_femmt../../femmt/gui/femmt_gui.py``
 
 Please note, the GUI is experimental.
 
@@ -150,12 +150,12 @@ Contributing
 
 Pull requests are welcome. For major changes, please open an issue first
 to discuss what you would like to change. For contributing, please refer
-to this `section <Contributing.rst>`__.
+to this `section <../../Contributing.rst>`__.
 
 Changelog
 ------------
 
-Find the changelog `here <CHANGELOG.md>`__.
+Find the changelog `here <../../CHANGELOG.md>`__.
 
 License
 ----------

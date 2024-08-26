@@ -16,7 +16,8 @@ def basic_example_sweep(onelab_folder: Optional[str] = None, show_visual_outputs
     :type is_test: bool
     """
     # In this sweep an inductor with variable air gap height is simulated
-    air_gap_heights = [0.0020, 0.0010, 0.0005, 0.000025, 0.0000125]
+    #  air_gap_heights = [0.0020, 0.0010, 0.0005, 0.000025, 0.0000125]
+    air_gap_heights = [0.0040, 0.0030, 0.0020, 0.0010, 0.0005]
 
     working_directories = []
 

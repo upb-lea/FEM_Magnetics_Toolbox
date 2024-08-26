@@ -273,7 +273,7 @@ class StackedTransformerOptimization:
             geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency,
                              pre_visualize_geometry=show_geometries)
 
-            center_tapped_study_excitation = geo.center_tapped_pre_study(
+            center_tapped_study_excitation = geo.stacked_core_center_tapped_pre_study(
                 time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec,
                                        target_and_fixed_parameters.current_extracted_1_vec],
                                       [target_and_fixed_parameters.time_extracted_vec,
@@ -741,7 +741,7 @@ class StackedTransformerOptimization:
 
         geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=True)
 
-        center_tapped_study_excitation = geo.center_tapped_pre_study(
+        center_tapped_study_excitation = geo.stacked_core_center_tapped_pre_study(
             time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec,
                                    target_and_fixed_parameters.current_extracted_1_vec],
                                   [target_and_fixed_parameters.time_extracted_vec,
@@ -900,7 +900,7 @@ class StackedTransformerOptimization:
         geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency,
                          pre_visualize_geometry=show_simulation_results)
 
-        center_tapped_study_excitation = geo.center_tapped_pre_study(
+        center_tapped_study_excitation = geo.stacked_core_center_tapped_pre_study(
             time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec,
                                    target_and_fixed_parameters.current_extracted_1_vec],
                                   [target_and_fixed_parameters.time_extracted_vec,
