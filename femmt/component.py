@@ -2408,7 +2408,7 @@ class MagneticComponent:
                 # print(np.array(inductance_matrix).imag)
 
         if len(self.windings) == 2:
-            # Self inductances
+            # Self inductances. Only real parts are taken into account, this is for the LOSSLESS equivalent circuit.
             self.L_1_1 = self_inductances[0].real
             self.L_2_2 = self_inductances[1].real
 
@@ -2418,45 +2418,13 @@ class MagneticComponent:
             # Mean coupling factor
             k = mean_coupling_factors[0][1]
 
-            # # 2 winding transformer
-            # # Turns Ratio n=N1/N2
-            # primary_turns = 0
-            # secondary_turns = 0
-            # for ww in self.winding_windows:
-            #     for vww in ww.virtual_winding_windows:
-            #         primary_turns += vww.turns[0]
-            #         secondary_turns += vww.turns[1]
-            # n = primary_turns / secondary_turns
-            #
-            # self.femmt_print(f"\n"
-            #                f"Turns Ratio:\n"
-            #                f"n = {n}\n"
-            #                )
-            #
-            #
-            # l_s1 = self.L_1_1 - self.M * n
-            # l_s2 = self.L_2_2 - self.M / n
-            # l_h = self.M * n
-            # self.femmt_print(f"\n"
-            #                f"T-ECD (primary side transformed):\n"
-            #                f"[Under-determined System: 'Transformation Ratio' := 'Turns Ratio']\n"
-            #                f"    - Transformation Ratio: n\n"
-            #                f"    - Primary Side Stray Inductance: L_s1\n"
-            #                f"    - Secondary Side Stray Inductance: L_s2\n"
-            #                f"    - Primary Side Main Inductance: L_h\n"
-            #                f"n := n = {n}\n"
-            #                f"L_s1 = L_1_1 - M * n = {l_s1}\n"
-            #                f"L_s2 = L_2_2 - M / n = {l_s2}\n"
-            #                f"L_h = M * n = {l_h}\n"
-            #                )
-
             # Stray Inductance concentrated on Primary Side
             self.n_conc = self.M / self.L_2_2
             self.L_s_conc = (1 - k ** 2) * self.L_1_1
             self.L_h_conc = self.M ** 2 / self.L_2_2
 
             self.femmt_print(f"\n"
-                             f"T-ECD (primary side concentrated):\n"
+                             f"Lossless T-ECD (primary side concentrated):\n"
                              f"[Under-determined System: n := M / L_2_2  -->  L_s2 = L_2_2 - M / n = 0]\n"
                              f"    - Transformation Ratio: n\n"
                              f"    - (Primary) Stray Inductance: L_s1\n"
@@ -2478,7 +2446,7 @@ class MagneticComponent:
             return dataclasses.asdict(inductance)
 
         if len(self.windings) == 3:
-            # Self inductances
+            # Self inductances. Only real parts are taken into account, this is for the LOSSLESS equivalent circuit.
             self.L_1_1 = self_inductances[0].real
             self.L_2_2 = self_inductances[1].real
             self.L_3_3 = self_inductances[2].real
@@ -2503,7 +2471,7 @@ class MagneticComponent:
             self.L_s23 = self.L_s2 + (self.n_13 / self.n_12) ** 2 * self.L_s3
 
             self.femmt_print(f"\n"
-                             f"T-ECD (Lh on primary side):\n"
+                             f"Lossless T-ECD (Lh on primary side):\n"
                              f"    - Primary Side Stray Inductance: L_s1\n"
                              f"    - Secondary Side Stray Inductance: L_s2\n"
                              f"    - Tertiary Side Stray Inductance: L_s3\n"
@@ -2522,23 +2490,6 @@ class MagneticComponent:
                              f"L_s13 = L_s1 + n_13**2 * L_s3 = {self.L_s13}\n"
                              f"L_s23 = L_s2 + (n_13/n_12)**2 * L_s3 = {self.L_s23}\n"
                              )
-            """
-            # Stray Inductance concentrated on Primary Side
-            self.n_conc = self.M / self.L_2_2
-            self.L_s_conc = (1 - k ** 2) * self.L_1_1
-            self.L_h_conc = self.M ** 2 / self.L_2_2
-
-            self.femmt_print(f"\n"
-                f"T-ECD (primary side concentrated):\n"
-                f"[Underdetermined System: n := M / L_2_2  -->  L_s2 = L_2_2 - M / n = 0]\n"
-                f"    - Transformation Ratio: n\n"
-                f"    - (Primary) Stray Inductance: L_s1\n"
-                f"    - Primary Side Main Inductance: L_h\n"
-                f"n := M / L_2_2 = k * Sqrt(L_1_1 / L_2_2) = {self.n_conc}\n"
-                f"L_s1 = (1 - k^2) * L_1_1 = {self.L_s_conc}\n"
-                f"L_h = M^2 / L_2_2 = k^2 * L_1_1 = {self.L_h_conc}\n"
-                )
-            """
 
             inductances = ThreeWindingTransformerInductance(
                 M_12=self.M_12,
@@ -2556,8 +2507,6 @@ class MagneticComponent:
                 L_s23=self.L_s23
             )
             return dataclasses.asdict(inductances)
-
-        # self.visualize()
 
     def get_steinmetz_loss(self, peak_current: float = None, ki: float = 1, alpha: float = 1.2, beta: float = 2.2,
                            t_rise: float = 3e-6, t_fall: float = 3e-6,
