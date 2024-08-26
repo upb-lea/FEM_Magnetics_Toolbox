@@ -373,6 +373,7 @@ class Material(str, Enum):
     _79 = "79"
     ML95S = "ML95S"
     N27 = "N27"
+    N30 = "N30"
     N49 = "N49"
     N87 = "N87"
     N95 = "N95"
