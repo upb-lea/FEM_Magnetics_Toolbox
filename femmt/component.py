@@ -1383,7 +1383,7 @@ class MagneticComponent:
 
             start_time = time.time()
             self.calculate_and_write_freq_domain_log()  # TODO: reuse center tapped
-            self.log_reluctance_calculations()
+            self.log_reluctance_and_inductance()
             logging_time = time.time() - start_time
             if show_fem_simulation_results:
                 self.visualize()
@@ -1399,7 +1399,7 @@ class MagneticComponent:
             self.generate_load_litz_approximation_parameters()
             self.simulate()
             self.calculate_and_write_freq_domain_log()  # TODO: reuse center tapped
-            self.log_reluctance_calculations()
+            self.log_reluctance_and_inductance()
             if show_fem_simulation_results:
                 self.visualize()
         self.femmt_print(f"The electromagnetic results are stored here: {self.file_data.e_m_results_log_path}")
@@ -1602,8 +1602,7 @@ class MagneticComponent:
         self.calculate_and_write_freq_domain_log(number_frequency_simulations=len(frequency_list), current_amplitude_list=current_list_list,
                                                  frequencies=frequency_list, phase_deg_list=phi_deg_list_list,
                                                  core_hyst_losses=core_hyst_loss)
-        self.log_reluctance_calculations()
-
+        self.log_reluctance_and_inductance()
         if show_last_fem_simulation:
             self.write_simulation_parameters_to_pro_files()
             self.visualize()
@@ -2456,7 +2455,7 @@ class MagneticComponent:
         return (total_airgap_reluctance, air_gaps_reluctance, total_airgap_top_reluctance, air_gaps_top_reluctance, total_airgap_bot_reluctance,
                 air_gaps_bot_reluctance, total_air_gap_radial_reluctance, air_gap_radial_reluctance)
 
-    def log_reluctance_calculations(self):
+    def log_reluctance_and_inductance(self):
         """
         Log the reluctance calculations for each part of the core and air gaps.
 
@@ -2467,76 +2466,67 @@ class MagneticComponent:
         - Total reluctance for the core.
         - Total reluctance for the air gaps.
         - Overall total reluctance.
+        - Inductance matrix.
         """
-        reluctance_log = {
-            "core_sections": [],
-            "air_gaps": [],
-            "total_core_reluctance": 0.0,
-            "total_air_gap_reluctance": 0.0,
-            "overall_total_reluctance": 0.0
-        }
+        reluctance_log = {}
 
-        # Calculate core reluctance and log each part
+        # log core reluctance and log each part
         (total_core_reluctance, core_part_reluctance, core_top_reluctance, core_part_top_reluctances, core_bot_reluctance, core_part_bot_reluctances,
-         core_middle_reluctance, core_part_middle_reluctances, total_length) = self.calculate_core_reluctance()
+         core_middle_reluctance, core_parts_middle_reluctance, total_length) = self.calculate_core_reluctance()
 
-        for i, rel in enumerate(core_part_reluctance):
-            reluctance_log["core_sections"].append({
-                "core_reluctance_part": i,
-                "reluctance": rel
-            })
-
-        reluctance_log["total_core_reluctance"] = total_core_reluctance
-
-        # Conditionally log the top, bottom, and middle reluctances if applicable
-        if self.stray_path or self.core.core_type == CoreType.Stacked:
+        if not (self.stray_path or self.core.core_type == CoreType.Stacked):
+            reluctance_log["core_sections"] = []
+            for i, rel in enumerate(core_part_reluctance):
+                reluctance_log["core_sections"].append({
+                    "core_part": i,
+                    "reluctance": rel
+                })
+            reluctance_log["total_core_reluctance"] = total_core_reluctance
+        else:
             reluctance_log["core_top_sections"] = []
             reluctance_log["core_bottom_sections"] = []
             reluctance_log["core_middle_sections"] = []
 
             for i, rel in enumerate(core_part_top_reluctances):
                 reluctance_log["core_top_sections"].append({
-                    "core_top_reluctance_part": i,
+                    "core_top_part": i,
                     "reluctance": rel
                 })
             reluctance_log["total_core_top_reluctance"] = core_top_reluctance
 
             for i, rel in enumerate(core_part_bot_reluctances):
                 reluctance_log["core_bottom_sections"].append({
-                    "core_bottom_reluctance_part": i,
+                    "core_bottom_part": i,
                     "reluctance": rel
                 })
             reluctance_log["total_core_bottom_reluctance"] = core_bot_reluctance
 
-            for i, rel in enumerate(core_part_middle_reluctances):
+            for i, rel in enumerate(core_parts_middle_reluctance):
                 reluctance_log["core_middle_sections"].append({
-                    "core_middle_reluctance_part": i,
+                    "core_middle_part": i,
                     "reluctance": rel
                 })
             reluctance_log["total_core_middle_reluctance"] = core_middle_reluctance
 
-        # Calculate air gap reluctance and log each part
+            # Sum up the top, bottom, and middle reluctances
+            reluctance_log["total_core_reluctance"] = core_top_reluctance + core_bot_reluctance + core_middle_reluctance
+
+        # log air gap reluctance and log each part
         (total_air_gap_reluctance, air_gaps_reluctance, total_airgap_top_reluctance, air_gaps_top_reluctance, total_airgap_bot_reluctance,
          air_gaps_bot_reluctance, total_air_gap_radial_reluctance, air_gap_radial_reluctance) = self.air_gaps_reluctance()
 
-        for i, rel in enumerate(air_gaps_reluctance):
-            if self.stray_path and i == 0:
+        if not (self.stray_path or self.core.core_type == CoreType.Stacked):
+            reluctance_log["air_gaps"] = []
+            for i, rel in enumerate(air_gaps_reluctance):
                 reluctance_log["air_gaps"].append({
-                    "air_gap": "radial airgap",
+                    "air_gap": i,
                     "reluctance": rel
                 })
-            else:
-                reluctance_log["air_gaps"].append({
-                    "air_gap": i if not self.stray_path else i - 1,
-                    "reluctance": rel
-                })
-
-        reluctance_log["total_air_gap_reluctance"] = total_air_gap_reluctance
-
-        # Conditionally log the top and bottom air gap reluctances if applicable
-        if self.stray_path or self.core.core_type == CoreType.Stacked:
+            reluctance_log["total_air_gap_reluctance"] = total_air_gap_reluctance
+        else:
             reluctance_log["air_gaps_top"] = []
             reluctance_log["air_gaps_bottom"] = []
+            reluctance_log["air_gaps_radial"] = []
 
             for i, rel in enumerate(air_gaps_top_reluctance):
                 reluctance_log["air_gaps_top"].append({
@@ -2551,17 +2541,32 @@ class MagneticComponent:
                     "reluctance": rel
                 })
             reluctance_log["total_air_gap_bottom_reluctance"] = total_airgap_bot_reluctance
-        if self.stray_path:
-            reluctance_log["air_gaps_radial"] = []
+
             for i, rel in enumerate(air_gap_radial_reluctance):
                 reluctance_log["air_gaps_radial"].append({
                     "air_gap_radial_part": i,
                     "reluctance": rel
                 })
-            reluctance_log["total_air_gap_radial_reluctance"] = total_air_gap_radial_reluctance
+            reluctance_log["total_air_gap_reluctance"] = total_airgap_top_reluctance + total_airgap_bot_reluctance + total_air_gap_radial_reluctance
 
         # Calculate overall total reluctance
-        reluctance_log["overall_total_reluctance"] = total_core_reluctance + total_air_gap_reluctance
+        reluctance_log["overall_total_reluctance"] = reluctance_log["total_core_reluctance"] + reluctance_log["total_air_gap_reluctance"]
+
+        # Log the inductance matrix from reluctance
+        inductance_matrix = self.get_inductance_from_reluctance()
+
+        # Convert the inductance matrix into a labeled dictionary
+        inductance_dict = {}
+        num_windings = inductance_matrix.shape[0]
+
+        for i in range(num_windings):
+            for j in range(num_windings):
+                label = f"L{i + 1}{j + 1}"
+                inductance_dict[label] = inductance_matrix[i, j]
+
+        # Add this dictionary to the log
+        reluctance_log["inductance_matrix_from_reluctance"] = inductance_dict
+
         # Save the reluctance log as a JSON file
         with open(self.file_data.reluctance_log_path, "w+", encoding='utf-8') as outfile:
             json.dump(reluctance_log, outfile, indent=2, ensure_ascii=False)
@@ -2573,7 +2578,7 @@ class MagneticComponent:
         :param saturation_threshold: Threshold for saturation (default is 70%).
         :type saturation_threshold: float
         """
-        # Reluctances
+        # Reluctance
         (core_reluctance, core_part_reluctance, core_top_reluctance, core_parts_top_reluctance, core_bot_reluctance, core_parts_bot_reluctance,
          core_middle_reluctance, core_parts_middle_reluctance, total_length) = self.calculate_core_reluctance()
         (total_airgap_reluctance, airgap_reluctance, total_airgap_top_reluctance, air_gaps_top_reluctance, total_airgap_bot_reluctance, air_gaps_bot_reluctance,
@@ -2583,7 +2588,7 @@ class MagneticComponent:
             # Calculate the total reluctance
             reluctance = core_reluctance + total_airgap_reluctance
 
-            # Calculate MMF (Magnetomotive Force)
+            # Calculate MMF (Magneto-motive Force)
             total_mmf = 0
             for winding_number in range(len(self.windings)):
                 turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
@@ -2635,7 +2640,6 @@ class MagneticComponent:
             N_21 = 0
             N_22 = 0
             vww_index = 0
-
             # Iterate over each winding window and virtual winding window to get the turns in the top and bot vww for every winding
             for ww in self.winding_windows:
                 for vww in ww.virtual_winding_windows:
@@ -2649,23 +2653,19 @@ class MagneticComponent:
                         elif vww_index == 3:
                             N_22 += vww.turns[index]
                         vww_index += 1
-            # Values for the current matrix
-            i_1 = self.current[0]
-            i_2 = self.current[1]
-
-            # Flux
-            # Reluctance matrix
-            reluctance_matrix = np.array([
-                [r1, r2],
-                [r3, r4]
-            ])
-
             # Winding matrix
             winding_matrix = np.array([
                 [N_11, N_12],
                 [N_21, N_22]
             ])
-
+            # Values for the current matrix
+            i_1 = self.current[0]
+            i_2 = self.current[1]
+            # Reluctance matrix
+            reluctance_matrix = np.array([
+                [r1, r2],
+                [r3, r4]
+            ])
             # Current matrix
             current_matrix = np.array([
                 [i_1],
@@ -2712,6 +2712,93 @@ class MagneticComponent:
             self.femmt_print(f"B-field Middle: {b_field_middle:.4f} T")
 
         self.femmt_print("Reluctance model pre-check passed.")
+
+    def get_inductance_from_reluctance(self):
+        """
+        Calculate the inductance matrix from the reluctance values of the core and air gaps.
+
+        Returns: The inductance matrix calculated from the reluctance values.
+        """
+        # Reluctance
+        (core_reluctance, core_part_reluctance, core_top_reluctance, core_parts_top_reluctance, core_bot_reluctance, core_parts_bot_reluctance,
+         core_middle_reluctance, core_parts_middle_reluctance, total_length) = self.calculate_core_reluctance()
+        (total_airgap_reluctance, airgap_reluctance, total_airgap_top_reluctance, air_gaps_top_reluctance, total_airgap_bot_reluctance,
+         air_gaps_bot_reluctance,
+         total_air_gap_radial_reluctance, air_gap_radial_reluctance) = self.air_gaps_reluctance()
+        # Single core Inductance (no stray path)
+        if self.core.core_type == CoreType.Single:
+            # Calculate the total reluctance
+            reluctance = core_reluctance + total_airgap_reluctance
+            # Initialize the inductance matrix
+            num_windings = len(self.windings)
+            inductance_matrix = np.zeros((num_windings, num_windings))
+
+            # Calculate self-inductance and mutual inductance
+            for i in range(num_windings):
+                turns_i = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings, winding_number=i)
+                for j in range(num_windings):
+                    turns_j = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings, winding_number=j)
+                    if i == j:
+                        # Self-inductance
+                        inductance_matrix[i, j] = (turns_i ** 2) / reluctance
+                    else:
+                        # Mutual inductance
+                        inductance_matrix[i, j] = (turns_i * turns_j) / reluctance
+            # Print the inductance matrix
+            self.femmt_print("Inductance Matrix from reluctance:")
+            self.femmt_print(f"{inductance_matrix}")
+            return inductance_matrix
+
+        else:
+            if self.core.core_type == CoreType.Single and self.stray_path:
+                # Values for the reluctance matrix
+                r1 = core_top_reluctance + core_middle_reluctance + total_airgap_top_reluctance + total_air_gap_radial_reluctance
+                r2 = -1 * (core_middle_reluctance + total_air_gap_radial_reluctance)
+                r3 = -1 * (core_middle_reluctance + total_air_gap_radial_reluctance)
+                r4 = core_bot_reluctance + core_middle_reluctance + total_airgap_bot_reluctance + total_air_gap_radial_reluctance
+            elif self.core.core_type == CoreType.Stacked:
+                # Values for the reluctance matrix
+                r1 = core_top_reluctance + core_middle_reluctance + total_airgap_top_reluctance
+                r2 = -1 * core_middle_reluctance
+                r3 = -1 * core_middle_reluctance
+                r4 = core_bot_reluctance + core_middle_reluctance + total_airgap_bot_reluctance
+            # Values for the winding matrix
+            # Initialize
+            N_11 = 0
+            N_12 = 0
+            N_21 = 0
+            N_22 = 0
+            vww_index = 0
+            # Iterate over each winding window and virtual winding window to get the turns in the top and bot vww for every winding
+            for ww in self.winding_windows:
+                for vww in ww.virtual_winding_windows:
+                    for index, _ in enumerate(self.windings):
+                        if vww_index == 0:
+                            N_11 += vww.turns[index]
+                        elif vww_index == 1:
+                            N_12 += vww.turns[index]
+                        elif vww_index == 2:
+                            N_21 += vww.turns[index]
+                        elif vww_index == 3:
+                            N_22 += vww.turns[index]
+                        vww_index += 1
+            # Winding matrix
+            winding_matrix = np.array([
+                [N_11, N_12],
+                [N_21, N_22]
+            ])
+            # Reluctance matrix
+            reluctance_matrix = np.array([
+                [r1, r2],
+                [r3, r4]
+            ])
+            # Inductance matrix
+            inductance_matrix = fr.calculate_inductance_matrix(reluctance_matrix, winding_matrix)
+
+            # Print the inductance matrix
+            self.femmt_print("Inductance Matrix from reluctance:")
+            self.femmt_print(f"{inductance_matrix}")
+            return inductance_matrix
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing
