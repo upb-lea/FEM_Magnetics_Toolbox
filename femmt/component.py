@@ -2803,7 +2803,7 @@ class MagneticComponent:
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing
     def get_inductances(self, I0: float, op_frequency: float = 0, skin_mesh_factor: float = 1,
-                        visualize_last_fem_simulation: bool = False, silent: bool = False):
+                        visualize_last_fem_simulation: bool = False, silent: bool = False, compare_with_inductance_from_reluctance: bool = False):
         """
         Get inductance values for 2- and 3-winding transformer.
 
@@ -2827,6 +2827,8 @@ class MagneticComponent:
         :param op_frequency: operating frequency in Hz
         :type op_frequency: float
         :param silent: True for not terminal output
+        :type silent: bool
+        :param compare_with_inductance_from_reluctance: False default
         :type silent: bool
         """
         if len(self.windings) == 1:
@@ -2862,6 +2864,65 @@ class MagneticComponent:
                 # print(np.array(inductance_matrix).real)
                 # print("")
                 # print(np.array(inductance_matrix).imag)
+                # Read the inductance matrix from the log file
+            if compare_with_inductance_from_reluctance:
+                # Extract the real part of the inductance matrix using the existing visualization function
+                inductance_matrix = np.array(inductance_matrix)
+                inductance_matrix_real = inductance_matrix.real
+
+                # Read the inductance matrix from the log file
+                log_file_path = self.file_data.reluctance_log_path
+
+                if os.path.exists(log_file_path):
+                    with open(log_file_path, 'r') as f:
+                        log_data = json.load(f)
+
+                    # Dynamically create the inductance matrix from the log data
+                    inductance_matrix_log = np.zeros((len(self.windings), len(self.windings)))
+                    for i in range(len(self.windings)):
+                        for j in range(len(self.windings)):
+                            label = f"L{i + 1}{j + 1}"
+                            inductance_matrix_log[i, j] = log_data["inductance_matrix_from_reluctance"].get(label, 0)
+
+                    # Print the inductance matrix from reluctance
+                    print("\nInductance Matrix from Reluctance Calculation:")
+                    ff.visualize_inductance_matrix(inductance_matrix_log, silent=silent)
+
+                    # Prepare data for plotting
+                    labels = []
+                    fem_values = []
+                    reluctance_values = []
+
+                    for i in range(len(self.windings)):
+                        for j in range(len(self.windings)):
+                            label = f"L{i + 1}{j + 1}"
+                            labels.append(label)
+                            fem_values.append(inductance_matrix_real[i, j])
+                            reluctance_values.append(inductance_matrix_log[i, j])
+
+                    # Plot the inductance values
+                    plt.figure(figsize=(10, 6))
+                    plt.scatter(labels, fem_values, color='blue', label='get_Inductance')
+                    plt.scatter(labels, reluctance_values, color='red', label='get_inductance_from_reluctance')
+                    plt.title('Comparison of Inductance Values (get_inductance vs get_inductance_from_reluctance)')
+                    plt.xlabel('Inductance Label')
+                    plt.ylabel('Inductance (H)')
+                    plt.legend()
+                    plt.grid(True)
+                    plt.show()
+
+                    # Plot differences
+                    differences = np.array(fem_values) - np.array(reluctance_values)
+                    plt.figure(figsize=(10, 6))
+                    plt.bar(labels, differences, color='purple')
+                    plt.title('Differences between get_inductance and get_inductance_from_reluctance Values')
+                    plt.xlabel('Inductance Label')
+                    plt.ylabel('Difference in Inductance (H)')
+                    plt.grid(True)
+                    plt.show()
+
+                else:
+                    print(f"Log file not found at {log_file_path}. Skipping comparison.")
 
         if len(self.windings) == 2:
             # Self inductances
@@ -2930,7 +2991,6 @@ class MagneticComponent:
                 L_1_1=self.L_1_1,
                 L_2_2=self.L_2_2,
             )
-
             return dataclasses.asdict(inductance)
 
         if len(self.windings) == 3:
@@ -3011,6 +3071,7 @@ class MagneticComponent:
                 L_s13=self.L_s13,
                 L_s23=self.L_s23
             )
+            # self.compare_and_plot_inductance_matrices()
             return dataclasses.asdict(inductances)
 
         # self.visualize()
