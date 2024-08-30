@@ -2619,97 +2619,103 @@ class MagneticComponent:
 
         else:
             # single core with stray path
-            if self.core.core_type == CoreType.Single and self.stray_path:
-                # Values for the reluctance matrix
-                r1 = core_top_reluctance + core_middle_reluctance + total_airgap_top_reluctance + total_air_gap_radial_reluctance
-                r2 = -1 * (core_middle_reluctance + total_air_gap_radial_reluctance)
-                r3 = -1 * (core_middle_reluctance + total_air_gap_radial_reluctance)
-                r4 = core_bot_reluctance + core_middle_reluctance + total_airgap_bot_reluctance + total_air_gap_radial_reluctance
-            # stacked core
-            elif self.core.core_type == CoreType.Stacked:
-                # Values for the reluctance matrix
-                r1 = core_top_reluctance + core_middle_reluctance + total_airgap_top_reluctance
-                r2 = -1 * core_middle_reluctance
-                r3 = -1 * core_middle_reluctance
-                r4 = core_bot_reluctance + core_middle_reluctance + total_airgap_bot_reluctance
+            if len(self.windings) == 2:
+                if self.core.core_type == CoreType.Single and self.stray_path:
+                    # Values for the reluctance matrix
+                    r1 = core_top_reluctance + core_middle_reluctance + total_airgap_top_reluctance + total_air_gap_radial_reluctance
+                    r2 = -1 * (core_middle_reluctance + total_air_gap_radial_reluctance)
+                    r3 = -1 * (core_middle_reluctance + total_air_gap_radial_reluctance)
+                    r4 = core_bot_reluctance + core_middle_reluctance + total_airgap_bot_reluctance + total_air_gap_radial_reluctance
+                # stacked core
+                elif self.core.core_type == CoreType.Stacked:
+                    # Values for the reluctance matrix
+                    r1 = core_top_reluctance + core_middle_reluctance + total_airgap_top_reluctance
+                    r2 = -1 * core_middle_reluctance
+                    r3 = -1 * core_middle_reluctance
+                    r4 = core_bot_reluctance + core_middle_reluctance + total_airgap_bot_reluctance
 
-            # Values for the winding matrix
-            # Initialize
-            N_11 = 0
-            N_12 = 0
-            N_21 = 0
-            N_22 = 0
-            vww_index = 0
-            # Iterate over each winding window and virtual winding window to get the turns in the top and bot vww for every winding
-            for ww in self.winding_windows:
-                for vww in ww.virtual_winding_windows:
-                    for index, _ in enumerate(self.windings):
-                        if vww_index == 0:
-                            N_11 += vww.turns[index]
-                        elif vww_index == 1:
-                            N_12 += vww.turns[index]
-                        elif vww_index == 2:
-                            N_21 += vww.turns[index]
-                        elif vww_index == 3:
-                            N_22 += vww.turns[index]
-                        vww_index += 1
-            # Winding matrix
-            winding_matrix = np.array([
-                [N_11, N_12],
-                [N_21, N_22]
-            ])
-            # Values for the current matrix
-            i_1 = self.current[0]
-            i_2 = self.current[1]
-            # Reluctance matrix
-            reluctance_matrix = np.array([
-                [r1, r2],
-                [r3, r4]
-            ])
-            # Current matrix
-            current_matrix = np.array([
-                [i_1],
-                [i_2]
-            ])
-            # Calculate flux matrix
-            flux_matrix = fr.calculate_flux_matrix(reluctance_matrix, winding_matrix, current_matrix)
-            print(flux_matrix)
-            # Extract flux values from the flux matrix
-            flux_top = flux_matrix[0, 0]
-            flux_bot = flux_matrix[1, 0]
+                # Values for the winding matrix
+                # Initialize
+                N_11 = 0
+                N_12 = 0
+                N_21 = 0
+                N_22 = 0
+                vww_index = 0
+                # Iterate over each winding window and virtual winding window to get the turns in the top and bot vww for every winding
+                for ww in self.winding_windows:
+                    for vww in ww.virtual_winding_windows:
+                        for index, _ in enumerate(self.windings):
+                            if vww_index == 0:
+                                N_11 += vww.turns[index]
+                            elif vww_index == 1:
+                                N_12 += vww.turns[index]
+                            elif vww_index == 2:
+                                N_21 += vww.turns[index]
+                            elif vww_index == 3:
+                                N_22 += vww.turns[index]
+                            vww_index += 1
+                # Winding matrix
+                winding_matrix = np.array([
+                    [N_11, N_12],
+                    [N_21, N_22]
+                ])
+                # Values for the current matrix
+                i_1 = self.current[0]
+                i_2 = self.current[1]
+                # Reluctance matrix
+                reluctance_matrix = np.array([
+                    [r1, r2],
+                    [r3, r4]
+                ])
+                # Current matrix
+                current_matrix = np.array([
+                    [i_1],
+                    [i_2]
+                ])
+                # Calculate flux matrix
+                flux_matrix = fr.calculate_flux_matrix(reluctance_matrix, winding_matrix, current_matrix)
+                print(flux_matrix)
+                # Extract flux values from the flux matrix
+                flux_top = flux_matrix[0, 0]
+                flux_bot = flux_matrix[1, 0]
 
-            # Calculate the middle flux
-            flux_middle = flux_top - flux_bot
-            # Area
-            core_cross_sectional_area = self.calculate_core_cross_sectional_area()
+                # Calculate the middle flux
+                flux_middle = flux_top - flux_bot
+                # Area
+                core_cross_sectional_area = self.calculate_core_cross_sectional_area()
 
-            # Calculate magnetic flux densities
-            b_field_top = flux_top / core_cross_sectional_area
-            b_field_bot = flux_bot / core_cross_sectional_area
-            b_field_middle = flux_middle / core_cross_sectional_area
+                # Calculate magnetic flux densities
+                b_field_top = flux_top / core_cross_sectional_area
+                b_field_bot = flux_bot / core_cross_sectional_area
+                b_field_middle = flux_middle / core_cross_sectional_area
 
-            # Get saturation flux density from material database
-            database = mdb.MaterialDatabase()
-            saturation_flux_density = database.get_saturation_flux_density(self.core.material)
+                # Get saturation flux density from material database
+                database = mdb.MaterialDatabase()
+                saturation_flux_density = database.get_saturation_flux_density(self.core.material)
 
-            if abs(b_field_top) > saturation_threshold * saturation_flux_density:
-                raise ValueError(
-                    f"Core saturation detected in top section! B-field ({abs(b_field_top)} T) exceeds "
-                    f"{saturation_threshold * 100}% of the saturation flux density ({saturation_flux_density} T).")
+                if abs(b_field_top) > saturation_threshold * saturation_flux_density:
+                    raise ValueError(
+                        f"Core saturation detected in top section! B-field ({abs(b_field_top)} T) exceeds "
+                        f"{saturation_threshold * 100}% of the saturation flux density ({saturation_flux_density} T).")
 
-            if abs(b_field_bot) > saturation_threshold * saturation_flux_density:
-                raise ValueError(
-                    f"Core saturation detected in bottom section! B-field ({abs(b_field_bot)} T) exceeds "
-                    f"{saturation_threshold * 100}% of the saturation flux density ({saturation_flux_density} T).")
+                if abs(b_field_bot) > saturation_threshold * saturation_flux_density:
+                    raise ValueError(
+                        f"Core saturation detected in bottom section! B-field ({abs(b_field_bot)} T) exceeds "
+                        f"{saturation_threshold * 100}% of the saturation flux density ({saturation_flux_density} T).")
 
-            if abs(b_field_middle) > saturation_threshold * saturation_flux_density:
-                raise ValueError(
-                    f"Core saturation detected in middle section! B-field ({abs(b_field_middle)} T) exceeds "
-                    f"{saturation_threshold * 100}% of the saturation flux density ({saturation_flux_density} T).")
+                if abs(b_field_middle) > saturation_threshold * saturation_flux_density:
+                    raise ValueError(
+                        f"Core saturation detected in middle section! B-field ({abs(b_field_middle)} T) exceeds "
+                        f"{saturation_threshold * 100}% of the saturation flux density ({saturation_flux_density} T).")
 
-            self.femmt_print(f"B-field Top: {b_field_top:.4f} T")
-            self.femmt_print(f"B-field Bottom: {b_field_bot:.4f} T")
-            self.femmt_print(f"B-field Middle: {b_field_middle:.4f} T")
+                self.femmt_print(f"B-field Top: {b_field_top:.4f} T")
+                self.femmt_print(f"B-field Bottom: {b_field_bot:.4f} T")
+                self.femmt_print(f"B-field Middle: {b_field_middle:.4f} T")
+            else:
+                if self.core.core_type == CoreType.Stacked or self.stray_path:
+                    # Raise a warning if there are more than 2 windings in a stacked core with stray path
+                    raise Warning("Warning: More than two windings detected in a stacked core with a stray path. "
+                                  "This configuration is not fully supported.")
 
         self.femmt_print("Reluctance model pre-check passed.")
 
@@ -2732,12 +2738,19 @@ class MagneticComponent:
             # Initialize the inductance matrix
             num_windings = len(self.windings)
             inductance_matrix = np.zeros((num_windings, num_windings))
-
             # Calculate self-inductance and mutual inductance
             for i in range(num_windings):
-                turns_i = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings, winding_number=i)
+                if self.windings[i].parallel:
+                    turns_i = 1  # For parallel windings, the effective turns is considered as 1
+                else:
+                    turns_i = ff.get_number_of_turns_of_winding(self.winding_windows, self.windings, i)
+
                 for j in range(num_windings):
-                    turns_j = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings, winding_number=j)
+                    if self.windings[j].parallel:
+                        turns_j = 1  # For parallel windings, the effective turns is considered as 1
+                    else:
+                        turns_j = ff.get_number_of_turns_of_winding(self.winding_windows, self.windings, j)
+
                     if i == j:
                         # Self-inductance
                         inductance_matrix[i, j] = (turns_i ** 2) / reluctance
@@ -2750,50 +2763,79 @@ class MagneticComponent:
             return inductance_matrix
 
         else:
-            if self.core.core_type == CoreType.Single and self.stray_path:
-                # Values for the reluctance matrix
-                r1 = core_top_reluctance + core_middle_reluctance + total_airgap_top_reluctance + total_air_gap_radial_reluctance
-                r2 = -1 * (core_middle_reluctance + total_air_gap_radial_reluctance)
-                r3 = -1 * (core_middle_reluctance + total_air_gap_radial_reluctance)
-                r4 = core_bot_reluctance + core_middle_reluctance + total_airgap_bot_reluctance + total_air_gap_radial_reluctance
-            elif self.core.core_type == CoreType.Stacked:
-                # Values for the reluctance matrix
-                r1 = core_top_reluctance + core_middle_reluctance + total_airgap_top_reluctance
-                r2 = -1 * core_middle_reluctance
-                r3 = -1 * core_middle_reluctance
-                r4 = core_bot_reluctance + core_middle_reluctance + total_airgap_bot_reluctance
-            # Values for the winding matrix
-            # Initialize
-            N_11 = 0
-            N_12 = 0
-            N_21 = 0
-            N_22 = 0
-            vww_index = 0
-            # Iterate over each winding window and virtual winding window to get the turns in the top and bot vww for every winding
-            for ww in self.winding_windows:
-                for vww in ww.virtual_winding_windows:
-                    for index, _ in enumerate(self.windings):
-                        if vww_index == 0:
-                            N_11 += vww.turns[index]
-                        elif vww_index == 1:
-                            N_12 += vww.turns[index]
-                        elif vww_index == 2:
-                            N_21 += vww.turns[index]
-                        elif vww_index == 3:
-                            N_22 += vww.turns[index]
-                        vww_index += 1
-            # Winding matrix
-            winding_matrix = np.array([
-                [N_11, N_12],
-                [N_21, N_22]
-            ])
-            # Reluctance matrix
-            reluctance_matrix = np.array([
-                [r1, r2],
-                [r3, r4]
-            ])
-            # Inductance matrix
-            inductance_matrix = fr.calculate_inductance_matrix(reluctance_matrix, winding_matrix)
+            if len(self.windings) == 2:
+                if self.core.core_type == CoreType.Single and self.stray_path:
+                    # Values for the reluctance matrix
+                    r1 = core_top_reluctance + core_middle_reluctance + total_airgap_top_reluctance + total_air_gap_radial_reluctance
+                    r2 = -1 * (core_middle_reluctance + total_air_gap_radial_reluctance)
+                    r3 = -1 * (core_middle_reluctance + total_air_gap_radial_reluctance)
+                    r4 = core_bot_reluctance + core_middle_reluctance + total_airgap_bot_reluctance + total_air_gap_radial_reluctance
+                elif self.core.core_type == CoreType.Stacked:
+                    # Values for the reluctance matrix
+                    r1 = core_top_reluctance + core_middle_reluctance + total_airgap_top_reluctance
+                    r2 = -1 * core_middle_reluctance
+                    r3 = -1 * core_middle_reluctance
+                    r4 = core_bot_reluctance + core_middle_reluctance + total_airgap_bot_reluctance
+                # Values for the winding matrix
+                # Initialize
+                N_11 = 0
+                N_12 = 0
+                N_21 = 0
+                N_22 = 0
+                vww_index = 0
+                # Iterate over each winding window and virtual winding window to get the turns in the top and bot vww for every winding
+                for ww in self.winding_windows:
+                    for vww in ww.virtual_winding_windows:
+                        for index, _ in enumerate(self.windings):
+                            if vww_index == 0:
+                                N_11 += vww.turns[index]
+                            elif vww_index == 1:
+                                N_12 += vww.turns[index]
+                            elif vww_index == 2:
+                                N_21 += vww.turns[index]
+                            elif vww_index == 3:
+                                N_22 += vww.turns[index]
+                            vww_index += 1
+                # Winding matrix
+                winding_matrix = np.array([
+                    [N_11, N_12],
+                    [N_21, N_22]
+                ])
+                # Reluctance matrix
+                reluctance_matrix = np.array([
+                    [r1, r2],
+                    [r3, r4]
+                ])
+                # Inductance matrix
+                inductance_matrix = fr.calculate_inductance_matrix(reluctance_matrix, winding_matrix)
+            else:
+                # Calculate the total reluctance
+                reluctance = core_reluctance + total_airgap_reluctance
+                # Initialize the inductance matrix
+                num_windings = len(self.windings)
+                inductance_matrix = np.zeros((num_windings, num_windings))
+                # Calculate self-inductance and mutual inductance
+                for i in range(num_windings):
+                    if self.windings[i].parallel:
+                        turns_i = 1  # For parallel windings, the effective turns is considered as 1
+                    else:
+                        turns_i = ff.get_number_of_turns_of_winding(self.winding_windows, self.windings, i)
+
+                    for j in range(num_windings):
+                        if self.windings[j].parallel:
+                            turns_j = 1  # For parallel windings, the effective turns is considered as 1
+                        else:
+                            turns_j = ff.get_number_of_turns_of_winding(self.winding_windows, self.windings, j)
+
+                        if i == j:
+                            # Self-inductance
+                            inductance_matrix[i, j] = (2 * turns_i ** 2) / reluctance
+                        else:
+                            # Mutual inductance
+                            inductance_matrix[i, j] = (2 * turns_i * turns_j) / reluctance
+                # Print the inductance matrix
+                self.femmt_print("Inductance Matrix from reluctance:")
+                self.femmt_print(f"{inductance_matrix}")
 
             # Print the inductance matrix
             self.femmt_print("Inductance Matrix from reluctance:")
