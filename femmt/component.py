@@ -2934,13 +2934,20 @@ class MagneticComponent:
                     labels = []
                     fem_values = []
                     reluctance_values = []
-
+                    relative_errors = []
                     for i in range(len(self.windings)):
                         for j in range(len(self.windings)):
                             label = f"L{i + 1}{j + 1}"
                             labels.append(label)
-                            fem_values.append(inductance_matrix_real[i, j])
-                            reluctance_values.append(inductance_matrix_log[i, j])
+                            fem_value = inductance_matrix_real[i, j]
+                            reluctance_value = inductance_matrix_log[i, j]
+                            fem_values.append(fem_value)
+                            reluctance_values.append(reluctance_value)
+
+                            # Calculate the relative error in percentage
+                            if reluctance_value != 0:
+                                relative_error = ((reluctance_value - fem_value) / fem_value) * 100
+                                relative_errors.append(relative_error)
 
                     # Plot the inductance values
                     plt.figure(figsize=(10, 6))
@@ -2953,13 +2960,14 @@ class MagneticComponent:
                     plt.grid(True)
                     plt.show()
 
-                    # Plot differences
-                    differences = np.array(fem_values) - np.array(reluctance_values)
+                    # Plot relative error
+                    # differences = np.array(fem_values) - np.array(reluctance_values)
                     plt.figure(figsize=(10, 6))
-                    plt.bar(labels, differences, color='purple')
-                    plt.title('Differences between get_inductance and get_inductance_from_reluctance Values')
+                    # plt.bar(labels, relative_errors, color='purple')
+                    plt.scatter(labels, relative_errors, color='purple', s=100, label='Relative Error (%)')
+                    plt.title('Relative error get_inductance and get_inductance_from_reluctance Values')
                     plt.xlabel('Inductance Label')
-                    plt.ylabel('Difference in Inductance (H)')
+                    plt.ylabel('Relative Error (%)')
                     plt.grid(True)
                     plt.show()
 
