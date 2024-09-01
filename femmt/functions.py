@@ -1020,6 +1020,8 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
     cumulative_losses = []
     cumulative_inductances = []
     windings_labels = []
+    # Determine if this is a single simulation or a sweep
+    is_single_simulation = len(loaded_results_dict["single_sweeps"]) == 1
 
     for index, sweep in enumerate(loaded_results_dict["single_sweeps"]):
         freq = sweep['f']
@@ -1065,8 +1067,11 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
 
     # Plot cumulative results for core and windings
     fig, ax = plt.subplots()
-    ax.bar(0, cumulative_core_hysteresis, width=0.35, label='Cumulative Core Hysteresis Loss')
-    ax.bar(0, cumulative_core_eddy, bottom=cumulative_core_hysteresis, width=0.35, label='Cumulative Core Eddy Current Loss')
+    if is_single_simulation:
+        ax.bar(0, cumulative_core_hysteresis, width=0.35, label='Cumulative Core Hysteresis Loss')
+        ax.bar(0, cumulative_core_eddy, bottom=cumulative_core_hysteresis, width=0.35, label='Cumulative Core Eddy Current Loss')
+    else:
+        ax.bar(0, cumulative_core_eddy, width=0.35, label='Cumulative Core Eddy Current Loss')
 
     for index, loss in enumerate(cumulative_losses):
         ax.bar(index + 1, loss, width=0.35, label=f'{windings_labels[index]} Cumulative Loss')
