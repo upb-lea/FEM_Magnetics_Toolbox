@@ -2732,7 +2732,7 @@ class MagneticComponent:
          air_gaps_bot_reluctance,
          total_air_gap_radial_reluctance, air_gap_radial_reluctance) = self.air_gaps_reluctance()
         # Single core Inductance (no stray path)
-        if self.core.core_type == CoreType.Single:
+        if self.core.core_type == CoreType.Single and not self.stray_path:
             # Calculate the total reluctance
             reluctance = core_reluctance + total_airgap_reluctance
             # Initialize the inductance matrix
@@ -2762,16 +2762,17 @@ class MagneticComponent:
             self.femmt_print(f"{inductance_matrix}")
             return inductance_matrix
         else:
-            if self.core.core_type == CoreType.Stacked or self.stray_path:
-                # Initialize the inductance matrix
-                num_windings = len(self.windings)
-                inductance_matrix = np.zeros((num_windings, num_windings))
-                # top and bot reluctance
-                top_reluctance = core_top_reluctance + total_airgap_top_reluctance + core_middle_reluctance + total_air_gap_radial_reluctance
-                bot_reluctance = core_bot_reluctance + total_airgap_bot_reluctance + core_middle_reluctance + total_air_gap_radial_reluctance
-                # Initialize arrays to store the number of turns in the top and bottom windows for each winding
-                turns_top = [0] * num_windings
-                turns_bottom = [0] * num_windings
+            # Initialize the inductance matrix
+            num_windings = len(self.windings)
+            inductance_matrix = np.zeros((num_windings, num_windings))
+            # top and bot reluctance
+            top_reluctance = core_top_reluctance + total_airgap_top_reluctance + core_middle_reluctance + total_air_gap_radial_reluctance
+            bot_reluctance = core_bot_reluctance + total_airgap_bot_reluctance + core_middle_reluctance + total_air_gap_radial_reluctance
+            # Initialize arrays to store the number of turns in the top and bottom windows for each winding
+            turns_top = [0] * num_windings
+            turns_bottom = [0] * num_windings
+            # stacked core
+            if self.core.core_type == CoreType.Stacked:
                 # Distribute turns across the top and bottom windows based on their order
                 for ww_index, ww in enumerate(self.winding_windows):
                     for vww in ww.virtual_winding_windows:
@@ -2781,34 +2782,45 @@ class MagneticComponent:
                                 turns_top[index] += turns
                             elif ww_index == 1:  # Second window is the bottom
                                 turns_bottom[index] += turns
-                # Calculate self-inductance and mutual inductance
-                for i in range(num_windings):
-                    # Handling turns for parallel windings
-                    if self.windings[i].parallel:
-                        turns_i_top = 1 if turns_top[i] > 0 else 0
-                        turns_i_bottom = 1 if turns_bottom[i] > 0 else 0
+            # single core with stray path
+            elif self.core.core_type == CoreType.Single and self.stray_path:
+                vww_index = 0
+                for ww in self.winding_windows:
+                    for vww in ww.virtual_winding_windows:
+                        for index in range(num_windings):
+                            if vww_index == 0:
+                                turns_top[index] += vww.turns[index]
+                            elif vww_index == 1:
+                                turns_bottom[index] += vww.turns[index]
+                        vww_index += 1
+            # Calculate self-inductance and mutual inductance
+            for i in range(num_windings):
+                # Handling turns for parallel windings
+                if self.windings[i].parallel:
+                    turns_i_top = 1 if turns_top[i] > 0 else 0
+                    turns_i_bottom = 1 if turns_bottom[i] > 0 else 0
+                else:
+                    turns_i_top = turns_top[i]
+                    turns_i_bottom = turns_bottom[i]
+
+                for j in range(num_windings):
+                    if self.windings[j].parallel:
+                        turns_j_top = 1 if turns_top[j] > 0 else 0
+                        turns_j_bottom = 1 if turns_bottom[j] > 0 else 0
                     else:
-                        turns_i_top = turns_top[i]
-                        turns_i_bottom = turns_bottom[i]
+                        turns_j_top = turns_top[j]
+                        turns_j_bottom = turns_bottom[j]
 
-                    for j in range(num_windings):
-                        if self.windings[j].parallel:
-                            turns_j_top = 1 if turns_top[j] > 0 else 0
-                            turns_j_bottom = 1 if turns_bottom[j] > 0 else 0
-                        else:
-                            turns_j_top = turns_top[j]
-                            turns_j_bottom = turns_bottom[j]
-
-                        if i == j:
-                            # Self-inductance
-                            inductance_matrix[i, j] = (turns_i_top ** 2 / top_reluctance) + (turns_i_bottom ** 2 / bot_reluctance)
-                        else:
-                            # Mutual inductance
-                            inductance_matrix[i, j] = (turns_i_top * turns_j_top / top_reluctance) + (turns_i_bottom * turns_j_bottom / bot_reluctance)
-                # Print the inductance matrix
-                self.femmt_print("Inductance Matrix from reluctance:")
-                self.femmt_print(f"{inductance_matrix}")
-                return inductance_matrix
+                    if i == j:
+                        # Self-inductance
+                        inductance_matrix[i, j] = (turns_i_top ** 2 / top_reluctance) + (turns_i_bottom ** 2 / bot_reluctance)
+                    else:
+                        # Mutual inductance
+                        inductance_matrix[i, j] = (turns_i_top * turns_j_top / top_reluctance) + (turns_i_bottom * turns_j_bottom / bot_reluctance)
+            # Print the inductance matrix
+            self.femmt_print("Inductance Matrix from reluctance:")
+            self.femmt_print(f"{inductance_matrix}")
+            return inductance_matrix
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing
