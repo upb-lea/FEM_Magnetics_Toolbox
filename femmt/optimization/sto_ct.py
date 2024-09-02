@@ -13,7 +13,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 # FEMMT and materialdatabase libraries
-from femmt.optimization.sto_dtos import *
+from femmt.optimization.sto_ct_dtos import *
 import femmt.functions_reluctance as fr
 import femmt.functions as ff
 import femmt.optimization.ito_functions as itof
@@ -21,11 +21,11 @@ import femmt
 import materialdatabase as mdb
 
 
-class StackedTransformerOptimization:
+class StackedTransformerCenterTappedOptimization:
     """Optimize a stacked transformer."""
 
     @staticmethod
-    def calculate_fix_parameters(config: StoSingleInputConfig) -> StoTargetAndFixedParameters:
+    def calculate_fix_parameters(config: StoCtSingleInputConfig) -> StoCtTargetAndFixedParameters:
         """Calculate fix parameters what can be derived from the input configuration.
 
         return values are:
@@ -82,7 +82,7 @@ class StackedTransformerOptimization:
         working_directories = itof.set_up_folder_structure(config.working_directory)
 
         # finalize data to dto
-        target_and_fix_parameters = StoTargetAndFixedParameters(
+        target_and_fix_parameters = StoCtTargetAndFixedParameters(
             i_rms_1=i_rms_1,
             i_rms_2=i_rms_2,
             i_peak_1=i_peak_1,
@@ -101,17 +101,17 @@ class StackedTransformerOptimization:
         return target_and_fix_parameters
 
     @staticmethod
-    def objective(trial: optuna.Trial, config: StoSingleInputConfig,
-                  target_and_fixed_parameters: StoTargetAndFixedParameters,
+    def objective(trial: optuna.Trial, config: StoCtSingleInputConfig,
+                  target_and_fixed_parameters: StoCtTargetAndFixedParameters,
                   number_objectives: int, show_geometries: bool = False, process_number: int = 1):
         """Objective for optuna optimization.
 
         :param trial: optuna trail objective. Used by optuna
         :type trial: optuna.Trial
         :param config: simulation configuration file
-        :type config: StoSingleInputConfig
+        :type config: StoCtSingleInputConfig
         :param target_and_fixed_parameters: contains pre-calculated values
-        :type target_and_fixed_parameters: StoTargetAndFixedParameters
+        :type target_and_fixed_parameters: StoCtTargetAndFixedParameters
         :param number_objectives: number of objectives to give different target output parameters
         :type number_objectives: int
         :param show_geometries: True to display the geometries
@@ -326,7 +326,7 @@ class StackedTransformerOptimization:
                 return float('nan'), float('nan'), float('nan'), float('nan')
 
     @staticmethod
-    def start_proceed_study(study_name: str, config: StoSingleInputConfig, number_trials: int,
+    def start_proceed_study(study_name: str, config: StoCtSingleInputConfig, number_trials: int,
                             number_objectives: int = None,
                             storage: str = 'sqlite',
                             sampler=optuna.samplers.NSGAIISampler(),
@@ -368,7 +368,7 @@ class StackedTransformerOptimization:
         if os.path.exists(f"{config.working_directory}/study_{study_name}.sqlite3"):
             print("Existing study found. Proceeding.")
 
-        target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
+        target_and_fixed_parameters = femmt.optimization.StackedTransformerCenterTappedOptimization.calculate_fix_parameters(config)
 
         # introduce study in storage, e.g. sqlite or mysql
         if storage == 'sqlite':
@@ -387,7 +387,7 @@ class StackedTransformerOptimization:
         directions = objective_directions(number_objectives)
 
         func = lambda \
-            trial: femmt.optimization.StackedTransformerOptimization.objective(trial, config, target_and_fixed_parameters, number_objectives, show_geometries)
+            trial: femmt.optimization.StackedTransformerCenterTappedOptimization.objective(trial, config, target_and_fixed_parameters, number_objectives, show_geometries)
 
         study_in_storage = optuna.create_study(study_name=study_name,
                                                storage=storage,
@@ -398,14 +398,14 @@ class StackedTransformerOptimization:
         print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
         study_in_memory.add_trials(study_in_storage.trials)
         study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True,
-                                 callbacks=[femmt.StackedTransformerOptimization.run_garbage_collector])
+                                 callbacks=[femmt.StackedTransformerCenterTappedOptimization.run_garbage_collector])
 
         study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
         print(f"Finished {number_trials} trials.")
         print(f"current time: {datetime.datetime.now()}")
 
     @staticmethod
-    def proceed_multi_core_study(study_name: str, config: StoSingleInputConfig, number_trials: int,
+    def proceed_multi_core_study(study_name: str, config: StoCtSingleInputConfig, number_trials: int,
                                  number_objectives: int = None,
                                  storage: str = "mysql://monty@localhost/mydb",
                                  sampler=optuna.samplers.NSGAIISampler(),
@@ -455,7 +455,7 @@ class StackedTransformerOptimization:
         elif storage == 'mysql':
             storage = "mysql://monty@localhost/mydb",
 
-        target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
+        target_and_fixed_parameters = femmt.optimization.StackedTransformerCenterTappedOptimization.calculate_fix_parameters(config)
 
         # set logging verbosity: https://optuna.readthedocs.io/en/stable/reference/generated/optuna.logging.set_verbosity.html#optuna.logging.set_verbosity
         # .INFO: all messages (default)
@@ -465,8 +465,8 @@ class StackedTransformerOptimization:
 
         directions = objective_directions(number_objectives)
 
-        func = lambda trial: femmt.optimization.StackedTransformerOptimization.objective(trial, config, target_and_fixed_parameters,
-                                                                                         number_objectives, show_geometries, process_number)
+        func = lambda trial: femmt.optimization.StackedTransformerCenterTappedOptimization.objective(trial, config, target_and_fixed_parameters,
+                                                                                                     number_objectives, show_geometries, process_number)
 
         study_in_database = optuna.create_study(study_name=study_name,
                                                 storage=storage,
@@ -474,7 +474,7 @@ class StackedTransformerOptimization:
                                                 load_if_exists=True, sampler=sampler)
 
         study_in_database.optimize(func, n_trials=number_trials, show_progress_bar=True,
-                                   callbacks=[femmt.StackedTransformerOptimization.run_garbage_collector])
+                                   callbacks=[femmt.StackedTransformerCenterTappedOptimization.run_garbage_collector])
 
     @staticmethod
     def run_garbage_collector(study: optuna.Study, _):
@@ -497,7 +497,7 @@ class StackedTransformerOptimization:
             gc.collect()
 
     @staticmethod
-    def show_study_results(study_name: str, config: StoSingleInputConfig,
+    def show_study_results(study_name: str, config: StoCtSingleInputConfig,
                            percent_error_difference_l_h: float = 20,
                            percent_error_difference_l_s12: float = 20) -> None:
         """Show the results of a study.
@@ -537,7 +537,7 @@ class StackedTransformerOptimization:
         fig.show()
 
     @staticmethod
-    def show_study_results3(study_name: str, config: StoSingleInputConfig,
+    def show_study_results3(study_name: str, config: StoCtSingleInputConfig,
                             error_difference_inductance_sum_percent, storage: str = 'sqlite') -> None:
         """Show the results of a study.
 
@@ -582,7 +582,7 @@ class StackedTransformerOptimization:
         fig.show()
 
     @staticmethod
-    def re_simulate_single_result(study_name: str, config: StoSingleInputConfig, number_trial: int,
+    def re_simulate_single_result(study_name: str, config: StoCtSingleInputConfig, number_trial: int,
                                   fft_filter_value_factor: float = 0.01, mesh_accuracy: float = 0.5,
                                   storage: str = "sqlite"):
         """Re-Simulates a FEM simulation from an optuna study.
@@ -596,7 +596,7 @@ class StackedTransformerOptimization:
         :param study_name: name of the study
         :type study_name: str
         :param config: stacked transformer configuration file
-        :type config: StoSingleInputConfig
+        :type config: StoCtSingleInputConfig
         :param number_trial: number of trial to simulate
         :type number_trial: int
         :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all amplitudes below 1 % of
@@ -608,7 +608,7 @@ class StackedTransformerOptimization:
         :param storage: storage of the study
         :type storage: str
         """
-        target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
+        target_and_fixed_parameters = femmt.optimization.StackedTransformerCenterTappedOptimization.calculate_fix_parameters(config)
 
         if storage == "sqlite":
             storage = f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3"
@@ -752,7 +752,7 @@ class StackedTransformerOptimization:
                                              number_primary_coil_turns=primary_coil_turns)
 
     @staticmethod
-    def re_simulate_from_df(df: pd.DataFrame, config: StoSingleInputConfig, number_trial: int,
+    def re_simulate_from_df(df: pd.DataFrame, config: StoCtSingleInputConfig, number_trial: int,
                             fft_filter_value_factor: float = 0.01, mesh_accuracy: float = 0.5,
                             show_simulation_results: bool = False):
         """Perform a single FEM simulation from a given pandas dataframe created by an optuna study.
@@ -766,7 +766,7 @@ class StackedTransformerOptimization:
         :param df: pandas dataframe with the loaded study
         :type df: pandas dataframe
         :param config: stacked transformer configuration file
-        :type config: StoSingleInputConfig
+        :type config: StoCtSingleInputConfig
         :param number_trial: number of trial to simulate
         :type number_trial: int
         :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all amplitudes below 1 % of
@@ -778,7 +778,7 @@ class StackedTransformerOptimization:
         :param show_simulation_results: visualize the simulation results of the FEM simulation
         :type show_simulation_results: bool
         """
-        target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
+        target_and_fixed_parameters = femmt.optimization.StackedTransformerCenterTappedOptimization.calculate_fix_parameters(config)
 
         loaded_trial_params = df.iloc[number_trial]
 
@@ -913,7 +913,7 @@ class StackedTransformerOptimization:
         return geo
 
     @staticmethod
-    def save_png_from_df(df: pd.DataFrame, config: StoSingleInputConfig, number_trial: int):
+    def save_png_from_df(df: pd.DataFrame, config: StoCtSingleInputConfig, number_trial: int):
         """
         Create the geometry of specified trials_numbers.
 
@@ -923,11 +923,11 @@ class StackedTransformerOptimization:
         :param df: pandas dataframe with the loaded study
         :type df: pandas dataframe
         :param config: stacked transformer configuration file
-        :type config: StoSingleInputConfig
+        :type config: StoCtSingleInputConfig
         :param number_trial: number of trial to simulate
         :type number_trial: int
         """
-        target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
+        target_and_fixed_parameters = femmt.optimization.StackedTransformerCenterTappedOptimization.calculate_fix_parameters(config)
 
         loaded_trial_params = df.iloc[number_trial]
 
@@ -1116,7 +1116,7 @@ class StackedTransformerOptimization:
         plt.show()
 
     @staticmethod
-    def create_full_report(df: pd.DataFrame, trials_numbers: list[int], config: StoSingleInputConfig,
+    def create_full_report(df: pd.DataFrame, trials_numbers: list[int], config: StoCtSingleInputConfig,
                            thermal_config: ThermalConfig,
                            current_waveforms_operating_points: List[CurrentWorkingPoint],
                            fft_filter_value_factor: float = 0.01, mesh_accuracy: float = 0.5):
@@ -1130,7 +1130,7 @@ class StackedTransformerOptimization:
         :param trials_numbers: List of trial numbers to re-simulate
         :type trials_numbers: List[int]
         :param config: stacked transformer optimization configuration file
-        :type config: StoSingleInputConfig
+        :type config: StoCtSingleInputConfig
         :param thermal_config: thermal configuration file
         :type thermal_config: ThermalConfig
         :param current_waveforms_operating_points: Trial numbers in a list to re-simulate
@@ -1155,14 +1155,14 @@ class StackedTransformerOptimization:
                     count_current_waveform].time_current_2_vec
 
                 # perform the electromagnetic simulation
-                geo_sim = femmt.StackedTransformerOptimization.re_simulate_from_df(df, config,
-                                                                                   number_trial=trial_number,
-                                                                                   show_simulation_results=False,
-                                                                                   fft_filter_value_factor=fft_filter_value_factor,
-                                                                                   mesh_accuracy=mesh_accuracy)
+                geo_sim = femmt.StackedTransformerCenterTappedOptimization.re_simulate_from_df(df, config,
+                                                                                               number_trial=trial_number,
+                                                                                               show_simulation_results=False,
+                                                                                               fft_filter_value_factor=fft_filter_value_factor,
+                                                                                               mesh_accuracy=mesh_accuracy)
                 # perform the thermal simulation
-                femmt.StackedTransformerOptimization.thermal_simulation_from_geo(geo_sim, thermal_config,
-                                                                                 show_visual_outputs=False)
+                femmt.StackedTransformerCenterTappedOptimization.thermal_simulation_from_geo(geo_sim, thermal_config,
+                                                                                             show_visual_outputs=False)
 
                 electromagnetoquasistatic_result_dict = geo_sim.read_log()
                 thermal_result_dict = geo_sim.read_thermal_log()
@@ -1184,7 +1184,7 @@ class StackedTransformerOptimization:
         print(f"Report exported to {config.working_directory}/summary.csv")
 
     @staticmethod
-    def create_pngs(df: pd.DataFrame, trials_numbers: list[int], config: StoSingleInputConfig):
+    def create_pngs(df: pd.DataFrame, trials_numbers: list[int], config: StoCtSingleInputConfig):
         """
         Create the geometry of specified trials_numbers and saves a screenshot in png format for each trial.
 
@@ -1196,22 +1196,26 @@ class StackedTransformerOptimization:
         :param trials_numbers: List of trial numbers to re-simulate
         :type trials_numbers: List[int]
         :param config: stacked transformer optimization configuration file
-        :type config: StoSingleInputConfig
+        :type config: StoCtSingleInputConfig
         """
         if not os.path.exists(f'{config.working_directory}/drawings'):
             os.mkdir(f'{config.working_directory}/drawings')
         for trial_number in trials_numbers:
-            femmt.StackedTransformerOptimization.save_png_from_df(df, config, number_trial=trial_number, show_simulation_results=False)
+            femmt.StackedTransformerCenterTappedOptimization.save_png_from_df(df, config, number_trial=trial_number, show_simulation_results=False)
 
     @staticmethod
-    def study_to_df(study_name: str, database_url: str):
-        """Create a dataframe from a study.
+    def study_to_df(study_name: str, database_url: str) -> pd.DataFrame:
+        """
+        Create a Pandas dataframe from a study.
 
         :param study_name: name of study
         :type study_name: str
         :param database_url: url of database
         :type database_url: str
+        :return: Study results as Pandas Dataframe
+        :rtype: pd.DataFrame
         """
         loaded_study = optuna.create_study(study_name=study_name, storage=database_url, load_if_exists=True)
         df = loaded_study.trials_dataframe()
         df.to_csv(f'{study_name}.csv')
+        return df

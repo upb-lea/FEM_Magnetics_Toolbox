@@ -10,7 +10,7 @@ from femmt.enumerations import *
 
 
 @dataclass
-class StoInsulation:
+class StoCtInsulation:
     """Insulation definition for stacked transformer optimization."""
 
     iso_top_core: float
@@ -24,9 +24,9 @@ class StoInsulation:
 
 
 @dataclass
-class StoSingleInputConfig:
+class StoCtSingleInputConfig:
     """
-    Configuration to simulate a stacked transformer.
+    Configuration to simulate a stacked center-tapped transformer.
 
     Input parameters are the target parameters, current vectors and the parameters to sweep.
     Also specifies the working directory where to store the results.
@@ -58,7 +58,7 @@ class StoSingleInputConfig:
     max_core_volume: float
 
     # fix parameters: insulations
-    insulations: StoInsulation
+    insulations: StoCtInsulation
 
     # misc
     working_directory: str
@@ -99,7 +99,7 @@ class WorkingDirectories:
 
 
 @dataclass
-class StoTargetAndFixedParameters:
+class StoCtTargetAndFixedParameters:
     """
     Stacked-transformer optimization target and fixed parameters.
 
