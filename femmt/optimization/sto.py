@@ -1,10 +1,8 @@
-
+"""Stacked transformer optimization."""
 # python libraries
-import dataclasses
 import datetime
 import logging
 import os
-from typing import List
 
 # own libraries
 from femmt.optimization.sto_dtos import StoSingleInputConfig, StoTargetAndFixedParameters
@@ -18,15 +16,17 @@ import femmt as fmt
 # 3rd party libraries
 import numpy as np
 import optuna
-from scipy import optimize, interpolate
+from scipy import optimize
 from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
 import magnethub as mh
 import pandas as pd
 
 class StackedTransformerOptimization:
+    """Perform optimizations for the stacked transformer."""
 
     class ReluctanceModel:
+        """Perform optimizations using the reluctance model of the stacked transformer."""
 
         @staticmethod
         def calculate_fix_parameters(config: StoSingleInputConfig) -> StoTargetAndFixedParameters:
@@ -104,12 +104,22 @@ class StackedTransformerOptimization:
             return target_and_fix_parameters
 
         @staticmethod
-        def objective(trial: optuna.Trial, config: StoSingleInputConfig, target_and_fixed_parameters: StoTargetAndFixedParameters, show_geometries: bool):
+        def objective(trial: optuna.Trial, config: StoSingleInputConfig, target_and_fixed_parameters: StoTargetAndFixedParameters):
+            """
+            Objective funktion to optimize. Uses reluctance model calculation.
 
+            :param trial: Optuna trial
+            :type trial: optuna.Trial
+            :param config: Stacked transformer optimization configuration file
+            :type config: StoSingleInputConfig
+            :param target_and_fixed_parameters: Target and fixed parameters
+            :type target_and_fixed_parameters: StoTargetAndFixedParameters
+            """
             # parameter suggestions
-            core_inner_diameter = trial.suggest_float('core_inner_diameter', config.core_inner_diameter_min_max_list[0], config.core_inner_diameter_min_max_list[1])
+            core_inner_diameter = trial.suggest_float('core_inner_diameter', config.core_inner_diameter_min_max_list[0],
+                                                      config.core_inner_diameter_min_max_list[1])
             window_w = trial.suggest_float('window_w', config.window_w_min_max_list[0], config.window_w_min_max_list[1])
-            window_h_bot = trial.suggest_float('window_h_bot', config.window_h_bot_min_max_list[0],config.window_h_bot_min_max_list[1])
+            window_h_bot = trial.suggest_float('window_h_bot', config.window_h_bot_min_max_list[0], config.window_h_bot_min_max_list[1])
             n_p_top = trial.suggest_int('n_p_top', config.n_p_top_min_max_list[0], config.n_p_top_min_max_list[1])
             n_p_bot = trial.suggest_int('n_p_bot', config.n_p_bot_min_max_list[0], config.n_p_bot_min_max_list[1])
             n_s_bot_min = int(np.round(n_p_bot / config.n_target, decimals=0)) - 3
@@ -134,8 +144,8 @@ class StackedTransformerOptimization:
             # calculate total 2D-axi symmetric volume of the core:
             # formula: number_turns_per_row = (available_width + primary_to_primary) / (wire_diameter + primary_to_primary)
             available_width_top = window_w - config.insulations.iso_window_top_core_left - config.insulations.iso_window_top_core_right
-            possible_number_turns_per_row_top_window = int((available_width_top + config.insulations.iso_primary_to_primary) /
-                                                           (primary_litz_wire_diameter + config.insulations.iso_primary_to_primary))
+            possible_number_turns_per_row_top_window = int(
+                (available_width_top + config.insulations.iso_primary_to_primary) / (primary_litz_wire_diameter + config.insulations.iso_primary_to_primary))
             number_of_rows_needed = np.ceil(n_p_top / possible_number_turns_per_row_top_window)
             needed_height_top_wo_insulation = (number_of_rows_needed * primary_litz_wire_diameter + \
                                                (number_of_rows_needed - 1) * config.insulations.iso_primary_to_primary)
@@ -222,8 +232,12 @@ class StackedTransformerOptimization:
             p_density_bot, _ = mdl(flux_density_bot_interp, target_and_fixed_parameters.fundamental_frequency, config.temperature)
             p_density_middle, _ = mdl(flux_density_middle_interp, target_and_fixed_parameters.fundamental_frequency, config.temperature)
 
-            volume_core_top = 2 * ff.calculate_cylinder_volume(core_inner_diameter, window_h_top) - ff.calculate_cylinder_volume(core_inner_diameter, l_top_air_gap) + ff.calculate_cylinder_volume(2 * r_outer, core_inner_diameter / 4)
-            volume_core_bot = 2 * ff.calculate_cylinder_volume(core_inner_diameter, window_h_bot) - ff.calculate_cylinder_volume(core_inner_diameter, l_bot_air_gap) + ff.calculate_cylinder_volume(2 * r_outer, core_inner_diameter / 4)
+            volume_core_top = (2 * ff.calculate_cylinder_volume(core_inner_diameter, window_h_top) - \
+                               ff.calculate_cylinder_volume(core_inner_diameter, l_top_air_gap) + \
+                               ff.calculate_cylinder_volume(2 * r_outer, core_inner_diameter / 4))
+            volume_core_bot = (2 * ff.calculate_cylinder_volume(core_inner_diameter, window_h_bot) - \
+                               ff.calculate_cylinder_volume(core_inner_diameter, l_bot_air_gap) + \
+                               ff.calculate_cylinder_volume(2 * r_outer, core_inner_diameter / 4))
             volume_core_middle = ff.calculate_cylinder_volume(2 * r_outer, core_inner_diameter / 4)
 
             p_top = p_density_top * volume_core_top
@@ -331,10 +345,6 @@ class StackedTransformerOptimization:
             :type study_name: str
             :param config: Integrated transformer configuration file
             :type config: ItoSingleInputConfig
-            :param percent_error_difference_l_h: relative error allowed in l_h
-            :type percent_error_difference_l_s12: float
-            :param percent_error_difference_l_s12: relative error allowed in L_s12
-            :type percent_error_difference_l_s12: float
             """
             study = optuna.create_study(study_name=study_name,
                                         storage=f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3",
@@ -371,6 +381,14 @@ class StackedTransformerOptimization:
 
         @staticmethod
         def load_csv_to_df(csv_filepath: str) -> pd.DataFrame:
+            """
+            Load a csv file (previously stored from a Pandas dataframe) back to a Pandas dataframe.
+
+            :param csv_filepath: File path of .csv file
+            :type csv_filepath: str
+            :return: loaded results from the given .csv file
+            :rtype: pandas.DataFrame
+            """
             df = pd.read_csv(csv_filepath, header=0, index_col=0)
             # reading a pandas dataframe seems to change a global variable in the c subsystem
             # after reading csv values, there are issues running onelab/gmsh, as gmsh writes ',' instead '.' to its own files
@@ -451,6 +469,8 @@ class StackedTransformerOptimization:
             :type df: List[ItoSingleResultFile]
             :param factor_min_dc_losses: filter factor for the minimum dc losses
             :type factor_min_dc_losses: float
+            :param factor_max_dc_losses: dc_max_loss = factor_max_dc_losses * min_available_dc_losses_in_pareto_front
+            :type factor_max_dc_losses: float
             :returns: list with removed objects (too small air gaps)
             :rtype: List[ItoSingleResultFile]
             """
@@ -481,11 +501,25 @@ class StackedTransformerOptimization:
             return pareto_df_offset
 
     class FemSimulation:
+        """Contains methods to perform FEM simulations or process their results."""
 
         @staticmethod
         def fem_simulations_from_reluctance_df(reluctance_df: pd.DataFrame, config: StoSingleInputConfig, show_visual_outputs: bool = False,
-                                               process_number: int = 1):
+                                               process_number: int = 1, current_waveforms_csv_file: str = None):
+            """
+            Perform FEM simulations from a given Pandas dataframe. The dataframe is from the reluctance model results.
 
+            :param reluctance_df: Pandas dataframe containing relults from the relutance model
+            :type reluctance_df: pandas.DataFrame
+            :param config: Configuration for the optimization of the transformer
+            :type config: StoSingleInputConfig
+            :param show_visual_outputs: Ture to show visual outputs like the geometry
+            :type show_visual_outputs: bool
+            :param process_number: Process number for parallel simulations on multiple cpu cores
+            :type process_number: int
+            :param current_waveforms_csv_file: csv file containing the current waveforms
+            :type current_waveforms_csv_file: str
+            """
             target_and_fix_parameters = StackedTransformerOptimization.ReluctanceModel.calculate_fix_parameters(config)
 
             working_directory = target_and_fix_parameters.working_directories.fem_working_directory
@@ -495,14 +529,12 @@ class StackedTransformerOptimization:
                 target_and_fix_parameters.working_directories.fem_working_directory, f"process_{process_number}")
 
             time_current_vectors = np.array([config.time_current_1_vec, config.time_current_2_vec])
-            csv_filename = '/home/nikolasf/Dokumente/01_git/30_Python/dab_computation_toolbox/example_results/02_transformer/01_reluctance_model_results/2024-08-29_preliminary_reluctance_optimization_vijay_design_new_waveform.csv'
-            pd.read_csv(csv_filename, header=0, index_col=0, delimiter=';')
 
-            for index, row in reluctance_df.iterrows():
+            pd.read_csv(current_waveforms_csv_file, header=0, index_col=0, delimiter=';')
+
+            for index, _ in reluctance_df.iterrows():
 
                 try:
-                # if True:
-
                     # 1. chose simulation type
                     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
                                                 working_directory=working_directory, verbosity=fmt.Verbosity.ToConsole)
@@ -513,7 +545,8 @@ class StackedTransformerOptimization:
                                                                      window_h_top=reluctance_df['user_attrs_window_h_top'][index],
                                                                      window_h_bot=reluctance_df["params_window_h_bot"][index])
                     core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions,
-                                    material=reluctance_df["params_material_name"][index], temperature=config.temperature, frequency=target_and_fix_parameters.fundamental_frequency,
+                                    material=reluctance_df["params_material_name"][index], temperature=config.temperature,
+                                    frequency=target_and_fix_parameters.fundamental_frequency,
                                     permeability_datasource=config.permeability_datasource,
                                     permeability_datatype=config.permeability_datatype,
                                     permeability_measurement_setup=config.permeability_measurement_setup,
@@ -525,8 +558,10 @@ class StackedTransformerOptimization:
 
                     # 3. set air gap parameters
                     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Stacked, core)
-                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, reluctance_df["user_attrs_l_top_air_gap"][index], stacked_position=fmt.StackedPosition.Top)
-                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, reluctance_df["user_attrs_l_bot_air_gap"][index], stacked_position=fmt.StackedPosition.Bot)
+                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, reluctance_df["user_attrs_l_top_air_gap"][index],
+                                         stacked_position=fmt.StackedPosition.Top)
+                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, reluctance_df["user_attrs_l_bot_air_gap"][index],
+                                         stacked_position=fmt.StackedPosition.Bot)
                     geo.set_air_gaps(air_gaps)
 
                     # 4. set insulations
@@ -545,13 +580,13 @@ class StackedTransformerOptimization:
                     # 6. set conductor parameters
                     winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
                     primary_litz_wire = fmt.litz_database()[reluctance_df['params_primary_litz_wire'][index]]
-                    winding1.set_litz_round_conductor(primary_litz_wire['conductor_radii'], primary_litz_wire['strands_numbers'], primary_litz_wire['strand_radii'],
-                                                      None, fmt.ConductorArrangement.Square)
+                    winding1.set_litz_round_conductor(primary_litz_wire['conductor_radii'], primary_litz_wire['strands_numbers'],
+                                                      primary_litz_wire['strand_radii'], None, fmt.ConductorArrangement.Square)
 
                     winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
                     secondary_litz_wire = fmt.litz_database()[reluctance_df['params_primary_litz_wire'][index]]
-                    winding2.set_litz_round_conductor(secondary_litz_wire['conductor_radii'], secondary_litz_wire['strands_numbers'], secondary_litz_wire['strand_radii'],
-                                                      None, fmt.ConductorArrangement.Square)
+                    winding2.set_litz_round_conductor(secondary_litz_wire['conductor_radii'], secondary_litz_wire['strands_numbers'],
+                                                      secondary_litz_wire['strand_radii'], None, fmt.ConductorArrangement.Square)
 
                     primary_coil_turns = reluctance_df['params_n_p_top'][index]
                     print(f"{primary_coil_turns=}")
@@ -560,7 +595,8 @@ class StackedTransformerOptimization:
 
                     # 7. add conductor to vww and add winding window to MagneticComponent
                     vww_top.set_interleaved_winding(winding1, primary_coil_turns, winding2, 0, fmt.InterleavedWindingScheme.HorizontalAlternating)
-                    vww_bot.set_interleaved_winding(winding1, reluctance_df['params_n_p_bot'][index], winding2, int(reluctance_df['user_attrs_n_s_bot'][index]), fmt.InterleavedWindingScheme.HorizontalAlternating)
+                    vww_bot.set_interleaved_winding(winding1, reluctance_df['params_n_p_bot'][index], winding2,
+                                                    int(reluctance_df['user_attrs_n_s_bot'][index]), fmt.InterleavedWindingScheme.HorizontalAlternating)
 
                     geo.set_winding_windows([winding_window_top, winding_window_bot])
 
@@ -570,7 +606,3 @@ class StackedTransformerOptimization:
                                            plot_waveforms=show_visual_outputs, fft_filter_value_factor=0.05)
                 except Exception as e:
                     print(e)
-
-
-    class ThermalSimulation:
-        pass

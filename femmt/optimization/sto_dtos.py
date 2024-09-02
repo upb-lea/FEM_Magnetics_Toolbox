@@ -1,4 +1,4 @@
-
+"""DTOs for the stacked transformer optimization."""
 # python libraries
 from dataclasses import dataclass
 from typing import List

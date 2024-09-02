@@ -387,7 +387,8 @@ class StackedTransformerCenterTappedOptimization:
         directions = objective_directions(number_objectives)
 
         func = lambda \
-            trial: femmt.optimization.StackedTransformerCenterTappedOptimization.objective(trial, config, target_and_fixed_parameters, number_objectives, show_geometries)
+            trial: femmt.optimization.StackedTransformerCenterTappedOptimization.objective(trial, config, target_and_fixed_parameters,
+                                                                                           number_objectives, show_geometries)
 
         study_in_storage = optuna.create_study(study_name=study_name,
                                                storage=storage,
