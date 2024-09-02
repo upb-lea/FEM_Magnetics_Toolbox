@@ -3478,11 +3478,9 @@ class MainWindow(QMainWindow):
                 hysteresis_label = getattr(self, f'md_loss_core_hysteresis_label{index + 1}')
                 eddy_current_label = getattr(self, f'md_loss_core_eddy_current_label{index + 1}')
                 winding1_loss_label = getattr(self, f'md_loss_winding1_label{index + 1}')
-                inductance1_label = getattr(self, f'md_inductance1_label{index + 1}')
 
                 if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
                     winding2_loss_label = getattr(self, f'md_loss_winding2_label{index + 1}')
-                    inductance2_label = getattr(self, f'md_inductance2_label{index + 1}')
                 # Update frequency label
                 freq_label.setText(f"Frequency: {sweep['f']} Hz")
 
@@ -3497,30 +3495,13 @@ class MainWindow(QMainWindow):
                     # just for shown one figure:
                     self.md_loss_plot_label1.setPixmap(pixmap)
                     self.md_loss_plot_label1.show()
-                # # Show the losses with round and approximation.
-                # hysteresis_label.setText(f"Core Hysteresis loss: {sweep.get('core_hyst_losses', 0):.5f} W")
-                # eddy_current_label.setText(f"Core Eddy Current loss: {sweep.get('core_eddy_losses', 0):.5f} W")
-                # winding1_loss_label.setText(f"Winding 1 loss: {sweep['winding1'].get('winding_losses', 0):.5f} W")
-                #
-                # primary_inductance_nh = sweep['winding1'].get('flux_over_current', [0])[0] * 1e9
-                # inductance1_label.setText(f"Primary Inductance: {primary_inductance_nh:.0f} nH")
-                # # Transformer case.
-                # if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-                #     secondary_inductance_nh = sweep['winding2'].get('flux_over_current', [0])[0] * 1e9
-                #     winding2_loss_label.setText(f"Winding 2 loss: {sweep['winding2'].get('winding_losses', 0):.0f} W")
-                #     inductance2_label.setText(f"Secondary Inductance: {secondary_inductance_nh:.5f} nH")
                 # Show the losses with the new format_number_with_units function.
                 hysteresis_label.setText(f"Core Hysteresis loss: {format_number_with_units(sweep.get('core_hyst_losses', 0))} W")
                 eddy_current_label.setText(f"Core Eddy Current loss: {format_number_with_units(sweep.get('core_eddy_losses', 0))} W")
                 winding1_loss_label.setText(f"Winding 1 loss: {format_number_with_units(sweep['winding1'].get('winding_losses', 0))} W")
-
-                primary_inductance_nh = sweep['winding1'].get('flux_over_current', [0])[0] * 1e9
-                inductance1_label.setText(f"Primary Inductance: {primary_inductance_nh:.0f} nH")
                 # Transformer case.
                 if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-                    secondary_inductance_nh = sweep['winding2'].get('flux_over_current', [0])[0]
                     winding2_loss_label.setText(f"Winding 2 loss: {format_number_with_units(sweep['winding2'].get('winding_losses', 0))} W")
-                    inductance2_label.setText(f"Secondary Inductance: {format_number_with_units(secondary_inductance_nh, decimals=4)} H")
 
         finally:
             # Unlock the mutex to allow other operations to proceed.

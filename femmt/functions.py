@@ -1018,7 +1018,6 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
     cumulative_core_hysteresis = 0
     cumulative_core_eddy = 0
     cumulative_losses = []
-    cumulative_inductances = []
     windings_labels = []
     # Determine if this is a single simulation or a sweep
     is_single_simulation = len(loaded_results_dict["single_sweeps"]) == 1
@@ -1045,11 +1044,9 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
 
                 if len(cumulative_losses) < i:
                     cumulative_losses.append(loss)
-                    cumulative_inductances.append(inductance)
                     windings_labels.append(f"Winding {i}")
                 else:
                     cumulative_losses[i - 1] += loss
-                    cumulative_inductances[i - 1] += inductance
 
                 # Plot for current frequency
                 ax.bar(i, loss, width=0.35, label=f'{windings_labels[i - 1]} Loss at {freq} Hz')
