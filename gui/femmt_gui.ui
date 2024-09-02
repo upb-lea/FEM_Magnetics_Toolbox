@@ -36,7 +36,7 @@
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>0</y>
+         <y>-164</y>
          <width>1508</width>
          <height>1280</height>
         </rect>
@@ -2669,10 +2669,6 @@
                                     </property>
                                    </widget>
                                   </item>
-                                 </layout>
-                                </item>
-                                <item>
-                                 <layout class="QVBoxLayout" name="verticalLayout_66">
                                   <item>
                                    <widget class="QLabel" name="md_loss_winding2_label9">
                                     <property name="text">
@@ -2680,6 +2676,10 @@
                                     </property>
                                    </widget>
                                   </item>
+                                 </layout>
+                                </item>
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_66">
                                   <item>
                                    <widget class="QLabel" name="md_inductance1_label9">
                                     <property name="text">
