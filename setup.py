@@ -49,7 +49,8 @@ setup(
                       'deepdiff>=6.2.1',  # comparing result dicts for pytests
                       'materialdatabase==0.3.0',
                       'optuna',
-                      'plotly'],
+                      'plotly',
+                      'mag-net-hub'],
     license="GNU General Public License v3",
     long_description=readme + '\n\n' + history,
     long_description_content_type="text/markdown",
