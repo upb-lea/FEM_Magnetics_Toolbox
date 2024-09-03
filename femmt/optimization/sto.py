@@ -522,7 +522,7 @@ class StackedTransformerOptimization:
 
         @staticmethod
         def fem_simulations_from_reluctance_df(reluctance_df: pd.DataFrame, config: StoSingleInputConfig, show_visual_outputs: bool = False,
-                                               process_number: int = 1, current_waveforms_csv_file: str = None):
+                                               process_number: int = 1):
             """
             Perform FEM simulations from a given Pandas dataframe. The dataframe is from the reluctance model results.
 
@@ -534,8 +534,6 @@ class StackedTransformerOptimization:
             :type show_visual_outputs: bool
             :param process_number: Process number for parallel simulations on multiple cpu cores
             :type process_number: int
-            :param current_waveforms_csv_file: csv file containing the current waveforms
-            :type current_waveforms_csv_file: str
             """
             target_and_fix_parameters = StackedTransformerOptimization.ReluctanceModel.calculate_fix_parameters(config)
 
@@ -547,7 +545,7 @@ class StackedTransformerOptimization:
 
             time_current_vectors = np.array([config.time_current_1_vec, config.time_current_2_vec])
 
-            pd.read_csv(current_waveforms_csv_file, header=0, index_col=0, delimiter=';')
+            # pd.read_csv(current_waveforms_csv_file, header=0, index_col=0, delimiter=';')
 
             for index, _ in reluctance_df.iterrows():
 
