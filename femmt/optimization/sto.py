@@ -3,6 +3,7 @@
 import datetime
 import logging
 import os
+from typing import List
 
 # own libraries
 from femmt.optimization.sto_dtos import StoSingleInputConfig, StoTargetAndFixedParameters
@@ -122,10 +123,10 @@ class StackedTransformerOptimization:
             window_h_bot = trial.suggest_float('window_h_bot', config.window_h_bot_min_max_list[0], config.window_h_bot_min_max_list[1])
             n_p_top = trial.suggest_int('n_p_top', config.n_p_top_min_max_list[0], config.n_p_top_min_max_list[1])
             n_p_bot = trial.suggest_int('n_p_bot', config.n_p_bot_min_max_list[0], config.n_p_bot_min_max_list[1])
-            n_s_bot_min = int(np.round(n_p_bot / config.n_target, decimals=0)) - 3
+            n_s_bot_min = int(np.round(n_p_bot / config.n_target, decimals=0)) - 2
             if n_s_bot_min < 1:
                 n_s_bot_min = 1
-            n_s_bot_max = int(np.round(n_p_bot / config.n_target, decimals=0)) + 3
+            n_s_bot_max = int(np.round(n_p_bot / config.n_target, decimals=0)) + 2
             n_s_bot = trial.suggest_int('n_s_bot', n_s_bot_min, n_s_bot_max)
 
             primary_litz_wire = trial.suggest_categorical('primary_litz_wire', config.primary_litz_wire_list)
@@ -195,27 +196,30 @@ class StackedTransformerOptimization:
             r_core_bot = 2 * core_inner_cylinder_bot + core_top_bot_radiant
             r_core_middle = core_top_bot_radiant
 
-            r_core_top_target = reluctance_matrix[0][0] - r_core_middle
-            r_core_bot_target = reluctance_matrix[1][1] - r_core_middle
+            r_core_top_target = reluctance_matrix[0][0] + reluctance_matrix[0][1]  # - r_core_middle
+            r_core_bot_target = reluctance_matrix[1][1] + reluctance_matrix[0][1]  # - r_core_middle
 
             r_air_gap_top_target = r_core_top_target - r_core_top
             r_air_gap_bot_target = r_core_bot_target - r_core_bot
 
             # calculate air gaps to reach the target parameters
-            minimum_air_gap_length = 0.05e-3
+            minimum_air_gap_length = 0.01e-3
             maximum_air_gap_length = 4e-3
 
             try:
                 l_top_air_gap = optimize.brentq(
                     fr.r_air_gap_round_inf_sct, minimum_air_gap_length, maximum_air_gap_length,
                     args=(core_inner_diameter, window_h_top, r_air_gap_top_target), full_output=True)[0]
-
+            except ValueError:
+                print("top air gap: No fitting air gap length")
+                return float('nan'), float('nan')
+            try:
                 l_bot_air_gap = optimize.brentq(
                     fr.r_air_gap_round_round_sct, minimum_air_gap_length, maximum_air_gap_length,
                     args=(core_inner_diameter, window_h_bot / 2, window_h_bot / 2, r_air_gap_bot_target), full_output=True)[0]
 
             except ValueError:
-                print("No fitting air gap length")
+                print("bot air gap: No fitting air gap length")
                 return float('nan'), float('nan')
 
             # calculate hysteresis losses from mag-net-hub
@@ -299,7 +303,7 @@ class StackedTransformerOptimization:
             :param show_geometries: True to show the geometry of each suggestion (with valid geometry data)
             :type show_geometries: bool
             """
-            if os.path.exists(f"{config.working_directory}/study_{study_name}.sqlite3"):
+            if os.path.exists(f"{config.working_directory}/{study_name}.sqlite3"):
                 print("Existing study found. Proceeding.")
 
             target_and_fixed_parameters = StackedTransformerOptimization.ReluctanceModel.calculate_fix_parameters(config)
@@ -318,8 +322,7 @@ class StackedTransformerOptimization:
             # .ERROR: only errors
             # optuna.logging.set_verbosity(optuna.logging.ERROR)
 
-            func = lambda \
-                trial: StackedTransformerOptimization.ReluctanceModel.objective(trial, config, target_and_fixed_parameters, show_geometries)
+            func = lambda trial: StackedTransformerOptimization.ReluctanceModel.objective(trial, config, target_and_fixed_parameters)
 
             study_in_storage = optuna.create_study(study_name=study_name,
                                                    storage=storage,
@@ -346,9 +349,7 @@ class StackedTransformerOptimization:
             :param config: Integrated transformer configuration file
             :type config: ItoSingleInputConfig
             """
-            study = optuna.create_study(study_name=study_name,
-                                        storage=f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3",
-                                        load_if_exists=True)
+            study = optuna.load_study(study_name=study_name, storage=f"sqlite:///{config.working_directory}/{study_name}.sqlite3")
 
             fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0], t.values[1]), target_names=["volume in m³", "loss in W"])
             fig.update_layout(title=f"{study_name}")
@@ -499,6 +500,22 @@ class StackedTransformerOptimization:
             pareto_df_offset = df[df['values_1'] < ref_loss_max]
 
             return pareto_df_offset
+
+        @staticmethod
+        def df_trial_numbers(df: pd.DataFrame, trial_number_list: List[int]) -> pd.DataFrame:
+            """
+            Generate a new dataframe from a given one, just with the trial numbers from the trial_number_list.
+
+            :param df: input dataframe
+            :type df: pandas.DataFrame
+            :param trial_number_list: list of trials, e.g. [1530, 1870, 3402]
+            :type trial_number_list: List[int]
+            :return: dataframe with trial numbers from trial_number_list
+            :rtype: pandas.DataFrame
+            """
+            df_trial_numbers = df.loc[df["number"].isin(trial_number_list)]
+
+            return df_trial_numbers
 
     class FemSimulation:
         """Contains methods to perform FEM simulations or process their results."""
