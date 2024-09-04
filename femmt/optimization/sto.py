@@ -179,7 +179,7 @@ class StackedTransformerOptimization:
 
             flux_top = flux_matrix[0]
             flux_bot = flux_matrix[1]
-            flux_middle = flux_top - flux_bot
+            flux_middle = flux_bot - flux_top
 
             core_cross_section = (core_inner_diameter / 2) ** 2 * np.pi
 
@@ -204,7 +204,7 @@ class StackedTransformerOptimization:
 
             # calculate air gaps to reach the target parameters
             minimum_air_gap_length = 0.01e-3
-            maximum_air_gap_length = 4e-3
+            maximum_air_gap_length = 2e-3
 
             try:
                 l_top_air_gap = optimize.brentq(
@@ -284,7 +284,7 @@ class StackedTransformerOptimization:
         @staticmethod
         def start_proceed_study(study_name: str, config: StoSingleInputConfig, number_trials: int,
                                 storage: str = 'sqlite',
-                                sampler=optuna.samplers.NSGAIISampler(),
+                                sampler=optuna.samplers.NSGAIIISampler(),
                                 show_geometries: bool = False,
                                 ) -> None:
             """
@@ -546,6 +546,7 @@ class StackedTransformerOptimization:
             time_current_vectors = np.array([config.time_current_1_vec, config.time_current_2_vec])
 
             # pd.read_csv(current_waveforms_csv_file, header=0, index_col=0, delimiter=';')
+            df = pd.DataFrame()
 
             for index, _ in reluctance_df.iterrows():
 
@@ -616,8 +617,15 @@ class StackedTransformerOptimization:
                     geo.set_winding_windows([winding_window_top, winding_window_bot])
 
                     geo.create_model(freq=target_and_fix_parameters.fundamental_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
-
                     geo.stacked_core_study(number_primary_coil_turns=primary_coil_turns, time_current_vectors=time_current_vectors,
                                            plot_waveforms=show_visual_outputs, fft_filter_value_factor=0.05)
+
+                    result_dict = geo.read_log()
+                    print(f"{result_dict=}")
+                    df_single_simulation = pd.DataFrame(result_dict)
+
+                    df = pd.concat([df, df_single_simulation], axis=0)
                 except Exception as e:
                     print(e)
+
+            return df
