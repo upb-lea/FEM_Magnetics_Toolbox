@@ -91,17 +91,17 @@ class InductorOptimization:
             :param target_and_fixed_parameters: target and fixed pre-calculated values for the inductor optimization
             :type target_and_fixed_parameters: InductorOptimizationTargetAndFixedParameters
             """
-            trial.suggest_categorical("material_name", config.material_name_list)
-
             # Give some core names in core_name_list to use core geometries from the core database.
             if config.core_name_list is not None:
+                # using fixed core sizes from the database with flexible height.
                 core_name = trial.suggest_categorical("core_name", config.core_name_list)
                 core = ff.core_database()[core_name]
                 core_inner_diameter = core["core_inner_diameter"]
                 window_w = core["window_w"]
-                window_h = trial.suggest_float("window_h", core["window_h"] * 0.3, core["window_h"])
+                window_h = trial.suggest_float("window_h", 0.3 * core["window_h"], core["window_h"])
 
             else:
+                # using arbitrary core sizes
                 core_inner_diameter = trial.suggest_float("core_inner_diameter", config.core_inner_diameter_list[0], config.core_inner_diameter_list[1])
                 window_w = trial.suggest_float("window_w", config.window_w_list[0], config.window_w_list[1])
                 window_h = trial.suggest_float("window_h", config.window_h_list[0], config.window_h_list[1])
@@ -133,7 +133,7 @@ class InductorOptimization:
             target_total_reluctance = turns ** 2 / config.target_inductance
 
             r_core_inner = fr.r_core_round(core_inner_diameter, window_h, material_dto.material_mu_r_abs)
-            r_core_top_bot = fr.r_core_top_bot_radiant(core_inner_diameter, window_w, material_dto.material_mu_r_abs, core_inner_diameter/4)
+            r_core_top_bot = fr.r_core_top_bot_radiant(core_inner_diameter, window_w, material_dto.material_mu_r_abs, core_inner_diameter / 4)
             r_core = 2 * r_core_inner + 2 * r_core_top_bot
 
             r_air_gap_target = target_total_reluctance - r_core
@@ -141,9 +141,11 @@ class InductorOptimization:
             flux = turns * target_and_fixed_parameters.current_extracted_vec / target_total_reluctance
             core_cross_section = (core_inner_diameter / 2) ** 2 * np.pi
             flux_density = flux / core_cross_section
-            if flux_density.max() > 0.7 * material_dto.saturation_flux_density:
-                print(f"Flux density too high (70 % of b_sat): {flux_density} T > 0.7 * {material_dto.saturation_flux_density} T")
-                return float('nan'), float('nan')
+
+            # Do not cross out saturation, as the genetic algorithm is missing bad results to improve its suggestions
+            # if flux_density.max() > 0.7 * material_dto.saturation_flux_density:
+            #     print(f"Flux density too high (70 % of b_sat): {flux_density} T > 0.7 * {material_dto.saturation_flux_density} T")
+            #     return float('nan'), float('nan')
 
             # calculate air gaps to reach the target parameters
             minimum_air_gap_length = 0.01e-3
@@ -189,7 +191,7 @@ class InductorOptimization:
             trial.set_user_attr('p_hyst', p_core)
             trial.set_user_attr('l_air_gap', l_air_gap)
 
-            return p_loss, volume
+            return volume, p_loss
 
         @staticmethod
         def start_proceed_study(study_name: str, config: InductorOptimizationDTO, number_trials: int,
