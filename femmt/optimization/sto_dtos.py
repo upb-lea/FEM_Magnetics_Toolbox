@@ -1,7 +1,7 @@
 """DTOs for the stacked transformer optimization."""
 # python libraries
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 # 3rd party libraries
 import numpy as np
@@ -84,8 +84,9 @@ class StoSingleInputConfig:
     n_p_top_min_max_list: list
     n_p_bot_min_max_list: list
     material_list: list
-    core_inner_diameter_min_max_list: list
-    window_w_min_max_list: list
+    core_name_list: Optional[List[str]]
+    core_inner_diameter_min_max_list: Optional[List[float]]
+    window_w_min_max_list: Optional[List[float]]
     window_h_bot_min_max_list: list
     primary_litz_wire_list: list
     secondary_litz_wire_list: list

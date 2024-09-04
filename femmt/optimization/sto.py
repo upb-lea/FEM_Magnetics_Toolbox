@@ -109,6 +109,9 @@ class StackedTransformerOptimization:
             """
             Objective funktion to optimize. Uses reluctance model calculation.
 
+            Once core_name_list is not None, the objective function uses fixed core sizes. Cores are picked from the core_database().
+            Otherwise, core_inner_diameter_min_max_list, window_w_min_max_list and window_h_bot_min_max_list are used.
+
             :param trial: Optuna trial
             :type trial: optuna.Trial
             :param config: Stacked transformer optimization configuration file
@@ -116,11 +119,21 @@ class StackedTransformerOptimization:
             :param target_and_fixed_parameters: Target and fixed parameters
             :type target_and_fixed_parameters: StoTargetAndFixedParameters
             """
-            # parameter suggestions
-            core_inner_diameter = trial.suggest_float('core_inner_diameter', config.core_inner_diameter_min_max_list[0],
-                                                      config.core_inner_diameter_min_max_list[1])
-            window_w = trial.suggest_float('window_w', config.window_w_min_max_list[0], config.window_w_min_max_list[1])
-            window_h_bot = trial.suggest_float('window_h_bot', config.window_h_bot_min_max_list[0], config.window_h_bot_min_max_list[1])
+            # fixed cores
+            if config.core_name_list is not None:
+                # using fixed core sizes from the database with flexible height.
+                core_name = trial.suggest_categorical("core_name", config.core_name_list)
+                core = ff.core_database()[core_name]
+                core_inner_diameter = core["core_inner_diameter"]
+                window_w = core["window_w"]
+                window_h_bot = trial.suggest_float("window_h_bot", 0.3 * core["window_h"], core["window_h"])
+
+            else:
+                # using arbitrary core sizes
+                core_inner_diameter = trial.suggest_float("core_inner_diameter", config.core_inner_diameter_min_max_list[0], config.core_inner_diameter_min_max_list[1])
+                window_w = trial.suggest_float("window_w", config.window_w_min_max_list[0], config.window_w_min_max_list[1])
+                window_h_bot = trial.suggest_float('window_h_bot', config.window_h_bot_min_max_list[0], config.window_h_bot_min_max_list[1])
+
             n_p_top = trial.suggest_int('n_p_top', config.n_p_top_min_max_list[0], config.n_p_top_min_max_list[1])
             n_p_bot = trial.suggest_int('n_p_bot', config.n_p_bot_min_max_list[0], config.n_p_bot_min_max_list[1])
             n_s_bot_min = int(np.round(n_p_bot / config.n_target, decimals=0)) - 2
