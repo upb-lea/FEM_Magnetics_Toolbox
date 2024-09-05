@@ -127,6 +127,9 @@ class StackedTransformerOptimization:
                 core_inner_diameter = core["core_inner_diameter"]
                 window_w = core["window_w"]
                 window_h_bot = trial.suggest_float("window_h_bot", 0.3 * core["window_h"], core["window_h"])
+                trial.set_user_attr('core_inner_diameter', core_inner_diameter)
+                trial.set_user_attr('window_w', window_w)
+                trial.set_user_attr('window_h_bot', window_h_bot)
 
             else:
                 # using arbitrary core sizes
@@ -159,9 +162,11 @@ class StackedTransformerOptimization:
             # calculate total 2D-axi symmetric volume of the core:
             # formula: number_turns_per_row = (available_width + primary_to_primary) / (wire_diameter + primary_to_primary)
             available_width_top = window_w - config.insulations.iso_window_top_core_left - config.insulations.iso_window_top_core_right
-            possible_number_turns_per_row_top_window = int(
+            possible_number_turns_per_column_top_window = int(
                 (available_width_top + config.insulations.iso_primary_to_primary) / (primary_litz_wire_diameter + config.insulations.iso_primary_to_primary))
-            number_of_rows_needed = np.ceil(n_p_top / possible_number_turns_per_row_top_window)
+            if possible_number_turns_per_column_top_window < 1:
+                return float('nan'), float('nan')
+            number_of_rows_needed = np.ceil(n_p_top / possible_number_turns_per_column_top_window)
             needed_height_top_wo_insulation = (number_of_rows_needed * primary_litz_wire_diameter + \
                                                (number_of_rows_needed - 1) * config.insulations.iso_primary_to_primary)
             window_h_top = needed_height_top_wo_insulation + config.insulations.iso_window_top_core_top + config.insulations.iso_window_top_core_bot
@@ -170,15 +175,38 @@ class StackedTransformerOptimization:
             r_outer = fr.calculate_r_outer(core_inner_diameter, window_w)
             volume = ff.calculate_cylinder_volume(cylinder_diameter=2 * r_outer, cylinder_height=core_total_height)
 
+            # detailed calculation for the winding window
+            # check the area for the primary winding
+            available_height_bot = window_h_bot - config.insulations.iso_window_bot_core_top - config.insulations.iso_window_bot_core_bot
+            possible_number_prim_turns_per_column_bot_window = int(
+                (available_height_bot + config.insulations.iso_primary_to_primary) / (primary_litz_wire_diameter + config.insulations.iso_primary_to_primary))
+            if possible_number_prim_turns_per_column_bot_window < 1:
+                return float('nan'), float('nan')
+            number_of_primary_columns_needed = np.ceil(n_p_bot / possible_number_prim_turns_per_column_bot_window)
+            needed_primary_width_bot_wo_insulation = (number_of_primary_columns_needed * primary_litz_wire_diameter + (number_of_primary_columns_needed - 1) * \
+                                                      config.insulations.iso_primary_to_primary)
+            area_primary_bot = needed_primary_width_bot_wo_insulation * window_h_bot
+
+            # check the area for the secondary winding
+            possible_number_sec_turns_per_column_bot_window = int(
+                (available_height_bot + config.insulations.iso_secondary_to_secondary) / \
+                (secondary_litz_wire_diameter + config.insulations.iso_secondary_to_secondary))
+            if possible_number_sec_turns_per_column_bot_window < 1:
+                return float('nan'), float('nan')
+            number_of_secondary_columns_needed = np.ceil(n_s_bot / possible_number_sec_turns_per_column_bot_window)
+            needed_primary_width_bot_wo_insulation = (number_of_secondary_columns_needed * secondary_litz_wire_diameter + \
+                                                      (number_of_secondary_columns_needed - 1) * config.insulations.iso_secondary_to_secondary)
+            area_secondary_bot = needed_primary_width_bot_wo_insulation * window_h_bot
+            area_insulation_prim_sec_bot = 2 * config.insulations.iso_primary_to_secondary * window_h_bot
+
+            total_area_windings_bot = area_primary_bot + area_secondary_bot + area_insulation_prim_sec_bot
+
             window_bot_available_height = window_h_bot - config.insulations.iso_window_bot_core_top - config.insulations.iso_window_bot_core_bot
             window_bot_available_width = window_w - config.insulations.iso_window_bot_core_left - config.insulations.iso_window_bot_core_right
             window_bot_available_area = window_bot_available_height * window_bot_available_width
 
-            # turn area for a single turn is approximated as a rectangle
-            window_bot_turns_area = n_p_bot * primary_litz_wire_diameter ** 2 + n_s_bot * secondary_litz_wire_diameter ** 2
-
             # as the window_h_top is adapted to the number of n_p_top, the top windings always fit into the top window.
-            if window_bot_turns_area > window_bot_available_area:
+            if total_area_windings_bot > window_bot_available_area:
                 print("Winding window too small for too many turns.")
                 return float('nan'), float('nan')
 
@@ -283,7 +311,6 @@ class StackedTransformerOptimization:
             p_loss = p_hyst + winding_losses
 
             # set additional attributes
-            trial.set_user_attr('n_s_bot', n_s_bot)
             trial.set_user_attr('p_hyst', p_hyst)
             trial.set_user_attr('p_hyst_top', p_top)
             trial.set_user_attr('p_hyst_bot', p_bot)
@@ -569,11 +596,20 @@ class StackedTransformerOptimization:
                     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
                                                 working_directory=working_directory, verbosity=fmt.Verbosity.ToConsole)
 
+                    if reluctance_df["params_core_name"] is not None:
+                        core_inner_diameter = reluctance_df["user_attrs_core_inner_diameter"][index]
+                        window_w = reluctance_df["user_attrs_window_w"][index]
+                        core_h_bot = reluctance_df["user_attrs_window_h_bot"][index]
+                    else:
+                        core_inner_diameter = reluctance_df["params_core_inner_diameter"][index]
+                        window_w = reluctance_df["params_window_w"][index]
+                        core_h_bot = reluctance_df["params_window_h_bot"][index]
+
                     # 2. set core parameters
-                    core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=reluctance_df["params_core_inner_diameter"][index],
-                                                                     window_w=reluctance_df["params_window_w"][index],
+                    core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter,
+                                                                     window_w=window_w,
                                                                      window_h_top=reluctance_df['user_attrs_window_h_top'][index],
-                                                                     window_h_bot=reluctance_df["params_window_h_bot"][index])
+                                                                     window_h_bot=core_h_bot)
                     core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions,
                                     material=reluctance_df["params_material_name"][index], temperature=config.temperature,
                                     frequency=target_and_fix_parameters.fundamental_frequency,
@@ -621,12 +657,12 @@ class StackedTransformerOptimization:
                     primary_coil_turns = reluctance_df['params_n_p_top'][index]
                     print(f"{primary_coil_turns=}")
                     print(f"{reluctance_df['params_n_p_bot'][index]=}")
-                    print(f"{reluctance_df['user_attrs_n_s_bot'][index]=}")
+                    print(f"{reluctance_df['params_n_s_bot'][index]=}")
 
                     # 7. add conductor to vww and add winding window to MagneticComponent
                     vww_top.set_interleaved_winding(winding1, primary_coil_turns, winding2, 0, fmt.InterleavedWindingScheme.HorizontalAlternating)
                     vww_bot.set_interleaved_winding(winding1, reluctance_df['params_n_p_bot'][index], winding2,
-                                                    int(reluctance_df['user_attrs_n_s_bot'][index]), fmt.InterleavedWindingScheme.HorizontalAlternating)
+                                                    int(reluctance_df['params_n_s_bot'][index]), fmt.InterleavedWindingScheme.HorizontalAlternating)
 
                     geo.set_winding_windows([winding_window_top, winding_window_bot])
 
