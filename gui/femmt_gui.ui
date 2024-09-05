@@ -36,7 +36,7 @@
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>-164</y>
+         <y>0</y>
          <width>1508</width>
          <height>1280</height>
         </rect>
@@ -61,7 +61,7 @@
                </size>
               </property>
               <property name="currentIndex">
-               <number>2</number>
+               <number>3</number>
               </property>
               <widget class="QWidget" name="md_QWidget">
                <attribute name="title">
@@ -2023,6 +2023,13 @@
                     </property>
                     <layout class="QVBoxLayout" name="verticalLayout_17">
                      <item>
+                      <widget class="QPushButton" name="md_pushButton_simulation_result">
+                       <property name="text">
+                        <string>Save electrical simulation result (JSON)</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
                       <widget class="QScrollArea" name="scrollArea_11">
                        <property name="widgetResizable">
                         <bool>false</bool>
@@ -2772,6 +2779,13 @@
                       <widget class="QPushButton" name="md_therm_simulation_QPushButton">
                        <property name="text">
                         <string>Simulation</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="md_pushButton_thermal_simulation_result">
+                       <property name="text">
+                        <string>Save thermal simulation result (JSON)</string>
                        </property>
                       </widget>
                      </item>
@@ -4470,8 +4484,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>694</width>
-                     <height>301</height>
+                     <width>1440</width>
+                     <height>1172</height>
                     </rect>
                    </property>
                    <layout class="QGridLayout" name="gridLayout_44">
@@ -4707,8 +4721,8 @@
                               <rect>
                                <x>0</x>
                                <y>0</y>
-                               <width>635</width>
-                               <height>518</height>
+                               <width>1398</width>
+                               <height>755</height>
                               </rect>
                              </property>
                              <layout class="QVBoxLayout" name="verticalLayout_13">
@@ -4759,8 +4773,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>547</width>
-                     <height>221</height>
+                     <width>1440</width>
+                     <height>1172</height>
                     </rect>
                    </property>
                    <layout class="QGridLayout" name="gridLayout_48">
@@ -4879,8 +4893,8 @@
                                 <rect>
                                  <x>0</x>
                                  <y>0</y>
-                                 <width>468</width>
-                                 <height>518</height>
+                                 <width>1378</width>
+                                 <height>1020</height>
                                 </rect>
                                </property>
                                <layout class="QVBoxLayout" name="verticalLayout_10">
