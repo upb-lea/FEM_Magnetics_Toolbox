@@ -315,6 +315,9 @@ class StackedTransformerOptimization:
             trial.set_user_attr('p_hyst_top', p_top)
             trial.set_user_attr('p_hyst_bot', p_bot)
             trial.set_user_attr('p_hyst_middle', p_middle)
+            trial.set_user_attr('b_max_top', np.max(flux_density_top_interp))
+            trial.set_user_attr('b_max_bot', np.max(flux_density_bot_interp))
+            trial.set_user_attr('b_max_middle', np.max(flux_density_middle_interp))
             trial.set_user_attr('window_h_top', window_h_top)
             trial.set_user_attr('winding_losses', winding_losses)
             trial.set_user_attr('l_top_air_gap', l_top_air_gap)
@@ -597,18 +600,18 @@ class StackedTransformerOptimization:
                                                 working_directory=working_directory, verbosity=fmt.Verbosity.ToConsole)
 
                     if reluctance_df["params_core_name"] is not None:
-                        core_inner_diameter = reluctance_df["user_attrs_core_inner_diameter"][index]
-                        window_w = reluctance_df["user_attrs_window_w"][index]
-                        core_h_bot = reluctance_df["user_attrs_window_h_bot"][index]
+                        core_inner_diameter = reluctance_df["user_attrs_core_inner_diameter"][index].item()
+                        window_w = reluctance_df["user_attrs_window_w"][index].item()
+                        core_h_bot = reluctance_df["user_attrs_window_h_bot"][index].item()
                     else:
-                        core_inner_diameter = reluctance_df["params_core_inner_diameter"][index]
-                        window_w = reluctance_df["params_window_w"][index]
-                        core_h_bot = reluctance_df["params_window_h_bot"][index]
+                        core_inner_diameter = reluctance_df["params_core_inner_diameter"][index].item()
+                        window_w = reluctance_df["params_window_w"][index].item()
+                        core_h_bot = reluctance_df["params_window_h_bot"][index].item()
 
                     # 2. set core parameters
                     core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter,
                                                                      window_w=window_w,
-                                                                     window_h_top=reluctance_df['user_attrs_window_h_top'][index],
+                                                                     window_h_top=reluctance_df['user_attrs_window_h_top'][index].item(),
                                                                      window_h_bot=core_h_bot)
                     core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions,
                                     material=reluctance_df["params_material_name"][index], temperature=config.temperature,
@@ -624,9 +627,9 @@ class StackedTransformerOptimization:
 
                     # 3. set air gap parameters
                     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Stacked, core)
-                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, reluctance_df["user_attrs_l_top_air_gap"][index],
+                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, reluctance_df["user_attrs_l_top_air_gap"][index].item(),
                                          stacked_position=fmt.StackedPosition.Top)
-                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, reluctance_df["user_attrs_l_bot_air_gap"][index],
+                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, reluctance_df["user_attrs_l_bot_air_gap"][index].item(),
                                          stacked_position=fmt.StackedPosition.Bot)
                     geo.set_air_gaps(air_gaps)
 
@@ -654,15 +657,15 @@ class StackedTransformerOptimization:
                     winding2.set_litz_round_conductor(secondary_litz_wire['conductor_radii'], secondary_litz_wire['strands_numbers'],
                                                       secondary_litz_wire['strand_radii'], None, fmt.ConductorArrangement.Square)
 
-                    primary_coil_turns = reluctance_df['params_n_p_top'][index]
+                    primary_coil_turns = reluctance_df['params_n_p_top'][index].item()
                     print(f"{primary_coil_turns=}")
                     print(f"{reluctance_df['params_n_p_bot'][index]=}")
                     print(f"{reluctance_df['params_n_s_bot'][index]=}")
 
                     # 7. add conductor to vww and add winding window to MagneticComponent
                     vww_top.set_interleaved_winding(winding1, primary_coil_turns, winding2, 0, fmt.InterleavedWindingScheme.HorizontalAlternating)
-                    vww_bot.set_interleaved_winding(winding1, reluctance_df['params_n_p_bot'][index], winding2,
-                                                    int(reluctance_df['params_n_s_bot'][index]), fmt.InterleavedWindingScheme.HorizontalAlternating)
+                    vww_bot.set_interleaved_winding(winding1, reluctance_df['params_n_p_bot'][index].item(), winding2,
+                                                    int(reluctance_df['params_n_s_bot'][index].item()), fmt.InterleavedWindingScheme.HorizontalAlternating)
 
                     geo.set_winding_windows([winding_window_top, winding_window_bot])
 
@@ -672,9 +675,9 @@ class StackedTransformerOptimization:
 
                     result_dict = geo.read_log()
                     print(f"{result_dict=}")
-                    df_single_simulation = pd.DataFrame(result_dict)
-
-                    df = pd.concat([df, df_single_simulation], axis=0)
+                    # df_single_simulation = pd.DataFrame(result_dict)
+                    #
+                    # df = pd.concat([df, df_single_simulation], axis=0)
                 except Exception as e:
                     print(e)
 
