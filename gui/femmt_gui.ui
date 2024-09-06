@@ -61,7 +61,7 @@
                </size>
               </property>
               <property name="currentIndex">
-               <number>0</number>
+               <number>3</number>
               </property>
               <widget class="QWidget" name="md_QWidget">
                <attribute name="title">
@@ -2023,6 +2023,13 @@
                     </property>
                     <layout class="QVBoxLayout" name="verticalLayout_17">
                      <item>
+                      <widget class="QPushButton" name="md_pushButton_simulation_result">
+                       <property name="text">
+                        <string>Save electrical simulation result (JSON)</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
                       <widget class="QScrollArea" name="scrollArea_11">
                        <property name="widgetResizable">
                         <bool>false</bool>
@@ -2077,10 +2084,6 @@
                                     </property>
                                    </widget>
                                   </item>
-                                 </layout>
-                                </item>
-                                <item>
-                                 <layout class="QVBoxLayout" name="verticalLayout_33">
                                   <item>
                                    <widget class="QLabel" name="md_loss_winding2_label1">
                                     <property name="text">
@@ -2088,6 +2091,10 @@
                                     </property>
                                    </widget>
                                   </item>
+                                 </layout>
+                                </item>
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_33">
                                   <item>
                                    <widget class="QLabel" name="md_inductance1_label1">
                                     <property name="text">
@@ -2151,10 +2158,6 @@
                                     </property>
                                    </widget>
                                   </item>
-                                 </layout>
-                                </item>
-                                <item>
-                                 <layout class="QVBoxLayout" name="verticalLayout_38">
                                   <item>
                                    <widget class="QLabel" name="md_loss_winding2_label2">
                                     <property name="text">
@@ -2162,6 +2165,10 @@
                                     </property>
                                    </widget>
                                   </item>
+                                 </layout>
+                                </item>
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_38">
                                   <item>
                                    <widget class="QLabel" name="md_inductance1_label2">
                                     <property name="text">
@@ -2219,6 +2226,13 @@
                                    </widget>
                                   </item>
                                   <item>
+                                   <widget class="QLabel" name="md_loss_winding2_label3">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
                                    <widget class="QLabel" name="md_loss_winding1_label3">
                                     <property name="text">
                                      <string/>
@@ -2229,13 +2243,6 @@
                                 </item>
                                 <item>
                                  <layout class="QVBoxLayout" name="verticalLayout_42">
-                                  <item>
-                                   <widget class="QLabel" name="md_loss_winding2_label3">
-                                    <property name="text">
-                                     <string/>
-                                    </property>
-                                   </widget>
-                                  </item>
                                   <item>
                                    <widget class="QLabel" name="md_inductance1_label3">
                                     <property name="text">
@@ -2299,10 +2306,6 @@
                                     </property>
                                    </widget>
                                   </item>
-                                 </layout>
-                                </item>
-                                <item>
-                                 <layout class="QVBoxLayout" name="verticalLayout_46">
                                   <item>
                                    <widget class="QLabel" name="md_loss_winding2_label4">
                                     <property name="text">
@@ -2310,6 +2313,10 @@
                                     </property>
                                    </widget>
                                   </item>
+                                 </layout>
+                                </item>
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_46">
                                   <item>
                                    <widget class="QLabel" name="md_inductance1_label4">
                                     <property name="text">
@@ -2367,6 +2374,13 @@
                                    </widget>
                                   </item>
                                   <item>
+                                   <widget class="QLabel" name="md_loss_winding2_label5">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
                                    <widget class="QLabel" name="md_loss_winding1_label5">
                                     <property name="text">
                                      <string/>
@@ -2377,13 +2391,6 @@
                                 </item>
                                 <item>
                                  <layout class="QVBoxLayout" name="verticalLayout_50">
-                                  <item>
-                                   <widget class="QLabel" name="md_loss_winding2_label5">
-                                    <property name="text">
-                                     <string/>
-                                    </property>
-                                   </widget>
-                                  </item>
                                   <item>
                                    <widget class="QLabel" name="md_inductance1_label5">
                                     <property name="text">
@@ -2447,10 +2454,6 @@
                                     </property>
                                    </widget>
                                   </item>
-                                 </layout>
-                                </item>
-                                <item>
-                                 <layout class="QVBoxLayout" name="verticalLayout_54">
                                   <item>
                                    <widget class="QLabel" name="md_loss_winding2_label6">
                                     <property name="text">
@@ -2458,6 +2461,10 @@
                                     </property>
                                    </widget>
                                   </item>
+                                 </layout>
+                                </item>
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_54">
                                   <item>
                                    <widget class="QLabel" name="md_inductance1_label6">
                                     <property name="text">
@@ -2521,10 +2528,6 @@
                                     </property>
                                    </widget>
                                   </item>
-                                 </layout>
-                                </item>
-                                <item>
-                                 <layout class="QVBoxLayout" name="verticalLayout_58">
                                   <item>
                                    <widget class="QLabel" name="md_loss_winding2_label7">
                                     <property name="text">
@@ -2532,6 +2535,10 @@
                                     </property>
                                    </widget>
                                   </item>
+                                 </layout>
+                                </item>
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_58">
                                   <item>
                                    <widget class="QLabel" name="md_inductance1_label7">
                                     <property name="text">
@@ -2595,10 +2602,6 @@
                                     </property>
                                    </widget>
                                   </item>
-                                 </layout>
-                                </item>
-                                <item>
-                                 <layout class="QVBoxLayout" name="verticalLayout_62">
                                   <item>
                                    <widget class="QLabel" name="md_loss_winding2_label8">
                                     <property name="text">
@@ -2606,6 +2609,10 @@
                                     </property>
                                    </widget>
                                   </item>
+                                 </layout>
+                                </item>
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_62">
                                   <item>
                                    <widget class="QLabel" name="md_inductance1_label8">
                                     <property name="text">
@@ -2669,10 +2676,6 @@
                                     </property>
                                    </widget>
                                   </item>
-                                 </layout>
-                                </item>
-                                <item>
-                                 <layout class="QVBoxLayout" name="verticalLayout_66">
                                   <item>
                                    <widget class="QLabel" name="md_loss_winding2_label9">
                                     <property name="text">
@@ -2680,6 +2683,10 @@
                                     </property>
                                    </widget>
                                   </item>
+                                 </layout>
+                                </item>
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_66">
                                   <item>
                                    <widget class="QLabel" name="md_inductance1_label9">
                                     <property name="text">
@@ -2772,6 +2779,13 @@
                       <widget class="QPushButton" name="md_therm_simulation_QPushButton">
                        <property name="text">
                         <string>Simulation</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="md_pushButton_thermal_simulation_result">
+                       <property name="text">
+                        <string>Save thermal simulation result (JSON)</string>
                        </property>
                       </widget>
                      </item>
@@ -4470,8 +4484,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>694</width>
-                     <height>301</height>
+                     <width>1440</width>
+                     <height>1172</height>
                     </rect>
                    </property>
                    <layout class="QGridLayout" name="gridLayout_44">
@@ -4707,8 +4721,8 @@
                               <rect>
                                <x>0</x>
                                <y>0</y>
-                               <width>98</width>
-                               <height>518</height>
+                               <width>1398</width>
+                               <height>755</height>
                               </rect>
                              </property>
                              <layout class="QVBoxLayout" name="verticalLayout_13">
@@ -4759,8 +4773,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>547</width>
-                     <height>221</height>
+                     <width>1440</width>
+                     <height>1172</height>
                     </rect>
                    </property>
                    <layout class="QGridLayout" name="gridLayout_48">
@@ -4879,8 +4893,8 @@
                                 <rect>
                                  <x>0</x>
                                  <y>0</y>
-                                 <width>98</width>
-                                 <height>518</height>
+                                 <width>1378</width>
+                                 <height>1020</height>
                                 </rect>
                                </property>
                                <layout class="QVBoxLayout" name="verticalLayout_10">
@@ -9728,7 +9742,7 @@
                        <rect>
                         <x>0</x>
                         <y>0</y>
-                        <width>98</width>
+                        <width>43</width>
                         <height>1024</height>
                        </rect>
                       </property>
