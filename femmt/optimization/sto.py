@@ -4,6 +4,7 @@ import datetime
 import logging
 import os
 from typing import List
+import shutil
 
 # own libraries
 from femmt.optimization.sto_dtos import StoSingleInputConfig, StoTargetAndFixedParameters
@@ -597,7 +598,7 @@ class StackedTransformerOptimization:
                 try:
                     # 1. chose simulation type
                     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
-                                                working_directory=working_directory, verbosity=fmt.Verbosity.ToConsole)
+                                                working_directory=working_directory, verbosity=fmt.Verbosity.Silent)
 
                     if reluctance_df["params_core_name"] is not None:
                         core_inner_diameter = reluctance_df["user_attrs_core_inner_diameter"][index].item()
@@ -674,10 +675,29 @@ class StackedTransformerOptimization:
                                            plot_waveforms=show_visual_outputs, fft_filter_value_factor=0.05)
 
                     result_dict = geo.read_log()
-                    print(f"{result_dict=}")
-                    # df_single_simulation = pd.DataFrame(result_dict)
-                    #
-                    # df = pd.concat([df, df_single_simulation], axis=0)
+                    df_dict = {'trial_number': index,
+                               'n': result_dict['inductances']['n_conc'],
+                               'l_s_conc': result_dict['inductances']['l_s_conc'],
+                               'l_h_conc': result_dict['inductances']['l_h_conc'],
+                               'p_loss_winding_1': result_dict['total_losses']['winding1']['total'],
+                               'p_loss_winding_2': result_dict['total_losses']['winding2']['total'],
+                               'eddy_core': result_dict['total_losses']['eddy_core'],
+                               'core': result_dict['total_losses']['core']}
+
+                    df_single_simulation = pd.DataFrame([df_dict])
+
+                    df = pd.concat([df, df_single_simulation], axis=0)
+
+                    # copy result files to result-file folder
+                    source_json_file = os.path.join(
+                        target_and_fix_parameters.working_directories.fem_working_directory, f'process_{process_number}',
+                        "results", "log_electro_magnetic.json")
+                    destination_json_file = os.path.join(
+                        target_and_fix_parameters.working_directories.fem_simulation_results_directory,
+                        f'case_{index}.json')
+
+                    shutil.copy(source_json_file, destination_json_file)
+
                 except Exception as e:
                     print(e)
 
