@@ -389,7 +389,9 @@ Alignment pertains to how the set of conductors is positioned within the winding
 Placement Strategies
 ^^^^^^^^^^^^^^^^^^^^
 
-The strategy for placing conductors is named based on the initial direction and subsequent movement. Examples include:
+The strategy for placing conductors is named based on the initial direction and subsequent movement. It is only applied if the winding type is ``Single``.
+
+For ``RoundSolid`` and ``RoundLitz`` conductors, the placement strategies are as follows:
 
 - **VerticalUpward_HorizontalRightward**: Placement starts at the bottom, moving upward vertically, then shifts rightward horizontally for the next column.
 
@@ -407,6 +409,20 @@ The strategy for placing conductors is named based on the initial direction and 
 
 - **HorizontalLeftward_VerticalDownward**: Starts on the right side, moving leftward, then downward for each new row.
 
+For ``RectangularSolid`` conductors, where the winding scheme is ``FoilVertical`` or ``FoilHorizontal``, the placement strategies are as follows:
+
+- **FoilVerticalDistribution**: These strategies are used when distributing rectangular foil conductors vertically.
+
+  - **HorizontalRightward**: Begins placement from the left of the winding window, moving horizontally rightward for each conductor.
+
+  - **HorizontalLeftward**:  Begins placement from the right of the winding window, moving horizontally leftward for each conductor.
+
+- **FoilHorizontalDistribution**: These strategies are used when distributing rectangular foil conductors horizontally.
+
+  - **VerticalUpward**: Begins placement from the bottom of the winding window, moving upward for each conductor.
+
+  - **VerticalDownward**: Begins placement from the top of the winding window, moving downward for each conductor.
+
 
 Zigzag Condition
 ^^^^^^^^^^^^^^^^
@@ -415,6 +431,7 @@ Zigzag placement introduces an alternating pattern in the layout:
 
 - After completing a row or column, the direction alternates (e.g., if moving upward initially, the next is downward).
 - The ``zigzag`` parameter is optional and defaults to ``False``. It can be omitted if a zigzag movement is not needed.
+It is only can be used for ``RoundSolid`` and ``RoundLitz`` conductors when the winding type is ``Single``.
 
 Now before simulating the winding window needs to be added to the model
 as well:

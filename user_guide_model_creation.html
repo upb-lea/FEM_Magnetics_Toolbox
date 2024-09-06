@@ -835,7 +835,8 @@ the focus is on two main aspects: alignment and how the conductors are placed.</
 </section>
 <section id="placement-strategies">
 <h4>Placement Strategies<a class="headerlink" href="#placement-strategies" title="Link to this heading"></a></h4>
-<p>The strategy for placing conductors is named based on the initial direction and subsequent movement. Examples include:</p>
+<p>The strategy for placing conductors is named based on the initial direction and subsequent movement. It is only applied if the winding type is <code class="docutils literal notranslate"><span class="pre">Single</span></code>.</p>
+<p>For <code class="docutils literal notranslate"><span class="pre">RoundSolid</span></code> and <code class="docutils literal notranslate"><span class="pre">RoundLitz</span></code> conductors, the placement strategies are as follows:</p>
 <ul class="simple">
 <li><p><strong>VerticalUpward_HorizontalRightward</strong>: Placement starts at the bottom, moving upward vertically, then shifts rightward horizontally for the next column.</p></li>
 <li><p><strong>VerticalUpward_HorizontalLeftward</strong>: Placement starts at the bottom, moving upward vertically, then shifts leftward horizontally for the next column.</p></li>
@@ -846,6 +847,21 @@ the focus is on two main aspects: alignment and how the conductors are placed.</
 <li><p><strong>HorizontalLeftward_VerticalUpward</strong>: Starts on the right side, moving leftward, then upward for each new row.</p></li>
 <li><p><strong>HorizontalLeftward_VerticalDownward</strong>: Starts on the right side, moving leftward, then downward for each new row.</p></li>
 </ul>
+<p>For <code class="docutils literal notranslate"><span class="pre">RectangularSolid</span></code> conductors, where the winding scheme is <code class="docutils literal notranslate"><span class="pre">FoilVertical</span></code> or <code class="docutils literal notranslate"><span class="pre">FoilHorizontal</span></code>, the placement strategies are as follows:</p>
+<ul class="simple">
+<li><p><strong>FoilVerticalDistribution</strong>: These strategies are used when distributing rectangular foil conductors vertically.</p>
+<ul>
+<li><p><strong>HorizontalRightward</strong>: Begins placement from the left of the winding window, moving horizontally rightward for each conductor.</p></li>
+<li><p><strong>HorizontalLeftward</strong>:  Begins placement from the right of the winding window, moving horizontally leftward for each conductor.</p></li>
+</ul>
+</li>
+<li><p><strong>FoilHorizontalDistribution</strong>: These strategies are used when distributing rectangular foil conductors horizontally.</p>
+<ul>
+<li><p><strong>VerticalUpward</strong>: Begins placement from the bottom of the winding window, moving upward for each conductor.</p></li>
+<li><p><strong>VerticalDownward</strong>: Begins placement from the top of the winding window, moving downward for each conductor.</p></li>
+</ul>
+</li>
+</ul>
 </section>
 <section id="zigzag-condition">
 <h4>Zigzag Condition<a class="headerlink" href="#zigzag-condition" title="Link to this heading"></a></h4>
@@ -854,6 +870,7 @@ the focus is on two main aspects: alignment and how the conductors are placed.</
 <li><p>After completing a row or column, the direction alternates (e.g., if moving upward initially, the next is downward).</p></li>
 <li><p>The <code class="docutils literal notranslate"><span class="pre">zigzag</span></code> parameter is optional and defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>. It can be omitted if a zigzag movement is not needed.</p></li>
 </ul>
+<p>It is only can be used for <code class="docutils literal notranslate"><span class="pre">RoundSolid</span></code> and <code class="docutils literal notranslate"><span class="pre">RoundLitz</span></code> conductors when the winding type is <code class="docutils literal notranslate"><span class="pre">Single</span></code>.</p>
 <p>Now before simulating the winding window needs to be added to the model
 as well:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">geo</span><span class="o">.</span><span class="n">set_winding_windows</span><span class="p">([</span><span class="n">winding_window</span><span class="p">])</span>
