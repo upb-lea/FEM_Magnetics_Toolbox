@@ -254,7 +254,7 @@ def litz_database() -> Dict:
     litz_dict["1.5x105x0.1"] = {"strands_numbers": 105,
                                 "strand_radii": 0.1e-3 / 2,
                                 "conductor_radii": 1.5e-3 / 2,
-                                "ff": "",
+                                "ff": None,
                                 "manufacturer": "PACK",
                                 "material_number": "",
                                 "litz": "RUPALIT V155",
@@ -262,7 +262,7 @@ def litz_database() -> Dict:
     litz_dict["1.4x200x0.071"] = {"strands_numbers": 200,
                                   "strand_radii": 0.071e-3 / 2,
                                   "conductor_radii": 1.4e-3 / 2,
-                                  "ff": "",
+                                  "ff": None,
                                   "manufacturer": "PACK",
                                   "material_number": "",
                                   "litz": "RUPALIT V155",
@@ -270,7 +270,7 @@ def litz_database() -> Dict:
     litz_dict["2.0x405x0.071"] = {"strands_numbers": 405,
                                   "strand_radii": 0.071e-3 / 2,
                                   "conductor_radii": 2.0e-3 / 2,
-                                  "ff": "",
+                                  "ff": None,
                                   "manufacturer": "",
                                   "material_number": "",
                                   "litz": "",
@@ -278,7 +278,7 @@ def litz_database() -> Dict:
     litz_dict["2.0x800x0.05"] = {"strands_numbers": 800,
                                  "strand_radii": 0.05e-3 / 2,
                                  "conductor_radii": 2e-3 / 2,
-                                 "ff": "",
+                                 "ff": None,
                                  "manufacturer": "Elektrisola",
                                  "material_number": "12104184",
                                  "litz": "",
@@ -287,7 +287,7 @@ def litz_database() -> Dict:
     litz_dict["1.1x60x0.1"] = {"strands_numbers": 60,
                                "strand_radii": 0.1e-3 / 2,
                                "conductor_radii": 1.1e-3 / 2,
-                               "ff": "",
+                               "ff": None,
                                "manufacturer": "PACK",
                                "material_number": "",
                                "litz": "RUPALIT V155",
@@ -296,7 +296,7 @@ def litz_database() -> Dict:
     litz_dict["1.35x200x0.071"] = {"strands_numbers": 200,
                                    "strand_radii": 0.071e-3 / 2,
                                    "conductor_radii": 1.35e-3 / 2,
-                                   "ff": "",
+                                   "ff": None,
                                    "manufacturer": "PACK",
                                    "material_number": "",
                                    "litz": "RUPALIT V155",
@@ -305,7 +305,7 @@ def litz_database() -> Dict:
     litz_dict["3.2x2100x0.05"] = {"strands_numbers": 2100,
                                   "strand_radii": 0.05e-3 / 2,
                                   "conductor_radii": 3.2e-3 / 2,
-                                  "ff": "",
+                                  "ff": None,
                                   "manufacturer": "PACK",
                                   "material_number": "AB21220373",
                                   "litz": "RUPALIT V155",
@@ -315,7 +315,7 @@ def litz_database() -> Dict:
     litz_dict["4.6x2160x0.071"] = {"strands_numbers": 2160,
                                    "strand_radii": 0.071e-3 / 2,
                                    "conductor_radii": 4.6e-3 / 2,
-                                   "ff": "",
+                                   "ff": None,
                                    "manufacturer": "PACK",
                                    "material_number": "AB21225497",
                                    "litz": "RUPALIT V155",
@@ -325,7 +325,7 @@ def litz_database() -> Dict:
     litz_dict["2.9x1200x0.06"] = {"strands_numbers": 1200,
                                   "strand_radii": 0.06e-3 / 2,
                                   "conductor_radii": 2.9e-3 / 2,
-                                  "ff": "",
+                                  "ff": None,
                                   "manufacturer": "Elektrisola",
                                   "material_number": "",
                                   "litz": "",
@@ -334,7 +334,7 @@ def litz_database() -> Dict:
     litz_dict["2.6x1000x0.06"] = {"strands_numbers": 1000,
                                   "strand_radii": 0.06e-3 / 2,
                                   "conductor_radii": 2.6e-3 / 2,
-                                  "ff": "",
+                                  "ff": None,
                                   "manufacturer": "Elektrisola",
                                   "material_number": "",
                                   "litz": "",
@@ -343,7 +343,7 @@ def litz_database() -> Dict:
     litz_dict["1.8x512x0.05"] = {"strands_numbers": 512,
                                  "strand_radii": 0.05e-3 / 2,
                                  "conductor_radii": 1.8e-3 / 2,
-                                 "ff": "",
+                                 "ff": None,
                                  "manufacturer": "PACK",
                                  "material_number": "AB21217207",
                                  "litz": "RUPALIT Safety VB155",
@@ -352,7 +352,7 @@ def litz_database() -> Dict:
     litz_dict["2.3x600x0.071"] = {"strands_numbers": 600,
                                   "strand_radii": 0.071e-3 / 2,
                                   "conductor_radii": 2.3e-3 / 2,
-                                  "ff": "",
+                                  "ff": None,
                                   "manufacturer": "PACK",
                                   "material_number": "AB21220522",
                                   "litz": "RUPALIT Safety Profil V155",
@@ -361,7 +361,7 @@ def litz_database() -> Dict:
     litz_dict["2.8x400x0.1"] = {"strands_numbers": 400,
                                 "strand_radii": 0.1e-3 / 2,
                                 "conductor_radii": 2.8e-3 / 2,
-                                "ff": "",
+                                "ff": None,
                                 "manufacturer": "PACK",
                                 "material_number": "AB21222210",
                                 "litz": "RUPALIT Safety V155",
@@ -370,7 +370,7 @@ def litz_database() -> Dict:
     litz_dict["1.71x140x0.1"] = {"strands_numbers": 140,
                                  "strand_radii": 0.1e-3 / 2,
                                  "conductor_radii": 1.71e-3 / 2,
-                                 "ff": "",
+                                 "ff": None,
                                  "manufacturer": "",
                                  "material_number": "",
                                  "litz": "",
@@ -379,7 +379,7 @@ def litz_database() -> Dict:
     litz_dict["1.7x500x0.06"] = {"strands_numbers": 500,
                                  "strand_radii": 0.06e-3 / 2,
                                  "conductor_radii": 1.7e-3 / 2,
-                                 "ff": "",
+                                 "ff": None,
                                  "manufacturer": "",
                                  "material_number": "",
                                  "litz": "",
@@ -1018,8 +1018,9 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
     cumulative_core_hysteresis = 0
     cumulative_core_eddy = 0
     cumulative_losses = []
-    cumulative_inductances = []
     windings_labels = []
+    # Determine if this is a single simulation or a sweep
+    is_single_simulation = len(loaded_results_dict["single_sweeps"]) == 1
 
     for index, sweep in enumerate(loaded_results_dict["single_sweeps"]):
         freq = sweep['f']
@@ -1043,11 +1044,9 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
 
                 if len(cumulative_losses) < i:
                     cumulative_losses.append(loss)
-                    cumulative_inductances.append(inductance)
                     windings_labels.append(f"Winding {i}")
                 else:
                     cumulative_losses[i - 1] += loss
-                    cumulative_inductances[i - 1] += inductance
 
                 # Plot for current frequency
                 ax.bar(i, loss, width=0.35, label=f'{windings_labels[i - 1]} Loss at {freq} Hz')
@@ -1065,8 +1064,11 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
 
     # Plot cumulative results for core and windings
     fig, ax = plt.subplots()
-    ax.bar(0, cumulative_core_hysteresis, width=0.35, label='Cumulative Core Hysteresis Loss')
-    ax.bar(0, cumulative_core_eddy, bottom=cumulative_core_hysteresis, width=0.35, label='Cumulative Core Eddy Current Loss')
+    if is_single_simulation:
+        ax.bar(0, cumulative_core_hysteresis, width=0.35, label='Cumulative Core Hysteresis Loss')
+        ax.bar(0, cumulative_core_eddy, bottom=cumulative_core_hysteresis, width=0.35, label='Cumulative Core Eddy Current Loss')
+    else:
+        ax.bar(0, cumulative_core_eddy, width=0.35, label='Cumulative Core Eddy Current Loss')
 
     for index, loss in enumerate(cumulative_losses):
         ax.bar(index + 1, loss, width=0.35, label=f'{windings_labels[index]} Cumulative Loss')

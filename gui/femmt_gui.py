@@ -5,7 +5,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import cm
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QMessageBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QMessageBox, QFileDialog, QInputDialog
 from PyQt5 import QtCore, uic, QtWidgets
 from PyQt5.QtGui import QPixmap, QDoubleValidator, QIntValidator
 import femmt as fmt
@@ -14,6 +14,7 @@ import os
 from typing import List
 import PIL
 import webbrowser
+import shutil
 # new import for threads
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QCoreApplication, QMutex
 
@@ -256,6 +257,10 @@ class MainWindow(QMainWindow):
         self.action_contribute.triggered.connect(self.webbrowser_contribute)
         self.action_documentation.triggered.connect(self.webbrowser_documentation)
         self.action_report_bug.triggered.connect(self.webbrowser_bugreport)
+
+        # ## Save electro-magnetic and thermal simulation results
+        self.md_pushButton_simulation_result.clicked.connect(self.save_results_to_directory)
+        self.md_pushButton_thermal_simulation_result.clicked.connect(self.save_results_to_directory)
 
         "******* Manual Design *********"
 
@@ -735,6 +740,70 @@ class MainWindow(QMainWindow):
     def webbrowser_documentation(self):
         """Open the web browser to the FEMMT documentation."""
         webbrowser.open('https://upb-lea.github.io/FEM_Magnetics_Toolbox/')
+
+    def save_results_to_directory(self):
+        """Open a dialog for the user to select a directory and saves the results from the default GUI working directory to the selected directory."""
+        options = QFileDialog.Options()
+        selected_directory = QFileDialog.getExistingDirectory(self, "Select Directory to Save Results", options=options)
+
+        if selected_directory:
+            # Define the source directory (where the results are stored by default)
+            source_directory = os.path.join(self.default_gui_working_directory, "results")
+
+            # Check if the source directory exists
+            if not os.path.exists(source_directory):
+                QMessageBox.warning(self, "No Results Found", "The results directory does not exist. There are no results to save.")
+                return
+
+            # Check if the source directory contains any .json files
+            json_files = [f for f in os.listdir(source_directory) if f.endswith('.json')]
+
+            if not json_files:
+                QMessageBox.warning(self, "No Results Found", "There are no .json result files in the current working directory.")
+                return
+
+            # Copy files
+            try:
+                self.copy_results_to_directory(source_directory, selected_directory)
+                self.statusBar().showMessage(f"Results saved to: {selected_directory}", 5000)
+            except Exception as e:
+                self.statusBar().showMessage(f"Error saving results: {str(e)}", 5000)
+
+    def copy_results_to_directory(self, source_directory, target_directory):
+        """
+        Copy JSON files from the source directory to the target directory.
+
+        :param source_directory: The path to the directory where the results are stored.
+        :type source_directory: str
+        :param target_directory: The path to the directory where the results should be copied to.
+        :type target_directory: str
+        """
+        # Create the target directory if it doesn't exist
+        if not os.path.exists(target_directory):
+            os.makedirs(target_directory)
+
+        # Copy only .json files from the source to the target
+        for item in os.listdir(source_directory):
+            if item.endswith('.json'):  # Check if the file is a .json file
+                source_item = os.path.join(source_directory, item)
+                target_item = os.path.join(target_directory, item)
+
+                # Check if the file already exists in the target directory
+                if os.path.exists(target_item):
+                    # Prompt user to rename the file
+                    new_name, ok = QInputDialog.getText(self, "File Exists",
+                                                        f"The file '{item}' already exists. Please enter a new name:")
+                    if ok and new_name:
+                        # Ensure the new name ends with .json
+                        if not new_name.endswith('.json'):
+                            new_name += '.json'
+                        target_item = os.path.join(target_directory, new_name)
+                    else:
+                        # If the user cancels the dialog or does not provide a new name, skip copying this file
+                        continue
+
+                # Copy the JSON file
+                shutil.copy2(source_item, target_item)
 
     #  **************************** Automated design tab ************************************************************  #
 
@@ -3478,11 +3547,9 @@ class MainWindow(QMainWindow):
                 hysteresis_label = getattr(self, f'md_loss_core_hysteresis_label{index + 1}')
                 eddy_current_label = getattr(self, f'md_loss_core_eddy_current_label{index + 1}')
                 winding1_loss_label = getattr(self, f'md_loss_winding1_label{index + 1}')
-                inductance1_label = getattr(self, f'md_inductance1_label{index + 1}')
 
                 if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
                     winding2_loss_label = getattr(self, f'md_loss_winding2_label{index + 1}')
-                    inductance2_label = getattr(self, f'md_inductance2_label{index + 1}')
                 # Update frequency label
                 freq_label.setText(f"Frequency: {sweep['f']} Hz")
 
@@ -3497,30 +3564,13 @@ class MainWindow(QMainWindow):
                     # just for shown one figure:
                     self.md_loss_plot_label1.setPixmap(pixmap)
                     self.md_loss_plot_label1.show()
-                # # Show the losses with round and approximation.
-                # hysteresis_label.setText(f"Core Hysteresis loss: {sweep.get('core_hyst_losses', 0):.5f} W")
-                # eddy_current_label.setText(f"Core Eddy Current loss: {sweep.get('core_eddy_losses', 0):.5f} W")
-                # winding1_loss_label.setText(f"Winding 1 loss: {sweep['winding1'].get('winding_losses', 0):.5f} W")
-                #
-                # primary_inductance_nh = sweep['winding1'].get('flux_over_current', [0])[0] * 1e9
-                # inductance1_label.setText(f"Primary Inductance: {primary_inductance_nh:.0f} nH")
-                # # Transformer case.
-                # if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-                #     secondary_inductance_nh = sweep['winding2'].get('flux_over_current', [0])[0] * 1e9
-                #     winding2_loss_label.setText(f"Winding 2 loss: {sweep['winding2'].get('winding_losses', 0):.0f} W")
-                #     inductance2_label.setText(f"Secondary Inductance: {secondary_inductance_nh:.5f} nH")
                 # Show the losses with the new format_number_with_units function.
                 hysteresis_label.setText(f"Core Hysteresis loss: {format_number_with_units(sweep.get('core_hyst_losses', 0))} W")
                 eddy_current_label.setText(f"Core Eddy Current loss: {format_number_with_units(sweep.get('core_eddy_losses', 0))} W")
                 winding1_loss_label.setText(f"Winding 1 loss: {format_number_with_units(sweep['winding1'].get('winding_losses', 0))} W")
-
-                primary_inductance_nh = sweep['winding1'].get('flux_over_current', [0])[0] * 1e9
-                inductance1_label.setText(f"Primary Inductance: {primary_inductance_nh:.0f} nH")
                 # Transformer case.
                 if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-                    secondary_inductance_nh = sweep['winding2'].get('flux_over_current', [0])[0]
                     winding2_loss_label.setText(f"Winding 2 loss: {format_number_with_units(sweep['winding2'].get('winding_losses', 0))} W")
-                    inductance2_label.setText(f"Secondary Inductance: {format_number_with_units(secondary_inductance_nh, decimals=4)} H")
 
         finally:
             # Unlock the mutex to allow other operations to proceed.
