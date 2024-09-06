@@ -1601,7 +1601,7 @@ class MagneticComponent:
         self.write_and_calculate_common_log(inductance_dict=inductance_dict)
         self.calculate_and_write_freq_domain_log(number_frequency_simulations=len(frequency_list), current_amplitude_list=current_list_list,
                                                  frequencies=frequency_list, phase_deg_list=phi_deg_list_list,
-                                                 core_hyst_losses=core_hyst_loss)
+                                                 core_hyst_losses=core_hyst_loss, inductance_dict=inductance_dict)
         self.log_reluctance_and_inductance()
         if show_last_fem_simulation:
             self.write_simulation_parameters_to_pro_files()
@@ -3317,7 +3317,7 @@ class MagneticComponent:
 
     def calculate_and_write_freq_domain_log(self, number_frequency_simulations: int = 1, current_amplitude_list: List = None,
                                             phase_deg_list: List = None, frequencies: List = None,
-                                            core_hyst_losses: List[float] = None):
+                                            core_hyst_losses: List[float] = None, inductance_dict: Optional[List] = None):
         """
         Read back the results from the .dat result files created by the ONELAB simulation client.
 
@@ -3348,6 +3348,8 @@ class MagneticComponent:
             the external value is used in the result-log. Otherwise, the hysteresis losses of the
             fundamental frequency is used
         :type core_hyst_losses: List[float]
+        :param inductance_dict: Given inductance dictionary to write to the result log.
+        :type inductance_dict: Dict
         """
         fundamental_index = 0  # index of the fundamental frequency
 
@@ -3593,15 +3595,18 @@ class MagneticComponent:
             log_dict["total_losses"]["eddy_core"] + log_dict["total_losses"]["all_windings"]
 
         # final_log_dict: freq dict + common dict
-        common_log_dict = self.write_and_calculate_common_log()
+        common_log_dict = self.write_and_calculate_common_log(inductance_dict=inductance_dict)
         final_log_dict = {**log_dict, **common_log_dict}
         # ====== save data as JSON ======
         with open(self.file_data.e_m_results_log_path, "w+", encoding='utf-8') as outfile:
             json.dump(final_log_dict, outfile, indent=2, ensure_ascii=False)
 
-    def calculate_and_write_time_domain_log(self):
+    def calculate_and_write_time_domain_log(self, inductance_dict: Optional[List] = None):
         """
         Process and log the results of time domain simulations.
+
+        :param inductance_dict: Given inductance dictionary to write to the result log.
+        :type inductance_dict: Dict
 
         Reads back the results from the simulation output files and stores them in a JSON format.
         The log includes detailed information about each time step of the simulation, as well as average and total losses.
@@ -3816,7 +3821,7 @@ class MagneticComponent:
                     log_dict["total_losses"]["eddy_core"] + \
                     log_dict["total_losses"]["all_windings_losses"]
 
-        common_log_dict = self.write_and_calculate_common_log()
+        common_log_dict = self.write_and_calculate_common_log(inductance_dict=inductance_dict)
         final_log_dict = {**log_dict, **common_log_dict}
         with open(self.file_data.e_m_results_log_path, "w+", encoding='utf-8') as outfile:
             json.dump(final_log_dict, outfile, indent=2, ensure_ascii=False)
@@ -3866,7 +3871,6 @@ class MagneticComponent:
 
         # ---- Print current configuration ----
         log_dict["simulation_settings"] = MagneticComponent.encode_settings(self)
-
         if isinstance(inductance_dict, Dict):
             log_dict["inductances"] = inductance_dict
 
