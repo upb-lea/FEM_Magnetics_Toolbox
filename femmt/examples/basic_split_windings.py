@@ -1,4 +1,15 @@
-"""Example how to use the split winding method. Run this file, to see the different winding orders."""
+"""
+Example how to use the split winding method. Run this file, to see the different winding orders.
+
+Just shows different split methods. No thermal simulation.
+
+After starting the program, the geometry dimensions are displayed. Verify this geometry, close the window, to continue the simulation.
+After a short time, B-Field and winding losses simulation results are shown. Winding losses are shown as a colormap.
+In the core, the magnitude B-Field in Tesla is shown. With the gmsh window, one can move the picture in the 3D way (not recommended).
+If you close this window, the thermal simulation will be continued, if programmed. If true, the thermal heat distribution will be displayed.
+To continue with the next simulation (or end the program), you need to close this window. All results are written to the result
+folder .../femmt/examples/example_results/simulation_file_name/results/log_electro_magnetic.json. and .../results_thermal.json.
+"""
 import femmt as fmt
 import os
 

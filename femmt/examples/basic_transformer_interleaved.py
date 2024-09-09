@@ -1,4 +1,13 @@
-"""Basic example to show how to simulate an interleaved transformer."""
+"""
+Basic example to show how to simulate an interleaved transformer.
+
+After starting the program, the geometry dimensions are displayed. Verify this geometry, close the window, to continue the simulation.
+After a short time, B-Field and winding losses simulation results are shown. Winding losses are shown as a colormap.
+In the core, the magnitude B-Field in Tesla is shown. With the gmsh window, one can move the picture in the 3D way (not recommended).
+If you close this window, the thermal simulation will be continued, if programmed. If true, the thermal heat distribution will be displayed.
+To continue with the next simulation (or end the program), you need to close this window. All results are written to the result
+folder .../femmt/examples/example_results/simulation_file_name/results/log_electro_magnetic.json. and .../results_thermal.json.
+"""
 import femmt as fmt
 import os
 
@@ -141,7 +150,7 @@ def basic_example_transformer_interleaved(onelab_folder: str = None, show_visual
     # ------------------------
     # read inductances
     geo.get_inductances(I0=8, op_frequency=250000, skin_mesh_factor=0.5,
-                        visualize_last_fem_simulation=show_visual_outputs)
+                        visualize_last_fem_simulation=False)
 
     # 9. start thermal simulation
     example_thermal_simulation(show_visual_outputs, flag_insulation=True)

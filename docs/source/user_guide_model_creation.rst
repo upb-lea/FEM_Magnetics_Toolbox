@@ -431,10 +431,9 @@ Zigzag placement introduces an alternating pattern in the layout:
 
 - After completing a row or column, the direction alternates (e.g., if moving upward initially, the next is downward).
 - The ``zigzag`` parameter is optional and defaults to ``False``. It can be omitted if a zigzag movement is not needed.
-It is only can be used for ``RoundSolid`` and ``RoundLitz`` conductors when the winding type is ``Single``.
+It can only be used for ``RoundSolid`` and ``RoundLitz`` conductors when the winding type is ``Single``.
 
-Now before simulating the winding window needs to be added to the model
-as well:
+Before the simulation, the winding window must be added to the model:
 
 .. code:: python
 
@@ -940,3 +939,13 @@ All temperature values mentioned are in degrees Celsius (°C).
     - **min**: Minimum insulation temperature observed.
     - **max**: Maximum insulation temperature observed.
     - **mean**: Mean insulation temperature calculated over the simulation.
+
+Warnings and Failures
+---------------------
+
+.. note::
+
+    Volumetric mass density not implemented for custom cores. Returns '0' in log-file: Core cost will also result to 0.
+
+As custom cores materials are e.g. ferrite, iron or even a fictive material, calculation with a fixed mass density
+does not make sense. So, weight (and also core costs) are set to zero in the result log.
