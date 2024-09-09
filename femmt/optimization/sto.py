@@ -591,7 +591,7 @@ class StackedTransformerOptimization:
             time_current_vectors = np.array([config.time_current_1_vec, config.time_current_2_vec])
 
             # pd.read_csv(current_waveforms_csv_file, header=0, index_col=0, delimiter=';')
-            df = pd.DataFrame()
+            df_fem = pd.DataFrame()
 
             for index, _ in reluctance_df.iterrows():
 
@@ -675,18 +675,14 @@ class StackedTransformerOptimization:
                                            plot_waveforms=show_visual_outputs, fft_filter_value_factor=0.05)
 
                     result_dict = geo.read_log()
-                    df_dict = {'trial_number': index,
-                               'n': result_dict['inductances']['n_conc'],
-                               'l_s_conc': result_dict['inductances']['l_s_conc'],
-                               'l_h_conc': result_dict['inductances']['l_h_conc'],
-                               'p_loss_winding_1': result_dict['total_losses']['winding1']['total'],
-                               'p_loss_winding_2': result_dict['total_losses']['winding2']['total'],
-                               'eddy_core': result_dict['total_losses']['eddy_core'],
-                               'core': result_dict['total_losses']['core']}
 
-                    df_single_simulation = pd.DataFrame([df_dict])
-
-                    df = pd.concat([df, df_single_simulation], axis=0)
+                    reluctance_df.at[index, 'n'] = result_dict['inductances']['n_conc']
+                    reluctance_df.at[index, 'l_s_conc'] = result_dict['inductances']['l_s_conc']
+                    reluctance_df.at[index, 'l_h_conc'] = result_dict['inductances']['l_h_conc']
+                    reluctance_df.at[index, 'p_loss_winding_1'] = result_dict['total_losses']['winding1']['total']
+                    reluctance_df.at[index, 'p_loss_winding_2'] = result_dict['total_losses']['winding2']['total']
+                    reluctance_df.at[index, 'eddy_core'] = result_dict['total_losses']['eddy_core']
+                    reluctance_df.at[index, 'core'] = result_dict['total_losses']['core']
 
                     # copy result files to result-file folder
                     source_json_file = os.path.join(
@@ -700,5 +696,11 @@ class StackedTransformerOptimization:
 
                 except Exception as e:
                     print(e)
-
-            return df
+                    reluctance_df.at[index, 'n'] = None
+                    reluctance_df.at[index, 'l_s_conc'] = None
+                    reluctance_df.at[index, 'l_h_conc'] = None
+                    reluctance_df.at[index, 'p_loss_winding_1'] = None
+                    reluctance_df.at[index, 'p_loss_winding_2'] = None
+                    reluctance_df.at[index, 'eddy_core'] = None
+                    reluctance_df.at[index, 'core'] = None
+            return reluctance_df
