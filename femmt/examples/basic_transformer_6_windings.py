@@ -1,4 +1,13 @@
-"""Basic example to show how to simulate a 5-winding transformer."""
+"""
+Basic example to show how to simulate a 5-winding transformer.
+
+After starting the program, the geometry dimensions are displayed. Verify this geometry, close the window, to continue the simulation.
+After a short time, B-Field and winding losses simulation results are shown. Winding losses are shown as a colormap.
+In the core, the magnitude B-Field in Tesla is shown. With the gmsh window, one can move the picture in the 3D way (not recommended).
+If you close this window, the thermal simulation will be continued, if programmed. If true, the thermal heat distribution will be displayed.
+To continue with the next simulation (or end the program), you need to close this window. All results are written to the result
+folder .../femmt/examples/example_results/simulation_file_name/results/log_electro_magnetic.json. and .../results_thermal.json.
+"""
 import femmt as fmt
 import os
 
@@ -164,7 +173,7 @@ def basic_example_transformer_6_windings(onelab_folder: str = None, show_visual_
 
     # 8. perform an FEM simulation
     geo.create_model(freq=100000, pre_visualize_geometry=show_visual_outputs)
-    geo.single_simulation(freq=100000, current=[1.625, 6.9, 4.9, 0.5, 1, 2],
+    geo.single_simulation(freq=100000, current=[1.625, 2.0, 2.9, 0.5, 1, 2],
                           phi_deg=[0, 180, 180, 90, 89, 180], show_fem_simulation_results=show_visual_outputs)
 
     # 9. prepare and start thermal simulation

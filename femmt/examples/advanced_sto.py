@@ -1,4 +1,40 @@
-"""Advanced example to show an optimization workflow for the stacked transformer."""
+"""
+Advanced example to show an optimization workflow for the stacked transformer.
+
+A stacked transformer should be optimized. The target parameters are:
+    * l_s12_target=5.8e-6,
+    * l_h_target=90e-6,
+    * n_target=15,
+Fixed input parameters are:
+    * sto_insulations (all insulations)
+    * temperature
+    * current waveforms
+    * ... (see in the code)
+sweep parameters: geometry and material
+    material_list=[fmt.Material.N95],
+    core_inner_diameter_min_max_list=[18e-3, 22e-3],
+    window_w_min_max_list=[10e-3, 14e-3],
+    window_h_bot_min_max_list=[13e-3, 15e-3],
+    primary_litz_wire_list=["1.71x140x0.1"],
+    metal_sheet_thickness_list=[0.5e-3, 1.5e-3],
+    primary_coil_turns_min_max_list=[1, 5],
+    interleaving_type_list=[fmt.CenterTappedInterleavingType.TypeC],
+    interleaving_scheme_list=[fmt.InterleavingSchemesFoilLitz.ter_3_4_sec_ter_4_3_sec],
+
+For the optimization, a genetic algorythm (e.g. NSGAII or NSGAIII) is used. The external "optuna"
+toolbox is used to perform the optimization. The optimizer makes several "trials" to suggest geometry
+and material parameters out of the given lists. In case of invalid designs are suggested, the trials
+will fail "Trial 1 failed with value (nan, nan, nan, nan)". Others will work fine.
+
+Uncomment "fmt.StackedTransformerOptimization.FemSimulation.show_study_results(study_name, dab_transformer_config,
+           percent_error_difference_l_h = 100, percent_error_difference_l_s12=100)"
+to see the Pareto plane with the simulation results.
+
+Chose a result number what should be re-simulated, in this example, case number 6, by running:
+"fmt.StackedTransformerOptimization.FemSimulation.re_simulate_single_result(study_name, dab_transformer_config, 6)"
+Note: Trial suggestions are with some random. If you are performing the simulation, may case number 6 has failed,
+and you need to choose another trial number.
+"""
 # python libraries
 import os
 
