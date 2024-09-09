@@ -116,6 +116,7 @@
 </li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#warnings-and-failures"><span class="sectnum">2.11 </span>Warnings and Failures</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="intro.html#winding-types"><span class="sectnum">3 </span>Winding types</a></li>
@@ -870,9 +871,8 @@ the focus is on two main aspects: alignment and how the conductors are placed.</
 <li><p>After completing a row or column, the direction alternates (e.g., if moving upward initially, the next is downward).</p></li>
 <li><p>The <code class="docutils literal notranslate"><span class="pre">zigzag</span></code> parameter is optional and defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>. It can be omitted if a zigzag movement is not needed.</p></li>
 </ul>
-<p>It is only can be used for <code class="docutils literal notranslate"><span class="pre">RoundSolid</span></code> and <code class="docutils literal notranslate"><span class="pre">RoundLitz</span></code> conductors when the winding type is <code class="docutils literal notranslate"><span class="pre">Single</span></code>.</p>
-<p>Now before simulating the winding window needs to be added to the model
-as well:</p>
+<p>It can only be used for <code class="docutils literal notranslate"><span class="pre">RoundSolid</span></code> and <code class="docutils literal notranslate"><span class="pre">RoundLitz</span></code> conductors when the winding type is <code class="docutils literal notranslate"><span class="pre">Single</span></code>.</p>
+<p>Before the simulation, the winding window must be added to the model:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">geo</span><span class="o">.</span><span class="n">set_winding_windows</span><span class="p">([</span><span class="n">winding_window</span><span class="p">])</span>
 </pre></div>
 </div>
@@ -1387,6 +1387,15 @@ simulation. The outcomes of thermal simulation are structured as:</p>
 </ul>
 </section>
 </section>
+</section>
+<section id="warnings-and-failures">
+<h2>Warnings and Failures<a class="headerlink" href="#warnings-and-failures" title="Link to this heading"></a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Volumetric mass density not implemented for custom cores. Returns ‘0’ in log-file: Core cost will also result to 0.</p>
+</div>
+<p>As custom cores materials are e.g. ferrite, iron or even a fictive material, calculation with a fixed mass density
+does not make sense. So, weight (and also core costs) are set to zero in the result log.</p>
 </section>
 </section>
 
