@@ -18,6 +18,7 @@ import femmt.examples.basic_inductor_foil
 import femmt.examples.basic_transformer_n_winding
 import femmt.examples.advanced_inductor_sweep
 import femmt.examples.basic_transformer_5_windings
+import femmt.examples.basic_transformer_6_windings
 import femmt.examples.experimental_inductor_time_domain
 import femmt.examples.experimental_transformer_time_domain
 import femmt.examples.experimental_transformer_three_winding_time_domain
@@ -2652,6 +2653,19 @@ def test_basic_example_transformer_5_windings(temp_folder: pytest.fixture):
     """
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_transformer_5_windings.basic_example_transformer_5_windings(onelab_folder=onelab_folder,
+                                                                                     show_visual_outputs=False,
+                                                                                     is_test=True)
+
+
+def test_basic_example_transformer_6_windings(temp_folder: pytest.fixture):
+    """
+    Integration test to the basic example file.
+
+    :param temp_folder: temporary folder path and onelab filepath
+    :type temp_folder: pytest.fixture
+    """
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_transformer_6_windings.basic_example_transformer_6_windings(onelab_folder=onelab_folder,
                                                                                      show_visual_outputs=False,
                                                                                      is_test=True)
 
