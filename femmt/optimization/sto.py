@@ -659,9 +659,6 @@ class StackedTransformerOptimization:
                                                       secondary_litz_wire['strand_radii'], None, fmt.ConductorArrangement.Square)
 
                     primary_coil_turns = reluctance_df['params_n_p_top'][index].item()
-                    print(f"{primary_coil_turns=}")
-                    print(f"{reluctance_df['params_n_p_bot'][index]=}")
-                    print(f"{reluctance_df['params_n_s_bot'][index]=}")
 
                     # 7. add conductor to vww and add winding window to MagneticComponent
                     vww_top.set_interleaved_winding(winding1, primary_coil_turns, winding2, 0, fmt.InterleavedWindingScheme.HorizontalAlternating)

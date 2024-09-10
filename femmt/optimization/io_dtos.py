@@ -7,12 +7,24 @@ from typing import List, Optional
 
 # own libraries
 from materialdatabase.dtos import MaterialCurve
+from femmt.enumerations import *
 
 @dataclasses.dataclass
 class WorkingDirectories:
     """Working directories."""
 
     pass
+
+@dataclasses.dataclass
+class InductorMaterialDataSources:
+    """Data sources for the FEM simulation."""
+
+    permeability_datasource: MaterialDataSource
+    permeability_datatype: MeasurementDataType
+    permeability_measurement_setup: MeasurementSetup
+    permittivity_datasource: MaterialDataSource
+    permittivity_datatype: MeasurementDataType
+    permittivity_measurement_setup: MeasurementSetup
 
 @dataclasses.dataclass
 class InductorInsulationDTO:
@@ -28,17 +40,28 @@ class InductorInsulationDTO:
 class InductorOptimizationDTO:
     """Contains boundary parameters for the inductor optimization."""
 
+    # general parameters
+    study_name: str
+    working_directory: str
+
+    # target parameter
+    target_inductance: float
+
+    # fixed parameters
+    insulations: InductorInsulationDTO
+    temperature: float
+    time_current_vec: List
+
+    # optimization parameters
     material_name_list: List[str]
     core_name_list: Optional[List[str]]
     core_inner_diameter_list: Optional[List[float]]
     window_w_list: Optional[List[float]]
     window_h_list: Optional[List[float]]
     litz_wire_list: List[str]
-    insulations: InductorInsulationDTO
-    target_inductance: float
-    temperature: float
-    time_current_vec: List
-    working_directory: str
+
+    # FEM simulation
+    material_data_sources: InductorMaterialDataSources
 
 @dataclasses.dataclass
 class InductorOptimizationTargetAndFixedParameters:
