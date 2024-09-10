@@ -1011,9 +1011,9 @@ def r_core_round(core_inner_diameter: Union[float, np.array], core_round_height:
 
 
 def resistance_solid_wire(core_inner_diameter: float, window_w: float, turns_count: int, conductor_radius: float,
-                          material: str = 'Copper') -> float:
+                          material: str = 'Copper', temperature: float = 100) -> float:
     """
-    Calculate the resistance of a solid wire.
+    Calculate the resistance of a solid wire, considering the winding temperature and a middle turn length.
 
     :param core_inner_diameter: core inner diameter
     :type core_inner_diameter: float
@@ -1025,6 +1025,8 @@ def resistance_solid_wire(core_inner_diameter: float, window_w: float, turns_cou
     :type conductor_radius: float
     :param material: Material, e.g. "Copper" or "Aluminium"
     :type material: str
+    :param temperature: temperature in °C
+    :type temperature: float
     :return: total resistance of wire
     :rtype: float
     """
@@ -1041,11 +1043,84 @@ def resistance_solid_wire(core_inner_diameter: float, window_w: float, turns_cou
 
     total_turn_length = turns_count * middle_turn_length
 
-    sigma_copper = ff.wire_material_database()[material].sigma
+    sigma_copper = ff.conductivity_temperature(material, temperature)
 
     # return R = rho * l / A
     return total_turn_length / (conductor_radius ** 2 * np.pi) / sigma_copper
 
+def resistance_litz_wire(core_inner_diameter: float, window_w: float, window_h: float, turns_count: int,
+                         iso_core_top: float, iso_core_bot: float, iso_core_left: float, iso_core_right: float,
+                         iso_primary_to_primary: float, litz_wire_name: str, material: str = "Copper",
+                         scheme: str = "vertical_first", temperature: float = 100) -> float:
+    """
+    Detailed DC resistance calculation for a given number of litz wire turns in a given core window.
+
+    :param core_inner_diameter: core inner diameter in meter
+    :type core_inner_diameter: float
+    :param window_w: winding window width in meter
+    :type window_w: float
+    :param turns_count: number of turns
+    :type turns_count: int
+    :param material: Material, e.g. "Copper" or "Aluminium"
+    :type material: str
+    :param temperature: temperature in °C
+    :type temperature: float
+    :param window_h: window height in meter
+    :type window_h: float
+    :param iso_core_top: insulation (bobbin) from winding window to top core in meter
+    :type iso_core_top: float
+    :param iso_core_bot: insulation (bobbin) from winding window to bot core in meter
+    :type iso_core_bot: float
+    :param iso_core_left: insulation (bobbin) from winding window to left core in meter
+    :type iso_core_left: float
+    :param iso_core_right: insulation (bobbin) from winding window to right core in meter
+    :type iso_core_right: float
+    :param iso_primary_to_primary: wire-to-wire insulation in meter
+    :type iso_primary_to_primary: float
+    :param litz_wire_name: litz wire name, e.g. "1.5x105x0.1"
+    :type litz_wire_name: str
+    :param scheme: scheme, e.g. "vertical_first" (finish vertical wires before going to next layer) or "horizontal_first"
+    :type scheme: str
+    :return: total resistance of wire in Ohm
+    :rtype: float
+    """
+    litz_wire = ff.litz_database()[litz_wire_name]
+    litz_wire_diameter = 2 * litz_wire["conductor_radii"]
+    litz_wire_effective_area = litz_wire["strands_numbers"] * litz_wire["strand_radii"] ** 2 * np.pi
+
+    # calculate total 2D-axi symmetric volume of the core:
+    # formula: number_turns_per_row = (available_width + primary_to_primary) / (wire_diameter + primary_to_primary)
+    available_width = window_w - iso_core_left - iso_core_right
+    possible_number_turns_per_row = int(
+        (available_width + iso_primary_to_primary) / (litz_wire_diameter + iso_primary_to_primary))
+    available_height = window_h - iso_core_top - iso_core_bot
+    possible_number_turns_per_column = int(
+        (available_height + iso_primary_to_primary) / (litz_wire_diameter + iso_primary_to_primary))
+
+    if scheme == "vertical_first":
+        number_of_columns = np.ceil(turns_count / possible_number_turns_per_column)
+        length_row_per_turn = np.zeros(int(number_of_columns))
+
+        # figure out the turn length per row
+        r_inner = np.array([core_inner_diameter / 2 + iso_core_left])
+        middle_radius_per_column = np.array([])
+        for count, _ in enumerate(length_row_per_turn):
+            middle_radius_per_column = np.append(middle_radius_per_column, r_inner + count * iso_primary_to_primary + (count + 0.5) * litz_wire_diameter)
+        turn_length_per_column = 2 * middle_radius_per_column * np.pi  # diameter * pi
+
+        # figure out the windings per column
+        windings_per_column = possible_number_turns_per_column * np.ones(int(number_of_columns))
+        last_column_turns = np.mod(turns_count, possible_number_turns_per_column)
+        windings_per_column[-1] = last_column_turns
+
+        # get the total turn length
+        total_turn_length = np.sum(np.multiply(windings_per_column, turn_length_per_column))
+    if scheme == "horizontal_first":
+        raise NotImplementedError("'horizontal_first'-scheme not implemented yet.")
+
+    sigma_copper = ff.conductivity_temperature(material, temperature)
+    # return R = rho * l / A
+    return total_turn_length / litz_wire_effective_area / sigma_copper
 
 def i_rms(time_current_matrix: np.array) -> float:
     """
