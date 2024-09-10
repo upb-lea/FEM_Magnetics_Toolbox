@@ -141,8 +141,9 @@ def test_winding_resistance_calculation_solid():
     turns_count = 20
     conductor_radius = 1e-3
     material = "Copper"
+    temperature = 25
 
-    assert femmt.resistance_solid_wire(core_inner_diameter, window_w, turns_count, conductor_radius, material) == pytest.approx(0.02251034482758622, rel=1e-3)
+    assert femmt.resistance_solid_wire(core_inner_diameter, window_w, turns_count, conductor_radius, material, temperature) == pytest.approx(0.02251034482758622, rel=1e-3)
 
 def test_calculate_inductance_matrix():
     """Unittest to calculate the inductance matrix from equivalent circuit parameters."""
