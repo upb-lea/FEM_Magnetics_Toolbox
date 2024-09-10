@@ -1153,3 +1153,88 @@ def i_rms(time_current_matrix: np.array) -> float:
 
     # return "mean" and "root" to finalize rms calculation
     return np.sqrt(square_integral_sum / time[-1])
+
+def calc_skin_depth(frequency: float, material_name: str = "Copper", temperature: float = 100) -> float:
+    """
+    Calculate the skin depth for the given material, frequency and temperature.
+
+    :param frequency: Frequency in Hz
+    :type frequency: float
+    :param material_name: material name, e.g. 'Copper' or 'Aluminium'
+    :type material_name: str
+    :param temperature: Temperature in °C
+    :type temperature: float
+    :return: Skin depth in meter
+    :rtype: float
+    """
+    rho = 1 / ff.conductivity_temperature(material_name, temperature)
+    skin_depth = np.sqrt(rho / np.pi / frequency / mu_0)
+    return skin_depth
+
+
+def calc_proximity_factor(litz_wire_name: str, number_turns: int, window_h: float, iso_core_top: float, iso_core_bot: float,
+                          frequency: float, litz_wire_material_name: str = 'Copper', temperature: float = 100) -> float:
+    """
+    Calculate the proximity factor for cores without air gaps, according to Charles R. Sullivan: "Simpliﬁed Design Method for Litz Wire", 2014 APEC.
+
+    :param litz_wire_name: litz wire name from the litz_database(), e.g. "1.5x105x0.1", "1.4x200x0.071"
+    :type litz_wire_name: str
+    :param number_turns: number of turns
+    :type number_turns: int
+    :param window_h: window height in meter
+    :type window_h: float
+    :param iso_core_top: insulation (bobbin) from winding to top core
+    :type iso_core_top: float
+    :param iso_core_bot: insulation (bobbin) from winding to bot core
+    :type iso_core_bot: float
+    :param frequency: Frequency in Hz
+    :type frequency: float
+    :param litz_wire_material_name: material name, e.g. 'Copper' or 'Aluminium'
+    :type litz_wire_material_name: str
+    :param temperature: Temperature in °C
+    :type temperature: float
+    """
+    litz_wire = ff.litz_database()[litz_wire_name]
+    nominator = (np.pi * litz_wire["strands_numbers"] * number_turns) ** 2 * (litz_wire["strand_radii"] * 2) ** 6
+    b = window_h - iso_core_top - iso_core_bot
+    skin_depth = calc_skin_depth(frequency, litz_wire_material_name, temperature)
+    denominator = 192 * skin_depth ** 4 * b ** 2
+
+    proximity_factor = 1 + nominator / denominator
+    return proximity_factor
+
+def calc_proximity_factor_air_gap(litz_wire_name: str, number_turns: int, r_1: float, frequency: float, winding_area: float,
+                                  litz_wire_material_name: str = 'Copper', temperature: float = 100) -> float:
+    """
+    Calculate the proximity factor for cores with center air gap, according to Charles R. Sullivan: "Simpliﬁed Design Method for Litz Wire", 2014 APEC.
+
+    :param litz_wire_name: litz wire name from the litz_database(), e.g. "1.5x105x0.1", "1.4x200x0.071"
+    :type litz_wire_name: str
+    :param number_turns: number of turns
+    :type number_turns: int
+    :param r_1: Radius from air gap to winding in meter (see mentioned paper for a clear drawing)
+    :type r_1: float
+    :param winding_area: winding area in square meters (m²). Used to calculate r_2 from the mentioned paper.
+    :type winding_area: float
+    :param frequency: Frequency in Hz
+    :type frequency: float
+    :param litz_wire_material_name: material name, e.g. 'Copper' or 'Aluminium'
+    :type litz_wire_material_name: str
+    :param temperature: Temperature in °C
+    :type temperature: float
+    """
+    litz_wire = ff.litz_database()[litz_wire_name]
+
+    nominator = (np.pi * litz_wire["strands_numbers"] * number_turns) ** 2 * (litz_wire["strand_radii"] * 2) ** 6
+
+    # single air gap
+    r_2 = np.sqrt(2 * winding_area / np.pi + r_1 ** 2)
+
+    b_eff = np.pi * (0.693 * r_1 + 0.307 * r_2 ** 0.91 * r_1 ** 0.09)
+
+    skin_depth = calc_skin_depth(frequency, litz_wire_material_name, temperature)
+
+    denominator = 192 * skin_depth ** 4 * b_eff ** 2
+
+    proximity_factor = 1 + nominator / denominator
+    return proximity_factor

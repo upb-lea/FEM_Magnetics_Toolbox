@@ -78,3 +78,5 @@ class InductorOptimizationTargetAndFixedParameters:
     current_extracted_vec: List
     fundamental_frequency: float
     working_directories: WorkingDirectories
+    fft_frequency_list: List[float]
+    fft_amplitude_list: List[float]

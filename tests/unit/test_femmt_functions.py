@@ -1,4 +1,4 @@
-"""Contains Unittests for some subfunctions of FEMMT."""
+"""Contains Unittests for some sub-functions of FEMMT."""
 import pytest
 import femmt
 import numpy as np
@@ -142,8 +142,9 @@ def test_winding_resistance_calculation_solid():
     conductor_radius = 1e-3
     material = "Copper"
     temperature = 25
+    calculated_winding_resistance = femmt.resistance_solid_wire(core_inner_diameter, window_w, turns_count, conductor_radius, material, temperature)
 
-    assert femmt.resistance_solid_wire(core_inner_diameter, window_w, turns_count, conductor_radius, material, temperature) == pytest.approx(0.02251034482758622, rel=1e-3)
+    assert calculated_winding_resistance == pytest.approx(0.02251034482758622, rel=1e-3)
 
 def test_calculate_inductance_matrix():
     """Unittest to calculate the inductance matrix from equivalent circuit parameters."""
@@ -165,3 +166,8 @@ def test_conductivity_temperature():
 
     assert copper_sigma_100_degree_calculated == pytest.approx(4.4874e7, rel=1e-3)
     assert aluminium_sigma_100_degree_calculated == pytest.approx(2.8627e7, rel=1e-3)
+
+def test_skin_depth():
+    """Unittest for calculating the skin depth."""
+    skin_depth_calculated = femmt.calc_skin_depth(100000, 'Copper', 25)
+    assert skin_depth_calculated == pytest.approx(0.00020898067849388921, rel=1e-3)

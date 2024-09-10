@@ -66,6 +66,9 @@ class InductorOptimization:
 
             i_peak, = fr.max_value_from_value_vec(current_extracted_vec)
 
+            (fft_frequencies, fft_amplitudes, _) = ff.fft(
+                period_vector_t_i=config.time_current_vec, sample_factor=1000, plot='no', mode='time', filter_type='factor', filter_value_factor=0.03)
+
             # material properties
             material_db = mdb.MaterialDatabase(is_silent=True)
 
@@ -85,7 +88,9 @@ class InductorOptimization:
                 current_extracted_vec=current_extracted_vec,
                 material_dto_curve_list=material_data_list,
                 fundamental_frequency=fundamental_frequency,
-                working_directories=working_directories
+                working_directories=working_directories,
+                fft_frequency_list=fft_frequencies,
+                fft_amplitude_list=fft_amplitudes
             )
 
             return target_and_fix_parameters
@@ -186,15 +191,8 @@ class InductorOptimization:
             volume_core = volume - volume_winding_window
             p_core = volume_core * p_density
 
-            # calculate winding losses using a proximity factor
-            proximity_factor_assumption = 1.3
-            effective_conductive_cross_section = litz_wire["strands_numbers"] * litz_wire["strand_radii"] ** 2 * np.pi
-            effective_conductive_radius = np.sqrt(effective_conductive_cross_section / np.pi)
-            # simplification
-            # winding_resistance = fr.resistance_solid_wire(
-            #     core_inner_diameter, window_w, turns, effective_conductive_radius, material='Copper')
-
-            winding_resistance = fr.resistance_litz_wire(
+            # winding loss calculation
+            winding_dc_resistance = fr.resistance_litz_wire(
                 core_inner_diameter=core_inner_diameter, window_w=window_w, window_h=window_h,
                 turns_count=turns, iso_core_top=config.insulations.core_top,
                 iso_core_bot=config.insulations.core_bot, iso_core_left=config.insulations.core_left,
@@ -202,9 +200,21 @@ class InductorOptimization:
                 iso_primary_to_primary=config.insulations.primary_to_primary, litz_wire_name=litz_wire_name,
                 material="Copper", scheme="vertical_first", temperature=config.temperature)
 
-            winding_dc_loss = winding_resistance * target_and_fixed_parameters.i_rms ** 2
+            winding_area = turns * litz_wire_diameter ** 2
 
-            p_winding = proximity_factor_assumption * winding_dc_loss
+            p_winding = 0
+            for count, fft_frequency in enumerate(target_and_fixed_parameters.fft_frequency_list):
+                # proximity_factor_assumption = fmt.calc_proximity_factor_air_gap(
+                #     litz_wire_name=litz_wire_name, number_turns=turns, r_1=config.insulations.core_left,
+                #     frequency=fft_frequency, winding_area=winding_area,
+                #     litz_wire_material_name='Copper', temperature=config.temperature)
+
+                proximity_factor_assumption = fmt.calc_proximity_factor(
+                    litz_wire_name=litz_wire_name, number_turns=turns, window_h=window_h,
+                    iso_core_top=config.insulations.core_top, iso_core_bot=config.insulations.core_bot,
+                    frequency=fft_frequency, litz_wire_material_name='Copper', temperature=config.temperature)
+
+                p_winding += proximity_factor_assumption * winding_dc_resistance * target_and_fixed_parameters.fft_amplitude_list[count] ** 2
 
             p_loss = p_winding + p_core
 
