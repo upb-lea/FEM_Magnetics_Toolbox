@@ -80,3 +80,4 @@ class InductorOptimizationTargetAndFixedParameters:
     working_directories: WorkingDirectories
     fft_frequency_list: List[float]
     fft_amplitude_list: List[float]
+    fft_phases_list: List[float]

@@ -1,4 +1,5 @@
 """Inductor optimization."""
+import dataclasses
 # python libraries
 import os
 import datetime
@@ -66,7 +67,7 @@ class InductorOptimization:
 
             i_peak, = fr.max_value_from_value_vec(current_extracted_vec)
 
-            (fft_frequencies, fft_amplitudes, _) = ff.fft(
+            (fft_frequencies, fft_amplitudes, fft_phases) = ff.fft(
                 period_vector_t_i=config.time_current_vec, sample_factor=1000, plot='no', mode='time', filter_type='factor', filter_value_factor=0.03)
 
             # material properties
@@ -90,7 +91,8 @@ class InductorOptimization:
                 fundamental_frequency=fundamental_frequency,
                 working_directories=working_directories,
                 fft_frequency_list=fft_frequencies,
-                fft_amplitude_list=fft_amplitudes
+                fft_amplitude_list=fft_amplitudes,
+                fft_phases_list=fft_phases
             )
 
             return target_and_fix_parameters
@@ -595,9 +597,11 @@ class InductorOptimization:
                     # 8. create the model
                     geo.create_model(freq=target_and_fix_parameters.fundamental_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
 
-                    # 6.a. start simulation
-                    geo.single_simulation(freq=target_and_fix_parameters.fundamental_frequency, current=[target_and_fix_parameters.i_peak],
-                                          plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
+                    current_amplitudes = [[current] for current in target_and_fix_parameters.fft_amplitude_list]
+                    phases = [[phase] for phase in target_and_fix_parameters.fft_phases_list]
+
+                    geo.excitation_sweep(frequency_list=target_and_fix_parameters.fft_frequency_list, current_list_list=current_amplitudes,
+                                         phi_deg_list_list=phases, show_last_fem_simulation=show_visual_outputs)
 
                     result_dict = geo.read_log()
 
@@ -648,14 +652,17 @@ class InductorOptimization:
 
             for file in files_in_folder:
                 with open(os.path.join(fem_results_folder_path, file), 'r') as log_file:
-                    readed_log_dict = json.load(log_file)
+                    scanned_log_dict = json.load(log_file)
 
                 index = int(file.replace("case_", "").replace(".json", ""))
 
-                reluctance_df.at[index, 'fem_inductance'] = readed_log_dict['single_sweeps'][0]['winding1']['flux_over_current'][0]
-                reluctance_df.at[index, 'fem_p_loss_winding'] = readed_log_dict['total_losses']['winding1']['total']
-                reluctance_df.at[index, 'fem_eddy_core'] = readed_log_dict['total_losses']['eddy_core']
-                reluctance_df.at[index, 'fem_core'] = readed_log_dict['total_losses']['core']
+                reluctance_df.at[index, 'fem_inductance'] = scanned_log_dict['single_sweeps'][0]['winding1']['flux_over_current'][0]
+                reluctance_df.at[index, 'fem_p_loss_winding'] = scanned_log_dict['total_losses']['winding1']['total']
+                reluctance_df.at[index, 'fem_eddy_core'] = scanned_log_dict['total_losses']['eddy_core']
+                reluctance_df.at[index, 'fem_core'] = scanned_log_dict['total_losses']['core']
+
+            # final loss calculation
+            reluctance_df["combined_losses"] = reluctance_df["fem_eddy_core"] + reluctance_df["fem_p_loss_winding"] + reluctance_df["user_attrs_p_hyst"]
 
             return reluctance_df
 
@@ -670,10 +677,11 @@ class InductorOptimization:
             fig, ax = plt.subplots()
             legend_list = []
             plt.legend(handles=legend_list)
-            sc = plt.scatter(df["values_0"], df["values_1"], s=10)  # c=color_array
+            plt.scatter(df["values_0"], df["values_1"], s=10, label='Relucatance Model')  # c=color_array
             df["fem_total_loss"] = df["fem_core"] + df["fem_p_loss_winding"]
-            sc = plt.scatter(df["values_0"], df["fem_total_loss"], s=10)  # c=color_array
-
+            plt.scatter(df["values_0"], df["fem_total_loss"], s=10, label='FEM simulation')  # c=color_array
+            plt.scatter(df["values_0"], df["combined_losses"], s=10, label="combined_losses")
+            plt.legend()
             plt.xlabel('Volume in m³')
             plt.ylabel('Losses in W')
             plt.grid()
