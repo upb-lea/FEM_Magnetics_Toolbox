@@ -531,7 +531,7 @@ class InductorOptimization:
                     # 1. chose simulation type
                     geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.FreqDomain, component_type=fmt.ComponentType.Inductor,
                                                 working_directory=working_directory, verbosity=fmt.Verbosity.Silent,
-                                                simulation_name=f"case_{reluctance_df["number"][index].item()}")
+                                                simulation_name=f"case_{reluctance_df['number'][index].item()}")
 
                     if reluctance_df["params_core_name"] is not None:
                         core_inner_diameter = reluctance_df["user_attrs_core_inner_diameter"][index].item()
