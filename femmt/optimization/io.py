@@ -1,5 +1,4 @@
 """Inductor optimization."""
-import dataclasses
 # python libraries
 import os
 import datetime
@@ -20,7 +19,7 @@ from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
 
 # onw libraries
-from femmt.optimization.io_dtos import InductorOptimizationDTO, InductorOptimizationTargetAndFixedParameters
+from femmt.optimization.io_dtos import InductorOptimizationDTO, InductorOptimizationTargetAndFixedParameters, FemInput, FemOutput
 import femmt.functions as ff
 import femmt.functions_reluctance as fr
 import femmt.optimization.ito_functions as itof
@@ -79,7 +78,7 @@ class InductorOptimization:
                 material_data_list.append(material_dto)
 
             # set up working directories
-            working_directories = itof.set_up_folder_structure(config.working_directory)
+            working_directories = itof.set_up_folder_structure(config.inductor_optimization_directory)
 
             # finalize data to dto
             target_and_fix_parameters = InductorOptimizationTargetAndFixedParameters(
@@ -226,6 +225,7 @@ class InductorOptimization:
             trial.set_user_attr('core_inner_diameter', core_inner_diameter)
             trial.set_user_attr('window_h', window_h)
             trial.set_user_attr('window_w', window_w)
+            trial.set_user_attr('flux_density_peak', np.max(flux_density))
 
             return volume, p_loss
 
@@ -246,7 +246,7 @@ class InductorOptimization:
             :param sampler: optuna.samplers.NSGAIISampler() or optuna.samplers.NSGAIIISampler(). Note about the brackets () !!
             :type sampler: optuna.sampler-object
             """
-            if os.path.exists(f"{config.working_directory}/{config.study_name}.sqlite3"):
+            if os.path.exists(f"{config.inductor_optimization_directory}/{config.inductor_study_name}.sqlite3"):
                 print("Existing study found. Proceeding.")
 
             target_and_fixed_parameters = InductorOptimization.ReluctanceModel.calculate_fix_parameters(config)
@@ -255,7 +255,7 @@ class InductorOptimization:
             if storage == 'sqlite':
                 # Note: for sqlite operation, there needs to be three slashes '///' even before the path '/home/...'
                 # Means, in total there are four slashes including the path itself '////home/.../database.sqlite3'
-                storage = f"sqlite:///{config.working_directory}/{config.study_name}.sqlite3"
+                storage = f"sqlite:///{config.inductor_optimization_directory}/{config.inductor_study_name}.sqlite3"
             elif storage == 'mysql':
                 storage = "mysql://monty@localhost/mydb",
 
@@ -266,11 +266,10 @@ class InductorOptimization:
             # optuna.logging.set_verbosity(optuna.logging.ERROR)
 
             # check for differences with the old configuration file
-            config_on_disk_filepath = f"{config.working_directory}/{config.study_name}.pkl"
+            config_on_disk_filepath = f"{config.inductor_optimization_directory}/{config.inductor_study_name}.pkl"
             if os.path.exists(config_on_disk_filepath):
                 config_on_disk = InductorOptimization.ReluctanceModel.load_config(config_on_disk_filepath)
                 difference = deepdiff.DeepDiff(config, config_on_disk, ignore_order=True, significant_digits=10)
-                print(difference)
                 if difference:
                     print("Configuration file has changed from previous simulation. Do you want to proceed?")
                     print(f"Difference: {difference}")
@@ -283,12 +282,12 @@ class InductorOptimization:
 
             func = lambda trial: InductorOptimization.ReluctanceModel.objective(trial, config, target_and_fixed_parameters)
 
-            study_in_storage = optuna.create_study(study_name=config.study_name,
+            study_in_storage = optuna.create_study(study_name=config.inductor_study_name,
                                                    storage=storage,
                                                    directions=['minimize', 'minimize'],
                                                    load_if_exists=True, sampler=sampler)
 
-            study_in_memory = optuna.create_study(directions=['minimize', 'minimize'], study_name=config.study_name, sampler=sampler)
+            study_in_memory = optuna.create_study(directions=['minimize', 'minimize'], study_name=config.inductor_study_name, sampler=sampler)
             print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
             study_in_memory.add_trials(study_in_storage.trials)
             study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
@@ -306,11 +305,12 @@ class InductorOptimization:
             :param config: Integrated transformer configuration file
             :type config: ItoSingleInputConfig
             """
-            study = optuna.load_study(study_name=config.study_name, storage=f"sqlite:///{config.working_directory}/{config.study_name}.sqlite3")
+            study = optuna.load_study(study_name=config.inductor_study_name,
+                                      storage=f"sqlite:///{config.inductor_optimization_directory}/{config.inductor_study_name}.sqlite3")
 
             fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0], t.values[1]), target_names=["volume in m³", "loss in W"])
-            fig.update_layout(title=f"{config.study_name}")
-            fig.write_html(f"{config.working_directory}/{config.study_name}"
+            fig.update_layout(title=f"{config.inductor_study_name}")
+            fig.write_html(f"{config.inductor_optimization_directory}/{config.inductor_study_name}"
                            f"_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
             fig.show()
 
@@ -322,8 +322,10 @@ class InductorOptimization:
             :param config: configuration
             :type config: InductorOptimizationDTO
             """
-            os.makedirs(config.working_directory, exist_ok=True)
-            with open(f"{config.working_directory}/{config.study_name}.pkl", 'wb') as output:
+            # convert config path to an absolute filepath
+            config.inductor_optimization_directory = os.path.abspath(config.inductor_optimization_directory)
+            os.makedirs(config.inductor_optimization_directory, exist_ok=True)
+            with open(f"{config.inductor_optimization_directory}/{config.inductor_study_name}/.pkl", 'wb') as output:
                 pickle.dump(config, output, pickle.HIGHEST_PROTOCOL)
 
         @staticmethod
@@ -349,15 +351,15 @@ class InductorOptimization:
             :return: Study results as Pandas Dataframe
             :rtype: pd.DataFrame
             """
-            database_url = f'sqlite:///{config.working_directory}/{config.study_name}.sqlite3'
+            database_url = f'sqlite:///{config.inductor_optimization_directory}/{config.inductor_study_name}.sqlite3'
             if os.path.isfile(database_url.replace('sqlite:///', '')):
                 print("Existing study found.")
             else:
                 raise ValueError(f"Can not find database: {database_url}")
-            loaded_study = optuna.load_study(study_name=config.study_name, storage=database_url)
+            loaded_study = optuna.load_study(study_name=config.inductor_study_name, storage=database_url)
             df = loaded_study.trials_dataframe()
-            df.to_csv(f'{config.working_directory}/{config.study_name}.csv')
-            logging.info(f"Exported study as .csv file: {config.working_directory}/{config.study_name}.csv")
+            df.to_csv(f'{config.inductor_optimization_directory}/{config.inductor_study_name}.csv')
+            logging.info(f"Exported study as .csv file: {config.inductor_optimization_directory}/{config.inductor_study_name}.csv")
             return df
 
         @staticmethod
@@ -517,10 +519,10 @@ class InductorOptimization:
             """
             target_and_fix_parameters = InductorOptimization.ReluctanceModel.calculate_fix_parameters(config)
 
-            working_directory = target_and_fix_parameters.working_directories.fem_working_directory
-            if not os.path.exists(working_directory):
-                os.mkdir(working_directory)
-            working_directory = os.path.join(
+            fem_working_directory = target_and_fix_parameters.working_directories.fem_working_directory
+            if not os.path.exists(fem_working_directory):
+                os.mkdir(fem_working_directory)
+            fem_working_directory = os.path.join(
                 target_and_fix_parameters.working_directories.fem_working_directory, f"process_{process_number}")
 
             time_current_vectors = np.array([config.time_current_vec, config.time_current_vec])
@@ -530,11 +532,6 @@ class InductorOptimization:
             for index, _ in reluctance_df.iterrows():
 
                 try:
-                    # 1. chose simulation type
-                    geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.FreqDomain, component_type=fmt.ComponentType.Inductor,
-                                                working_directory=working_directory, verbosity=fmt.Verbosity.Silent,
-                                                simulation_name=f"case_{reluctance_df['number'][index].item()}")
-
                     if reluctance_df["params_core_name"] is not None:
                         core_inner_diameter = reluctance_df["user_attrs_core_inner_diameter"][index].item()
                         window_w = reluctance_df["user_attrs_window_w"][index].item()
@@ -543,72 +540,32 @@ class InductorOptimization:
                         core_inner_diameter = reluctance_df["params_core_inner_diameter"][index].item()
                         window_w = reluctance_df["params_window_w"][index].item()
                         window_h = reluctance_df["params_window_h"][index].item()
+                    fem_input = FemInput(
+                        simulation_name=f"case_{reluctance_df['number'][index].item()}",
+                        working_directory=fem_working_directory,
+                        core_inner_diameter=core_inner_diameter,
+                        window_w=window_w,
+                        window_h=window_h,
+                        material_name=reluctance_df["params_material_name"][index],
+                        temperature=config.temperature,
+                        material_data_sources=config.material_data_sources,
+                        insulations=config.insulations,
+                        fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
+                        air_gap_length=reluctance_df["user_attrs_l_air_gap"][index].item(),
+                        litz_wire_name=reluctance_df['params_litz_wire_name'][index],
+                        turns=int(reluctance_df["params_turns"][index].item()),
+                        fft_frequency_list=target_and_fix_parameters.fft_frequency_list,
+                        fft_amplitude_list=target_and_fix_parameters.fft_amplitude_list,
+                        fft_phases_list=target_and_fix_parameters.fft_phases_list,
+                    )
 
-                    # 2. set core parameters
-                    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_inner_diameter,
-                                                                    window_w=window_w,
-                                                                    window_h=window_h, core_h=window_h + core_inner_diameter / 2)
+                    # fem simulation here
+                    fem_output = InductorOptimization.FemSimulation.single_fem_simulation(fem_input, False)
 
-                    core = fmt.Core(core_type=fmt.CoreType.Single,
-                                    core_dimensions=core_dimensions,
-                                    detailed_core_model=True,
-                                    material=reluctance_df["params_material_name"][index], temperature=config.temperature,
-                                    frequency=target_and_fix_parameters.fundamental_frequency,
-                                    permeability_datasource=config.material_data_sources.permeability_datasource,
-                                    permeability_datatype=config.material_data_sources.permeability_datatype,
-                                    permeability_measurement_setup=config.material_data_sources.permeability_measurement_setup,
-                                    permittivity_datasource=config.material_data_sources.permittivity_datasource,
-                                    permittivity_datatype=config.material_data_sources.permittivity_datatype,
-                                    permittivity_measurement_setup=config.material_data_sources.permittivity_measurement_setup,
-                                    mdb_verbosity=fmt.Verbosity.Silent)
-
-                    geo.set_core(core)
-
-                    # 3. set air gap parameters
-                    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, reluctance_df["user_attrs_l_air_gap"][index].item(), 50)
-                    geo.set_air_gaps(air_gaps)
-
-                    # 4. set insulations
-                    insulation = fmt.Insulation(flag_insulation=True)
-                    insulation.add_core_insulations(config.insulations.core_top, config.insulations.core_bot,
-                                                    config.insulations.core_left, config.insulations.core_right)
-                    insulation.add_winding_insulations([[config.insulations.primary_to_primary]])
-                    geo.set_insulation(insulation)
-
-                    # 5. create winding window and virtual winding windows (vww)
-                    winding_window = fmt.WindingWindow(core, insulation)
-                    vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
-
-                    # 6. create conductor and set parameters: use solid wires
-                    winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=config.temperature)
-
-                    primary_litz_wire = fmt.litz_database()[reluctance_df['params_litz_wire_name'][index]]
-                    winding.set_litz_round_conductor(primary_litz_wire['conductor_radii'], primary_litz_wire['strands_numbers'],
-                                                     primary_litz_wire['strand_radii'], None, fmt.ConductorArrangement.Square)
-
-                    # 7. add conductor to vww and add winding window to MagneticComponent
-
-                    vww.set_winding(winding, int(reluctance_df["params_turns"][index].item()), None, fmt.Align.CenterOnVerticalAxis,
-                                    placing_strategy=fmt.ConductorDistribution.VerticalUpward_HorizontalRightward,
-                                    zigzag=True)
-                    geo.set_winding_windows([winding_window])
-
-                    # 8. create the model
-                    geo.create_model(freq=target_and_fix_parameters.fundamental_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
-
-                    current_amplitudes = [[current] for current in target_and_fix_parameters.fft_amplitude_list]
-                    phases = [[phase] for phase in target_and_fix_parameters.fft_phases_list]
-
-                    geo.excitation_sweep(frequency_list=target_and_fix_parameters.fft_frequency_list, current_list_list=current_amplitudes,
-                                         phi_deg_list_list=phases, show_last_fem_simulation=show_visual_outputs)
-
-                    result_dict = geo.read_log()
-
-                    reluctance_df.at[index, 'fem_inductance'] = result_dict['single_sweeps'][0]['winding1']['flux_over_current'][0]
-                    reluctance_df.at[index, 'fem_p_loss_winding'] = result_dict['total_losses']['winding1']['total']
-                    reluctance_df.at[index, 'fem_eddy_core'] = result_dict['total_losses']['eddy_core']
-                    reluctance_df.at[index, 'fem_core'] = result_dict['total_losses']['core']
+                    reluctance_df.at[index, 'fem_inductance'] = fem_output.fem_inductance
+                    reluctance_df.at[index, 'fem_p_loss_winding'] = fem_output.fem_p_loss_winding
+                    reluctance_df.at[index, 'fem_eddy_core'] = fem_output.fem_eddy_core
+                    reluctance_df.at[index, 'fem_core'] = fem_output.fem_core
 
                     # copy result files to result-file folder
                     source_json_file = os.path.join(
@@ -709,3 +666,146 @@ class InductorOptimization:
             df["inductance_fem_vs_reluctance"] = df["fem_inductance"] / config.target_inductance
 
             return df
+
+        @staticmethod
+        def single_fem_simulation(fem_input: FemInput, show_visual_outputs: bool = False) -> FemOutput:
+            """
+            Perform a single FEM simulation.
+
+            :param fem_input: FEM input DTO
+            :type fem_input: FemInput
+            :param show_visual_outputs: True to show visual outputs
+            :type show_visual_outputs: bool
+            :return: FEM output DTO
+            :rtype: FemOutput
+            """
+            # 1. chose simulation type
+            geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.FreqDomain, component_type=fmt.ComponentType.Inductor,
+                                        working_directory=fem_input.working_directory, verbosity=fmt.Verbosity.Silent,
+                                        simulation_name=fem_input.simulation_name)
+
+            # 2. set core parameters
+            core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=fem_input.core_inner_diameter,
+                                                            window_w=fem_input.window_w,
+                                                            window_h=fem_input.window_h, core_h=fem_input.window_h + fem_input.core_inner_diameter / 2)
+
+            core = fmt.Core(core_type=fmt.CoreType.Single,
+                            core_dimensions=core_dimensions,
+                            detailed_core_model=True,
+                            material=fem_input.material_name, temperature=fem_input.temperature,
+                            frequency=fem_input.fundamental_frequency,
+                            permeability_datasource=fem_input.material_data_sources.permeability_datasource,
+                            permeability_datatype=fem_input.material_data_sources.permeability_datatype,
+                            permeability_measurement_setup=fem_input.material_data_sources.permeability_measurement_setup,
+                            permittivity_datasource=fem_input.material_data_sources.permittivity_datasource,
+                            permittivity_datatype=fem_input.material_data_sources.permittivity_datatype,
+                            permittivity_measurement_setup=fem_input.material_data_sources.permittivity_measurement_setup,
+                            mdb_verbosity=fmt.Verbosity.Silent)
+
+            geo.set_core(core)
+
+            # 3. set air gap parameters
+            air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+            air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, fem_input.air_gap_length, 50)
+            geo.set_air_gaps(air_gaps)
+
+            # 4. set insulations
+            insulation = fmt.Insulation(flag_insulation=True)
+            insulation.add_core_insulations(fem_input.insulations.core_top, fem_input.insulations.core_bot,
+                                            fem_input.insulations.core_left, fem_input.insulations.core_right)
+            insulation.add_winding_insulations([[fem_input.insulations.primary_to_primary]])
+            geo.set_insulation(insulation)
+
+            # 5. create winding window and virtual winding windows (vww)
+            winding_window = fmt.WindingWindow(core, insulation)
+            vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+
+            # 6. create conductor and set parameters: use solid wires
+            winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=fem_input.temperature)
+
+            primary_litz_wire = fmt.litz_database()[fem_input.litz_wire_name]
+            winding.set_litz_round_conductor(primary_litz_wire['conductor_radii'], primary_litz_wire['strands_numbers'],
+                                             primary_litz_wire['strand_radii'], None, fmt.ConductorArrangement.Square)
+
+            # 7. add conductor to vww and add winding window to MagneticComponent
+
+            vww.set_winding(winding, fem_input.turns, None, fmt.Align.CenterOnVerticalAxis,
+                            placing_strategy=fmt.ConductorDistribution.VerticalUpward_HorizontalRightward,
+                            zigzag=True)
+            geo.set_winding_windows([winding_window])
+
+            # 8. create the model
+            geo.create_model(freq=fem_input.fundamental_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
+
+            current_amplitudes = [[current] for current in fem_input.fft_amplitude_list]
+            phases = [[phase] for phase in fem_input.fft_phases_list]
+
+            geo.excitation_sweep(frequency_list=fem_input.fft_frequency_list, current_list_list=current_amplitudes,
+                                 phi_deg_list_list=phases, show_last_fem_simulation=show_visual_outputs)
+
+            result_dict = geo.read_log()
+
+            fem_output = FemOutput(
+                fem_inductance=result_dict['single_sweeps'][0]['winding1']['flux_over_current'][0],
+                fem_p_loss_winding=result_dict['total_losses']['winding1']['total'],
+                fem_eddy_core=result_dict['total_losses']['eddy_core'],
+                fem_core=result_dict['total_losses']['core']
+            )
+            return fem_output
+
+        # @staticmethod
+        # def full_simulation(df_geometry: pd.DataFrame, current_waveform: List, config_filepath: str, process_number: int = 1):
+        #
+        #     for index, _ in df_geometry.iterrows():
+        #
+        #         local_config = InductorOptimization.ReluctanceModel.load_config(config_filepath)
+        #
+        #         if local_config.core_name_list is not None:
+        #             # using fixed core sizes from the database with flexible height.
+        #             core_name = df_geometry['params_core_name']
+        #             core = ff.core_database()[core_name]
+        #             core_inner_diameter = core["core_inner_diameter"]
+        #             window_w = core["window_w"]
+        #         else:
+        #             core_inner_diameter = df_geometry['params_core_inner_diameter']
+        #             window_w = df_geometry['params_window_w']
+        #
+        #         # overwrite the old time-current vector with the new one
+        #         local_config.time_current_vec = current_waveform
+        #         target_and_fix_parameters = InductorOptimization.ReluctanceModel.calculate_fix_parameters(local_config)
+        #
+        #         working_directory = target_and_fix_parameters.working_directories.fem_working_directory
+        #         if not os.path.exists(working_directory):
+        #             os.mkdir(working_directory)
+        #         working_directory = os.path.join(
+        #             target_and_fix_parameters.working_directories.fem_working_directory, f"process_{process_number}")
+        #
+        #         fem_input = FemInput(
+        #             # general parameters
+        #             working_directory=local_config.inductor_optimization_directory,
+        #             simulation_name='xx',
+        #
+        #             # material and geometry parameters
+        #             material_name=df_geometry['params_material_name'].item(),
+        #             litz_wire_name=df_geometry['params_litz_wire_name'],
+        #             core_inner_diameter=core_inner_diameter,
+        #             window_w=window_w,
+        #             window_h=df_geometry["params_window_h"],
+        #             air_gap_length=df_geometry['user_attrs_l_air_gap'],
+        #             turns=df_geometry['params_turns'],
+        #             insulations=local_config.insulations,
+        #
+        #             # data sources
+        #             material_data_sources=local_config.material_data_sources,
+        #
+        #             # operating point conditions
+        #             temperature=local_config.temperature,
+        #             fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
+        #             fft_frequency_list=target_and_fix_parameters.fft_frequency_list,
+        #             fft_amplitude_list=target_and_fix_parameters.fft_amplitude_list,
+        #             fft_phases_list=target_and_fix_parameters.fft_phases_list
+        #         )
+        #
+        #         fem_output = InductorOptimization.FemSimulation.single_fem_simulation(fem_input, False)
+        #
+        #         print(fem_output)

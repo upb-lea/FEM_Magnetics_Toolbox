@@ -8,12 +8,7 @@ from typing import List, Optional
 # own libraries
 from materialdatabase.dtos import MaterialCurve
 from femmt.enumerations import *
-
-@dataclasses.dataclass
-class WorkingDirectories:
-    """Working directories."""
-
-    pass
+from femmt.optimization.ito_dtos import WorkingDirectories
 
 @dataclasses.dataclass
 class InductorMaterialDataSources:
@@ -41,8 +36,8 @@ class InductorOptimizationDTO:
     """Contains boundary parameters for the inductor optimization."""
 
     # general parameters
-    study_name: str
-    working_directory: str
+    inductor_study_name: str
+    inductor_optimization_directory: str
 
     # target parameter
     target_inductance: float
@@ -81,3 +76,40 @@ class InductorOptimizationTargetAndFixedParameters:
     fft_frequency_list: List[float]
     fft_amplitude_list: List[float]
     fft_phases_list: List[float]
+
+@dataclasses.dataclass
+class FemInput:
+    """Input DTO for a FEM simulation within the inductor optimization."""
+
+    # general parameters
+    working_directory: str
+    simulation_name: str
+
+    # material and geometry parameters
+    material_name: str
+    litz_wire_name: str
+    core_inner_diameter: float
+    window_w: float
+    window_h: float
+    air_gap_length: float
+    turns: float
+    insulations: InductorInsulationDTO
+
+    # data sources
+    material_data_sources: InductorMaterialDataSources
+
+    # operating point conditions
+    temperature: float
+    fundamental_frequency: float
+    fft_frequency_list: List[float]
+    fft_amplitude_list: List[float]
+    fft_phases_list: List[float]
+
+@dataclasses.dataclass
+class FemOutput:
+    """Output DTO for a FEM simulation within the inductor optimization."""
+
+    fem_inductance: float
+    fem_p_loss_winding: float
+    fem_eddy_core: float
+    fem_core: float
