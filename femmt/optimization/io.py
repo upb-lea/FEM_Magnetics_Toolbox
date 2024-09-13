@@ -72,9 +72,13 @@ class InductorOptimization:
             material_db = mdb.MaterialDatabase(is_silent=True)
 
             material_data_list = []
+            magnet_model_list = []
             for material_name in config.material_name_list:
                 material_dto: mdb.MaterialCurve = material_db.material_data_interpolation_to_dto(material_name, fundamental_frequency, config.temperature)
                 material_data_list.append(material_dto)
+                # instantiate material-specific model
+                mdl: mh.loss.LossModel = mh.loss.LossModel(material=material_name, team="paderborn")
+                magnet_model_list.append(mdl)
 
             # set up working directories
             working_directories = itof.set_up_folder_structure(config.inductor_optimization_directory)
@@ -86,6 +90,7 @@ class InductorOptimization:
                 time_extracted_vec=time_extracted,
                 current_extracted_vec=current_extracted_vec,
                 material_dto_curve_list=material_data_list,
+                magnet_hub_model_list=magnet_model_list,
                 fundamental_frequency=fundamental_frequency,
                 working_directories=working_directories,
                 fft_frequency_list=fft_frequencies,
@@ -142,9 +147,10 @@ class InductorOptimization:
             turns = trial.suggest_int('turns', 1, max_turns)
 
             material_name = trial.suggest_categorical('material_name', config.material_name_list)
-            for material_dto in target_and_fixed_parameters.material_dto_curve_list:
+            for count, material_dto in enumerate(target_and_fixed_parameters.material_dto_curve_list):
                 if material_dto.material_name == material_name:
                     material_dto: mdb.MaterialCurve = material_dto
+                    magnet_material_model = target_and_fixed_parameters.magnet_hub_model_list[count]
 
             target_total_reluctance = turns ** 2 / config.target_inductance
 
@@ -177,11 +183,8 @@ class InductorOptimization:
                 return float('nan'), float('nan')
 
             # p_loss calculation
-            # instantiate material-specific model
-            mdl = mh.loss.LossModel(material=material_name, team="paderborn")
-
             # get power loss in W/m³ and estimated H wave in A/m
-            p_density, _ = mdl(flux_density, target_and_fixed_parameters.fundamental_frequency, config.temperature)
+            p_density, _ = magnet_material_model(flux_density, target_and_fixed_parameters.fundamental_frequency, config.temperature)
 
             # volume calculation
             r_outer = fr.calculate_r_outer(core_inner_diameter, window_w)

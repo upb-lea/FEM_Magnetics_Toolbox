@@ -4,6 +4,7 @@ import dataclasses
 from typing import List, Optional
 
 # 3rd party libraries
+from magnethub.loss import LossModel
 
 # own libraries
 from materialdatabase.dtos import MaterialCurve
@@ -69,6 +70,7 @@ class InductorOptimizationTargetAndFixedParameters:
     i_rms: float
     i_peak: float
     material_dto_curve_list: List[MaterialCurve]
+    magnet_hub_model_list: List[LossModel]
     time_extracted_vec: List
     current_extracted_vec: List
     fundamental_frequency: float
