@@ -114,4 +114,37 @@ class FemOutput:
     fem_inductance: float
     fem_p_loss_winding: float
     fem_eddy_core: float
-    fem_core: float
+    fem_core_total: float
+    volume: float
+
+@dataclasses.dataclass
+class ReluctanceModelInput:
+    """Input DTO for reluctance model simulation within the inductor optimization."""
+    target_inductance: float
+    core_inner_diameter: float
+    window_w: float
+    window_h: float
+    turns: int
+    litz_wire_name: str
+    litz_wire_diameter: float
+
+    insulations: InductorInsulationDTO
+    material_dto: MaterialCurve
+    magnet_material_model: LossModel
+
+    temperature: float
+    current_extracted_vec: List
+    fundamental_frequency: float
+    fft_frequency_list: List[float]
+    fft_amplitude_list: List[float]
+    fft_phases_list: List[float]
+
+@dataclasses.dataclass
+class ReluctanceModelOutput:
+    """output DTO for reluctance model simulation within the inductor optimization."""
+    volume: float
+    p_loss_total: float
+    p_winding: float
+    p_hyst: float
+    l_air_gap: float
+    flux_density_peak: float

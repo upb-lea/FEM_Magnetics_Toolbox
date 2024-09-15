@@ -18,7 +18,8 @@ from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
 
 # onw libraries
-from femmt.optimization.io_dtos import InductorOptimizationDTO, InductorOptimizationTargetAndFixedParameters, FemInput, FemOutput
+from femmt.optimization.io_dtos import (InductorOptimizationDTO, InductorOptimizationTargetAndFixedParameters, FemInput,
+                                        FemOutput, ReluctanceModelInput, ReluctanceModelOutput)
 import femmt.functions as ff
 import femmt.functions_reluctance as fr
 import femmt.optimization.ito_functions as itof
@@ -152,16 +153,62 @@ class InductorOptimization:
                     material_dto: mdb.MaterialCurve = material_dto
                     magnet_material_model = target_and_fixed_parameters.magnet_hub_model_list[count]
 
-            target_total_reluctance = turns ** 2 / config.target_inductance
+            reluctance_model_input = ReluctanceModelInput(
+                core_inner_diameter=core_inner_diameter,
+                window_w=window_w,
+                window_h=window_h,
+                turns=turns,
+                target_inductance=config.target_inductance,
+                litz_wire_name=litz_wire_name,
+                litz_wire_diameter=litz_wire_diameter,
 
-            r_core_inner = fr.r_core_round(core_inner_diameter, window_h, material_dto.material_mu_r_abs)
-            r_core_top_bot = fr.r_core_top_bot_radiant(core_inner_diameter, window_w, material_dto.material_mu_r_abs, core_inner_diameter / 4)
+                insulations=config.insulations,
+                material_dto=material_dto,
+                magnet_material_model=magnet_material_model,
+
+                temperature=config.temperature,
+                current_extracted_vec=target_and_fixed_parameters.current_extracted_vec,
+                fundamental_frequency=target_and_fixed_parameters.fundamental_frequency,
+                fft_frequency_list=target_and_fixed_parameters.fft_frequency_list,
+                fft_amplitude_list=target_and_fixed_parameters.fft_amplitude_list,
+                fft_phases_list=target_and_fixed_parameters.fft_phases_list
+            )
+            try:
+                reluctance_output: ReluctanceModelOutput = InductorOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_input)
+            except ValueError:
+                print("bot air gap: No fitting air gap length")
+                return float('nan'), float('nan')
+
+            trial.set_user_attr('p_winding', reluctance_output.p_winding)
+            trial.set_user_attr('p_hyst', reluctance_output.p_hyst)
+            trial.set_user_attr('l_air_gap', reluctance_output.l_air_gap)
+            trial.set_user_attr('core_inner_diameter', core_inner_diameter)
+            trial.set_user_attr('window_h', window_h)
+            trial.set_user_attr('window_w', window_w)
+            trial.set_user_attr('flux_density_peak', reluctance_output.flux_density_peak)
+
+            return reluctance_output.volume, reluctance_output.p_loss_total
+
+        @staticmethod
+        def single_reluctance_model_simulation(reluctance_input: ReluctanceModelInput) -> ReluctanceModelOutput:
+            """Perform a single reluctance model simulation. E.g. during optimization or during a re-simulation of a single operating point.
+
+            :param reluctance_input: Input parameters for the reluctance model simulation.
+            :type reluctance_input: ReluctanceModelInput
+            :return: Output parameters of the reluctance model simulation
+            :rtype: ReluctanceModelOutput
+            """
+            target_total_reluctance = reluctance_input.turns ** 2 / reluctance_input.target_inductance
+
+            r_core_inner = fr.r_core_round(reluctance_input.core_inner_diameter, reluctance_input.window_h, reluctance_input.material_dto.material_mu_r_abs)
+            r_core_top_bot = fr.r_core_top_bot_radiant(reluctance_input.core_inner_diameter, reluctance_input.window_w,
+                                                       reluctance_input.material_dto.material_mu_r_abs, reluctance_input.core_inner_diameter / 4)
             r_core = 2 * r_core_inner + 2 * r_core_top_bot
 
             r_air_gap_target = target_total_reluctance - r_core
 
-            flux = turns * target_and_fixed_parameters.current_extracted_vec / target_total_reluctance
-            core_cross_section = (core_inner_diameter / 2) ** 2 * np.pi
+            flux = reluctance_input.turns * reluctance_input.current_extracted_vec / target_total_reluctance
+            core_cross_section = (reluctance_input.core_inner_diameter / 2) ** 2 * np.pi
             flux_density = flux / core_cross_section
 
             # Do not cross out saturation, as the genetic algorithm is missing bad results to improve its suggestions
@@ -173,63 +220,62 @@ class InductorOptimization:
             minimum_air_gap_length = 0.01e-3
             maximum_air_gap_length = 4e-3
 
-            try:
-                l_air_gap = optimize.brentq(
-                    fr.r_air_gap_round_round_sct, minimum_air_gap_length, maximum_air_gap_length,
-                    args=(core_inner_diameter, window_h / 2, window_h / 2, r_air_gap_target), full_output=True)[0]
-
-            except ValueError:
-                print("bot air gap: No fitting air gap length")
-                return float('nan'), float('nan')
+            l_air_gap = optimize.brentq(
+                fr.r_air_gap_round_round_sct, minimum_air_gap_length, maximum_air_gap_length,
+                args=(reluctance_input.core_inner_diameter, reluctance_input.window_h / 2, reluctance_input.window_h / 2, r_air_gap_target),
+                full_output=True)[0]
 
             # p_loss calculation
             # get power loss in W/m³ and estimated H wave in A/m
-            p_density, _ = magnet_material_model(flux_density, target_and_fixed_parameters.fundamental_frequency, config.temperature)
+            p_density, _ = reluctance_input.magnet_material_model(flux_density, reluctance_input.fundamental_frequency, reluctance_input.temperature)
 
             # volume calculation
-            r_outer = fr.calculate_r_outer(core_inner_diameter, window_w)
-            volume = ff.calculate_cylinder_volume(cylinder_diameter=2 * r_outer, cylinder_height=window_h + core_inner_diameter / 2)
+            r_outer = fr.calculate_r_outer(reluctance_input.core_inner_diameter, reluctance_input.window_w)
+            volume = ff.calculate_cylinder_volume(cylinder_diameter=2 * r_outer,
+                                                  cylinder_height=reluctance_input.window_h + reluctance_input.core_inner_diameter / 2)
 
-            volume_winding_window = ((core_inner_diameter / 2 + window_w) ** 2 * np.pi - (core_inner_diameter / 2) ** 2 * np.pi) * window_h
+            volume_winding_window = ((reluctance_input.core_inner_diameter / 2 + reluctance_input.window_w) ** 2 * np.pi - \
+                                     (reluctance_input.core_inner_diameter / 2) ** 2 * np.pi) * reluctance_input.window_h
             volume_core = volume - volume_winding_window
             p_core = volume_core * p_density
 
             # winding loss calculation
             winding_dc_resistance = fr.resistance_litz_wire(
-                core_inner_diameter=core_inner_diameter, window_w=window_w, window_h=window_h,
-                turns_count=turns, iso_core_top=config.insulations.core_top,
-                iso_core_bot=config.insulations.core_bot, iso_core_left=config.insulations.core_left,
-                iso_core_right=config.insulations.core_right,
-                iso_primary_to_primary=config.insulations.primary_to_primary, litz_wire_name=litz_wire_name,
-                material="Copper", scheme="vertical_first", temperature=config.temperature)
+                core_inner_diameter=reluctance_input.core_inner_diameter, window_w=reluctance_input.window_w, window_h=reluctance_input.window_h,
+                turns_count=reluctance_input.turns, iso_core_top=reluctance_input.insulations.core_top,
+                iso_core_bot=reluctance_input.insulations.core_bot, iso_core_left=reluctance_input.insulations.core_left,
+                iso_core_right=reluctance_input.insulations.core_right,
+                iso_primary_to_primary=reluctance_input.insulations.primary_to_primary, litz_wire_name=reluctance_input.litz_wire_name,
+                material="Copper", scheme="vertical_first", temperature=reluctance_input.temperature)
 
-            winding_area = turns * litz_wire_diameter ** 2
+            winding_area = reluctance_input.turns * reluctance_input.litz_wire_diameter ** 2
 
             p_winding = 0
-            for count, fft_frequency in enumerate(target_and_fixed_parameters.fft_frequency_list):
+            for count, fft_frequency in enumerate(reluctance_input.fft_frequency_list):
                 # proximity_factor_assumption = fmt.calc_proximity_factor_air_gap(
                 #     litz_wire_name=litz_wire_name, number_turns=turns, r_1=config.insulations.core_left,
                 #     frequency=fft_frequency, winding_area=winding_area,
                 #     litz_wire_material_name='Copper', temperature=config.temperature)
 
                 proximity_factor_assumption = fmt.calc_proximity_factor(
-                    litz_wire_name=litz_wire_name, number_turns=turns, window_h=window_h,
-                    iso_core_top=config.insulations.core_top, iso_core_bot=config.insulations.core_bot,
-                    frequency=fft_frequency, litz_wire_material_name='Copper', temperature=config.temperature)
+                    litz_wire_name=reluctance_input.litz_wire_name, number_turns=reluctance_input.turns, window_h=reluctance_input.window_h,
+                    iso_core_top=reluctance_input.insulations.core_top, iso_core_bot=reluctance_input.insulations.core_bot,
+                    frequency=fft_frequency, litz_wire_material_name='Copper', temperature=reluctance_input.temperature)
 
-                p_winding += proximity_factor_assumption * winding_dc_resistance * target_and_fixed_parameters.fft_amplitude_list[count] ** 2
+                p_winding += proximity_factor_assumption * winding_dc_resistance * reluctance_input.fft_amplitude_list[count] ** 2
 
             p_loss = p_winding + p_core
 
-            trial.set_user_attr('p_winding', p_winding)
-            trial.set_user_attr('p_hyst', p_core)
-            trial.set_user_attr('l_air_gap', l_air_gap)
-            trial.set_user_attr('core_inner_diameter', core_inner_diameter)
-            trial.set_user_attr('window_h', window_h)
-            trial.set_user_attr('window_w', window_w)
-            trial.set_user_attr('flux_density_peak', np.max(flux_density))
+            reluctance_model_output = ReluctanceModelOutput(
+                p_loss_total=p_loss,
+                volume=volume,
+                p_winding=p_winding,
+                p_hyst=p_core,
+                l_air_gap=l_air_gap,
+                flux_density_peak=np.max(flux_density),
+            )
 
-            return volume, p_loss
+            return reluctance_model_output
 
         @staticmethod
         def start_proceed_study(config: InductorOptimizationDTO, number_trials: int,
@@ -297,7 +343,7 @@ class InductorOptimization:
             study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
             print(f"Finished {number_trials} trials.")
             print(f"current time: {datetime.datetime.now()}")
-            # InductorOptimization.ReluctanceModel.save_config(config)
+            InductorOptimization.ReluctanceModel.save_config(config)
 
         @staticmethod
         def show_study_results(config: InductorOptimizationDTO) -> None:
@@ -571,7 +617,7 @@ class InductorOptimization:
                         reluctance_df.at[index, 'fem_inductance'] = fem_output.fem_inductance
                         reluctance_df.at[index, 'fem_p_loss_winding'] = fem_output.fem_p_loss_winding
                         reluctance_df.at[index, 'fem_eddy_core'] = fem_output.fem_eddy_core
-                        reluctance_df.at[index, 'fem_core'] = fem_output.fem_core
+                        reluctance_df.at[index, 'fem_core'] = fem_output.fem_core_total
 
                         # copy result files to result-file folder
                         source_json_file = os.path.join(
@@ -752,7 +798,8 @@ class InductorOptimization:
                 fem_inductance=result_dict['single_sweeps'][0]['winding1']['flux_over_current'][0],
                 fem_p_loss_winding=result_dict['total_losses']['winding1']['total'],
                 fem_eddy_core=result_dict['total_losses']['eddy_core'],
-                fem_core=result_dict['total_losses']['core']
+                fem_core_total=result_dict['total_losses']['core'],
+                volume=result_dict["misc"]["core_2daxi_total_volume"]
             )
             return fem_output
 
@@ -823,3 +870,54 @@ class InductorOptimization:
                 fem_output = InductorOptimization.FemSimulation.single_fem_simulation(fem_input, False)
 
                 print(fem_output)
+
+                litz_wire = ff.litz_database()[df_geometry['params_litz_wire_name'][index]]
+                litz_wire_diameter = 2 * litz_wire["conductor_radii"]
+
+                # material properties
+                material_db = mdb.MaterialDatabase(is_silent=True)
+
+                material_dto: mdb.MaterialCurve = material_db.material_data_interpolation_to_dto(
+                    df_geometry['params_material_name'][index], target_and_fix_parameters.fundamental_frequency, local_config.temperature)
+                # instantiate material-specific model
+                magnet_material_model: mh.loss.LossModel = mh.loss.LossModel(material=df_geometry['params_material_name'][index], team="paderborn")
+
+                reluctance_model_input = ReluctanceModelInput(
+                    core_inner_diameter=core_inner_diameter,
+                    window_w=window_w,
+                    window_h=df_geometry["params_window_h"][index],
+                    turns=int(df_geometry['params_turns'][index].item()),
+                    target_inductance=local_config.target_inductance,
+                    litz_wire_name=df_geometry['params_litz_wire_name'][index],
+                    litz_wire_diameter=litz_wire_diameter,
+
+                    insulations=local_config.insulations,
+                    material_dto=material_dto,
+                    magnet_material_model=magnet_material_model,
+
+                    temperature=local_config.temperature,
+                    current_extracted_vec=target_and_fix_parameters.current_extracted_vec,
+                    fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
+                    fft_frequency_list=target_and_fix_parameters.fft_frequency_list,
+                    fft_amplitude_list=target_and_fix_parameters.fft_amplitude_list,
+                    fft_phases_list=target_and_fix_parameters.fft_phases_list
+                )
+
+                reluctance_output: ReluctanceModelOutput = InductorOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_input)
+
+                p_core = reluctance_output.p_hyst + fem_output.fem_eddy_core + fem_output.fem_p_loss_winding
+
+                print(f"Inductance reluctance: {local_config.target_inductance}")
+                print(f"Inductance FEM: {fem_output.fem_inductance}")
+                print(f"Inductance derivation: {(fem_output.fem_inductance - local_config.target_inductance) / local_config.target_inductance * 100} %")
+                print(f"Volume reluctance: {reluctance_output.volume}")
+                print(f"Volume FEM: {fem_output.volume}")
+                print(f"Volume derivation: {(reluctance_output.volume - fem_output.volume) / reluctance_output.volume * 100} %")
+                print(f"P_winding reluctance: {reluctance_output.p_winding}")
+                print(f"P_winding FEM: {fem_output.fem_p_loss_winding}")
+                print(f"P_winding derivation: {(fem_output.fem_p_loss_winding - reluctance_output.p_winding) / fem_output.fem_p_loss_winding * 100}")
+                print(f"P_hyst reluctance: {reluctance_output.p_hyst}")
+                print(f"P_hyst FEM: {fem_output.fem_core_total}")
+                print(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.fem_core_total) / reluctance_output.p_hyst * 100}")
+
+                return reluctance_output.volume, p_core
