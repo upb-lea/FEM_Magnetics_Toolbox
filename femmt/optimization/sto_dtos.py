@@ -70,6 +70,8 @@ class StoSingleInputConfig:
     Also specifies the working directory where to store the results.
     """
 
+    stacked_transformer_study_name: str
+
     # target parameters
     l_s12_target: float
     l_h_target: float
@@ -99,7 +101,7 @@ class StoSingleInputConfig:
     insulations: StoInsulation
 
     # misc
-    working_directory: str
+    stacked_transformer_optimization_directory: str
     fft_filter_value_factor: float
     mesh_accuracy: float
 

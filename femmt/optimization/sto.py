@@ -84,7 +84,7 @@ class StackedTransformerOptimization:
                 material_data_list.append(material_dto)
 
             # set up working directories
-            working_directories = itof.set_up_folder_structure(config.working_directory)
+            working_directories = itof.set_up_folder_structure(config.stacked_transformer_optimization_directory)
 
             # finalize data to dto
             target_and_fix_parameters = StoTargetAndFixedParameters(
@@ -327,7 +327,7 @@ class StackedTransformerOptimization:
             return volume, p_loss
 
         @staticmethod
-        def start_proceed_study(study_name: str, config: StoSingleInputConfig, number_trials: int,
+        def start_proceed_study(config: StoSingleInputConfig, number_trials: int,
                                 storage: str = 'sqlite',
                                 sampler=optuna.samplers.NSGAIIISampler(),
                                 show_geometries: bool = False,
@@ -335,8 +335,6 @@ class StackedTransformerOptimization:
             """
             Proceed a study which is stored as sqlite database.
 
-            :param study_name: Name of the study
-            :type study_name: str
             :param config: Simulation configuration
             :type config: ItoSingleInputConfig
             :param number_trials: Number of trials adding to the existing study
@@ -348,7 +346,7 @@ class StackedTransformerOptimization:
             :param show_geometries: True to show the geometry of each suggestion (with valid geometry data)
             :type show_geometries: bool
             """
-            if os.path.exists(f"{config.working_directory}/{study_name}.sqlite3"):
+            if os.path.exists(f"{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.sqlite3"):
                 print("Existing study found. Proceeding.")
 
             target_and_fixed_parameters = StackedTransformerOptimization.ReluctanceModel.calculate_fix_parameters(config)
@@ -357,7 +355,7 @@ class StackedTransformerOptimization:
             if storage == 'sqlite':
                 # Note: for sqlite operation, there needs to be three slashes '///' even before the path '/home/...'
                 # Means, in total there are four slashes including the path itself '////home/.../database.sqlite3'
-                storage = f"sqlite:///{config.working_directory}/{study_name}.sqlite3"
+                storage = f"sqlite:///{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.sqlite3"
             elif storage == 'mysql':
                 storage = "mysql://monty@localhost/mydb",
 
@@ -369,12 +367,12 @@ class StackedTransformerOptimization:
 
             func = lambda trial: StackedTransformerOptimization.ReluctanceModel.objective(trial, config, target_and_fixed_parameters)
 
-            study_in_storage = optuna.create_study(study_name=study_name,
+            study_in_storage = optuna.create_study(study_name=config.stacked_transformer_study_name,
                                                    storage=storage,
                                                    directions=['minimize', 'minimize'],
                                                    load_if_exists=True, sampler=sampler)
 
-            study_in_memory = optuna.create_study(directions=['minimize', 'minimize'], study_name=study_name, sampler=sampler)
+            study_in_memory = optuna.create_study(directions=['minimize', 'minimize'], study_name=config.stacked_transformer_study_name, sampler=sampler)
             print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
             study_in_memory.add_trials(study_in_storage.trials)
             study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
@@ -384,45 +382,40 @@ class StackedTransformerOptimization:
             print(f"current time: {datetime.datetime.now()}")
 
         @staticmethod
-        def show_study_results(study_name: str, config: StoSingleInputConfig) -> None:
+        def show_study_results(config: StoSingleInputConfig) -> None:
             """Show the results of a study.
 
             A local .html file is generated under config.working_directory to store the interactive plotly plots on disk.
 
-            :param study_name: Name of the study
-            :type study_name: str
             :param config: Integrated transformer configuration file
             :type config: ItoSingleInputConfig
             """
-            study = optuna.load_study(study_name=study_name, storage=f"sqlite:///{config.working_directory}/{study_name}.sqlite3")
+            study = optuna.load_study(study_name=config.stacked_transformer_study_name, storage=f"sqlite:///{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.sqlite3")
 
             fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0], t.values[1]), target_names=["volume in m³", "loss in W"])
-            fig.update_layout(title=f"{study_name}")
-            fig.write_html(f"{config.working_directory}/{study_name}"
+            fig.update_layout(title=f"{config.stacked_transformer_study_name}")
+            fig.write_html(f"{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}"
                            f"_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
             fig.show()
-
         @staticmethod
-        def study_to_df(study_name: str, working_directory: str) -> pd.DataFrame:
+        def study_to_df(config: StoSingleInputConfig) -> pd.DataFrame:
             """
             Create a Pandas dataframe from a study.
 
-            :param study_name: name of study
-            :type study_name: str
-            :param working_directory: folder of the located study
-            :type working_directory: str
+            :param config: configuration
+            :type config: InductorOptimizationDTO
             :return: Study results as Pandas Dataframe
             :rtype: pd.DataFrame
             """
-            database_url = f'sqlite:///{working_directory}/{study_name}.sqlite3'
+            database_url = f'sqlite:///{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.sqlite3'
             if os.path.isfile(database_url.replace('sqlite:///', '')):
                 print("Existing study found.")
             else:
                 raise ValueError(f"Can not find database: {database_url}")
-            loaded_study = optuna.load_study(study_name=study_name, storage=database_url)
+            loaded_study = optuna.load_study(study_name=config.stacked_transformer_study_name, storage=database_url)
             df = loaded_study.trials_dataframe()
-            df.to_csv(f'{working_directory}/{study_name}.csv')
-            logging.info(f"Exported study as .csv file: {working_directory}/{study_name}.csv")
+            df.to_csv(f'{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.csv')
+            logging.info(f"Exported study as .csv file: {config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.csv")
             return df
 
         @staticmethod
