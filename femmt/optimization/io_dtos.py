@@ -120,6 +120,7 @@ class FemOutput:
 @dataclasses.dataclass
 class ReluctanceModelInput:
     """Input DTO for reluctance model simulation within the inductor optimization."""
+
     target_inductance: float
     core_inner_diameter: float
     window_w: float
@@ -142,6 +143,7 @@ class ReluctanceModelInput:
 @dataclasses.dataclass
 class ReluctanceModelOutput:
     """output DTO for reluctance model simulation within the inductor optimization."""
+
     volume: float
     p_loss_total: float
     p_winding: float
