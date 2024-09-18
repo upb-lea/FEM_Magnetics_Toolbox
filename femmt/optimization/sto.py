@@ -7,7 +7,7 @@ from typing import List
 import shutil
 
 # own libraries
-from femmt.optimization.sto_dtos import StoSingleInputConfig, StoTargetAndFixedParameters
+from femmt.optimization.sto_dtos import StoSingleInputConfig, StoTargetAndFixedParameters, FemInput, FemOutput
 import femmt.functions as ff
 import femmt.functions_reluctance as fr
 import materialdatabase as mdb
@@ -390,13 +390,15 @@ class StackedTransformerOptimization:
             :param config: Integrated transformer configuration file
             :type config: ItoSingleInputConfig
             """
-            study = optuna.load_study(study_name=config.stacked_transformer_study_name, storage=f"sqlite:///{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.sqlite3")
+            study = optuna.load_study(study_name=config.stacked_transformer_study_name,
+                                      storage=f"sqlite:///{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.sqlite3")
 
             fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0], t.values[1]), target_names=["volume in m³", "loss in W"])
             fig.update_layout(title=f"{config.stacked_transformer_study_name}")
             fig.write_html(f"{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}"
                            f"_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
             fig.show()
+
         @staticmethod
         def study_to_df(config: StoSingleInputConfig) -> pd.DataFrame:
             """
@@ -581,99 +583,56 @@ class StackedTransformerOptimization:
             working_directory = os.path.join(
                 target_and_fix_parameters.working_directories.fem_working_directory, f"process_{process_number}")
 
-            time_current_vectors = np.array([config.time_current_1_vec, config.time_current_2_vec])
-
             # pd.read_csv(current_waveforms_csv_file, header=0, index_col=0, delimiter=';')
             df_fem = pd.DataFrame()
 
             for index, _ in reluctance_df.iterrows():
 
                 try:
-                    # 1. chose simulation type
-                    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
-                                                working_directory=working_directory, verbosity=fmt.Verbosity.Silent)
-
                     if reluctance_df["params_core_name"] is not None:
                         core_inner_diameter = reluctance_df["user_attrs_core_inner_diameter"][index].item()
                         window_w = reluctance_df["user_attrs_window_w"][index].item()
-                        core_h_bot = reluctance_df["user_attrs_window_h_bot"][index].item()
+                        window_h_bot = reluctance_df["user_attrs_window_h_bot"][index].item()
                     else:
                         core_inner_diameter = reluctance_df["params_core_inner_diameter"][index].item()
                         window_w = reluctance_df["params_window_w"][index].item()
-                        core_h_bot = reluctance_df["params_window_h_bot"][index].item()
+                        window_h_bot = reluctance_df["params_window_h_bot"][index].item()
 
-                    # 2. set core parameters
-                    core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter,
-                                                                     window_w=window_w,
-                                                                     window_h_top=reluctance_df['user_attrs_window_h_top'][index].item(),
-                                                                     window_h_bot=core_h_bot)
-                    core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions,
-                                    material=reluctance_df["params_material_name"][index], temperature=config.temperature,
-                                    frequency=target_and_fix_parameters.fundamental_frequency,
-                                    permeability_datasource=config.material_data_sources.permeability_datasource,
-                                    permeability_datatype=config.material_data_sources.permeability_datatype,
-                                    permeability_measurement_setup=config.material_data_sources.permeability_measurement_setup,
-                                    permittivity_datasource=config.material_data_sources.permittivity_datasource,
-                                    permittivity_datatype=config.material_data_sources.permittivity_datatype,
-                                    permittivity_measurement_setup=config.material_data_sources.permittivity_measurement_setup,
-                                    mdb_verbosity=fmt.Verbosity.Silent
-                                    )
-                    geo.set_core(core)
+                    fem_input = FemInput(
+                        simulation_name='xx',
+                        working_directory=working_directory,
+                        core_inner_diameter=core_inner_diameter,
+                        window_w=window_w,
+                        window_h_bot=window_h_bot,
+                        window_h_top=reluctance_df['user_attrs_window_h_top'][index].item(),
+                        material_name=reluctance_df["params_material_name"][index],
+                        temperature=config.temperature,
+                        material_data_sources=config.material_data_sources,
+                        air_gap_length_top=reluctance_df["user_attrs_l_top_air_gap"][index].item(),
+                        air_gap_length_bot=reluctance_df["user_attrs_l_bot_air_gap"][index].item(),
+                        insulations=config.insulations,
+                        primary_litz_wire_name=reluctance_df['params_primary_litz_wire'][index],
+                        secondary_litz_wire_name=reluctance_df['params_secondary_litz_wire'][index],
 
-                    # 3. set air gap parameters
-                    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Stacked, core)
-                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, reluctance_df["user_attrs_l_top_air_gap"][index].item(),
-                                         stacked_position=fmt.StackedPosition.Top)
-                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, reluctance_df["user_attrs_l_bot_air_gap"][index].item(),
-                                         stacked_position=fmt.StackedPosition.Bot)
-                    geo.set_air_gaps(air_gaps)
+                        turns_primary_top=reluctance_df['params_n_p_top'][index].item(),
+                        turns_primary_bot=reluctance_df['params_n_p_bot'][index].item(),
+                        turns_secondary_bot=int(reluctance_df['params_n_s_bot'][index].item()),
 
-                    # 4. set insulations
-                    insulation = fmt.Insulation(flag_insulation=False)
-                    insulation.add_core_insulations(config.insulations.iso_window_bot_core_top, config.insulations.iso_window_bot_core_bot,
-                                                    config.insulations.iso_window_bot_core_left, config.insulations.iso_window_bot_core_right)
-                    insulation.add_winding_insulations([[config.insulations.iso_primary_to_primary, config.insulations.iso_secondary_to_secondary],
-                                                        [config.insulations.iso_secondary_to_secondary, config.insulations.iso_primary_to_primary]])
-                    geo.set_insulation(insulation)
+                        fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
 
-                    winding_window_top, winding_window_bot = fmt.create_stacked_winding_windows(core, insulation)
+                        time_current_1_vec=config.time_current_1_vec,
+                        time_current_2_vec=config.time_current_2_vec,
+                    )
 
-                    vww_top = winding_window_top.split_window(fmt.WindingWindowSplit.NoSplit)
-                    vww_bot = winding_window_bot.split_window(fmt.WindingWindowSplit.NoSplit)
+                    fem_output = StackedTransformerOptimization.FemSimulation.single_fem_simulation(fem_input)
 
-                    # 6. set conductor parameters
-                    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
-                    primary_litz_wire = fmt.litz_database()[reluctance_df['params_primary_litz_wire'][index]]
-                    winding1.set_litz_round_conductor(primary_litz_wire['conductor_radii'], primary_litz_wire['strands_numbers'],
-                                                      primary_litz_wire['strand_radii'], None, fmt.ConductorArrangement.Square)
-
-                    winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
-                    secondary_litz_wire = fmt.litz_database()[reluctance_df['params_primary_litz_wire'][index]]
-                    winding2.set_litz_round_conductor(secondary_litz_wire['conductor_radii'], secondary_litz_wire['strands_numbers'],
-                                                      secondary_litz_wire['strand_radii'], None, fmt.ConductorArrangement.Square)
-
-                    primary_coil_turns = reluctance_df['params_n_p_top'][index].item()
-
-                    # 7. add conductor to vww and add winding window to MagneticComponent
-                    vww_top.set_interleaved_winding(winding1, primary_coil_turns, winding2, 0, fmt.InterleavedWindingScheme.HorizontalAlternating)
-                    vww_bot.set_interleaved_winding(winding1, reluctance_df['params_n_p_bot'][index].item(), winding2,
-                                                    int(reluctance_df['params_n_s_bot'][index].item()), fmt.InterleavedWindingScheme.HorizontalAlternating)
-
-                    geo.set_winding_windows([winding_window_top, winding_window_bot])
-
-                    geo.create_model(freq=target_and_fix_parameters.fundamental_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
-                    geo.stacked_core_study(number_primary_coil_turns=primary_coil_turns, time_current_vectors=time_current_vectors,
-                                           plot_waveforms=show_visual_outputs, fft_filter_value_factor=0.05)
-
-                    result_dict = geo.read_log()
-
-                    reluctance_df.at[index, 'n'] = result_dict['inductances']['n_conc']
-                    reluctance_df.at[index, 'l_s_conc'] = result_dict['inductances']['l_s_conc']
-                    reluctance_df.at[index, 'l_h_conc'] = result_dict['inductances']['l_h_conc']
-                    reluctance_df.at[index, 'p_loss_winding_1'] = result_dict['total_losses']['winding1']['total']
-                    reluctance_df.at[index, 'p_loss_winding_2'] = result_dict['total_losses']['winding2']['total']
-                    reluctance_df.at[index, 'eddy_core'] = result_dict['total_losses']['eddy_core']
-                    reluctance_df.at[index, 'core'] = result_dict['total_losses']['core']
+                    reluctance_df.at[index, 'n'] = fem_output.n_conc
+                    reluctance_df.at[index, 'l_s_conc'] = fem_output.l_s_conc
+                    reluctance_df.at[index, 'l_h_conc'] = fem_output.l_h_conc
+                    reluctance_df.at[index, 'p_loss_winding_1'] = fem_output.p_loss_winding_1
+                    reluctance_df.at[index, 'p_loss_winding_2'] = fem_output.p_loss_winding_2
+                    reluctance_df.at[index, 'eddy_core'] = fem_output.eddy_core
+                    reluctance_df.at[index, 'core'] = fem_output.core
 
                     # copy result files to result-file folder
                     source_json_file = os.path.join(
@@ -695,3 +654,98 @@ class StackedTransformerOptimization:
                     reluctance_df.at[index, 'eddy_core'] = None
                     reluctance_df.at[index, 'core'] = None
             return reluctance_df
+
+        @staticmethod
+        def single_fem_simulation(fem_input: FemInput, show_visual_outputs: bool = False):
+            """
+            Perform a single FEM simulation.
+
+            :param fem_input: FEM input DTO
+            :type fem_input: FemInput
+            :param show_visual_outputs: True to show visual outputs
+            :type show_visual_outputs: bool
+            :return: FEM output DTO
+            :rtype: FemOutput
+            """
+            time_current_vectors = np.array([fem_input.time_current_1_vec, fem_input.time_current_2_vec])
+
+            # 1. chose simulation type
+            geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
+                                        working_directory=fem_input.working_directory, verbosity=fmt.Verbosity.Silent)
+
+            # 2. set core parameters
+            core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=fem_input.core_inner_diameter,
+                                                             window_w=fem_input.window_w,
+                                                             window_h_top=fem_input.window_h_top,
+                                                             window_h_bot=fem_input.window_h_bot)
+            core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions,
+                            material=fem_input.material_name, temperature=fem_input.temperature,
+                            frequency=fem_input.fundamental_frequency,
+                            permeability_datasource=fem_input.material_data_sources.permeability_datasource,
+                            permeability_datatype=fem_input.material_data_sources.permeability_datatype,
+                            permeability_measurement_setup=fem_input.material_data_sources.permeability_measurement_setup,
+                            permittivity_datasource=fem_input.material_data_sources.permittivity_datasource,
+                            permittivity_datatype=fem_input.material_data_sources.permittivity_datatype,
+                            permittivity_measurement_setup=fem_input.material_data_sources.permittivity_measurement_setup,
+                            mdb_verbosity=fmt.Verbosity.Silent
+                            )
+            geo.set_core(core)
+
+            # 3. set air gap parameters
+            air_gaps = fmt.AirGaps(fmt.AirGapMethod.Stacked, core)
+            air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, fem_input.air_gap_length_top,
+                                 stacked_position=fmt.StackedPosition.Top)
+            air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, fem_input.air_gap_length_bot,
+                                 stacked_position=fmt.StackedPosition.Bot)
+            geo.set_air_gaps(air_gaps)
+
+            # 4. set insulations
+            insulation = fmt.Insulation(flag_insulation=False)
+            insulation.add_core_insulations(fem_input.insulations.iso_window_bot_core_top, fem_input.insulations.iso_window_bot_core_bot,
+                                            fem_input.insulations.iso_window_bot_core_left, fem_input.insulations.iso_window_bot_core_right)
+            insulation.add_winding_insulations([[fem_input.insulations.iso_primary_to_primary, fem_input.insulations.iso_secondary_to_secondary],
+                                                [fem_input.insulations.iso_secondary_to_secondary, fem_input.insulations.iso_primary_to_primary]])
+            geo.set_insulation(insulation)
+
+            winding_window_top, winding_window_bot = fmt.create_stacked_winding_windows(core, insulation)
+
+            vww_top = winding_window_top.split_window(fmt.WindingWindowSplit.NoSplit)
+            vww_bot = winding_window_bot.split_window(fmt.WindingWindowSplit.NoSplit)
+
+            # 6. set conductor parameters
+            winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+            primary_litz_wire = fmt.litz_database()[fem_input.primary_litz_wire_name]
+            winding1.set_litz_round_conductor(primary_litz_wire['conductor_radii'], primary_litz_wire['strands_numbers'],
+                                              primary_litz_wire['strand_radii'], None, fmt.ConductorArrangement.Square)
+
+            winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+            secondary_litz_wire = fmt.litz_database()[fem_input.secondary_litz_wire_name]
+            winding2.set_litz_round_conductor(secondary_litz_wire['conductor_radii'], secondary_litz_wire['strands_numbers'],
+                                              secondary_litz_wire['strand_radii'], None, fmt.ConductorArrangement.Square)
+
+            primary_coil_turns = fem_input.turns_primary_top
+
+            # 7. add conductor to vww and add winding window to MagneticComponent
+            vww_top.set_interleaved_winding(winding1, primary_coil_turns, winding2, 0, fmt.InterleavedWindingScheme.HorizontalAlternating)
+            vww_bot.set_interleaved_winding(winding1, fem_input.turns_primary_bot, winding2,
+                                            fem_input.turns_secondary_bot, fmt.InterleavedWindingScheme.HorizontalAlternating)
+
+            geo.set_winding_windows([winding_window_top, winding_window_bot])
+
+            geo.create_model(freq=fem_input.fundamental_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
+            geo.stacked_core_study(number_primary_coil_turns=primary_coil_turns, time_current_vectors=time_current_vectors,
+                                   plot_waveforms=show_visual_outputs, fft_filter_value_factor=0.05)
+
+            result_dict = geo.read_log()
+
+            fem_output = FemOutput(
+                n_conc=result_dict['inductances']['n_conc'],
+                l_s_conc=result_dict['inductances']['l_s_conc'],
+                l_h_conc=result_dict['inductances']['l_h_conc'],
+                p_loss_winding_1=result_dict['total_losses']['winding1']['total'],
+                p_loss_winding_2=result_dict['total_losses']['winding2']['total'],
+                eddy_core=result_dict['total_losses']['eddy_core'],
+                core=result_dict['total_losses']['core']
+            )
+
+            return fem_output

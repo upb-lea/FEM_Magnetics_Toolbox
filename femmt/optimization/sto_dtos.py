@@ -62,6 +62,8 @@ class StoInsulation:
 
 @dataclass
 class StackedTransformerMaterialDataSources:
+    """Data sources for the FEM simulation."""
+
     permeability_datasource: MaterialDataSource
     permeability_datatype: MeasurementDataType
     permeability_measurement_setup: MeasurementSetup
@@ -116,3 +118,46 @@ class StoSingleInputConfig:
     # data sources
     material_data_sources: StackedTransformerMaterialDataSources
 
+@dataclass
+class FemInput:
+    """Input DTO for a FEM simulation within the stacked transformer optimization."""
+
+    # general parameters
+    working_directory: str
+    simulation_name: str
+
+    # material and geometry parameters
+    material_name: str
+    primary_litz_wire_name: str
+    secondary_litz_wire_name: str
+    core_inner_diameter: float
+    window_w: float
+    window_h_top: float
+    window_h_bot: float
+    air_gap_length_top: float
+    air_gap_length_bot: float
+    turns_primary_top: float
+    turns_primary_bot: float
+    turns_secondary_bot: float
+    insulations: StoInsulation
+
+    # data sources
+    material_data_sources: StackedTransformerMaterialDataSources
+
+    # operating point conditions
+    temperature: float
+    fundamental_frequency: float
+    time_current_1_vec: np.array
+    time_current_2_vec: np.array
+
+@dataclass
+class FemOutput:
+    """Output DTO for a FEM simulation within the stacked transformer optimization."""
+
+    n_conc: float
+    l_s_conc: float
+    l_h_conc: float
+    p_loss_winding_1: float
+    p_loss_winding_2: float
+    eddy_core: float
+    core: float
