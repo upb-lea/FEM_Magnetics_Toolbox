@@ -843,7 +843,7 @@ class InductorOptimization:
 
                 fem_input = FemInput(
                     # general parameters
-                    working_directory=working_directory,  #local_config.inductor_optimization_directory,
+                    working_directory=working_directory,
                     simulation_name='xx',
 
                     # material and geometry parameters
