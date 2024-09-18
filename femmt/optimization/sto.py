@@ -584,75 +584,78 @@ class StackedTransformerOptimization:
                 target_and_fix_parameters.working_directories.fem_working_directory, f"process_{process_number}")
 
             # pd.read_csv(current_waveforms_csv_file, header=0, index_col=0, delimiter=';')
-            df_fem = pd.DataFrame()
 
             for index, _ in reluctance_df.iterrows():
 
-                try:
-                    if reluctance_df["params_core_name"] is not None:
-                        core_inner_diameter = reluctance_df["user_attrs_core_inner_diameter"][index].item()
-                        window_w = reluctance_df["user_attrs_window_w"][index].item()
-                        window_h_bot = reluctance_df["user_attrs_window_h_bot"][index].item()
-                    else:
-                        core_inner_diameter = reluctance_df["params_core_inner_diameter"][index].item()
-                        window_w = reluctance_df["params_window_w"][index].item()
-                        window_h_bot = reluctance_df["params_window_h_bot"][index].item()
+                destination_json_file = os.path.join(
+                    target_and_fix_parameters.working_directories.fem_simulation_results_directory,
+                    f'case_{index}.json')
+                if os.path.exists(destination_json_file):
+                    print(f'case_{index}.json already exists. Skip simulation.')
+                else:
 
-                    fem_input = FemInput(
-                        simulation_name='xx',
-                        working_directory=working_directory,
-                        core_inner_diameter=core_inner_diameter,
-                        window_w=window_w,
-                        window_h_bot=window_h_bot,
-                        window_h_top=reluctance_df['user_attrs_window_h_top'][index].item(),
-                        material_name=reluctance_df["params_material_name"][index],
-                        temperature=config.temperature,
-                        material_data_sources=config.material_data_sources,
-                        air_gap_length_top=reluctance_df["user_attrs_l_top_air_gap"][index].item(),
-                        air_gap_length_bot=reluctance_df["user_attrs_l_bot_air_gap"][index].item(),
-                        insulations=config.insulations,
-                        primary_litz_wire_name=reluctance_df['params_primary_litz_wire'][index],
-                        secondary_litz_wire_name=reluctance_df['params_secondary_litz_wire'][index],
+                    try:
+                        if reluctance_df["params_core_name"] is not None:
+                            core_inner_diameter = reluctance_df["user_attrs_core_inner_diameter"][index].item()
+                            window_w = reluctance_df["user_attrs_window_w"][index].item()
+                            window_h_bot = reluctance_df["user_attrs_window_h_bot"][index].item()
+                        else:
+                            core_inner_diameter = reluctance_df["params_core_inner_diameter"][index].item()
+                            window_w = reluctance_df["params_window_w"][index].item()
+                            window_h_bot = reluctance_df["params_window_h_bot"][index].item()
 
-                        turns_primary_top=reluctance_df['params_n_p_top'][index].item(),
-                        turns_primary_bot=reluctance_df['params_n_p_bot'][index].item(),
-                        turns_secondary_bot=int(reluctance_df['params_n_s_bot'][index].item()),
+                        fem_input = FemInput(
+                            simulation_name='xx',
+                            working_directory=working_directory,
+                            core_inner_diameter=core_inner_diameter,
+                            window_w=window_w,
+                            window_h_bot=window_h_bot,
+                            window_h_top=reluctance_df['user_attrs_window_h_top'][index].item(),
+                            material_name=reluctance_df["params_material_name"][index],
+                            temperature=config.temperature,
+                            material_data_sources=config.material_data_sources,
+                            air_gap_length_top=reluctance_df["user_attrs_l_top_air_gap"][index].item(),
+                            air_gap_length_bot=reluctance_df["user_attrs_l_bot_air_gap"][index].item(),
+                            insulations=config.insulations,
+                            primary_litz_wire_name=reluctance_df['params_primary_litz_wire'][index],
+                            secondary_litz_wire_name=reluctance_df['params_secondary_litz_wire'][index],
 
-                        fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
+                            turns_primary_top=reluctance_df['params_n_p_top'][index].item(),
+                            turns_primary_bot=reluctance_df['params_n_p_bot'][index].item(),
+                            turns_secondary_bot=int(reluctance_df['params_n_s_bot'][index].item()),
 
-                        time_current_1_vec=config.time_current_1_vec,
-                        time_current_2_vec=config.time_current_2_vec,
-                    )
+                            fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
 
-                    fem_output = StackedTransformerOptimization.FemSimulation.single_fem_simulation(fem_input)
+                            time_current_1_vec=config.time_current_1_vec,
+                            time_current_2_vec=config.time_current_2_vec,
+                        )
 
-                    reluctance_df.at[index, 'n'] = fem_output.n_conc
-                    reluctance_df.at[index, 'l_s_conc'] = fem_output.l_s_conc
-                    reluctance_df.at[index, 'l_h_conc'] = fem_output.l_h_conc
-                    reluctance_df.at[index, 'p_loss_winding_1'] = fem_output.p_loss_winding_1
-                    reluctance_df.at[index, 'p_loss_winding_2'] = fem_output.p_loss_winding_2
-                    reluctance_df.at[index, 'eddy_core'] = fem_output.eddy_core
-                    reluctance_df.at[index, 'core'] = fem_output.core
+                        fem_output = StackedTransformerOptimization.FemSimulation.single_fem_simulation(fem_input)
 
-                    # copy result files to result-file folder
-                    source_json_file = os.path.join(
-                        target_and_fix_parameters.working_directories.fem_working_directory, f'process_{process_number}',
-                        "results", "log_electro_magnetic.json")
-                    destination_json_file = os.path.join(
-                        target_and_fix_parameters.working_directories.fem_simulation_results_directory,
-                        f'case_{index}.json')
+                        reluctance_df.at[index, 'n'] = fem_output.n_conc
+                        reluctance_df.at[index, 'l_s_conc'] = fem_output.l_s_conc
+                        reluctance_df.at[index, 'l_h_conc'] = fem_output.l_h_conc
+                        reluctance_df.at[index, 'p_loss_winding_1'] = fem_output.p_loss_winding_1
+                        reluctance_df.at[index, 'p_loss_winding_2'] = fem_output.p_loss_winding_2
+                        reluctance_df.at[index, 'eddy_core'] = fem_output.eddy_core
+                        reluctance_df.at[index, 'core'] = fem_output.core
 
-                    shutil.copy(source_json_file, destination_json_file)
+                        # copy result files to result-file folder
+                        source_json_file = os.path.join(
+                            target_and_fix_parameters.working_directories.fem_working_directory, f'process_{process_number}',
+                            "results", "log_electro_magnetic.json")
 
-                except Exception as e:
-                    print(e)
-                    reluctance_df.at[index, 'n'] = None
-                    reluctance_df.at[index, 'l_s_conc'] = None
-                    reluctance_df.at[index, 'l_h_conc'] = None
-                    reluctance_df.at[index, 'p_loss_winding_1'] = None
-                    reluctance_df.at[index, 'p_loss_winding_2'] = None
-                    reluctance_df.at[index, 'eddy_core'] = None
-                    reluctance_df.at[index, 'core'] = None
+                        shutil.copy(source_json_file, destination_json_file)
+
+                    except Exception as e:
+                        print(e)
+                        reluctance_df.at[index, 'n'] = None
+                        reluctance_df.at[index, 'l_s_conc'] = None
+                        reluctance_df.at[index, 'l_h_conc'] = None
+                        reluctance_df.at[index, 'p_loss_winding_1'] = None
+                        reluctance_df.at[index, 'p_loss_winding_2'] = None
+                        reluctance_df.at[index, 'eddy_core'] = None
+                        reluctance_df.at[index, 'core'] = None
             return reluctance_df
 
         @staticmethod
