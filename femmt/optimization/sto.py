@@ -610,12 +610,13 @@ class StackedTransformerOptimization:
                     core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions,
                                     material=reluctance_df["params_material_name"][index], temperature=config.temperature,
                                     frequency=target_and_fix_parameters.fundamental_frequency,
-                                    permeability_datasource=config.permeability_datasource,
-                                    permeability_datatype=config.permeability_datatype,
-                                    permeability_measurement_setup=config.permeability_measurement_setup,
-                                    permittivity_datasource=config.permittivity_datasource,
-                                    permittivity_datatype=config.permittivity_datatype,
-                                    permittivity_measurement_setup=config.permittivity_measurement_setup, mdb_verbosity=fmt.Verbosity.Silent
+                                    permeability_datasource=config.material_data_sources.permeability_datasource,
+                                    permeability_datatype=config.material_data_sources.permeability_datatype,
+                                    permeability_measurement_setup=config.material_data_sources.permeability_measurement_setup,
+                                    permittivity_datasource=config.material_data_sources.permittivity_datasource,
+                                    permittivity_datatype=config.material_data_sources.permittivity_datatype,
+                                    permittivity_measurement_setup=config.material_data_sources.permittivity_measurement_setup,
+                                    mdb_verbosity=fmt.Verbosity.Silent
                                     )
                     geo.set_core(core)
 

@@ -60,6 +60,14 @@ class StoInsulation:
     iso_secondary_to_secondary: float
     iso_primary_to_secondary: float
 
+@dataclass
+class StackedTransformerMaterialDataSources:
+    permeability_datasource: MaterialDataSource
+    permeability_datatype: MeasurementDataType
+    permeability_measurement_setup: MeasurementSetup
+    permittivity_datasource: MaterialDataSource
+    permittivity_datatype: MeasurementDataType
+    permittivity_measurement_setup: MeasurementSetup
 
 @dataclass
 class StoSingleInputConfig:
@@ -106,9 +114,5 @@ class StoSingleInputConfig:
     mesh_accuracy: float
 
     # data sources
-    permeability_datasource: MaterialDataSource
-    permeability_datatype: MeasurementDataType
-    permeability_measurement_setup: MeasurementSetup
-    permittivity_datasource: MaterialDataSource
-    permittivity_datatype: MeasurementDataType
-    permittivity_measurement_setup: MeasurementSetup
+    material_data_sources: StackedTransformerMaterialDataSources
+
