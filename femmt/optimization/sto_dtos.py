@@ -7,6 +7,7 @@ from typing import List, Optional
 import numpy as np
 from materialdatabase.dtos import MaterialCurve
 from femmt.enumerations import *
+from magnethub.loss import LossModel
 
 @dataclass
 class WorkingDirectories:
@@ -34,12 +35,22 @@ class StoTargetAndFixedParameters:
     i_phase_deg_1: float
     i_phase_deg_2: float
     material_dto_curve_list: List[MaterialCurve]
+    magnet_hub_model_list: List[LossModel]
     time_extracted_vec: List
     current_extracted_1_vec: List
     current_extracted_2_vec: List
     fundamental_frequency: float
     target_inductance_matrix: np.ndarray
     working_directories: WorkingDirectories
+    # winding 1
+    fft_frequency_list_1: List[float]
+    fft_amplitude_list_1: List[float]
+    fft_phases_list_1: List[float]
+
+    # winding 2
+    fft_frequency_list_2: List[float]
+    fft_amplitude_list_2: List[float]
+    fft_phases_list_2: List[float]
 
 @dataclass
 class StoInsulation:
@@ -161,3 +172,65 @@ class FemOutput:
     p_loss_winding_2: float
     eddy_core: float
     core: float
+    volume: float
+
+@dataclass
+class ReluctanceModelInput:
+    """Input DTO for reluctance model simulation within the inductor optimization."""
+
+    target_inductance_matrix: np.array
+    core_inner_diameter: float
+    window_w: float
+    window_h_bot: float
+    window_h_top: float
+    turns_1_top: int
+    turns_1_bot: int
+    turns_2_bot: int
+    litz_wire_name_1: str
+    litz_wire_diameter_1: float
+    litz_wire_name_2: str
+    litz_wire_diameter_2: float
+
+    insulations: StoInsulation
+    material_dto: MaterialCurve
+    magnet_material_model: LossModel
+
+    temperature: float
+    time_extracted_vec: List
+    current_extracted_vec_1: List
+    current_extracted_vec_2: List
+    fundamental_frequency: float
+
+    i_rms_1: float
+    i_rms_2: float
+
+    primary_litz_dict: dict
+    secondary_litz_dict: dict
+
+    # # winding 1
+    # fft_frequency_list_1: List[float]
+    # fft_amplitude_list_1: List[float]
+    # fft_phases_list_1: List[float]
+    #
+    # # winding 2
+    # fft_frequency_list_2: List[float]
+    # fft_amplitude_list_2: List[float]
+    # fft_phases_list_2: List[float]
+
+@dataclass
+class ReluctanceModelOutput:
+    """output DTO for reluctance model simulation within the inductor optimization."""
+
+    # set additional attributes
+    p_hyst: float
+    p_hyst_top: float
+    p_hyst_bot: float
+    p_hyst_middle: float
+    b_max_top: float
+    b_max_bot: float
+    b_max_middle: float
+    winding_losses: float
+    l_top_air_gap: float
+    l_bot_air_gap: float
+    volume: float
+    p_loss: float
