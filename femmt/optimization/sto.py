@@ -25,6 +25,7 @@ from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
 import magnethub as mh
 import pandas as pd
+import tqdm
 
 class StackedTransformerOptimization:
     """Perform optimizations for the stacked transformer."""
@@ -483,7 +484,7 @@ class StackedTransformerOptimization:
                                       storage=f"sqlite:///{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.sqlite3")
 
             fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0], t.values[1]), target_names=["volume in m³", "loss in W"])
-            fig.update_layout(title=f"{config.stacked_transformer_study_name}")
+            fig.update_layout(title=f"{config.stacked_transformer_study_name} <br><sup>{config.stacked_transformer_optimization_directory}</sup>")
             fig.write_html(f"{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}"
                            f"_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
             fig.show()
@@ -700,8 +701,7 @@ class StackedTransformerOptimization:
                 target_and_fix_parameters.working_directories.fem_working_directory, f"process_{process_number}")
 
             # pd.read_csv(current_waveforms_csv_file, header=0, index_col=0, delimiter=';')
-
-            for index, _ in reluctance_df.iterrows():
+            for index, _ in tqdm.tqdm(reluctance_df.iterrows(), total=reluctance_df.shape[0]):
 
                 destination_json_file = os.path.join(
                     target_and_fix_parameters.working_directories.fem_simulation_results_directory,
@@ -1044,8 +1044,10 @@ class StackedTransformerOptimization:
 
                 print(f"P_winding_both reluctance: {reluctance_output.winding_losses}")
                 print(f"P_winding_both FEM: {fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2}")
-                print(f"P_winding_both derivation: {(fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2 - reluctance_output.winding_losses) / \
-                                                    (fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2) * 100}")
+                winding_derivation = ((fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2 - reluctance_output.winding_losses) / \
+                                      (fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2) * 100)
+                print(f"P_winding_both derivation: "
+                      f"{winding_derivation}")
                 print(f"P_hyst reluctance: {reluctance_output.p_hyst}")
                 print(f"P_hyst FEM: {fem_output.core}")
                 print(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.core) / reluctance_output.p_hyst * 100}")

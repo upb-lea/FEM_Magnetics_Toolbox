@@ -16,6 +16,7 @@ import magnethub as mh
 import pandas as pd
 from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
+import tqdm
 
 # onw libraries
 from femmt.optimization.io_dtos import (InductorOptimizationDTO, InductorOptimizationTargetAndFixedParameters, FemInput,
@@ -358,7 +359,7 @@ class InductorOptimization:
                                       storage=f"sqlite:///{config.inductor_optimization_directory}/{config.inductor_study_name}.sqlite3")
 
             fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0], t.values[1]), target_names=["volume in m³", "loss in W"])
-            fig.update_layout(title=f"{config.inductor_study_name}")
+            fig.update_layout(title=f"{config.inductor_study_name} <br><sup>{config.inductor_optimization_directory}</sup>")
             fig.write_html(f"{config.inductor_optimization_directory}/{config.inductor_study_name}"
                            f"_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
             fig.show()
@@ -574,7 +575,7 @@ class InductorOptimization:
             fem_working_directory = os.path.join(
                 target_and_fix_parameters.working_directories.fem_working_directory, f"process_{process_number}")
 
-            for index, _ in reluctance_df.iterrows():
+            for index, _ in tqdm.tqdm(reluctance_df.iterrows(), total=reluctance_df.shape[0]):
 
                 destination_json_file = os.path.join(
                     target_and_fix_parameters.working_directories.fem_simulation_results_directory,
@@ -647,8 +648,6 @@ class InductorOptimization:
             :rtype: pd.DataFrame
             """
             files_in_folder = [f for f in os.listdir(fem_results_folder_path) if os.path.isfile(os.path.join(fem_results_folder_path, f))]
-            print(files_in_folder)
-            print(len(files_in_folder))
 
             # add new columns to the dataframe, init values with None
             reluctance_df['fem_inductance'] = None
@@ -804,7 +803,7 @@ class InductorOptimization:
             return fem_output
 
         @staticmethod
-        def full_simulation(df_geometry: pd.DataFrame, current_waveform: List, inductor_config_filepath: str, process_number: int = 1):
+        def full_simulation(df_geometry: pd.DataFrame, current_waveform: List, inductor_config_filepath: str, process_number: int = 1) -> tuple:
             """
             Reluctance model (hysteresis losses) and FEM simulation (winding losses and eddy current losses) for geometries from df_geometry.
 
@@ -816,6 +815,8 @@ class InductorOptimization:
             :type inductor_config_filepath: str
             :param process_number: process number to run the simulation on
             :type process_number: int
+            :return: volume, loss
+            :rtype: tuple
             """
             for index, _ in df_geometry.iterrows():
 
