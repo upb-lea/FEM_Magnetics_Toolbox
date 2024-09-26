@@ -706,6 +706,7 @@ class StackedTransformerOptimization:
                 destination_json_file = os.path.join(
                     target_and_fix_parameters.working_directories.fem_simulation_results_directory,
                     f'case_{index}.json')
+
                 if os.path.exists(destination_json_file):
                     print(f'case_{index}.json already exists. Skip simulation.')
                 else:
@@ -764,7 +765,7 @@ class StackedTransformerOptimization:
                         shutil.copy(source_json_file, destination_json_file)
 
                     except Exception as e:
-                        print(e)
+                        print(f"The following exception was raised: {e}")
                         reluctance_df.at[index, 'n'] = None
                         reluctance_df.at[index, 'l_s_conc'] = None
                         reluctance_df.at[index, 'l_h_conc'] = None
@@ -775,7 +776,7 @@ class StackedTransformerOptimization:
             return reluctance_df
 
         @staticmethod
-        def single_fem_simulation(fem_input: FemInput, show_visual_outputs: bool = False):
+        def single_fem_simulation(fem_input: FemInput, show_visual_outputs: bool = False, wire_loss_only: bool = False):
             """
             Perform a single FEM simulation.
 
@@ -783,6 +784,8 @@ class StackedTransformerOptimization:
             :type fem_input: FemInput
             :param show_visual_outputs: True to show visual outputs
             :type show_visual_outputs: bool
+            :param wire_loss_only: True: only wire loss and inductance calculation, False: Full study (wire loss, hyst. losses, inductance calculation)
+            :type wire_loss_only: bool
             :return: FEM output DTO
             :rtype: FemOutput
             """
@@ -852,21 +855,49 @@ class StackedTransformerOptimization:
             geo.set_winding_windows([winding_window_top, winding_window_bot])
 
             geo.create_model(freq=fem_input.fundamental_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
-            geo.stacked_core_study(number_primary_coil_turns=primary_coil_turns, time_current_vectors=time_current_vectors,
-                                   plot_waveforms=show_visual_outputs, fft_filter_value_factor=0.05)
 
-            result_dict = geo.read_log()
+            if wire_loss_only:
+                hyst_frequency, _, _ = ff.hysteresis_current_excitation(time_current_vectors)
+                inductance_dict = geo.get_inductances(I0=1, skin_mesh_factor=1, op_frequency=hyst_frequency, silent=True)
 
-            fem_output = FemOutput(
-                n_conc=result_dict['inductances']['n_conc'],
-                l_s_conc=result_dict['inductances']['l_s_conc'],
-                l_h_conc=result_dict['inductances']['l_h_conc'],
-                p_loss_winding_1=result_dict['total_losses']['winding1']['total'],
-                p_loss_winding_2=result_dict['total_losses']['winding2']['total'],
-                eddy_core=result_dict['total_losses']['eddy_core'],
-                core=result_dict['total_losses']['core'],
-                volume=result_dict["misc"]["core_2daxi_total_volume"],
-            )
+                study_excitation = geo.stacked_core_study_excitation(time_current_vectors, plot_waveforms=False,
+                                                                     fft_filter_value_factor=0.1,
+                                                                     transfer_ratio_n=inductance_dict["n_conc"])
+
+                geo.excitation_sweep(study_excitation["linear_losses"]["frequencies"],
+                                     study_excitation["linear_losses"]["current_amplitudes"],
+                                     study_excitation["linear_losses"]["current_phases_deg"],
+                                     inductance_dict=inductance_dict)
+
+                result_dict = geo.read_log()
+
+                fem_output = FemOutput(
+                    n_conc=result_dict['inductances']['n_conc'],
+                    l_s_conc=result_dict['inductances']['l_s_conc'],
+                    l_h_conc=result_dict['inductances']['l_h_conc'],
+                    p_loss_winding_1=result_dict['total_losses']['winding1']['total'],
+                    p_loss_winding_2=result_dict['total_losses']['winding2']['total'],
+                    eddy_core=result_dict['total_losses']['eddy_core'],
+                    core=0,
+                    volume=result_dict["misc"]["core_2daxi_total_volume"],
+                )
+
+            else:
+                geo.stacked_core_study(number_primary_coil_turns=primary_coil_turns, time_current_vectors=time_current_vectors,
+                                       plot_waveforms=show_visual_outputs, fft_filter_value_factor=0.1)
+
+                result_dict = geo.read_log()
+
+                fem_output = FemOutput(
+                    n_conc=result_dict['inductances']['n_conc'],
+                    l_s_conc=result_dict['inductances']['l_s_conc'],
+                    l_h_conc=result_dict['inductances']['l_h_conc'],
+                    p_loss_winding_1=result_dict['total_losses']['winding1']['total'],
+                    p_loss_winding_2=result_dict['total_losses']['winding2']['total'],
+                    eddy_core=result_dict['total_losses']['eddy_core'],
+                    core=result_dict['total_losses']['core'],
+                    volume=result_dict["misc"]["core_2daxi_total_volume"],
+                )
 
             return fem_output
 
@@ -1030,7 +1061,7 @@ class StackedTransformerOptimization:
                 reluctance_output: ReluctanceModelOutput = StackedTransformerOptimization.ReluctanceModel.single_reluctance_model_simulation(
                     reluctance_model_input)
 
-                p_core = reluctance_output.p_hyst + fem_output.eddy_core + fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2
+                p_total = reluctance_output.p_hyst + fem_output.eddy_core + fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2
 
                 print(f"Inductance l_h reluctance: {local_config.l_h_target}")
                 print(f"Inductance l_h FEM: {fem_output.l_h_conc}")
@@ -1052,4 +1083,4 @@ class StackedTransformerOptimization:
                 print(f"P_hyst FEM: {fem_output.core}")
                 print(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.core) / reluctance_output.p_hyst * 100}")
 
-                return reluctance_output.volume, p_core
+                return reluctance_output.volume, p_total
