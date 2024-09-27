@@ -145,6 +145,7 @@ class ReluctanceModelOutput:
     """output DTO for reluctance model simulation within the inductor optimization."""
 
     volume: float
+    area_to_heat_sink: float
     p_loss_total: float
     p_winding: float
     p_hyst: float

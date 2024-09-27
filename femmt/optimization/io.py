@@ -238,6 +238,7 @@ class InductorOptimization:
             volume_winding_window = ((reluctance_input.core_inner_diameter / 2 + reluctance_input.window_w) ** 2 * np.pi - \
                                      (reluctance_input.core_inner_diameter / 2) ** 2 * np.pi) * reluctance_input.window_h
             volume_core = volume - volume_winding_window
+            area_to_heat_sink = r_outer ** 2 * np.pi
             p_core = volume_core * p_density
 
             # winding loss calculation
@@ -270,6 +271,7 @@ class InductorOptimization:
             reluctance_model_output = ReluctanceModelOutput(
                 p_loss_total=p_loss,
                 volume=volume,
+                area_to_heat_sink=area_to_heat_sink,
                 p_winding=p_winding,
                 p_hyst=p_core,
                 l_air_gap=l_air_gap,
@@ -921,4 +923,4 @@ class InductorOptimization:
                 print(f"P_hyst FEM: {fem_output.fem_core_total}")
                 print(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.fem_core_total) / reluctance_output.p_hyst * 100}")
 
-                return reluctance_output.volume, p_core
+                return reluctance_output.volume, p_core, reluctance_output.area_to_heat_sink

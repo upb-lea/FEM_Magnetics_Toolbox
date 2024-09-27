@@ -400,6 +400,8 @@ class StackedTransformerOptimization:
 
             p_loss = p_hyst + winding_losses
 
+            area_to_heat_sink = r_outer ** 2 * np.pi
+
             reluctance_output = ReluctanceModelOutput(
                 # set additional attributes
                 p_hyst=p_hyst,
@@ -413,6 +415,7 @@ class StackedTransformerOptimization:
                 l_top_air_gap=l_top_air_gap,
                 l_bot_air_gap=l_bot_air_gap,
                 volume=volume,
+                area_to_heat_sink=area_to_heat_sink,
                 p_loss=p_loss,
             )
 
@@ -1083,4 +1086,4 @@ class StackedTransformerOptimization:
                 print(f"P_hyst FEM: {fem_output.core}")
                 print(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.core) / reluctance_output.p_hyst * 100}")
 
-                return reluctance_output.volume, p_total
+                return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink

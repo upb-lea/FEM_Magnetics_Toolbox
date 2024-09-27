@@ -233,4 +233,5 @@ class ReluctanceModelOutput:
     l_top_air_gap: float
     l_bot_air_gap: float
     volume: float
+    area_to_heat_sink: float
     p_loss: float
