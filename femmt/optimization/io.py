@@ -500,14 +500,14 @@ class InductorOptimization:
             """
             Remove designs with too high losses compared to the minimum losses.
 
-            :param df: list of valid DTOs
-            :type df: List[ItoSingleResultFile]
+            :param df: pandas dataframe with study results
+            :type df: pd.DataFrame
             :param factor_min_dc_losses: filter factor for the minimum dc losses
             :type factor_min_dc_losses: float
             :param factor_max_dc_losses: dc_max_loss = factor_max_dc_losses * min_available_dc_losses_in_pareto_front
             :type factor_max_dc_losses: float
-            :returns: list with removed objects (too small air gaps)
-            :rtype: List[ItoSingleResultFile]
+            :returns: pandas dataframe with Pareto front near points
+            :rtype: pd.DataFrame
             """
             # figure out pareto front
             # pareto_volume_list, pareto_core_hyst_list, pareto_dto_list = self.pareto_front(volume_list, core_hyst_loss_list, valid_design_list)
