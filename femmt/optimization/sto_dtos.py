@@ -208,14 +208,14 @@ class ReluctanceModelInput:
     secondary_litz_dict: dict
 
     # # winding 1
-    # fft_frequency_list_1: List[float]
-    # fft_amplitude_list_1: List[float]
-    # fft_phases_list_1: List[float]
+    fft_frequency_list_1: List[float]
+    fft_amplitude_list_1: List[float]
+    fft_phases_list_1: List[float]
     #
     # # winding 2
-    # fft_frequency_list_2: List[float]
-    # fft_amplitude_list_2: List[float]
-    # fft_phases_list_2: List[float]
+    fft_frequency_list_2: List[float]
+    fft_amplitude_list_2: List[float]
+    fft_phases_list_2: List[float]
 
 @dataclass
 class ReluctanceModelOutput:
@@ -229,7 +229,8 @@ class ReluctanceModelOutput:
     b_max_top: float
     b_max_bot: float
     b_max_middle: float
-    winding_losses: float
+    winding_1_loss: float
+    winding_2_loss: float
     l_top_air_gap: float
     l_bot_air_gap: float
     volume: float

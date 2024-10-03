@@ -258,6 +258,15 @@ class StackedTransformerOptimization:
                 i_rms_2=target_and_fixed_parameters.i_rms_2,
                 primary_litz_dict=primary_litz_dict,
                 secondary_litz_dict=secondary_litz_dict,
+
+                # winding 1
+                fft_frequency_list_1=target_and_fixed_parameters.fft_frequency_list_1,
+                fft_amplitude_list_1=target_and_fixed_parameters.fft_amplitude_list_1,
+                fft_phases_list_1=target_and_fixed_parameters.fft_phases_list_1,
+                # winding 2
+                fft_frequency_list_2=target_and_fixed_parameters.fft_frequency_list_2,
+                fft_amplitude_list_2=target_and_fixed_parameters.fft_amplitude_list_2,
+                fft_phases_list_2=target_and_fixed_parameters.fft_phases_list_2,
             )
             try:
                 reluctance_output = StackedTransformerOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_intput)
@@ -274,7 +283,7 @@ class StackedTransformerOptimization:
             trial.set_user_attr('b_max_bot', reluctance_output.b_max_bot)
             trial.set_user_attr('b_max_middle', reluctance_output.b_max_middle)
             trial.set_user_attr('window_h_top', window_h_top)
-            trial.set_user_attr('winding_losses', reluctance_output.winding_losses)
+            trial.set_user_attr('winding_losses', reluctance_output.winding_1_loss + reluctance_output.winding_2_loss)
             trial.set_user_attr('l_top_air_gap', reluctance_output.l_top_air_gap)
             trial.set_user_attr('l_bot_air_gap', reluctance_output.l_bot_air_gap)
 
@@ -379,14 +388,12 @@ class StackedTransformerOptimization:
             p_hyst = p_top + p_bot + p_middle
 
             # calculate winding losses using a proximity factor
-            proximity_factor_assumption = 1.3
             primary_effective_conductive_cross_section = (
                 reluctance_input.primary_litz_dict["strands_numbers"] * reluctance_input.primary_litz_dict["strand_radii"] ** 2 * np.pi)
             primary_effective_conductive_radius = np.sqrt(primary_effective_conductive_cross_section / np.pi)
             primary_resistance = fr.resistance_solid_wire(
                 reluctance_input.core_inner_diameter, reluctance_input.window_w, reluctance_input.turns_1_top + reluctance_input.turns_1_bot,
                 primary_effective_conductive_radius, material='Copper')
-            primary_dc_loss = primary_resistance * reluctance_input.i_rms_1 ** 2
 
             secondary_effective_conductive_cross_section = (
                 reluctance_input.secondary_litz_dict["strands_numbers"] * reluctance_input.secondary_litz_dict["strand_radii"] ** 2 * np.pi)
@@ -394,11 +401,39 @@ class StackedTransformerOptimization:
             secondary_resistance = fr.resistance_solid_wire(
                 reluctance_input.core_inner_diameter, reluctance_input.window_w, reluctance_input.turns_2_bot, secondary_effective_conductive_radius,
                 material='Copper')
-            secondary_dc_loss = secondary_resistance * reluctance_input.i_rms_2 ** 2
 
-            winding_losses = proximity_factor_assumption * (primary_dc_loss + secondary_dc_loss)
+            p_winding_1_top = 0
+            p_winding_1_bot = 0
+            for count, fft_frequency in enumerate(reluctance_input.fft_frequency_list_1):
+                # proximity_factor_assumption = fmt.calc_proximity_factor_air_gap(
+                #     litz_wire_name=litz_wire_name, number_turns=turns, r_1=config.insulations.core_left,
+                #     frequency=fft_frequency, winding_area=winding_area,
+                #     litz_wire_material_name='Copper', temperature=config.temperature)
 
-            p_loss = p_hyst + winding_losses
+                proximity_factor_assumption_1_top = fmt.calc_proximity_factor(
+                    litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=reluctance_input.turns_1_top, window_h=reluctance_input.window_h_top,
+                    iso_core_top=reluctance_input.insulations.iso_window_top_core_top, iso_core_bot=reluctance_input.insulations.iso_window_top_core_bot,
+                    frequency=fft_frequency, litz_wire_material_name='Copper', temperature=reluctance_input.temperature)
+
+                p_winding_1_top += proximity_factor_assumption_1_top * primary_resistance * reluctance_input.fft_amplitude_list_1[count] ** 2
+
+                proximity_factor_assumption_1_bot = fmt.calc_proximity_factor(
+                    litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=reluctance_input.turns_1_bot, window_h=reluctance_input.window_h_bot,
+                    iso_core_top=reluctance_input.insulations.iso_window_bot_core_top, iso_core_bot=reluctance_input.insulations.iso_window_bot_core_bot,
+                    frequency=fft_frequency, litz_wire_material_name='Copper', temperature=reluctance_input.temperature)
+
+                p_winding_1_bot += proximity_factor_assumption_1_bot * primary_resistance * reluctance_input.fft_amplitude_list_1[count] ** 2
+
+            p_winding_2 = 0
+            for count, fft_frequency in enumerate(reluctance_input.fft_frequency_list_2):
+                proximity_factor_assumption_2 = fmt.calc_proximity_factor(
+                    litz_wire_name=reluctance_input.litz_wire_name_2, number_turns=reluctance_input.turns_2_bot, window_h=reluctance_input.window_h_bot,
+                    iso_core_top=reluctance_input.insulations.iso_window_bot_core_top, iso_core_bot=reluctance_input.insulations.iso_window_bot_core_bot,
+                    frequency=fft_frequency, litz_wire_material_name='Copper', temperature=reluctance_input.temperature)
+
+                p_winding_2 += proximity_factor_assumption_2 * secondary_resistance * reluctance_input.fft_amplitude_list_2[count] ** 2
+
+            p_loss = p_hyst + p_winding_1_top + p_winding_1_bot + p_winding_2
 
             area_to_heat_sink = r_outer ** 2 * np.pi
 
@@ -411,7 +446,8 @@ class StackedTransformerOptimization:
                 b_max_top=np.max(flux_density_top_interp),
                 b_max_bot=np.max(flux_density_bot_interp),
                 b_max_middle=np.max(flux_density_middle_interp),
-                winding_losses=winding_losses,
+                winding_1_loss=p_winding_1_top,
+                winding_2_loss=p_winding_2,
                 l_top_air_gap=l_top_air_gap,
                 l_bot_air_gap=l_bot_air_gap,
                 volume=volume,
@@ -1059,7 +1095,18 @@ class StackedTransformerOptimization:
                     i_rms_2=target_and_fix_parameters.i_rms_2,
 
                     primary_litz_dict=litz_wire_primary_dict,
-                    secondary_litz_dict=litz_wire_secondary_dict)
+                    secondary_litz_dict=litz_wire_secondary_dict,
+
+                    # winding 1
+                    fft_frequency_list_1=target_and_fix_parameters.fft_frequency_list_1,
+                    fft_amplitude_list_1=target_and_fix_parameters.fft_amplitude_list_1,
+                    fft_phases_list_1=target_and_fix_parameters.fft_phases_list_1,
+
+                    # winding 2
+                    fft_frequency_list_2=target_and_fix_parameters.fft_frequency_list_2,
+                    fft_amplitude_list_2=target_and_fix_parameters.fft_amplitude_list_2,
+                    fft_phases_list_2=target_and_fix_parameters.fft_phases_list_2
+                )
 
                 reluctance_output: ReluctanceModelOutput = StackedTransformerOptimization.ReluctanceModel.single_reluctance_model_simulation(
                     reluctance_model_input)
@@ -1076,9 +1123,10 @@ class StackedTransformerOptimization:
                 print(f"Volume FEM: {fem_output.volume}")
                 print(f"Volume derivation: {(reluctance_output.volume - fem_output.volume) / reluctance_output.volume * 100} %")
 
-                print(f"P_winding_both reluctance: {reluctance_output.winding_losses}")
+                print(f"P_winding_both reluctance: {reluctance_output.winding_1_loss + reluctance_output.winding_2_loss}")
                 print(f"P_winding_both FEM: {fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2}")
-                winding_derivation = ((fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2 - reluctance_output.winding_losses) / \
+                winding_derivation = ((fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2 - \
+                                       (reluctance_output.winding_1_loss + reluctance_output.winding_2_loss)) / \
                                       (fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2) * 100)
                 print(f"P_winding_both derivation: "
                       f"{winding_derivation}")
