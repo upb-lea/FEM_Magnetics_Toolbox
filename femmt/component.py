@@ -156,6 +156,7 @@ class MagneticComponent:
         self.frequency = None
         self.phase_deg = None  # Default is zero, Defined for every conductor
         self.red_freq = None  # [] * self.n_windings  # Defined for every conductor
+        self.max_reduced_frequency = 3.25
         self.delta = None
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3277,9 +3278,9 @@ class MagneticComponent:
             self.femmt_print(f"Cell surface area: {self.windings[winding_number].a_cell} \n"
                              f"Reduced frequency: {self.red_freq[winding_number]}")
 
-            if self.red_freq[winding_number] > 1.25 and self.windings[winding_number].conductor_type == ConductorType.RoundLitz:
+            if self.red_freq[winding_number] > self.max_reduced_frequency and self.windings[winding_number].conductor_type == ConductorType.RoundLitz:
                 # TODO: Allow higher reduced frequencies
-                self.femmt_print("Litz Coefficients only implemented for X<=1.25")
+                self.femmt_print(f"Litz Coefficients only implemented for X<={self.max_reduced_frequency}")
                 raise Warning("Reduced frequency exceeds limit for Litz Coefficients.")
             # Reduced Frequency
             text_file.write(f"Rr_{winding_number + 1} = {self.red_freq[winding_number]};\n")
@@ -4522,7 +4523,7 @@ class MagneticComponent:
         self.onelab_client.runSubClient("myGmsh", gmsh_client + " " + cell_geo + " -2 " + verbose)
 
         modes = [1, 2]  # 1 = "skin", 2 = "proximity"
-        reduced_frequencies = np.linspace(0, 1.25, 6)  # must be even
+        reduced_frequencies = np.linspace(0, self.max_reduced_frequency, int(self.max_reduced_frequency*4)+1)  # must be even
         for mode in modes:
             for rf in reduced_frequencies:
                 # -- Pre-Simulation Settings --
