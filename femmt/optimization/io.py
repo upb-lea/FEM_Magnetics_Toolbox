@@ -830,7 +830,8 @@ class InductorOptimization:
             return fem_output
 
         @staticmethod
-        def full_simulation(df_geometry: pd.DataFrame, current_waveform: List, inductor_config_filepath: str, process_number: int = 1) -> tuple:
+        def full_simulation(df_geometry: pd.DataFrame, current_waveform: List, inductor_config_filepath: str, process_number: int = 1,
+                            print_derivations: bool = False) -> tuple:
             """
             Reluctance model (hysteresis losses) and FEM simulation (winding losses and eddy current losses) for geometries from df_geometry.
 
@@ -935,18 +936,19 @@ class InductorOptimization:
 
                 p_core = reluctance_output.p_hyst + fem_output.fem_eddy_core + fem_output.fem_p_loss_winding
 
-                print(f"Inductance reluctance: {local_config.target_inductance}")
-                print(f"Inductance FEM: {fem_output.fem_inductance}")
-                print(f"Inductance derivation: {(fem_output.fem_inductance - local_config.target_inductance) / local_config.target_inductance * 100} %")
-                print(f"Volume reluctance: {reluctance_output.volume}")
-                print(f"Volume FEM: {fem_output.volume}")
-                print(f"Volume derivation: {(reluctance_output.volume - fem_output.volume) / reluctance_output.volume * 100} %")
-                print(f"P_winding reluctance: {reluctance_output.p_winding}")
-                print(f"P_winding FEM: {fem_output.fem_p_loss_winding}")
-                print(f"P_winding derivation: {(fem_output.fem_p_loss_winding - reluctance_output.p_winding) / fem_output.fem_p_loss_winding * 100}")
-                print(f"P_hyst reluctance: {reluctance_output.p_hyst}")
-                print(f"P_hyst FEM: {fem_output.fem_core_total}")
-                print(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.fem_core_total) / reluctance_output.p_hyst * 100}")
+                if print_derivations:
+                    print(f"Inductance reluctance: {local_config.target_inductance}")
+                    print(f"Inductance FEM: {fem_output.fem_inductance}")
+                    print(f"Inductance derivation: {(fem_output.fem_inductance - local_config.target_inductance) / local_config.target_inductance * 100} %")
+                    print(f"Volume reluctance: {reluctance_output.volume}")
+                    print(f"Volume FEM: {fem_output.volume}")
+                    print(f"Volume derivation: {(reluctance_output.volume - fem_output.volume) / reluctance_output.volume * 100} %")
+                    print(f"P_winding reluctance: {reluctance_output.p_winding}")
+                    print(f"P_winding FEM: {fem_output.fem_p_loss_winding}")
+                    print(f"P_winding derivation: {(fem_output.fem_p_loss_winding - reluctance_output.p_winding) / fem_output.fem_p_loss_winding * 100}")
+                    print(f"P_hyst reluctance: {reluctance_output.p_hyst}")
+                    print(f"P_hyst FEM: {fem_output.fem_core_total}")
+                    print(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.fem_core_total) / reluctance_output.p_hyst * 100}")
 
                 return reluctance_output.volume, p_core, reluctance_output.area_to_heat_sink
 
