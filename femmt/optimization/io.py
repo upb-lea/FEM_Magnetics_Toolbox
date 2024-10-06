@@ -898,8 +898,6 @@ class InductorOptimization:
 
                 fem_output = InductorOptimization.FemSimulation.single_fem_simulation(fem_input, False)
 
-                print(fem_output)
-
                 litz_wire = ff.litz_database()[df_geometry['params_litz_wire_name'][index]]
                 litz_wire_diameter = 2 * litz_wire["conductor_radii"]
 
