@@ -228,7 +228,7 @@ class StackedTransformerOptimization:
 
             # as the window_h_top is adapted to the number of n_p_top, the top windings always fit into the top window.
             if total_area_windings_bot > window_bot_available_area:
-                print("Winding window too small for too many turns.")
+                logging.warning("Winding window too small for too many turns.")
                 return float('nan'), float('nan')
 
             reluctance_model_intput = ReluctanceModelInput(
@@ -271,7 +271,7 @@ class StackedTransformerOptimization:
             try:
                 reluctance_output = StackedTransformerOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_intput)
             except ValueError:
-                print("No fitting air gap length")
+                logging.warning("No fitting air gap length")
                 return float('nan'), float('nan')
 
             # set additional attributes
@@ -533,7 +533,7 @@ class StackedTransformerOptimization:
             # .INFO: all messages (default)
             # .WARNING: fails and warnings
             # .ERROR: only errors
-            # optuna.logging.set_verbosity(optuna.logging.ERROR)
+            optuna.logging.set_verbosity(optuna.logging.ERROR)
 
             func = lambda trial: StackedTransformerOptimization.ReluctanceModel.objective(trial, config, target_and_fixed_parameters)
 

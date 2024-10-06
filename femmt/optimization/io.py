@@ -31,6 +31,51 @@ import materialdatabase as mdb
 class InductorOptimization:
     """Reluctance model and FEM simulation for the inductor optimization."""
 
+    @staticmethod
+    def filter_df(df: pd.DataFrame, x: str = "values_0", y: str = "values_1", factor_min_dc_losses: float = 1.2,
+                  factor_max_dc_losses: float = 10) -> pd.DataFrame:
+        """
+        Remove designs with too high losses compared to the minimum losses.
+
+        :param df: pandas dataframe with study results
+        :type df: pd.DataFrame
+        :param x: x-value name for Pareto plot filtering
+        :type x: str
+        :param y: y-value name for Pareto plot filtering
+        :type y: str
+        :param factor_min_dc_losses: filter factor for the minimum dc losses
+        :type factor_min_dc_losses: float
+        :param factor_max_dc_losses: dc_max_loss = factor_max_dc_losses * min_available_dc_losses_in_pareto_front
+        :type factor_max_dc_losses: float
+        :returns: pandas dataframe with Pareto front near points
+        :rtype: pd.DataFrame
+        """
+        # figure out pareto front
+        # pareto_volume_list, pareto_core_hyst_list, pareto_dto_list = self.pareto_front(volume_list, core_hyst_loss_list, valid_design_list)
+
+        pareto_df: pd.DataFrame = fo.pareto_front_from_df(df)
+
+        vector_to_sort = np.array([pareto_df[x], pareto_df[y]])
+
+        # sorting 2d array by 1st row
+        # https://stackoverflow.com/questions/49374253/sort-a-numpy-2d-array-by-1st-row-maintaining-columns
+        sorted_vector = vector_to_sort[:, vector_to_sort[0].argsort()]
+        x_pareto_vec = sorted_vector[0]
+        y_pareto_vec = sorted_vector[1]
+
+        total_losses_list = df[y][~np.isnan(df[y])].to_numpy()
+
+        min_total_dc_losses = total_losses_list[np.argmin(total_losses_list)]
+        loss_offset = factor_min_dc_losses * min_total_dc_losses
+
+        ref_loss_max = np.interp(df[x], x_pareto_vec, y_pareto_vec) + loss_offset
+        # clip losses to a maximum of the minimum losses
+        ref_loss_max = np.clip(ref_loss_max, a_min=-1, a_max=factor_max_dc_losses * min_total_dc_losses)
+
+        pareto_df_offset = df[df[y] < ref_loss_max]
+
+        return pareto_df_offset
+
     class ReluctanceModel:
         """Reluctance model methods for the optimization."""
 
@@ -143,7 +188,7 @@ class InductorOptimization:
                 (available_height + config.insulations.primary_to_primary) / (litz_wire_diameter + config.insulations.primary_to_primary))
             max_turns = possible_number_turns_per_row * possible_number_turns_per_column
             if max_turns < 1:
-                print("Max. number of turns per window < 1")
+                logging.warning("Max. number of turns per window < 1")
                 return float('nan'), float('nan')
 
             turns = trial.suggest_int('turns', 1, max_turns)
@@ -177,7 +222,7 @@ class InductorOptimization:
             try:
                 reluctance_output: ReluctanceModelOutput = InductorOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_input)
             except ValueError:
-                print("bot air gap: No fitting air gap length")
+                logging.warning("bot air gap: No fitting air gap length")
                 return float('nan'), float('nan')
 
             trial.set_user_attr('p_winding', reluctance_output.p_winding)
@@ -314,7 +359,7 @@ class InductorOptimization:
             # .INFO: all messages (default)
             # .WARNING: fails and warnings
             # .ERROR: only errors
-            # optuna.logging.set_verbosity(optuna.logging.ERROR)
+            optuna.logging.set_verbosity(optuna.logging.ERROR)
 
             # check for differences with the old configuration file
             # config_on_disk_filepath = f"{config.inductor_optimization_directory}/{config.inductor_study_name}.pkl"
@@ -509,31 +554,9 @@ class InductorOptimization:
             :returns: pandas dataframe with Pareto front near points
             :rtype: pd.DataFrame
             """
-            # figure out pareto front
-            # pareto_volume_list, pareto_core_hyst_list, pareto_dto_list = self.pareto_front(volume_list, core_hyst_loss_list, valid_design_list)
-
-            pareto_df: pd.DataFrame = fo.pareto_front_from_df(df)
-
-            vector_to_sort = np.array([pareto_df["values_0"], pareto_df["values_1"]])
-
-            # sorting 2d array by 1st row
-            # https://stackoverflow.com/questions/49374253/sort-a-numpy-2d-array-by-1st-row-maintaining-columns
-            sorted_vector = vector_to_sort[:, vector_to_sort[0].argsort()]
-            x_pareto_vec = sorted_vector[0]
-            y_pareto_vec = sorted_vector[1]
-
-            total_losses_list = df["values_1"][~np.isnan(df['values_1'])].to_numpy()
-
-            min_total_dc_losses = total_losses_list[np.argmin(total_losses_list)]
-            loss_offset = factor_min_dc_losses * min_total_dc_losses
-
-            ref_loss_max = np.interp(df["values_0"], x_pareto_vec, y_pareto_vec) + loss_offset
-            # clip losses to a maximum of the minimum losses
-            ref_loss_max = np.clip(ref_loss_max, a_min=-1, a_max=factor_max_dc_losses * min_total_dc_losses)
-
-            pareto_df_offset = df[df['values_1'] < ref_loss_max]
-
-            return pareto_df_offset
+            filtered_df = InductorOptimization.filter_df(df, x="values_0", y="values_1", factor_min_dc_losses=factor_min_dc_losses,
+                                                         factor_max_dc_losses=factor_max_dc_losses)
+            return filtered_df
 
         @staticmethod
         def df_from_trial_numbers(df: pd.DataFrame, trial_number_list: List[int]) -> pd.DataFrame:
@@ -721,6 +744,8 @@ class InductorOptimization:
         def single_fem_simulation(fem_input: FemInput, show_visual_outputs: bool = False) -> FemOutput:
             """
             Perform a single FEM simulation.
+
+            For parallel simulations, use different working directories.
 
             :param fem_input: FEM input DTO
             :type fem_input: FemInput
@@ -924,3 +949,23 @@ class InductorOptimization:
                 print(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.fem_core_total) / reluctance_output.p_hyst * 100}")
 
                 return reluctance_output.volume, p_core, reluctance_output.area_to_heat_sink
+
+        @staticmethod
+        def filter_combined_loss_list_df(df: pd.DataFrame, factor_min_dc_losses: float = 1.2, factor_max_dc_losses: float = 10) -> pd.DataFrame:
+            """
+            Remove designs with too high losses compared to the minimum losses.
+
+            :param df: pandas dataframe with study results
+            :type df: pd.DataFrame
+            :param factor_min_dc_losses: filter factor for the minimum dc losses
+            :type factor_min_dc_losses: float
+            :param factor_max_dc_losses: dc_max_loss = factor_max_dc_losses * min_available_dc_losses_in_pareto_front
+            :type factor_max_dc_losses: float
+            :returns: pandas dataframe with Pareto front near points
+            :rtype: pd.DataFrame
+            """
+            df = df.drop(df[df["combined_losses"].isna()].index)
+            filtered_df = InductorOptimization.filter_df(df, x="values_0", y="combined_losses", factor_min_dc_losses=factor_min_dc_losses,
+                                                         factor_max_dc_losses=factor_max_dc_losses)
+
+            return filtered_df
