@@ -3,7 +3,7 @@
 import datetime
 import logging
 import os
-from typing import List
+from typing import List, Optional
 import shutil
 import json
 import pickle
@@ -500,8 +500,8 @@ class StackedTransformerOptimization:
             return reluctance_output
 
         @staticmethod
-        def start_proceed_study(config: StoSingleInputConfig, number_trials: int,
-                                storage: str = 'sqlite',
+        def start_proceed_study(config: StoSingleInputConfig, number_trials: Optional[int] = None,
+                                target_number_trials: Optional[int] = None, storage: str = 'sqlite',
                                 sampler=optuna.samplers.NSGAIIISampler(),
                                 ) -> None:
             """
@@ -513,6 +513,8 @@ class StackedTransformerOptimization:
             :type number_trials: int
             :param storage: storage database, e.g. 'sqlite' or 'mysql'
             :type storage: str
+            :param target_number_trials: Number of target trials for the existing study
+            :type target_number_trials: int
             :param sampler: optuna.samplers.NSGAIISampler() or optuna.samplers.NSGAIIISampler(). Note about the brackets () !!
             :type sampler: optuna.sampler-object
             """
@@ -542,14 +544,31 @@ class StackedTransformerOptimization:
                                                    directions=['minimize', 'minimize'],
                                                    load_if_exists=True, sampler=sampler)
 
-            study_in_memory = optuna.create_study(directions=['minimize', 'minimize'], study_name=config.stacked_transformer_study_name, sampler=sampler)
-            print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
-            study_in_memory.add_trials(study_in_storage.trials)
-            study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
+            if target_number_trials is not None:
+                # simulation for a given number of target trials
+                if len(study_in_storage.trials) < target_number_trials:
+                    study_in_memory = optuna.create_study(directions=['minimize', 'minimize'],
+                                                          study_name=config.stacked_transformer_study_name, sampler=sampler)
+                    print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
+                    study_in_memory.add_trials(study_in_storage.trials)
+                    number_trials = target_number_trials - len(study_in_memory.trials)
+                    study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
+                    study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
+                    print(f"Finished {number_trials} trials.")
+                    print(f"current time: {datetime.datetime.now()}")
+                else:
+                    print(f"Study has already {len(study_in_storage.trials)} trials, and target is {target_number_trials} trials.")
 
-            study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
-            print(f"Finished {number_trials} trials.")
-            print(f"current time: {datetime.datetime.now()}")
+            else:
+                # normal simulation with number_trials
+                study_in_memory = optuna.create_study(directions=['minimize', 'minimize'], study_name=config.stacked_transformer_study_name, sampler=sampler)
+                print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
+                study_in_memory.add_trials(study_in_storage.trials)
+                study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
+
+                study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
+                print(f"Finished {number_trials} trials.")
+                print(f"current time: {datetime.datetime.now()}")
             StackedTransformerOptimization.ReluctanceModel.save_config(config)
 
         @staticmethod
