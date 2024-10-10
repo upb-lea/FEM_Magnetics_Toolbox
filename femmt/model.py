@@ -776,6 +776,8 @@ class Insulation:
         :param right_core: Insulation between winding window and right of the bot section core
         :type right_core: float
         """
+        if top_core is None:
+            top_core = 0
         if bot_core is None:
             bot_core = 0
         if left_core is None:
@@ -784,16 +786,6 @@ class Insulation:
             right_core = 0
 
         self.bot_section_core_cond = [top_core, bot_core, left_core, right_core]
-
-    # def to_dict(self):
-    #     """Transfer object parameters to a dictionary. Important method to create the final result-log."""
-    #     if len(self.cond_cond) == 0:
-    #         return {}
-    #
-    #     return {
-    #         "inner_winding_insulations": self.cond_cond,
-    #         "core_insulations": self.core_cond
-    #     }
     def to_dict(self):
         """Transfer object parameters to a dictionary."""
         result = {
@@ -1097,10 +1089,10 @@ class WindingWindow:
                 self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
                 self.max_right_bound = core.r_inner - insulations.core_cond[3]
         elif self.core.core_type == CoreType.Stacked:  # top, bot, left, right
-            self.max_bot_bound = -core.window_h_bot / 2 + insulations.core_cond[1]
-            self.max_top_bound = core.window_h_bot / 2 + core.window_h_top + core.core_thickness - insulations.core_cond[0]
-            self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
-            self.max_right_bound = core.r_inner - insulations.core_cond[3]
+            self.max_bot_bound = -core.window_h_bot / 2 + insulations.bot_section_core_cond[1]
+            self.max_top_bound = core.window_h_bot / 2 + core.window_h_top + core.core_thickness - insulations.top_section_core_cond[0]
+            self.max_left_bound = core.core_inner_diameter / 2 + insulations.top_section_core_cond[2]
+            self.max_right_bound = core.r_inner - insulations.top_section_core_cond[3]
 
         # Insulations
         self.insulations = insulations
@@ -1189,8 +1181,8 @@ class WindingWindow:
         elif split_type == WindingWindowSplit.NoSplitWithBobbin:
             bobbin_def = [top_bobbin, bot_bobbin, left_bobbin, right_bobbin]
             for index, element in enumerate(bobbin_def):
-                if element is not None and element > self.insulations.core_cond[index]:
-                    bobbin_def[index] = self.insulations.core_cond[index] - element
+                if element is not None and element > self.insulations.top_section_core_cond[index]:
+                    bobbin_def[index] = self.insulations.top_section_core_cond[index] - element
                 else:
                     bobbin_def[index] = 0
 

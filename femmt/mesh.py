@@ -1016,15 +1016,17 @@ class Mesh:
         l_air_top = l_core_air[0:5] + [l_bound_air[0]]
         curve_loop_air_top = [gmsh.model.geo.addCurveLoop(l_air_top, -1, True)]
         flatten_curve_loop_cond_top = primary_in_top + secondary_in_top + tertiary_in_top
-        curve_loop_iso_core_top = []  # TODO: insulations
-        self.plane_surface_air_top.append(gmsh.model.geo.addPlaneSurface(curve_loop_air_top + flatten_curve_loop_cond_top + curve_loop_iso_core_top))
+        # curve_loop_iso_core_top = []  # TODO: insulations
+        curve_loop_iso_top_core = primary_in_top + secondary_in_top + tertiary_in_top
+        self.plane_surface_air_top.append(gmsh.model.geo.addPlaneSurface(curve_loop_air_top + flatten_curve_loop_cond_top + curve_loop_iso_top_core))
 
         # bot window
         l_air_bot = l_core_air[5:12] + [l_bound_air[1]]
         curve_loop_air_bot = [gmsh.model.geo.addCurveLoop(l_air_bot, -1, True)]
         flatten_curve_loop_cond_bot = primary_in_bot + secondary_in_bot + tertiary_in_bot
-        curve_loop_iso_core_bot = []  # TODO: insulations
-        self.plane_surface_air_bot.append(gmsh.model.geo.addPlaneSurface(curve_loop_air_bot + flatten_curve_loop_cond_bot + curve_loop_iso_core_bot))
+        # curve_loop_iso_core_bot = []  # TODO: insulations
+        curve_loop_iso_bot_core = primary_in_bot + secondary_in_bot + tertiary_in_bot
+        self.plane_surface_air_bot.append(gmsh.model.geo.addPlaneSurface(curve_loop_air_bot + flatten_curve_loop_cond_bot + curve_loop_iso_bot_core))
 
         # TODO: How to select the conductors which are in the top and which are in the bot vww? -> Need to be cut out of the air...
         # l_air_top = l_core_air[0:5] + [l_bound_air[0]]
@@ -1244,13 +1246,8 @@ class Mesh:
         # TODO: Add model_insulation as an input parameter of the function.
         if self.insulation.flag_insulation:
             if self.model.component_type == ComponentType.IntegratedTransformer:
-                if self.stray_path:
-                    curve_loop_iso_core, curve_loop_iso_top_core, curve_loop_iso_bot_core = (self.insulations_core_cond
-                                                                                             ([], p_iso_top_core, p_iso_bot_core))
-                else:
-                    warnings.warn("Insulations are currently not implemented for integrated transformer and will be ignored.",
-                                  stacklevel=2)
-                    # TODO: Implement insulations for integrated transformer.
+                curve_loop_iso_core, curve_loop_iso_top_core, curve_loop_iso_bot_core = (self.insulations_core_cond(
+                    [], p_iso_top_core, p_iso_bot_core))
             else:
                 curve_loop_iso_core, curve_loop_iso_top_core, curve_loop_iso_bot_core = self.insulations_core_cond(p_iso_core, [], [])
         else:
