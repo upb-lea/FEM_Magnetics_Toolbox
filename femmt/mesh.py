@@ -10,7 +10,6 @@ GMSH default procedure
 # Python standard libraries
 import os
 import numpy as np
-import warnings
 from logging import Logger
 from typing import Dict, List
 

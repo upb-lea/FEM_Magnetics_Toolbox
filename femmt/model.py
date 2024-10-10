@@ -786,6 +786,7 @@ class Insulation:
             right_core = 0
 
         self.bot_section_core_cond = [top_core, bot_core, left_core, right_core]
+
     def to_dict(self):
         """Transfer object parameters to a dictionary."""
         result = {
