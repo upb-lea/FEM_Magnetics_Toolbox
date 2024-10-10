@@ -1285,8 +1285,10 @@ def fixture_transformer_integrated_core_fixed_loss_angle(temp_folder: pytest.fix
         geo.set_air_gaps(air_gaps)
 
         # 4. set insulations
-        insulation = fmt.Insulation()
-        insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
+        insulation = fmt.Insulation(flag_insulation=False)
+        # insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
+        insulation.add_top_section_core_insulations(0.001, 0.001, 0.002, 0.001)
+        insulation.add_bottom_section_core_insulations(0.001, 0.001, 0.002, 0.001)
         insulation.add_winding_insulations([[0.0002, 0.0005], [0.0005, 0.0002]])
         geo.set_insulation(insulation)
 

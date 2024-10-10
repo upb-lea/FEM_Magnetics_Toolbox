@@ -10,7 +10,6 @@ GMSH default procedure
 # Python standard libraries
 import os
 import numpy as np
-import warnings
 from logging import Logger
 from typing import Dict, List
 
@@ -117,7 +116,9 @@ class Mesh:
             p_cond.append([])
         p_region = []
         p_iso_core = []
-        return p_core, p_island, p_cond, p_region, p_iso_core
+        p_iso_top_core = []
+        p_iso_bot_core = []
+        return p_core, p_island, p_cond, p_region, p_iso_core, p_iso_top_core, p_iso_bot_core
 
     def set_empty_line_lists(self):
         """Initialize line lists. For internal overview as a mirrored gmsh information set."""
@@ -132,7 +133,9 @@ class Mesh:
         l_region = []
         l_air_gaps_air = []
         l_iso_core = []
-        return l_bound_core, l_bound_air, l_core_air, l_cond, l_region, l_air_gaps_air, l_iso_core, l_core_core
+        l_iso_top_core = []
+        l_iso_bot_core = []
+        return l_bound_core, l_bound_air, l_core_air, l_cond, l_region, l_air_gaps_air, l_iso_core, l_core_core, l_iso_top_core, l_iso_bot_core
 
     def set_empty_curve_loop_lists(self):
         """Initialize curve loop lists. For internal overview as a mirrored gmsh information set."""
@@ -146,7 +149,9 @@ class Mesh:
         curve_loop_iso_core = []
         # curve_loop_outer_air = []
         # curve_loop_bound = []
-        return curve_loop_cond, curve_loop_island, curve_loop_air, curve_loop_air_gaps, curve_loop_iso_core
+        curve_loop_iso_top_core = []
+        curve_loop_iso_bot_core = []
+        return curve_loop_cond, curve_loop_island, curve_loop_air, curve_loop_air_gaps, curve_loop_iso_core, curve_loop_iso_top_core, curve_loop_iso_bot_core
 
     def set_empty_plane_lists(self):
         """Initialize plane lists. For internal overview as a mirrored gmsh information set."""
@@ -166,6 +171,8 @@ class Mesh:
         self.plane_surface_air_gaps = []
         self.plane_surface_iso_core = []
         self.plane_surface_iso_pri_sec = []
+        self.plane_surface_iso_top_core = []
+        self.plane_surface_iso_bot_core = []
 
     def single_core(self,
                     p_core: list, p_island: list,
@@ -775,12 +782,16 @@ class Mesh:
             for i, center_point in enumerate(center_points):
                 gmsh.model.mesh.embed(0, [center_point], 2, self.plane_surface_cond[num][i])
 
-    def insulations_core_cond(self, p_iso_core: list) -> List:
+    def insulations_core_cond(self, p_iso_core: list, p_iso_top_core: list, p_iso_bot_core: list):
         """
         Set the rectangular electrical insulation between conductors and core.
 
         :param p_iso_core:
         :type p_iso_core: List
+        :param p_iso_top_core:
+        :type p_iso_bot_core: List
+        :param p_iso_bot_core:
+        :type p_iso_top_core: List
 
         :return:
         :rtype: list
@@ -788,26 +799,65 @@ class Mesh:
         # Insulations
         # Core to Windings
         # If no insulation, return an empty list
-        if not self.model.p_iso_core:
+        if not self.model.p_iso_core and not self.model.p_iso_top_core and not self.model.p_iso_bot_core:
             return []
-        # if self.model.p_iso_core and self.insulation.flag_insulation:  # Check if list is not empty
-            # Points
-        for iso in self.model.p_iso_core:
-            p_iso = []
-            for i in iso:
-                p_iso.append(gmsh.model.geo.addPoint(i[0], i[1], i[2], i[3]))
-            p_iso_core.append(p_iso)
-        # Lines
-        l_iso_core = [[gmsh.model.geo.addLine(iso[i], iso[(i + 1) % 4]) for i in range(4)] for iso in p_iso_core]
 
-        # Curve loop and surface
         curve_loop_iso_core = []
-        self.plane_surface_iso_core = []
-        for iso in l_iso_core:
-            cl = gmsh.model.geo.addCurveLoop(iso)
-            curve_loop_iso_core.append(cl)
-            self.plane_surface_iso_core.append(gmsh.model.geo.addPlaneSurface([cl]))
-        return curve_loop_iso_core
+        curve_loop_iso_top_core = []
+        curve_loop_iso_bot_core = []
+        # if self.model.p_iso_core and self.insulation.flag_insulation:  # Check if list is not empty
+        # Handle General Core Insulation (Non-Integrated Transformer)
+        if self.model.p_iso_core:
+            # Points
+            for iso in self.model.p_iso_core:
+                p_iso = []
+                for i in iso:
+                    p_iso.append(gmsh.model.geo.addPoint(i[0], i[1], i[2], i[3]))
+                p_iso_core.append(p_iso)
+            # Lines
+            l_iso_core = [[gmsh.model.geo.addLine(iso[i], iso[(i + 1) % 4]) for i in range(4)] for iso in p_iso_core]
+
+            # Curve loop and surface
+            self.plane_surface_iso_core = []
+            for iso in l_iso_core:
+                cl = gmsh.model.geo.addCurveLoop(iso)
+                curve_loop_iso_core.append(cl)
+                self.plane_surface_iso_core.append(gmsh.model.geo.addPlaneSurface([cl]))
+        # Handle Top Core Insulation (Integrated Transformer)
+        if self.model.p_iso_top_core:
+            # Points
+            for iso in self.model.p_iso_top_core:
+                p_iso = []
+                for i in iso:
+                    p_iso.append(gmsh.model.geo.addPoint(i[0], i[1], i[2], i[3]))
+                p_iso_top_core.append(p_iso)
+            # Lines
+            l_iso_top_core = [[gmsh.model.geo.addLine(iso[i], iso[(i + 1) % 4]) for i in range(4)] for iso in p_iso_top_core]
+
+            # Curve loop and surface
+            self.plane_surface_iso_top_core = []
+            for iso in l_iso_top_core:
+                cl = gmsh.model.geo.addCurveLoop(iso)
+                curve_loop_iso_top_core.append(cl)
+                self.plane_surface_iso_top_core.append(gmsh.model.geo.addPlaneSurface([cl]))
+        # Handle Bottom Core Insulation (Integrated Transformer)
+        if self.model.p_iso_bot_core:
+            # Points
+            for iso in self.model.p_iso_bot_core:
+                p_iso = []
+                for i in iso:
+                    p_iso.append(gmsh.model.geo.addPoint(i[0], i[1], i[2], i[3]))
+                p_iso_bot_core.append(p_iso)
+            # Lines
+            l_iso_bot_core = [[gmsh.model.geo.addLine(iso[i], iso[(i + 1) % 4]) for i in range(4)] for iso in p_iso_bot_core]
+
+            # Curve loop and surface
+            self.plane_surface_iso_bot_core = []
+            for iso in l_iso_bot_core:
+                cl = gmsh.model.geo.addCurveLoop(iso)
+                curve_loop_iso_bot_core.append(cl)
+                self.plane_surface_iso_bot_core.append(gmsh.model.geo.addPlaneSurface([cl]))
+        return curve_loop_iso_core, curve_loop_iso_top_core, curve_loop_iso_bot_core
 
     def air_single(self, l_core_air: list, l_air_gaps_air: list, curve_loop_air: list, curve_loop_cond: list, curve_loop_iso_core: list):
         """
@@ -965,15 +1015,17 @@ class Mesh:
         l_air_top = l_core_air[0:5] + [l_bound_air[0]]
         curve_loop_air_top = [gmsh.model.geo.addCurveLoop(l_air_top, -1, True)]
         flatten_curve_loop_cond_top = primary_in_top + secondary_in_top + tertiary_in_top
-        curve_loop_iso_core_top = []  # TODO: insulations
-        self.plane_surface_air_top.append(gmsh.model.geo.addPlaneSurface(curve_loop_air_top + flatten_curve_loop_cond_top + curve_loop_iso_core_top))
+        # curve_loop_iso_core_top = []  # TODO: insulations
+        curve_loop_iso_top_core = primary_in_top + secondary_in_top + tertiary_in_top
+        self.plane_surface_air_top.append(gmsh.model.geo.addPlaneSurface(curve_loop_air_top + flatten_curve_loop_cond_top + curve_loop_iso_top_core))
 
         # bot window
         l_air_bot = l_core_air[5:12] + [l_bound_air[1]]
         curve_loop_air_bot = [gmsh.model.geo.addCurveLoop(l_air_bot, -1, True)]
         flatten_curve_loop_cond_bot = primary_in_bot + secondary_in_bot + tertiary_in_bot
-        curve_loop_iso_core_bot = []  # TODO: insulations
-        self.plane_surface_air_bot.append(gmsh.model.geo.addPlaneSurface(curve_loop_air_bot + flatten_curve_loop_cond_bot + curve_loop_iso_core_bot))
+        # curve_loop_iso_core_bot = []  # TODO: insulations
+        curve_loop_iso_bot_core = primary_in_bot + secondary_in_bot + tertiary_in_bot
+        self.plane_surface_air_bot.append(gmsh.model.geo.addPlaneSurface(curve_loop_air_bot + flatten_curve_loop_cond_bot + curve_loop_iso_bot_core))
 
         # TODO: How to select the conductors which are in the top and which are in the bot vww? -> Need to be cut out of the air...
         # l_air_top = l_core_air[0:5] + [l_bound_air[0]]
@@ -1170,9 +1222,11 @@ class Mesh:
         gmsh.clear()
         # Initialization
         self.set_empty_plane_lists()
-        p_core, p_island, p_cond, p_region, p_iso_core = self.set_empty_point_lists()
-        l_bound_core, l_bound_air, l_core_air, l_cond, l_region, l_air_gaps_air, l_iso_core, l_core_core = self.set_empty_line_lists()
-        curve_loop_cond, curve_loop_island, curve_loop_air, curve_loop_air_gaps, curve_loop_iso_core = self.set_empty_curve_loop_lists()
+        p_core, p_island, p_cond, p_region, p_iso_core, p_iso_top_core, p_iso_bot_core = self.set_empty_point_lists()
+        l_bound_core, l_bound_air, l_core_air, l_cond, l_region, l_air_gaps_air, l_iso_core, l_core_core, l_iso_top_core, l_iso_bot_core =\
+            self.set_empty_line_lists()
+        curve_loop_cond, curve_loop_island, curve_loop_air, curve_loop_air_gaps, curve_loop_iso_core, curve_loop_iso_top_core, curve_loop_iso_bot_core =\
+            self.set_empty_curve_loop_lists()
 
         # Set path for storing the mesh file
         gmsh.model.add(os.path.join(self.e_m_mesh_file, "geometry"))
@@ -1188,17 +1242,15 @@ class Mesh:
         self.conductors(p_cond, l_cond, curve_loop_cond)
 
         # Define mesh for conductors
-        model_insulation: bool = True
         # TODO: Add model_insulation as an input parameter of the function.
-
-        if self.model.component_type == ComponentType.IntegratedTransformer:
-            warnings.warn("Insulations are currently not implemented for integrated transformer and will be ignored.",
-                          stacklevel=2)
-            # TODO: Implement insulations for integrated transformer.
-            model_insulation = False
-
-        if model_insulation:
-            curve_loop_iso_core = self.insulations_core_cond(p_iso_core)
+        if self.insulation.flag_insulation:
+            if self.model.component_type == ComponentType.IntegratedTransformer:
+                curve_loop_iso_core, curve_loop_iso_top_core, curve_loop_iso_bot_core = (self.insulations_core_cond(
+                    [], p_iso_top_core, p_iso_bot_core))
+            else:
+                curve_loop_iso_core, curve_loop_iso_top_core, curve_loop_iso_bot_core = self.insulations_core_cond(p_iso_core, [], [])
+        else:
+            curve_loop_iso_core = curve_loop_iso_top_core = curve_loop_iso_bot_core = []
 
         # Define mesh for air
         if self.core.core_type == CoreType.Single:
