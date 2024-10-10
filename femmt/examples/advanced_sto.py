@@ -67,7 +67,7 @@ i_1 = [[0.0, 3.265248131976911e-07, 2.5e-06, 2.8265248131976912e-06, 5e-06],
 i_2 = [[0.0, 3.265248131976911e-07, 2.5e-06, 2.8265248131976912e-06, 5e-06],
        [-0.9196195846583147, -19.598444313231134, 0.9196195846583122, 19.59844431323113, -0.9196195846583147]]
 
-sto_insulations = fmt.StoInsulation(
+sto_insulations = fmt.StoCtInsulation(
     iso_top_core=0.001,
     iso_bot_core=0.001,
     iso_left_core_min=0.5e-3,
@@ -78,7 +78,7 @@ sto_insulations = fmt.StoInsulation(
     iso_primary_inner_bobbin=2e-3
 )
 
-dab_transformer_config = fmt.StoSingleInputConfig(
+dab_transformer_config = fmt.StoCtSingleInputConfig(
     # target parameters
     l_s12_target=5.8e-6,
     l_h_target=90e-6,
@@ -125,10 +125,10 @@ if __name__ == '__main__':
     study_name = "2023-09-01"
     time_start = datetime.datetime.now()
 
-    fmt.StackedTransformerOptimization.start_proceed_study(study_name, dab_transformer_config, 10,
-                                                           number_objectives=4,
-                                                           sampler=optuna.samplers.NSGAIIISampler(),
-                                                           show_geometries=False)
+    fmt.StackedTransformerCenterTappedOptimization.start_proceed_study(study_name, dab_transformer_config, 10,
+                                                                       number_objectives=4,
+                                                                       sampler=optuna.samplers.NSGAIIISampler(),
+                                                                       show_geometries=False)
     # fmt.StackedTransformerOptimization.FemSimulation.show_study_results(study_name, dab_transformer_config,
     # percent_error_difference_l_h = 100, percent_error_difference_l_s12=100)
     # fmt.StackedTransformerOptimization.FemSimulation.re_simulate_single_result(study_name, dab_transformer_config, 6)

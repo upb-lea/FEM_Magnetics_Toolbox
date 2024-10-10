@@ -431,6 +431,7 @@ Zigzag placement introduces an alternating pattern in the layout:
 
 - After completing a row or column, the direction alternates (e.g., if moving upward initially, the next is downward).
 - The ``zigzag`` parameter is optional and defaults to ``False``. It can be omitted if a zigzag movement is not needed.
+
 It can only be used for ``RoundSolid`` and ``RoundLitz`` conductors when the winding type is ``Single``.
 
 Before the simulation, the winding window must be added to the model:

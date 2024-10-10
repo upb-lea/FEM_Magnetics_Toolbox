@@ -22,19 +22,19 @@ Stable features
 
 * Component features:
     * 2D axi-symmetric cylindrical simplification
-    * `Inductor </femmt/examples/basic_inductor.py>`__, `2-winding transformer </femmt/examples/basic_transformer.py>`__, `n-winding transformer </femmt/examples/basic_transformer_6_windings.py>`__
+    * `Inductor <https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/femmt/examples/basic_inductor.py>`__, `2-winding transformer <https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/femmt/examples/basic_transformer.py>`__, `n-winding transformer <https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/femmt/examples/basic_transformer_6_windings.py>`__
     * Arbitrary (distributed) air gap positioning in center leg
     * Variety of winding interleaving schemes
     * Special geometries:
-        * `Center tapped transformer </femmt/examples/basic_transformer_center_tapped.py>`__
-        * `Magnetic shunt </femmt/examples/basic_transformer_integrated.py>`__ (transformer with integrated inductor)
-        * `Stacked core </femmt/examples/basic_transformer_stacked.py>`__ (transformer with integrated inductor)
+        * `Center tapped transformer <https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/femmt/examples/basic_transformer_center_tapped.py>`__
+        * `Magnetic shunt <https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/femmt/examples/basic_transformer_integrated.py>`__ (transformer with integrated inductor)
+        * `Stacked core <https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/femmt/examples/basic_transformer_stacked.py>`__ (transformer with integrated inductor)
     * Round litz wire, implemented according to `Niyomsatian et al.: Frequency-domain homogenization for litz-wire bundles in finite element calculations <https://ieeexplore.ieee.org/document/9007233>`__
     * Round and rectangular solid wires
     * Different winding schemes (hexagonal, left/right, top/down, ...)
     * Parallel connection of solid wires
     * Insulation distances (winding2core, winding2winding)
-    * Many `examples </femmt/examples/>`__ to learn and understand FEMMT
+    * Many `examples <https://github.com/upb-lea/FEM_Magnetics_Toolbox/tree/main/femmt/examples>`__ to learn and understand FEMMT
     * Databases
          * Litz wire database
          * Core geometry database
@@ -148,7 +148,7 @@ This toolbox is able to build a complete FEM simulation from simple
 Python code. The following figure shows the Python code on the left and
 the corresponding FEM simulation on the right. |FEMMT_Screenshot|
 
-To run a minimal example please have a look at the `examples </femmt/examples/>`__.
+To run a minimal example please have a look at the `examples <https://github.com/upb-lea/FEM_Magnetics_Toolbox/tree/main/femmt/examples>`__.
 
 GUI (Experimental)
 -------------------
@@ -190,12 +190,12 @@ Contributing
 
 Pull requests are welcome. For major changes, please open an issue first
 to discuss what you would like to change. For contributing, please refer
-to this `section <Contributing.rst>`__.
+to this `section <https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/Contributing.rst>`__.
 
 Changelog
 ------------
 
-Find the changelog `here <CHANGELOG.md>`__.
+Find the changelog `here <https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/CHANGELOG.md>`__.
 
 License
 ----------

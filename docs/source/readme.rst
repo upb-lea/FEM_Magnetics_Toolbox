@@ -6,6 +6,10 @@ Python toolbox to generate preconfigured figures for FEM simulation tools in pow
 The toolbox is accessible via python code or a graphical user interface
 (GUI), which current development status is experimental.
 
+All core shapes are simulated as 2D symmetric cores, as shown in the figure.
+
+|geometry_translated|
+
 
 Overview features
 -------------------
@@ -15,19 +19,19 @@ Stable features
 
 * Component features:
     * 2D axi-symmetric cylindrical simplification
-    * `Inductor <../../femmt/examples/basic_inductor.py>`__, `2-winding transformer <../../femmt/examples/basic_transformer.py>`__, `n-winding transformer <../../femmt/examples/basic_transformer_6_windings.py>`__
+    * `Inductor <https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/femmt/examples/basic_inductor.py>`__, `2-winding transformer <https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/femmt/examples/basic_transformer.py>`__, `n-winding transformer <https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/femmt/examples/basic_transformer_6_windings.py>`__
     * Arbitrary (distributed) air gap positioning in center leg
     * Variety of winding interleaving schemes
     * Special geometries:
-        * `Center tapped transformer <../../femmt/examples/basic_transformer_center_tapped.py>`__
-        * `Magnetic shunt <../../femmt/examples/basic_transformer_integrated.py>`__ (transformer with integrated inductor)
-        * `Stacked core <../../femmt/examples/basic_transformer_stacked.py>`__ (transformer with integrated inductor)
-    * Round litz wire
+        * `Center tapped transformer <https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/femmt/examples/basic_transformer_center_tapped.py>`__
+        * `Magnetic shunt <https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/femmt/examples/basic_transformer_integrated.py>`__ (transformer with integrated inductor)
+        * `Stacked core <https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/femmt/examples/basic_transformer_stacked.py>`__ (transformer with integrated inductor)
+    * Round litz wire, implemented according to `Niyomsatian et al.: Frequency-domain homogenization for litz-wire bundles in finite element calculations <https://ieeexplore.ieee.org/document/9007233>`__
     * Round and rectangular solid wires
     * Different winding schemes (hexagonal, left/right, top/down, ...)
     * Parallel connection of solid wires
     * Insulation distances (winding2core, winding2winding)
-    * Many `examples <../../femmt/examples/>`__. to learn and understand FEMMT
+    * Many `examples <https://github.com/upb-lea/FEM_Magnetics_Toolbox/tree/main/femmt/examples>`__ to learn and understand FEMMT
     * Databases
          * Litz wire database
          * Core geometry database
@@ -38,7 +42,7 @@ Stable features
     * Implemented using `ONELAB <https://onelab.info/>`__
     * Current excitation
     * Frequency domain solver
-    * Litz wire loss model for proximity and skin effect (Niyomsatian et al.: Frequency-domain homogenization for impedance characterization of litz-wire transformers in 2-D finite element models)
+    * Litz wire loss model for proximity and skin effect (`Niyomsatian et al.: Frequency-domain homogenization for impedance characterization of litz-wire transformers in 2-D finite element models <https://ieeexplore.ieee.org/document/7695378>`__)
     * Core loss calculation for real materials (data from material database)
         * Amplitude dependent loss angle (Local resolution of complex permeability)
         * Equivalent permittivity data for eddy current calculations
@@ -66,7 +70,7 @@ Experimental features (under development)
 * Component features:
     * Reluctance module is currently working for a single optimization example and not fully implemented yet.
 * Solver features:
-    * Time domain solver
+    * Time domain solver is experimental
 * Optimization:
     * Advanced optimization algorithms by connecting to `optuna <https://github.com/optuna/optuna>`__
 * GUI:
@@ -91,6 +95,13 @@ Documentation
 -------------------
 Please have a look at the `documentation <https://upb-lea.github.io/FEM_Magnetics_Toolbox/intro.html>`__. You will find tutorials and a function description.
 
+Literature
+-------------------
+
+* `An Open-Source FEM Magnetics Toolbox for Power Electronic Magnetic Components <https://ieeexplore.ieee.org/document/9862128>`__
+
+* `An Open-Source FEM Magnetic Toolbox for Calculating Electric and Thermal Behavior of Power Electronic Magnetic Components <https://ieeexplore.ieee.org/document/9907554>`__
+
 Installation
 ---------------
 
@@ -103,6 +114,17 @@ ONELAB installation
 -  Download the Desktop Version for your OS (Windows, Linux or macOS)
 -  Unpack the software and remember the file path. This will be needed
    later when installing FEMMT.
+
+Further steps for macOS(ARM)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Go to https://onelab.info/
+-  Download the Desktop Version for Windows
+-  Copy the "conveks.py" and "Onelab.py" files and paste them into the "onelab" folder
+-  Go to http://getdp.info/
+-  Download the macOS(ARM) Version
+-  Open the downloaded folder, navigate to "bin" and copy the "getdp" application file
+-  Paste the copied file into your "onelab" folder
 
 Install FEMMT
 ~~~~~~~~~~~~~~~~~
@@ -123,7 +145,7 @@ This toolbox is able to build a complete FEM simulation from simple
 Python code. The following figure shows the Python code on the left and
 the corresponding FEM simulation on the right. |FEMMT_Screenshot|
 
-To run a minimal example please have a look at the `examples <../../femmt/examples/>`__.
+To run a minimal example please have a look at the `examples <https://github.com/upb-lea/FEM_Magnetics_Toolbox/tree/main/femmt/examples>`__.
 
 GUI (Experimental)
 -------------------
@@ -134,11 +156,26 @@ at first, but will be simplified in the future:
 * Download the complete repository via ``Code`` -> ``Download ZIP`` and unpack it.
 * Or clone the repository
 * Install the development version of femmt using ``pip install -e .``
-* Run python ``.../path-to_femmt../../femmt/gui/femmt_gui.py``
+* Run python ``.../path-to_femmt/femmt/gui/femmt_gui.py``
 
 Please note, the GUI is experimental.
 
 |femmt_gui_definition|
+
+Troubleshooting
+-------------------
+If the working directory is within OneDrive, there are problems writing .dat files, which are basic for FEMMT. The following error messages appear:
+
+::
+
+    The system cannot find the file specified: your_directory/femmt/electro_magnetic/Strands_Coefficients/coeff/pB_RS_la0.6_4layer.dat
+    FileNotFoundError: [Errno 2] No such file or directory: your_directory/results/values/j2F_1.dat
+
+
+
+The solution is to place the working directory of FEMMT including the Python virtual environment outside the OneDrive folder.
+
+
 
 Bug Reports
 --------------
@@ -150,12 +187,12 @@ Contributing
 
 Pull requests are welcome. For major changes, please open an issue first
 to discuss what you would like to change. For contributing, please refer
-to this `section <../../Contributing.rst>`__.
+to this `section <https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/Contributing.rst>`__.
 
 Changelog
 ------------
 
-Find the changelog `here <../../CHANGELOG.md>`__.
+Find the changelog `here <https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/CHANGELOG.md>`__.
 
 License
 ----------
@@ -171,6 +208,7 @@ project should be completely rewritten, because many new complex levels
 have been added. To place the project in the open source world, the
 programming language python is used.
 
+.. |geometry_translated| image:: ../images/geometry_translated.png
 .. |femmt| image:: ../images/femmt.png
 .. |FEMMT_Screenshot| image:: ../images/FEMMT_Screenshot.png
 .. |femmt_gui_definition| image:: ../images/femmt_gui_definition.png

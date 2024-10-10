@@ -1,1217 +1,1203 @@
-"""Stacked transformer optimization (STO)."""
-
+"""Stacked transformer optimization."""
 # python libraries
+import datetime
+import logging
 import os
+from typing import List, Optional
 import shutil
 import json
-import datetime
-import gc
+import pickle
+
+# own libraries
+from femmt.optimization.sto_dtos import StoSingleInputConfig, StoTargetAndFixedParameters, FemInput, FemOutput, ReluctanceModelInput, ReluctanceModelOutput
+import femmt.functions as ff
+import femmt.functions_reluctance as fr
+import materialdatabase as mdb
+import femmt.optimization.ito_functions as itof
+import femmt.optimization.functions_optimization as fo
+import femmt as fmt
 
 # 3rd party libraries
+import numpy as np
 import optuna
-import pandas as pd
+from scipy import optimize
 from matplotlib import pyplot as plt
-
-# FEMMT and materialdatabase libraries
-from femmt.optimization.sto_dtos import *
-import femmt.functions_reluctance as fr
-import femmt.functions as ff
-import femmt.optimization.ito_functions as itof
-import femmt
-import materialdatabase as mdb
-
+import matplotlib.patches as mpatches
+import magnethub as mh
+import pandas as pd
+import tqdm
 
 class StackedTransformerOptimization:
-    """Optimize a stacked transformer."""
+    """Perform optimizations for the stacked transformer."""
 
-    @staticmethod
-    def calculate_fix_parameters(config: StoSingleInputConfig) -> StoTargetAndFixedParameters:
-        """Calculate fix parameters what can be derived from the input configuration.
+    class ReluctanceModel:
+        """Perform optimizations using the reluctance model of the stacked transformer."""
 
-        return values are:
+        @staticmethod
+        def calculate_fix_parameters(config: StoSingleInputConfig) -> StoTargetAndFixedParameters:
+            """Calculate fix parameters what can be derived from the input configuration.
 
-            i_rms_1
-            i_rms_2
-            time_extracted_vec
-            current_extracted_1_vec
-            current_extracted_2_vec
-            material_dto_curve_list
-            fundamental_frequency
-            target_inductance_matrix
-            fem_working_directory
-            fem_simulation_results_directory
-            reluctance_model_results_directory
-            fem_thermal_simulation_results_directory
+            return values are:
 
-        :param config: configuration file
-        :type config: ItoSingleInputConfig
-        :return: calculated target and fix parameters
-        :rtype: ItoTargetAndFixedParameters
-        """
-        # currents
-        time_extracted, current_extracted_1_vec = fr.time_vec_current_vec_from_time_current_vec(
-            config.time_current_1_vec)
-        time_extracted, current_extracted_2_vec = fr.time_vec_current_vec_from_time_current_vec(
-            config.time_current_2_vec)
-        fundamental_frequency = 1 / time_extracted[-1]
+                i_rms_1
+                i_rms_2
+                time_extracted_vec
+                current_extracted_1_vec
+                current_extracted_2_vec
+                material_dto_curve_list
+                fundamental_frequency
+                target_inductance_matrix
+                fem_working_directory
+                fem_simulation_results_directory
+                reluctance_model_results_directory
+                fem_thermal_simulation_results_directory
 
-        i_rms_1 = fr.i_rms(config.time_current_1_vec)
-        i_rms_2 = fr.i_rms(config.time_current_2_vec)
+            :param config: configuration file
+            :type config: ItoSingleInputConfig
+            :return: calculated target and fix parameters
+            :rtype: ItoTargetAndFixedParameters
+            """
+            # currents
+            time_extracted, current_extracted_1_vec = fr.time_vec_current_vec_from_time_current_vec(
+                config.time_current_1_vec)
+            time_extracted, current_extracted_2_vec = fr.time_vec_current_vec_from_time_current_vec(
+                config.time_current_2_vec)
+            fundamental_frequency = 1 / time_extracted[-1]
 
-        i_peak_1, i_peak_2 = fr.max_value_from_value_vec(current_extracted_1_vec, current_extracted_2_vec)
-        phi_deg_1, phi_deg_2 = fr.phases_deg_from_time_current(time_extracted, current_extracted_1_vec,
-                                                               current_extracted_2_vec)
+            i_rms_1 = fr.i_rms(config.time_current_1_vec)
+            i_rms_2 = fr.i_rms(config.time_current_2_vec)
 
-        phi_deg_2 = phi_deg_2 - 180
+            i_peak_1, i_peak_2 = fr.max_value_from_value_vec(current_extracted_1_vec, current_extracted_2_vec)
+            phi_deg_1, phi_deg_2 = fr.phases_deg_from_time_current(time_extracted, current_extracted_1_vec,
+                                                                   current_extracted_2_vec)
 
-        # target inductances
-        target_inductance_matrix = fr.calculate_inductance_matrix_from_ls_lh_n(config.l_s12_target,
-                                                                               config.l_h_target,
-                                                                               config.n_target)
+            # phi_deg_2 = phi_deg_2 - 180
 
-        # material properties
-        material_db = mdb.MaterialDatabase(is_silent=True)
+            # target inductances
+            target_inductance_matrix = fr.calculate_inductance_matrix_from_ls_lh_n(config.l_s12_target,
+                                                                                   config.l_h_target,
+                                                                                   config.n_target)
 
-        material_data_list = []
-        for material_name in config.material_list:
-            material_dto = material_db.material_data_interpolation_to_dto(material_name, fundamental_frequency,
-                                                                          config.temperature)
-            material_data_list.append(material_dto)
+            (fft_frequencies_1, fft_amplitudes_1, fft_phases_1) = ff.fft(
+                period_vector_t_i=config.time_current_1_vec, sample_factor=1000, plot='no', mode='time', filter_type='factor', filter_value_factor=0.03)
 
-        # set up working directories
-        working_directories = itof.set_up_folder_structure(config.working_directory)
+            (fft_frequencies_2, fft_amplitudes_2, fft_phases_2) = ff.fft(
+                period_vector_t_i=config.time_current_2_vec, sample_factor=1000, plot='no', mode='time', filter_type='factor', filter_value_factor=0.03)
 
-        # finalize data to dto
-        target_and_fix_parameters = StoTargetAndFixedParameters(
-            i_rms_1=i_rms_1,
-            i_rms_2=i_rms_2,
-            i_peak_1=i_peak_1,
-            i_peak_2=i_peak_2,
-            i_phase_deg_1=phi_deg_1,
-            i_phase_deg_2=phi_deg_2,
-            time_extracted_vec=time_extracted,
-            current_extracted_1_vec=current_extracted_1_vec,
-            current_extracted_2_vec=current_extracted_2_vec,
-            material_dto_curve_list=material_data_list,
-            fundamental_frequency=fundamental_frequency,
-            target_inductance_matrix=target_inductance_matrix,
-            working_directories=working_directories
-        )
+            # material properties
+            material_db = mdb.MaterialDatabase(is_silent=True)
 
-        return target_and_fix_parameters
+            material_data_list = []
+            magnet_model_list = []
+            for material_name in config.material_list:
+                material_dto: mdb.MaterialCurve = material_db.material_data_interpolation_to_dto(material_name, fundamental_frequency, config.temperature)
+                material_data_list.append(material_dto)
+                # instantiate material-specific model
+                mdl: mh.loss.LossModel = mh.loss.LossModel(material=material_name, team="paderborn")
+                magnet_model_list.append(mdl)
 
-    @staticmethod
-    def objective(trial: optuna.Trial, config: StoSingleInputConfig,
-                  target_and_fixed_parameters: StoTargetAndFixedParameters,
-                  number_objectives: int, show_geometries: bool = False, process_number: int = 1):
-        """Objective for optuna optimization.
+            # set up working directories
+            working_directories = itof.set_up_folder_structure(config.stacked_transformer_optimization_directory)
 
-        :param trial: optuna trail objective. Used by optuna
-        :type trial: optuna.Trial
-        :param config: simulation configuration file
-        :type config: StoSingleInputConfig
-        :param target_and_fixed_parameters: contains pre-calculated values
-        :type target_and_fixed_parameters: StoTargetAndFixedParameters
-        :param number_objectives: number of objectives to give different target output parameters
-        :type number_objectives: int
-        :param show_geometries: True to display the geometries
-        :type show_geometries: bool
-        :param process_number: process number. Important for parallel computing, each simulation works in a separate folder
-        :type process_number: int
-        :return: returns volume, loss and absolute error of inductances in %
-            if number_objectives == 3:
-                total_volume, total_loss, 100 * (abs(difference_l_h / config.l_h_target) + abs(difference_l_s12 / config.l_s12_target))
-            elif number_objectives == 4:
-                return total_volume, total_loss, 100 * abs(difference_l_h), 100 * abs(difference_l_s12)
-        """
-        # suggest core geometry
-        core_inner_diameter = trial.suggest_float("core_inner_diameter", config.core_inner_diameter_min_max_list[0],
-                                                  config.core_inner_diameter_min_max_list[1])
-        window_w = trial.suggest_float("window_w", config.window_w_min_max_list[0], config.window_w_min_max_list[1])
-        air_gap_transformer = trial.suggest_float("air_gap_transformer", 0.1e-3, 5e-3)
+            # finalize data to dto
+            target_and_fix_parameters = StoTargetAndFixedParameters(
+                i_rms_1=i_rms_1,
+                i_rms_2=i_rms_2,
+                i_peak_1=i_peak_1,
+                i_peak_2=i_peak_2,
+                i_phase_deg_1=phi_deg_1,
+                i_phase_deg_2=phi_deg_2,
+                time_extracted_vec=time_extracted,
+                magnet_hub_model_list=magnet_model_list,
+                current_extracted_1_vec=current_extracted_1_vec,
+                current_extracted_2_vec=current_extracted_2_vec,
+                material_dto_curve_list=material_data_list,
+                fundamental_frequency=fundamental_frequency,
+                target_inductance_matrix=target_inductance_matrix,
+                working_directories=working_directories,
+                # winding 1
+                fft_frequency_list_1=fft_frequencies_1,
+                fft_amplitude_list_1=fft_amplitudes_1,
+                fft_phases_list_1=fft_phases_1,
 
-        # suggest secondary / tertiary inner winding radius
-        iso_left_core = trial.suggest_float("iso_left_core", config.insulations.iso_left_core_min,
-                                            config.insulations.iso_primary_inner_bobbin)
+                # winding 2
+                fft_frequency_list_2=fft_frequencies_2,
+                fft_amplitude_list_2=fft_amplitudes_2,
+                fft_phases_list_2=fft_phases_2
+            )
 
-        primary_additional_bobbin = config.insulations.iso_primary_inner_bobbin - iso_left_core
+            return target_and_fix_parameters
 
-        primary_litz_wire = trial.suggest_categorical("primary_litz_wire", config.primary_litz_wire_list)
+        @staticmethod
+        def objective(trial: optuna.Trial, config: StoSingleInputConfig, target_and_fixed_parameters: StoTargetAndFixedParameters):
+            """
+            Objective funktion to optimize. Uses reluctance model calculation.
 
-        primary_litz_parameters = ff.litz_database()[primary_litz_wire]
-        primary_litz_diameter = 2 * primary_litz_parameters["conductor_radii"]
+            Once core_name_list is not None, the objective function uses fixed core sizes. Cores are picked from the core_database().
+            Otherwise, core_inner_diameter_min_max_list, window_w_min_max_list and window_h_bot_min_max_list are used.
 
-        # Will always be calculated from the given parameters
-        available_width = window_w - iso_left_core - config.insulations.iso_right_core
-
-        # Suggestion of top window coil
-        # Theoretically also 0 coil turns possible (number_rows_coil_winding must then be recalculated to avoid neg. values)
-        primary_coil_turns = trial.suggest_int("primary_coil_turns", config.primary_coil_turns_min_max_list[0],
-                                               config.primary_coil_turns_min_max_list[1])
-        # Note: int() is used to round down.
-        number_rows_coil_winding = int((primary_coil_turns * (
-            primary_litz_diameter + config.insulations.iso_primary_to_primary) - iso_left_core) / available_width) + 1
-        window_h_top = config.insulations.iso_top_core + config.insulations.iso_bot_core + number_rows_coil_winding * primary_litz_diameter + (
-            number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
-
-        # Maximum coil air gap depends on the maximum window height top
-        air_gap_coil = trial.suggest_float("air_gap_coil", 0.1e-3, window_h_top - 0.1e-3)
-
-        # suggest categorical
-        core_material = trial.suggest_categorical("material", config.material_list)
-        foil_thickness = trial.suggest_categorical("foil_thickness", config.metal_sheet_thickness_list)
-        interleaving_scheme = trial.suggest_categorical("interleaving_scheme", config.interleaving_scheme_list)
-        interleaving_type = trial.suggest_categorical("interleaving_type", config.interleaving_type_list)
-
-        try:
-            if config.max_transformer_total_height is not None:
-                # Maximum transformer height
-                window_h_bot_max = config.max_transformer_total_height - 3 * core_inner_diameter / 4 - window_h_top
-                window_h_bot_min = config.window_h_bot_min_max_list[0]
-                if window_h_bot_min > window_h_bot_max:
-                    print(f"{number_rows_coil_winding=}")
-                    print(f"{window_h_top=}")
-                    raise ValueError(f"{window_h_bot_min=} > {window_h_bot_max=}")
-
-                window_h_bot = trial.suggest_float("window_h_bot", window_h_bot_min, window_h_bot_max)
+            :param trial: Optuna trial
+            :type trial: optuna.Trial
+            :param config: Stacked transformer optimization configuration file
+            :type config: StoSingleInputConfig
+            :param target_and_fixed_parameters: Target and fixed parameters
+            :type target_and_fixed_parameters: StoTargetAndFixedParameters
+            """
+            # fixed cores
+            if config.core_name_list is not None:
+                # using fixed core sizes from the database with flexible height.
+                core_name = trial.suggest_categorical("core_name", config.core_name_list)
+                core = ff.core_database()[core_name]
+                core_inner_diameter = core["core_inner_diameter"]
+                window_w = core["window_w"]
+                window_h_bot = trial.suggest_float("window_h_bot", 0.3 * core["window_h"], core["window_h"])
+                trial.set_user_attr('core_inner_diameter', core_inner_diameter)
+                trial.set_user_attr('window_w', window_w)
+                trial.set_user_attr('window_h_bot', window_h_bot)
 
             else:
-                window_h_bot = trial.suggest_float("window_h_bot", config.window_h_bot_min_max_list[0],
-                                                   config.window_h_bot_min_max_list[1])
+                # using arbitrary core sizes
+                core_inner_diameter = trial.suggest_float("core_inner_diameter", config.core_inner_diameter_min_max_list[0],
+                                                          config.core_inner_diameter_min_max_list[1])
+                window_w = trial.suggest_float("window_w", config.window_w_min_max_list[0], config.window_w_min_max_list[1])
+                window_h_bot = trial.suggest_float('window_h_bot', config.window_h_bot_min_max_list[0], config.window_h_bot_min_max_list[1])
 
-            if show_geometries:
-                verbosity = femmt.Verbosity.ToConsole
+            n_p_top = trial.suggest_int('n_p_top', config.n_p_top_min_max_list[0], config.n_p_top_min_max_list[1])
+            n_p_bot = trial.suggest_int('n_p_bot', config.n_p_bot_min_max_list[0], config.n_p_bot_min_max_list[1])
+            n_s_bot_min = int(np.round(n_p_bot / config.n_target, decimals=0)) - 2
+            if n_s_bot_min < 1:
+                n_s_bot_min = 1
+            n_s_bot_max = int(np.round(n_p_bot / config.n_target, decimals=0)) + 2
+            n_s_bot = trial.suggest_int('n_s_bot', n_s_bot_min, n_s_bot_max)
+
+            primary_litz_name = trial.suggest_categorical('primary_litz_name', config.primary_litz_wire_list)
+            primary_litz_dict = ff.litz_database()[primary_litz_name]
+            primary_litz_diameter = 2 * primary_litz_dict['conductor_radii']
+
+            secondary_litz_name = trial.suggest_categorical('secondary_litz_name', config.secondary_litz_wire_list)
+            secondary_litz_dict = ff.litz_database()[secondary_litz_name]
+            secondary_litz_diameter = 2 * secondary_litz_dict['conductor_radii']
+
+            material_name = trial.suggest_categorical('material_name', config.material_list)
+            for count, material_dto in enumerate(target_and_fixed_parameters.material_dto_curve_list):
+                if material_dto.material_name == material_name:
+                    material_dto: mdb.MaterialCurve = material_dto
+                    magnet_material_model = target_and_fixed_parameters.magnet_hub_model_list[count]
+
+            # calculate total 2D-axi symmetric volume of the core:
+            # formula: number_turns_per_row = (available_width + primary_to_primary) / (wire_diameter + primary_to_primary)
+            available_width_top = window_w - config.insulations.iso_window_top_core_left - config.insulations.iso_window_top_core_right
+            possible_number_turns_per_column_top_window = int(
+                (available_width_top + config.insulations.iso_primary_to_primary) / (primary_litz_diameter + config.insulations.iso_primary_to_primary))
+            if possible_number_turns_per_column_top_window < 1:
+                return float('nan'), float('nan')
+            number_of_rows_needed = np.ceil(n_p_top / possible_number_turns_per_column_top_window)
+            needed_height_top_wo_insulation = (number_of_rows_needed * primary_litz_diameter + \
+                                               (number_of_rows_needed - 1) * config.insulations.iso_primary_to_primary)
+            window_h_top = needed_height_top_wo_insulation + config.insulations.iso_window_top_core_top + config.insulations.iso_window_top_core_bot
+
+            # detailed calculation for the winding window
+            # check the area for the primary winding
+            available_height_bot = window_h_bot - config.insulations.iso_window_bot_core_top - config.insulations.iso_window_bot_core_bot
+            possible_number_prim_turns_per_column_bot_window = int(
+                (available_height_bot + config.insulations.iso_primary_to_primary) / (primary_litz_diameter + config.insulations.iso_primary_to_primary))
+            if possible_number_prim_turns_per_column_bot_window < 1:
+                return float('nan'), float('nan')
+            number_of_primary_columns_needed = np.ceil(n_p_bot / possible_number_prim_turns_per_column_bot_window)
+            needed_primary_width_bot_wo_insulation = (number_of_primary_columns_needed * primary_litz_diameter + (number_of_primary_columns_needed - 1) * \
+                                                      config.insulations.iso_primary_to_primary)
+            area_primary_bot = needed_primary_width_bot_wo_insulation * window_h_bot
+
+            # check the area for the secondary winding
+            possible_number_sec_turns_per_column_bot_window = int(
+                (available_height_bot + config.insulations.iso_secondary_to_secondary) / \
+                (secondary_litz_diameter + config.insulations.iso_secondary_to_secondary))
+            if possible_number_sec_turns_per_column_bot_window < 1:
+                return float('nan'), float('nan')
+            number_of_secondary_columns_needed = np.ceil(n_s_bot / possible_number_sec_turns_per_column_bot_window)
+            needed_primary_width_bot_wo_insulation = (number_of_secondary_columns_needed * secondary_litz_diameter + \
+                                                      (number_of_secondary_columns_needed - 1) * config.insulations.iso_secondary_to_secondary)
+            area_secondary_bot = needed_primary_width_bot_wo_insulation * window_h_bot
+            area_insulation_prim_sec_bot = 2 * config.insulations.iso_primary_to_secondary * window_h_bot
+
+            total_area_windings_bot = area_primary_bot + area_secondary_bot + area_insulation_prim_sec_bot
+
+            window_bot_available_height = window_h_bot - config.insulations.iso_window_bot_core_top - config.insulations.iso_window_bot_core_bot
+            window_bot_available_width = window_w - config.insulations.iso_window_bot_core_left - config.insulations.iso_window_bot_core_right
+            window_bot_available_area = window_bot_available_height * window_bot_available_width
+
+            # as the window_h_top is adapted to the number of n_p_top, the top windings always fit into the top window.
+            if total_area_windings_bot > window_bot_available_area:
+                logging.warning("Winding window too small for too many turns.")
+                return float('nan'), float('nan')
+
+            reluctance_model_intput = ReluctanceModelInput(
+                target_inductance_matrix=target_and_fixed_parameters.target_inductance_matrix,
+                core_inner_diameter=core_inner_diameter,
+                window_w=window_w,
+                window_h_bot=window_h_bot,
+                window_h_top=window_h_top,
+                turns_1_top=n_p_top,
+                turns_1_bot=n_p_bot,
+                turns_2_bot=n_s_bot,
+                litz_wire_name_1=primary_litz_name,
+                litz_wire_diameter_1=primary_litz_diameter,
+                litz_wire_name_2=secondary_litz_name,
+                litz_wire_diameter_2=secondary_litz_diameter,
+
+                insulations=config.insulations,
+                material_dto=material_dto,
+                magnet_material_model=magnet_material_model,
+
+                temperature=config.temperature,
+                time_extracted_vec=target_and_fixed_parameters.time_extracted_vec,
+                current_extracted_vec_1=target_and_fixed_parameters.current_extracted_1_vec,
+                current_extracted_vec_2=target_and_fixed_parameters.current_extracted_2_vec,
+                fundamental_frequency=target_and_fixed_parameters.fundamental_frequency,
+                i_rms_1=target_and_fixed_parameters.i_rms_1,
+                i_rms_2=target_and_fixed_parameters.i_rms_2,
+                primary_litz_dict=primary_litz_dict,
+                secondary_litz_dict=secondary_litz_dict,
+
+                # winding 1
+                fft_frequency_list_1=target_and_fixed_parameters.fft_frequency_list_1,
+                fft_amplitude_list_1=target_and_fixed_parameters.fft_amplitude_list_1,
+                fft_phases_list_1=target_and_fixed_parameters.fft_phases_list_1,
+                # winding 2
+                fft_frequency_list_2=target_and_fixed_parameters.fft_frequency_list_2,
+                fft_amplitude_list_2=target_and_fixed_parameters.fft_amplitude_list_2,
+                fft_phases_list_2=target_and_fixed_parameters.fft_phases_list_2,
+            )
+            try:
+                reluctance_output = StackedTransformerOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_intput)
+            except ValueError:
+                logging.warning("No fitting air gap length")
+                return float('nan'), float('nan')
+
+            # set additional attributes
+            trial.set_user_attr('p_hyst', reluctance_output.p_hyst)
+            trial.set_user_attr('p_hyst_top', reluctance_output.p_hyst_top)
+            trial.set_user_attr('p_hyst_bot', reluctance_output.p_hyst_bot)
+            trial.set_user_attr('p_hyst_middle', reluctance_output.p_hyst_middle)
+            trial.set_user_attr('b_max_top', reluctance_output.b_max_top)
+            trial.set_user_attr('b_max_bot', reluctance_output.b_max_bot)
+            trial.set_user_attr('b_max_middle', reluctance_output.b_max_middle)
+            trial.set_user_attr('window_h_top', window_h_top)
+            trial.set_user_attr('winding_losses', reluctance_output.winding_1_loss + reluctance_output.winding_2_loss)
+            trial.set_user_attr('l_top_air_gap', reluctance_output.l_top_air_gap)
+            trial.set_user_attr('l_bot_air_gap', reluctance_output.l_bot_air_gap)
+
+            return reluctance_output.volume, reluctance_output.p_loss
+
+        @staticmethod
+        def single_reluctance_model_simulation(reluctance_input: ReluctanceModelInput) -> ReluctanceModelOutput:
+            """
+            Perform a single reluctance model simulation.
+
+            :param reluctance_input: Reluctance model input data.
+            :type reluctance_input: ReluctanceModelInput
+            :return: Reluctance model output data
+            :rtype: ReluctanceModelOutput
+            """
+            core_total_height = reluctance_input.window_h_top + reluctance_input.window_h_bot + reluctance_input.core_inner_diameter * 3 / 4
+            r_outer = fr.calculate_r_outer(reluctance_input.core_inner_diameter, reluctance_input.window_w)
+            volume = ff.calculate_cylinder_volume(cylinder_diameter=2 * r_outer, cylinder_height=core_total_height)
+
+            # calculate the reluctance and flux matrix
+            winding_matrix = np.array([[reluctance_input.turns_1_top, 0], [reluctance_input.turns_1_bot, reluctance_input.turns_2_bot]])
+
+            reluctance_matrix = fr.calculate_reluctance_matrix(winding_matrix, reluctance_input.target_inductance_matrix)
+
+            current_matrix = np.array([reluctance_input.current_extracted_vec_1, reluctance_input.current_extracted_vec_2])
+
+            flux_matrix = fr.calculate_flux_matrix(reluctance_matrix, winding_matrix, current_matrix)
+
+            flux_top = flux_matrix[0]
+            flux_bot = flux_matrix[1]
+            flux_middle = flux_bot - flux_top
+
+            core_cross_section = (reluctance_input.core_inner_diameter / 2) ** 2 * np.pi
+
+            flux_density_top = flux_top / core_cross_section
+            flux_density_bot = flux_bot / core_cross_section
+            flux_density_middle = flux_middle / core_cross_section
+
+            # calculate the core reluctance
+            core_inner_cylinder_top = fr.r_core_round(reluctance_input.core_inner_diameter, reluctance_input.window_h_top,
+                                                      reluctance_input.material_dto.material_mu_r_abs)
+            core_inner_cylinder_bot = fr.r_core_round(reluctance_input.core_inner_diameter, reluctance_input.window_h_bot,
+                                                      reluctance_input.material_dto.material_mu_r_abs)
+            core_top_bot_radiant = fr.r_core_top_bot_radiant(reluctance_input.core_inner_diameter, reluctance_input.window_w,
+                                                             reluctance_input.material_dto.material_mu_r_abs, reluctance_input.core_inner_diameter / 4)
+
+            r_core_top = 2 * core_inner_cylinder_top + core_top_bot_radiant
+            r_core_bot = 2 * core_inner_cylinder_bot + core_top_bot_radiant
+            r_core_middle = core_top_bot_radiant
+
+            r_core_top_target = reluctance_matrix[0][0] + reluctance_matrix[0][1]  # - r_core_middle
+            r_core_bot_target = reluctance_matrix[1][1] + reluctance_matrix[0][1]  # - r_core_middle
+
+            r_air_gap_top_target = r_core_top_target - r_core_top
+            r_air_gap_bot_target = r_core_bot_target - r_core_bot
+
+            # calculate air gaps to reach the target parameters
+            minimum_air_gap_length = 0.01e-3
+            maximum_air_gap_length = 2e-3
+
+            l_top_air_gap = optimize.brentq(
+                fr.r_air_gap_round_inf_sct, minimum_air_gap_length, maximum_air_gap_length,
+                args=(reluctance_input.core_inner_diameter, reluctance_input.window_h_top, r_air_gap_top_target), full_output=True)[0]
+
+            l_bot_air_gap = optimize.brentq(
+                fr.r_air_gap_round_round_sct, minimum_air_gap_length, maximum_air_gap_length,
+                args=(reluctance_input.core_inner_diameter, reluctance_input.window_h_bot / 2, reluctance_input.window_h_bot / 2, r_air_gap_bot_target),
+                full_output=True)[0]
+
+            # calculate hysteresis losses from mag-net-hub
+            interp_points = np.arange(0, 1024) * reluctance_input.time_extracted_vec[-1] / 1024
+            flux_density_top_interp = np.interp(interp_points, reluctance_input.time_extracted_vec, flux_density_top)
+            flux_density_bot_interp = np.interp(interp_points, reluctance_input.time_extracted_vec, flux_density_bot)
+            flux_density_middle_interp = np.interp(interp_points, reluctance_input.time_extracted_vec, flux_density_middle)
+
+            # get power loss in W/m³ and estimated H wave in A/m
+            p_density_top, _ = reluctance_input.magnet_material_model(flux_density_top_interp,
+                                                                      reluctance_input.fundamental_frequency, reluctance_input.temperature)
+            p_density_bot, _ = reluctance_input.magnet_material_model(flux_density_bot_interp,
+                                                                      reluctance_input.fundamental_frequency, reluctance_input.temperature)
+            p_density_middle, _ = reluctance_input.magnet_material_model(flux_density_middle_interp,
+                                                                         reluctance_input.fundamental_frequency, reluctance_input.temperature)
+
+            volume_core_top = (2 * ff.calculate_cylinder_volume(reluctance_input.core_inner_diameter, reluctance_input.window_h_top) - \
+                               ff.calculate_cylinder_volume(reluctance_input.core_inner_diameter, l_top_air_gap) + \
+                               ff.calculate_cylinder_volume(2 * r_outer, reluctance_input.core_inner_diameter / 4))
+            volume_core_bot = (2 * ff.calculate_cylinder_volume(reluctance_input.core_inner_diameter, reluctance_input.window_h_bot) - \
+                               ff.calculate_cylinder_volume(reluctance_input.core_inner_diameter, l_bot_air_gap) + \
+                               ff.calculate_cylinder_volume(2 * r_outer, reluctance_input.core_inner_diameter / 4))
+            volume_core_middle = ff.calculate_cylinder_volume(2 * r_outer, reluctance_input.core_inner_diameter / 4)
+
+            p_top = p_density_top * volume_core_top
+            p_bot = p_density_bot * volume_core_bot
+            p_middle = p_density_middle * volume_core_middle
+
+            p_hyst = p_top + p_bot + p_middle
+
+            # calculate winding losses
+            primary_effective_conductive_cross_section = (
+                reluctance_input.primary_litz_dict["strands_numbers"] * reluctance_input.primary_litz_dict["strand_radii"] ** 2 * np.pi)
+            primary_effective_conductive_radius = np.sqrt(primary_effective_conductive_cross_section / np.pi)
+            primary_resistance_top = fr.resistance_solid_wire(
+                reluctance_input.core_inner_diameter, reluctance_input.window_w, reluctance_input.turns_1_top,
+                primary_effective_conductive_radius, material='Copper')
+
+            number_bot_prim_turns_per_column = (
+                int((reluctance_input.window_h_bot - reluctance_input.insulations.iso_window_bot_core_top - \
+                     reluctance_input.insulations.iso_window_bot_core_bot + reluctance_input.insulations.iso_primary_to_primary) / \
+                    (2 * reluctance_input.primary_litz_dict["conductor_radii"] + reluctance_input.insulations.iso_primary_to_primary)))
+            if number_bot_prim_turns_per_column > reluctance_input.turns_1_bot:
+                # single row window only
+                primary_resistance_bot_inner = fr.resistance_solid_wire(
+                    reluctance_input.core_inner_diameter, reluctance_input.window_w, reluctance_input.turns_1_bot,
+                    primary_effective_conductive_radius, material='Copper')
+                primary_resistance_bot_outer = 0
             else:
-                verbosity = femmt.Verbosity.Silent
+                # multiple row window
+                primary_resistance_bot_inner = fr.resistance_solid_wire(
+                    reluctance_input.core_inner_diameter, reluctance_input.window_w, number_bot_prim_turns_per_column,
+                    primary_effective_conductive_radius, material='Copper')
 
-            # calculate core volume for stacked core type. Check if this volume is smaller than the given limit
-            core_height = window_h_bot + window_h_top + core_inner_diameter * 3 / 4
-            r_outer = fr.calculate_r_outer(core_inner_diameter, window_w)
-            core_volume = np.pi * r_outer ** 2 * core_height
-            if core_volume > config.max_core_volume:
-                raise ValueError(f"Core volume of {core_volume} > {config.max_core_volume}.")
+                primary_resistance_bot_outer = fr.resistance_solid_wire(
+                    reluctance_input.core_inner_diameter, reluctance_input.window_w, reluctance_input.turns_1_bot - number_bot_prim_turns_per_column,
+                    primary_effective_conductive_radius, material='Copper')
 
-            working_directory_single_process = os.path.join(
-                target_and_fixed_parameters.working_directories.fem_working_directory, f"process_{process_number}")
+            secondary_effective_conductive_cross_section = (
+                reluctance_input.secondary_litz_dict["strands_numbers"] * reluctance_input.secondary_litz_dict["strand_radii"] ** 2 * np.pi)
+            secondary_effective_conductive_radius = np.sqrt(secondary_effective_conductive_cross_section / np.pi)
+            secondary_resistance = fr.resistance_solid_wire(
+                reluctance_input.core_inner_diameter, reluctance_input.window_w, reluctance_input.turns_2_bot, secondary_effective_conductive_radius,
+                material='Copper')
 
-            geo = femmt.MagneticComponent(component_type=femmt.ComponentType.IntegratedTransformer,
-                                          working_directory=working_directory_single_process,
-                                          verbosity=verbosity, simulation_name=f"Case_{trial.number}")
+            winding_area_1_top = (
+                2 * reluctance_input.primary_litz_dict["conductor_radii"] * \
+                (reluctance_input.turns_1_top * 2 * reluctance_input.primary_litz_dict["conductor_radii"] + \
+                    (reluctance_input.turns_1_top - 1) * reluctance_input.insulations.iso_primary_to_primary))
 
-            geo.update_mesh_accuracies(config.mesh_accuracy, config.mesh_accuracy, config.mesh_accuracy,
-                                       config.mesh_accuracy)
+            p_winding_1_top = 0
+            p_winding_1_bot = 0
+            for count, fft_frequency in enumerate(reluctance_input.fft_frequency_list_1):
+                proximity_factor_1_top = fmt.calc_proximity_factor_air_gap(
+                    litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=reluctance_input.turns_1_top,
+                    r_1=reluctance_input.insulations.iso_window_top_core_left,
+                    frequency=fft_frequency, winding_area=winding_area_1_top,
+                    litz_wire_material_name='Copper', temperature=reluctance_input.temperature)
 
-            electro_magnetic_directory_single_process = os.path.join(working_directory_single_process,
-                                                                     "electro_magnetic")
-            strands_coefficients_folder_single_process = os.path.join(electro_magnetic_directory_single_process,
-                                                                      "Strands_Coefficients")
+                p_winding_1_top += proximity_factor_1_top * primary_resistance_top * reluctance_input.fft_amplitude_list_1[count] ** 2
 
-            # Update directories for each model
-            geo.file_data.update_paths(working_directory_single_process, electro_magnetic_directory_single_process,
-                                       strands_coefficients_folder_single_process)
+                if number_bot_prim_turns_per_column > reluctance_input.turns_1_bot:
+                    winding_area_1_bot = 2 * reluctance_input.primary_litz_dict["conductor_radii"] * \
+                        (reluctance_input.turns_1_bot * 2 * reluctance_input.primary_litz_dict["conductor_radii"] + \
+                            (reluctance_input.turns_1_bot - 1) * reluctance_input.insulations.iso_primary_to_primary)
 
-            core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter,
-                                                               window_w=window_w,
-                                                               window_h_top=window_h_top, window_h_bot=window_h_bot)
-            core = femmt.Core(core_type=femmt.CoreType.Stacked, core_dimensions=core_dimensions,
-                              material=core_material, temperature=config.temperature,
-                              frequency=target_and_fixed_parameters.fundamental_frequency,
-                              permeability_datasource=config.permeability_datasource,
-                              permeability_datatype=config.permeability_datatype,
-                              permeability_measurement_setup=config.permeability_measurement_setup,
-                              permittivity_datasource=config.permittivity_datasource,
-                              permittivity_datatype=config.permittivity_datatype,
-                              permittivity_measurement_setup=config.permittivity_measurement_setup)
+                    proximity_factor_1_bot_inner = fmt.calc_proximity_factor_air_gap(
+                        litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=reluctance_input.turns_1_bot,
+                        r_1=reluctance_input.insulations.iso_window_bot_core_left,
+                        frequency=fft_frequency, winding_area=winding_area_1_bot,
+                        litz_wire_material_name='Copper', temperature=reluctance_input.temperature)
 
+                    proximity_factor_1_bot_outer = 0
+                else:
+                    winding_area_1_bot = (2 * reluctance_input.primary_litz_dict["conductor_radii"] * (
+                        number_bot_prim_turns_per_column * 2 * reluctance_input.primary_litz_dict["conductor_radii"] + \
+                        (number_bot_prim_turns_per_column - 1) * reluctance_input.insulations.iso_primary_to_primary))
+
+                    proximity_factor_1_bot_inner = fmt.calc_proximity_factor_air_gap(
+                        litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=number_bot_prim_turns_per_column,
+                        r_1=reluctance_input.insulations.iso_window_bot_core_left,
+                        frequency=fft_frequency, winding_area=winding_area_1_bot,
+                        litz_wire_material_name='Copper', temperature=reluctance_input.temperature)
+
+                    proximity_factor_1_bot_outer = fmt.calc_proximity_factor(
+                        litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=reluctance_input.turns_1_bot - number_bot_prim_turns_per_column,
+                        window_h=reluctance_input.window_h_bot,
+                        iso_core_top=reluctance_input.insulations.iso_window_bot_core_top, iso_core_bot=reluctance_input.insulations.iso_window_bot_core_bot,
+                        frequency=fft_frequency, litz_wire_material_name='Copper', temperature=reluctance_input.temperature)
+
+                p_winding_1_bot_inner = proximity_factor_1_bot_inner * primary_resistance_bot_inner * reluctance_input.fft_amplitude_list_1[count] ** 2
+                p_winding_1_bot_outer = proximity_factor_1_bot_outer * primary_resistance_bot_outer * reluctance_input.fft_amplitude_list_1[count] ** 2
+
+                p_winding_1_bot += p_winding_1_bot_inner + p_winding_1_bot_outer
+
+            p_winding_2 = 0
+            for count, fft_frequency in enumerate(reluctance_input.fft_frequency_list_2):
+                proximity_factor_assumption_2 = fmt.calc_proximity_factor(
+                    litz_wire_name=reluctance_input.litz_wire_name_2, number_turns=reluctance_input.turns_2_bot, window_h=reluctance_input.window_h_bot,
+                    iso_core_top=reluctance_input.insulations.iso_window_bot_core_top, iso_core_bot=reluctance_input.insulations.iso_window_bot_core_bot,
+                    frequency=fft_frequency, litz_wire_material_name='Copper', temperature=reluctance_input.temperature)
+
+                p_winding_2 += proximity_factor_assumption_2 * secondary_resistance * reluctance_input.fft_amplitude_list_2[count] ** 2
+
+            p_loss_total = p_hyst + p_winding_1_top + p_winding_1_bot + p_winding_2
+
+            area_to_heat_sink = r_outer ** 2 * np.pi
+
+            reluctance_output = ReluctanceModelOutput(
+                # set additional attributes
+                p_hyst=p_hyst,
+                p_hyst_top=p_top,
+                p_hyst_bot=p_bot,
+                p_hyst_middle=p_middle,
+                b_max_top=np.max(flux_density_top_interp),
+                b_max_bot=np.max(flux_density_bot_interp),
+                b_max_middle=np.max(flux_density_middle_interp),
+                winding_1_loss=p_winding_1_top + p_winding_1_bot,
+                winding_2_loss=p_winding_2,
+                l_top_air_gap=l_top_air_gap,
+                l_bot_air_gap=l_bot_air_gap,
+                volume=volume,
+                area_to_heat_sink=area_to_heat_sink,
+                p_loss=p_loss_total,
+            )
+
+            return reluctance_output
+
+        @staticmethod
+        def start_proceed_study(config: StoSingleInputConfig, number_trials: Optional[int] = None,
+                                target_number_trials: Optional[int] = None, storage: str = 'sqlite',
+                                sampler=optuna.samplers.NSGAIIISampler(),
+                                ) -> None:
+            """
+            Proceed a study which is stored as sqlite database.
+
+            :param config: Simulation configuration
+            :type config: ItoSingleInputConfig
+            :param number_trials: Number of trials adding to the existing study
+            :type number_trials: int
+            :param storage: storage database, e.g. 'sqlite' or 'mysql'
+            :type storage: str
+            :param target_number_trials: Number of target trials for the existing study
+            :type target_number_trials: int
+            :param sampler: optuna.samplers.NSGAIISampler() or optuna.samplers.NSGAIIISampler(). Note about the brackets () !!
+            :type sampler: optuna.sampler-object
+            """
+            if os.path.exists(f"{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.sqlite3"):
+                print("Existing study found. Proceeding.")
+
+            target_and_fixed_parameters = StackedTransformerOptimization.ReluctanceModel.calculate_fix_parameters(config)
+
+            # introduce study in storage, e.g. sqlite or mysql
+            if storage == 'sqlite':
+                # Note: for sqlite operation, there needs to be three slashes '///' even before the path '/home/...'
+                # Means, in total there are four slashes including the path itself '////home/.../database.sqlite3'
+                storage = f"sqlite:///{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.sqlite3"
+            elif storage == 'mysql':
+                storage = "mysql://monty@localhost/mydb",
+
+            # set logging verbosity: https://optuna.readthedocs.io/en/stable/reference/generated/optuna.logging.set_verbosity.html#optuna.logging.set_verbosity
+            # .INFO: all messages (default)
+            # .WARNING: fails and warnings
+            # .ERROR: only errors
+            optuna.logging.set_verbosity(optuna.logging.ERROR)
+
+            func = lambda trial: StackedTransformerOptimization.ReluctanceModel.objective(trial, config, target_and_fixed_parameters)
+
+            study_in_storage = optuna.create_study(study_name=config.stacked_transformer_study_name,
+                                                   storage=storage,
+                                                   directions=['minimize', 'minimize'],
+                                                   load_if_exists=True, sampler=sampler)
+
+            if target_number_trials is not None:
+                # simulation for a given number of target trials
+                if len(study_in_storage.trials) < target_number_trials:
+                    study_in_memory = optuna.create_study(directions=['minimize', 'minimize'],
+                                                          study_name=config.stacked_transformer_study_name, sampler=sampler)
+                    print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
+                    study_in_memory.add_trials(study_in_storage.trials)
+                    number_trials = target_number_trials - len(study_in_memory.trials)
+                    study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
+                    study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
+                    print(f"Finished {number_trials} trials.")
+                    print(f"current time: {datetime.datetime.now()}")
+                else:
+                    print(f"Study has already {len(study_in_storage.trials)} trials, and target is {target_number_trials} trials.")
+
+            else:
+                # normal simulation with number_trials
+                study_in_memory = optuna.create_study(directions=['minimize', 'minimize'], study_name=config.stacked_transformer_study_name, sampler=sampler)
+                print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
+                study_in_memory.add_trials(study_in_storage.trials)
+                study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
+
+                study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
+                print(f"Finished {number_trials} trials.")
+                print(f"current time: {datetime.datetime.now()}")
+            StackedTransformerOptimization.ReluctanceModel.save_config(config)
+
+        @staticmethod
+        def show_study_results(config: StoSingleInputConfig) -> None:
+            """Show the results of a study.
+
+            A local .html file is generated under config.working_directory to store the interactive plotly plots on disk.
+
+            :param config: Integrated transformer configuration file
+            :type config: ItoSingleInputConfig
+            """
+            study = optuna.load_study(study_name=config.stacked_transformer_study_name,
+                                      storage=f"sqlite:///{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.sqlite3")
+
+            fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0], t.values[1]), target_names=["volume in m³", "loss in W"])
+            fig.update_layout(title=f"{config.stacked_transformer_study_name} <br><sup>{config.stacked_transformer_optimization_directory}</sup>")
+            fig.write_html(f"{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}"
+                           f"_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
+            fig.show()
+
+        @staticmethod
+        def study_to_df(config: StoSingleInputConfig) -> pd.DataFrame:
+            """
+            Create a Pandas dataframe from a study.
+
+            :param config: configuration
+            :type config: InductorOptimizationDTO
+            :return: Study results as Pandas Dataframe
+            :rtype: pd.DataFrame
+            """
+            database_url = f'sqlite:///{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.sqlite3'
+            if os.path.isfile(database_url.replace('sqlite:///', '')):
+                print("Existing study found.")
+            else:
+                raise ValueError(f"Can not find database: {database_url}")
+            loaded_study = optuna.load_study(study_name=config.stacked_transformer_study_name, storage=database_url)
+            df = loaded_study.trials_dataframe()
+            df.to_csv(f'{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.csv')
+            logging.info(f"Exported study as .csv file: {config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.csv")
+            return df
+
+        @staticmethod
+        def load_csv_to_df(csv_filepath: str) -> pd.DataFrame:
+            """
+            Load a csv file (previously stored from a Pandas dataframe) back to a Pandas dataframe.
+
+            :param csv_filepath: File path of .csv file
+            :type csv_filepath: str
+            :return: loaded results from the given .csv file
+            :rtype: pandas.DataFrame
+            """
+            df = pd.read_csv(csv_filepath, header=0, index_col=0)
+            # reading a pandas dataframe seems to change a global variable in the c subsystem
+            # after reading csv values, there are issues running onelab/gmsh, as gmsh writes ',' instead '.' to its own files
+            # reading the file again with setting back the delimiter to ';', is a workaround for the mentioned problem.
+            pd.read_csv(csv_filepath, header=0, index_col=0, delimiter=';')
+            return df
+
+        @staticmethod
+        def df_plot_pareto_front(*dataframes: list[pd.DataFrame], label_list: list[str], color_list: list[str] = None,
+                                 interactive: bool = True) -> None:
+            """
+            Plot an interactive Pareto diagram (losses vs. volume) to select the transformers to re-simulate.
+
+            :param dataframes: Dataframe, generated from an optuna study (exported by optuna)
+            :type dataframes: pd.Dataframe
+            :param label_list: list of labels for the legend. Same order as df.
+            :type label_list: list[str]
+            :param color_list: list of colors for the points and legend. Same order as df.
+            :type color_list: list[str]
+            :param interactive: True to show trial numbers if one moves the mouse over it
+            :type interactive: bool
+            """
+            if color_list is None:
+                color_list = ['red', 'blue', 'green', 'grey']
+            for count, df in enumerate(dataframes):
+                # color_list was before list(ff.colors_femmt_default.keys())
+                df['color_r'], df['color_g'], df['color_b'] = ff.colors_femmt_default[color_list[count]]
+
+            df_all = pd.concat(dataframes, axis=0)
+            color_array = np.transpose(np.array([df_all['color_r'].to_numpy(), df_all['color_g'].to_numpy(), df_all['color_b'].to_numpy()])) / 255
+
+            names = df_all["number"].to_numpy()
+            fig, ax = plt.subplots()
+            legend_list = []
+            for count, label_text in enumerate(label_list):
+                legend_list.append(mpatches.Patch(color=np.array(ff.colors_femmt_default[color_list[count]]) / 255, label=label_text))
+            plt.legend(handles=legend_list)
+            sc = plt.scatter(df_all["values_0"], df_all["values_1"], s=10, c=color_array)
+
+            if interactive:
+                annot = ax.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
+                                    bbox=dict(boxstyle="round", fc="w"),
+                                    arrowprops=dict(arrowstyle="->"))
+                annot.set_visible(False)
+
+                def update_annot(ind):
+                    pos = sc.get_offsets()[ind["ind"][0]]
+                    annot.xy = pos
+                    text = f"{[names[n] for n in ind['ind']]}"
+                    annot.set_text(text)
+                    annot.get_bbox_patch().set_alpha(0.4)
+
+                def hover(event):
+                    vis = annot.get_visible()
+                    if event.inaxes == ax:
+                        cont, ind = sc.contains(event)
+                        if cont:
+                            update_annot(ind)
+                            annot.set_visible(True)
+                            fig.canvas.draw_idle()
+                        else:
+                            if vis:
+                                annot.set_visible(False)
+                                fig.canvas.draw_idle()
+
+                fig.canvas.mpl_connect("motion_notify_event", hover)
+            plt.xlabel('Volume in m³')
+            plt.ylabel('Losses in W')
+            plt.grid()
+            plt.show()
+
+        @staticmethod
+        def filter_loss_list_df(df: pd.DataFrame, factor_min_dc_losses: float = 1.2, factor_max_dc_losses: float = 10) -> pd.DataFrame:
+            """
+            Remove designs with too high losses compared to the minimum losses.
+
+            :param df: list of valid DTOs
+            :type df: List[ItoSingleResultFile]
+            :param factor_min_dc_losses: filter factor for the minimum dc losses
+            :type factor_min_dc_losses: float
+            :param factor_max_dc_losses: dc_max_loss = factor_max_dc_losses * min_available_dc_losses_in_pareto_front
+            :type factor_max_dc_losses: float
+            :returns: list with removed objects (too small air gaps)
+            :rtype: List[ItoSingleResultFile]
+            """
+            # figure out pareto front
+            # pareto_volume_list, pareto_core_hyst_list, pareto_dto_list = self.pareto_front(volume_list, core_hyst_loss_list, valid_design_list)
+
+            pareto_df: pd.DataFrame = fo.pareto_front_from_df(df)
+
+            vector_to_sort = np.array([pareto_df["values_0"], pareto_df["values_1"]])
+
+            # sorting 2d array by 1st row
+            # https://stackoverflow.com/questions/49374253/sort-a-numpy-2d-array-by-1st-row-maintaining-columns
+            sorted_vector = vector_to_sort[:, vector_to_sort[0].argsort()]
+            x_pareto_vec = sorted_vector[0]
+            y_pareto_vec = sorted_vector[1]
+
+            total_losses_list = df["values_1"][~np.isnan(df['values_1'])].to_numpy()
+
+            min_total_dc_losses = total_losses_list[np.argmin(total_losses_list)]
+            loss_offset = factor_min_dc_losses * min_total_dc_losses
+
+            ref_loss_max = np.interp(df["values_0"], x_pareto_vec, y_pareto_vec) + loss_offset
+            # clip losses to a maximum of the minimum losses
+            ref_loss_max = np.clip(ref_loss_max, a_min=-1, a_max=factor_max_dc_losses * min_total_dc_losses)
+
+            pareto_df_offset = df[df['values_1'] < ref_loss_max]
+
+            return pareto_df_offset
+
+        @staticmethod
+        def df_trial_numbers(df: pd.DataFrame, trial_number_list: List[int]) -> pd.DataFrame:
+            """
+            Generate a new dataframe from a given one, just with the trial numbers from the trial_number_list.
+
+            :param df: input dataframe
+            :type df: pandas.DataFrame
+            :param trial_number_list: list of trials, e.g. [1530, 1870, 3402]
+            :type trial_number_list: List[int]
+            :return: dataframe with trial numbers from trial_number_list
+            :rtype: pandas.DataFrame
+            """
+            df_trial_numbers = df.loc[df["number"].isin(trial_number_list)]
+
+            return df_trial_numbers
+
+        @staticmethod
+        def save_config(config: StoSingleInputConfig) -> None:
+            """
+            Save the configuration file as pickle file on the disk.
+
+            :param config: configuration
+            :type config: InductorOptimizationDTO
+            """
+            # convert config path to an absolute filepath
+            config.inductor_optimization_directory = os.path.abspath(config.stacked_transformer_optimization_directory)
+            os.makedirs(config.stacked_transformer_optimization_directory, exist_ok=True)
+            with open(f"{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.pkl", 'wb') as output:
+                pickle.dump(config, output, pickle.HIGHEST_PROTOCOL)
+
+        @staticmethod
+        def load_config(config_pickle_filepath: str) -> StoSingleInputConfig:
+            """
+            Load pickle configuration file from disk.
+
+            :param config_pickle_filepath: filepath to the pickle configuration file
+            :type config_pickle_filepath: str
+            :return: Configuration file as InductorOptimizationDTO object
+            :rtype: InductorOptimizationDTO
+            """
+            with open(config_pickle_filepath, 'rb') as pickle_file_data:
+                return pickle.load(pickle_file_data)
+
+    class FemSimulation:
+        """Contains methods to perform FEM simulations or process their results."""
+
+        @staticmethod
+        def fem_simulations_from_reluctance_df(reluctance_df: pd.DataFrame, config: StoSingleInputConfig, show_visual_outputs: bool = False,
+                                               process_number: int = 1):
+            """
+            Perform FEM simulations from a given Pandas dataframe. The dataframe is from the reluctance model results.
+
+            :param reluctance_df: Pandas dataframe containing relults from the relutance model
+            :type reluctance_df: pandas.DataFrame
+            :param config: Configuration for the optimization of the transformer
+            :type config: StoSingleInputConfig
+            :param show_visual_outputs: Ture to show visual outputs like the geometry
+            :type show_visual_outputs: bool
+            :param process_number: Process number for parallel simulations on multiple cpu cores
+            :type process_number: int
+            """
+            target_and_fix_parameters = StackedTransformerOptimization.ReluctanceModel.calculate_fix_parameters(config)
+
+            working_directory = target_and_fix_parameters.working_directories.fem_working_directory
+            if not os.path.exists(working_directory):
+                os.mkdir(working_directory)
+            working_directory = os.path.join(
+                target_and_fix_parameters.working_directories.fem_working_directory, f"process_{process_number}")
+
+            # pd.read_csv(current_waveforms_csv_file, header=0, index_col=0, delimiter=';')
+            for index, _ in tqdm.tqdm(reluctance_df.iterrows(), total=reluctance_df.shape[0]):
+
+                destination_json_file = os.path.join(
+                    target_and_fix_parameters.working_directories.fem_simulation_results_directory,
+                    f'case_{index}.json')
+
+                if os.path.exists(destination_json_file):
+                    print(f'case_{index}.json already exists. Skip simulation.')
+                else:
+
+                    try:
+                        if reluctance_df["params_core_name"] is not None:
+                            core_inner_diameter = reluctance_df["user_attrs_core_inner_diameter"][index].item()
+                            window_w = reluctance_df["user_attrs_window_w"][index].item()
+                            window_h_bot = reluctance_df["user_attrs_window_h_bot"][index].item()
+                        else:
+                            core_inner_diameter = reluctance_df["params_core_inner_diameter"][index].item()
+                            window_w = reluctance_df["params_window_w"][index].item()
+                            window_h_bot = reluctance_df["params_window_h_bot"][index].item()
+
+                        fem_input = FemInput(
+                            simulation_name='xx',
+                            working_directory=working_directory,
+                            core_inner_diameter=core_inner_diameter,
+                            window_w=window_w,
+                            window_h_bot=window_h_bot,
+                            window_h_top=reluctance_df['user_attrs_window_h_top'][index].item(),
+                            material_name=reluctance_df["params_material_name"][index],
+                            temperature=config.temperature,
+                            material_data_sources=config.material_data_sources,
+                            air_gap_length_top=reluctance_df["user_attrs_l_top_air_gap"][index].item(),
+                            air_gap_length_bot=reluctance_df["user_attrs_l_bot_air_gap"][index].item(),
+                            insulations=config.insulations,
+                            primary_litz_wire_name=reluctance_df['params_primary_litz_name'][index],
+                            secondary_litz_wire_name=reluctance_df['params_secondary_litz_name'][index],
+
+                            turns_primary_top=reluctance_df['params_n_p_top'][index].item(),
+                            turns_primary_bot=reluctance_df['params_n_p_bot'][index].item(),
+                            turns_secondary_bot=int(reluctance_df['params_n_s_bot'][index].item()),
+
+                            fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
+
+                            time_current_1_vec=config.time_current_1_vec,
+                            time_current_2_vec=config.time_current_2_vec,
+                        )
+
+                        fem_output = StackedTransformerOptimization.FemSimulation.single_fem_simulation(fem_input, show_visual_outputs=show_visual_outputs)
+
+                        reluctance_df.at[index, 'n'] = fem_output.n_conc
+                        reluctance_df.at[index, 'l_s_conc'] = fem_output.l_s_conc
+                        reluctance_df.at[index, 'l_h_conc'] = fem_output.l_h_conc
+                        reluctance_df.at[index, 'p_loss_winding_1'] = fem_output.p_loss_winding_1
+                        reluctance_df.at[index, 'p_loss_winding_2'] = fem_output.p_loss_winding_2
+                        reluctance_df.at[index, 'eddy_core'] = fem_output.eddy_core
+                        reluctance_df.at[index, 'core'] = fem_output.core
+
+                        # copy result files to result-file folder
+                        source_json_file = os.path.join(
+                            target_and_fix_parameters.working_directories.fem_working_directory, f'process_{process_number}',
+                            "results", "log_electro_magnetic.json")
+
+                        shutil.copy(source_json_file, destination_json_file)
+
+                    except Exception as e:
+                        print(f"The following exception was raised: {e}")
+                        reluctance_df.at[index, 'n'] = None
+                        reluctance_df.at[index, 'l_s_conc'] = None
+                        reluctance_df.at[index, 'l_h_conc'] = None
+                        reluctance_df.at[index, 'p_loss_winding_1'] = None
+                        reluctance_df.at[index, 'p_loss_winding_2'] = None
+                        reluctance_df.at[index, 'eddy_core'] = None
+                        reluctance_df.at[index, 'core'] = None
+            return reluctance_df
+
+        @staticmethod
+        def single_fem_simulation(fem_input: FemInput, show_visual_outputs: bool = False, wire_loss_only: bool = False):
+            """
+            Perform a single FEM simulation.
+
+            :param fem_input: FEM input DTO
+            :type fem_input: FemInput
+            :param show_visual_outputs: True to show visual outputs
+            :type show_visual_outputs: bool
+            :param wire_loss_only: True: only wire loss and inductance calculation, False: Full study (wire loss, hyst. losses, inductance calculation)
+            :type wire_loss_only: bool
+            :return: FEM output DTO
+            :rtype: FemOutput
+            """
+            time_current_vectors = np.array([fem_input.time_current_1_vec, fem_input.time_current_2_vec])
+
+            # 1. chose simulation type
+            geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
+                                        working_directory=fem_input.working_directory, verbosity=fmt.Verbosity.Silent)
+
+            # 2. set core parameters
+            core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=fem_input.core_inner_diameter,
+                                                             window_w=fem_input.window_w,
+                                                             window_h_top=fem_input.window_h_top,
+                                                             window_h_bot=fem_input.window_h_bot)
+            core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions,
+                            material=fem_input.material_name, temperature=fem_input.temperature,
+                            frequency=fem_input.fundamental_frequency,
+                            permeability_datasource=fem_input.material_data_sources.permeability_datasource,
+                            permeability_datatype=fem_input.material_data_sources.permeability_datatype,
+                            permeability_measurement_setup=fem_input.material_data_sources.permeability_measurement_setup,
+                            permittivity_datasource=fem_input.material_data_sources.permittivity_datasource,
+                            permittivity_datatype=fem_input.material_data_sources.permittivity_datatype,
+                            permittivity_measurement_setup=fem_input.material_data_sources.permittivity_measurement_setup,
+                            mdb_verbosity=fmt.Verbosity.Silent
+                            )
             geo.set_core(core)
 
-            air_gaps = femmt.AirGaps(femmt.AirGapMethod.Stacked, core)
-            air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, air_gap_coil,
-                                 stacked_position=femmt.StackedPosition.Top)
-            air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, air_gap_transformer,
-                                 stacked_position=femmt.StackedPosition.Bot)
+            # 3. set air gap parameters
+            air_gaps = fmt.AirGaps(fmt.AirGapMethod.Stacked, core)
+            air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, fem_input.air_gap_length_top,
+                                 stacked_position=fmt.StackedPosition.Top)
+            air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, fem_input.air_gap_length_bot,
+                                 stacked_position=fmt.StackedPosition.Bot)
             geo.set_air_gaps(air_gaps)
 
-            # set_center_tapped_windings() automatically places the condu
-            insulation, coil_window, transformer_window = femmt.functions_topologies.set_center_tapped_windings(
-                core=core,
-
-                # primary litz
-                primary_additional_bobbin=primary_additional_bobbin,
-                primary_turns=config.n_target,
-                primary_radius=primary_litz_parameters["conductor_radii"],
-                primary_number_strands=primary_litz_parameters["strands_numbers"],
-                primary_strand_radius=primary_litz_parameters["strand_radii"],
-
-                # secondary foil
-                secondary_parallel_turns=2,
-                secondary_thickness_foil=foil_thickness,
-
-                # insulation
-                iso_top_core=config.insulations.iso_top_core,
-                iso_bot_core=config.insulations.iso_bot_core,
-                iso_left_core=iso_left_core,
-                iso_right_core=config.insulations.iso_right_core,
-                iso_primary_to_primary=config.insulations.iso_primary_to_primary,
-                iso_secondary_to_secondary=config.insulations.iso_secondary_to_secondary,
-                iso_primary_to_secondary=config.insulations.iso_primary_to_secondary,
-                bobbin_coil_top=config.insulations.iso_top_core,
-                bobbin_coil_bot=config.insulations.iso_bot_core,
-                bobbin_coil_left=config.insulations.iso_primary_inner_bobbin,
-                bobbin_coil_right=config.insulations.iso_right_core,
-                center_foil_additional_bobbin=0e-3,
-                interleaving_scheme=interleaving_scheme,
-
-                # misc
-                interleaving_type=interleaving_type,
-                primary_coil_turns=primary_coil_turns,
-                winding_temperature=config.temperature)
-
+            # 4. set insulations
+            insulation = fmt.Insulation(flag_insulation=False)
+            insulation.add_core_insulations(fem_input.insulations.iso_window_bot_core_top, fem_input.insulations.iso_window_bot_core_bot,
+                                            fem_input.insulations.iso_window_bot_core_left, fem_input.insulations.iso_window_bot_core_right)
+            insulation.add_winding_insulations([[fem_input.insulations.iso_primary_to_primary, fem_input.insulations.iso_secondary_to_secondary],
+                                                [fem_input.insulations.iso_secondary_to_secondary, fem_input.insulations.iso_primary_to_primary]])
             geo.set_insulation(insulation)
-            geo.set_winding_windows([coil_window, transformer_window])
 
-            geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency,
-                             pre_visualize_geometry=show_geometries)
+            winding_window_top, winding_window_bot = fmt.create_stacked_winding_windows(core, insulation)
 
-            center_tapped_study_excitation = geo.stacked_core_center_tapped_pre_study(
-                time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec,
-                                       target_and_fixed_parameters.current_extracted_1_vec],
-                                      [target_and_fixed_parameters.time_extracted_vec,
-                                       target_and_fixed_parameters.current_extracted_2_vec]],
-                fft_filter_value_factor=config.fft_filter_value_factor)
+            vww_top = winding_window_top.split_window(fmt.WindingWindowSplit.NoSplit)
+            vww_bot = winding_window_bot.split_window(fmt.WindingWindowSplit.NoSplit)
 
-            geo.stacked_core_center_tapped_study(center_tapped_study_excitation,
-                                                 number_primary_coil_turns=primary_coil_turns)
+            # 6. set conductor parameters
+            winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+            primary_litz_wire = fmt.litz_database()[fem_input.primary_litz_wire_name]
+            winding1.set_litz_round_conductor(primary_litz_wire['conductor_radii'], primary_litz_wire['strands_numbers'],
+                                              primary_litz_wire['strand_radii'], None, fmt.ConductorArrangement.Square)
 
-            # copy result files to result-file folder
-            source_json_file = os.path.join(
-                target_and_fixed_parameters.working_directories.fem_working_directory, f'process_{process_number}',
-                "results", "log_electro_magnetic.json")
-            destination_json_file = os.path.join(
-                target_and_fixed_parameters.working_directories.fem_simulation_results_directory,
-                f'case_{trial.number}.json')
+            winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+            secondary_litz_wire = fmt.litz_database()[fem_input.secondary_litz_wire_name]
+            winding2.set_litz_round_conductor(secondary_litz_wire['conductor_radii'], secondary_litz_wire['strands_numbers'],
+                                              secondary_litz_wire['strand_radii'], None, fmt.ConductorArrangement.Square)
 
-            shutil.copy(source_json_file, destination_json_file)
+            primary_coil_turns = fem_input.turns_primary_top
 
-            # read result-log
-            with open(source_json_file, "r") as fd:
-                loaded_data_dict = json.loads(fd.read())
+            # 7. add conductor to vww and add winding window to MagneticComponent
+            vww_top.set_interleaved_winding(winding1, primary_coil_turns, winding2, 0, fmt.InterleavedWindingScheme.HorizontalAlternating)
+            vww_bot.set_interleaved_winding(winding1, fem_input.turns_primary_bot, winding2,
+                                            fem_input.turns_secondary_bot, fmt.InterleavedWindingScheme.HorizontalAlternating)
 
-            total_volume = loaded_data_dict["misc"]["core_2daxi_total_volume"]
-            total_loss = loaded_data_dict["total_losses"]["total_losses"]
-            # total_cost = loaded_data_dict["misc"]["total_cost_incl_margin"]
+            geo.set_winding_windows([winding_window_top, winding_window_bot])
 
-            # Get inductance values
-            difference_l_h = config.l_h_target - geo.L_h
-            difference_l_s12 = config.l_s12_target - geo.L_s12
+            geo.create_model(freq=fem_input.fundamental_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
 
-            trial.set_user_attr("l_h", geo.L_h)
-            trial.set_user_attr("l_s12", geo.L_s12)
+            if wire_loss_only:
+                hyst_frequency, _, _ = ff.hysteresis_current_excitation(time_current_vectors)
+                inductance_dict = geo.get_inductances(I0=1, skin_mesh_factor=1, op_frequency=hyst_frequency, silent=True)
 
-            # TODO: Normalize on goal values here or the whole generation on min and max? for each feature inbetween 0 and 1
-            # norm_total_loss, norm_difference_l_h, norm_difference_l_s12 = total_loss/10, #
-            #     abs(difference_l_h/config.l_h_target), abs(difference_l_s12/config.l_s12_target)
-            # return norm_total_loss, norm_difference_l_h, norm_difference_l_s12
-            if number_objectives == 3:
-                return total_volume, total_loss, 100 * (abs(difference_l_h / config.l_h_target) + abs(
-                    difference_l_s12 / config.l_s12_target))
-            elif number_objectives == 4:
-                return total_volume, total_loss, 100 * abs(difference_l_h), 100 * abs(difference_l_s12)
+                study_excitation = geo.stacked_core_study_excitation(time_current_vectors, plot_waveforms=False,
+                                                                     fft_filter_value_factor=0.1,
+                                                                     transfer_ratio_n=inductance_dict["n_conc"])
 
-        except Exception as e:
-            print(e)
-            if number_objectives == 3:
-                return float('nan'), float('nan'), float('nan')
-            elif number_objectives == 4:
-                return float('nan'), float('nan'), float('nan'), float('nan')
+                geo.excitation_sweep(study_excitation["linear_losses"]["frequencies"],
+                                     study_excitation["linear_losses"]["current_amplitudes"],
+                                     study_excitation["linear_losses"]["current_phases_deg"],
+                                     inductance_dict=inductance_dict)
 
-    @staticmethod
-    def start_proceed_study(study_name: str, config: StoSingleInputConfig, number_trials: int,
-                            number_objectives: int = None,
-                            storage: str = 'sqlite',
-                            sampler=optuna.samplers.NSGAIISampler(),
-                            show_geometries: bool = False,
-                            ) -> None:
-        """Proceed a study which is stored as sqlite database.
+                result_dict = geo.read_log()
 
-        :param study_name: Name of the study
-        :type study_name: str
-        :param config: Simulation configuration
-        :type config: ItoSingleInputConfig
-        :param number_trials: Number of trials adding to the existing study
-        :type number_trials: int
-        :param number_objectives: number of objectives, e.g. 3 or 4
-        :type number_objectives: int
-        :param storage: storage database, e.g. 'sqlite' or 'mysql'
-        :type storage: str
-        :param sampler: optuna.samplers.NSGAIISampler() or optuna.samplers.NSGAIIISampler(). Note about the brackets () !!
-        :type sampler: optuna.sampler-object
-        :param show_geometries: True to show the geometry of each suggestion (with valid geometry data)
-        :type show_geometries: bool
-        """
+                fem_output = FemOutput(
+                    n_conc=result_dict['inductances']['n_conc'],
+                    l_s_conc=result_dict['inductances']['l_s_conc'],
+                    l_h_conc=result_dict['inductances']['l_h_conc'],
+                    p_loss_winding_1=result_dict['total_losses']['winding1']['total'],
+                    p_loss_winding_2=result_dict['total_losses']['winding2']['total'],
+                    eddy_core=result_dict['total_losses']['eddy_core'],
+                    core=0,
+                    volume=result_dict["misc"]["core_2daxi_total_volume"],
+                )
 
-        def objective_directions(configure_number_objectives: int):
-            """Check the number of objectives and returns the minimizing targets.
-
-            :param configure_number_objectives: number of objectives
-            :type configure_number_objectives: int
-            :returns: objective targets and optimization function
-            """
-            if configure_number_objectives == 3:
-                # Wrap the objective inside a lambda and call objective inside it
-                return ["minimize", "minimize", "minimize"]
-            if configure_number_objectives == 4:
-                return ["minimize", "minimize", "minimize", 'minimize']
             else:
-                raise ValueError("Invalid objective number.")
+                geo.stacked_core_study(number_primary_coil_turns=primary_coil_turns, time_current_vectors=time_current_vectors,
+                                       plot_waveforms=show_visual_outputs, fft_filter_value_factor=0.1)
 
-        if os.path.exists(f"{config.working_directory}/study_{study_name}.sqlite3"):
-            print("Existing study found. Proceeding.")
+                result_dict = geo.read_log()
 
-        target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
+                fem_output = FemOutput(
+                    n_conc=result_dict['inductances']['n_conc'],
+                    l_s_conc=result_dict['inductances']['l_s_conc'],
+                    l_h_conc=result_dict['inductances']['l_h_conc'],
+                    p_loss_winding_1=result_dict['total_losses']['winding1']['total'],
+                    p_loss_winding_2=result_dict['total_losses']['winding2']['total'],
+                    eddy_core=result_dict['total_losses']['eddy_core'],
+                    core=result_dict['total_losses']['core'],
+                    volume=result_dict["misc"]["core_2daxi_total_volume"],
+                )
 
-        # introduce study in storage, e.g. sqlite or mysql
-        if storage == 'sqlite':
-            # Note: for sqlite operation, there needs to be three slashes '///' even before the path '/home/...'
-            # Means, in total there are four slashes including the path itself '////home/.../database.sqlite3'
-            storage = f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3"
-        elif storage == 'mysql':
-            storage = "mysql://monty@localhost/mydb",
+            return fem_output
 
-        # set logging verbosity: https://optuna.readthedocs.io/en/stable/reference/generated/optuna.logging.set_verbosity.html#optuna.logging.set_verbosity
-        # .INFO: all messages (default)
-        # .WARNING: fails and warnings
-        # .ERROR: only errors
-        # optuna.logging.set_verbosity(optuna.logging.ERROR)
-
-        directions = objective_directions(number_objectives)
-
-        func = lambda \
-            trial: femmt.optimization.StackedTransformerOptimization.objective(trial, config, target_and_fixed_parameters, number_objectives, show_geometries)
-
-        study_in_storage = optuna.create_study(study_name=study_name,
-                                               storage=storage,
-                                               directions=directions,
-                                               load_if_exists=True, sampler=sampler)
-
-        study_in_memory = optuna.create_study(directions=directions, study_name=study_name, sampler=sampler)
-        print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
-        study_in_memory.add_trials(study_in_storage.trials)
-        study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True,
-                                 callbacks=[femmt.StackedTransformerOptimization.run_garbage_collector])
-
-        study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
-        print(f"Finished {number_trials} trials.")
-        print(f"current time: {datetime.datetime.now()}")
-
-    @staticmethod
-    def proceed_multi_core_study(study_name: str, config: StoSingleInputConfig, number_trials: int,
-                                 number_objectives: int = None,
-                                 storage: str = "mysql://monty@localhost/mydb",
-                                 sampler=optuna.samplers.NSGAIISampler(),
-                                 show_geometries: bool = False,
-                                 process_number: int = 1,
-                                 ) -> None:
-        """Proceed a study which can be paralleled. It is highly recommended to use a mysql-database (or mariadb).
-
-        :param study_name: Name of the study
-        :type study_name: str
-        :param config: Simulation configuration
-        :type config: ItoSingleInputConfig
-        :param number_trials: Number of trials adding to the existing study
-        :type number_trials: int
-        :param number_objectives: number of objectives, e.g. 3 or 4
-        :type number_objectives: int
-        :param storage: storage database, e.g. 'sqlite' or mysql-storage, e.g. "mysql://monty@localhost/mydb"
-        :type storage: str
-        :param sampler: optuna.samplers.NSGAIISampler() or optuna.samplers.NSGAIIISampler(). Note about the brackets () !!
-        :type sampler: optuna.sampler-object
-        :param show_geometries: True to show the geometry of each suggestion (with valid geometry data)
-        :type show_geometries: bool
-        :type process_number: number of the process, mandatory to split this up for several processes, because they use the same simulation result folder!
-        :param process_number: int
-        """
-
-        def objective_directions(number_objectives: int):
-            """Check if the number of objectives is correct and returns the minimizing targets.
-
-            :param number_objectives: number of objectives
-            :type number_objectives: int
-            :returns: objective targets and optimization function
+        @staticmethod
+        def fem_logs_to_df(reluctance_df: pd.DataFrame, fem_results_folder_path: str) -> pd.DataFrame:
             """
-            if number_objectives == 3:
-                # Wrap the objective inside a lambda and call objective inside it
-                return ["minimize", "minimize", "minimize"]
-            if number_objectives == 4:
-                return ["minimize", "minimize", "minimize", 'minimize']
-            else:
-                raise ValueError("Invalid objective number.")
-
-        # introduce study in storage, e.g. sqlite or mysql
-        if storage == 'sqlite':
-            # Note: for sqlite operation, there needs to be three slashes '///' even before the path '/home/...'
-            # Means, in total there are four slashes including the path itself '////home/.../database.sqlite3'
-            storage = f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3"
-        elif storage == 'mysql':
-            storage = "mysql://monty@localhost/mydb",
-
-        target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
-
-        # set logging verbosity: https://optuna.readthedocs.io/en/stable/reference/generated/optuna.logging.set_verbosity.html#optuna.logging.set_verbosity
-        # .INFO: all messages (default)
-        # .WARNING: fails and warnings
-        # .ERROR: only errors
-        # optuna.logging.set_verbosity(optuna.logging.ERROR)
-
-        directions = objective_directions(number_objectives)
-
-        func = lambda trial: femmt.optimization.StackedTransformerOptimization.objective(trial, config, target_and_fixed_parameters,
-                                                                                         number_objectives, show_geometries, process_number)
-
-        study_in_database = optuna.create_study(study_name=study_name,
-                                                storage=storage,
-                                                directions=directions,
-                                                load_if_exists=True, sampler=sampler)
-
-        study_in_database.optimize(func, n_trials=number_trials, show_progress_bar=True,
-                                   callbacks=[femmt.StackedTransformerOptimization.run_garbage_collector])
-
-    @staticmethod
-    def run_garbage_collector(study: optuna.Study, _):
-        """Run the garbage collector to prevent high memory consumption.
-
-        :param study: optuna study
-        :type study: optuna.Study
-
-        as seen so far, a typical study needs 50.000 to 500.000 trials to have good results when performing
-        the optimization. In the range above 200.000 trials, the RAM has a high occupancy rate.
-        in case of running 10 or more cores, the garbage collector will run each 10.000 trial
-        There could be an improvement to run the garbage collector on every process in the future.
-        Now, it is random on which of the processes the garbage collector runs.
-        Learn about the garbage collector https://docs.python.org/3/library/gc.html#gc.collect
-        Every process runs its own garbage collector. So there is no difference between multiple processes
-        https://stackoverflow.com/questions/23272943/how-does-garbage-collection-work-with-multiple-running-processes-threads
-        """
-        if len(study.trials) % 10000 == 0:
-            print("Run garbage collector")
-            gc.collect()
-
-    @staticmethod
-    def show_study_results(study_name: str, config: StoSingleInputConfig,
-                           percent_error_difference_l_h: float = 20,
-                           percent_error_difference_l_s12: float = 20) -> None:
-        """Show the results of a study.
-
-        A local .html file is generated under config.working_directory to store the interactive plotly plots on disk.
-
-        :param study_name: Name of the study
-        :type study_name: str
-        :param config: Integrated transformer configuration file
-        :type config: ItoSingleInputConfig
-        :param percent_error_difference_l_h: relative error allowed in l_h
-        :type percent_error_difference_l_s12: float
-        :param percent_error_difference_l_s12: relative error allowed in L_s12
-        :type percent_error_difference_l_s12: float
-        """
-        study = optuna.create_study(study_name=study_name,
-                                    storage=f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3",
-                                    load_if_exists=True)
-
-        # Order: total_volume, total_loss, difference_l_h, difference_l_s
-        l_h_absolute_error = percent_error_difference_l_h / 100 * config.l_h_target
-        print(f"{config.l_h_target=}")
-        print(f"{l_h_absolute_error=}")
-
-        l_s_absolute_error = percent_error_difference_l_s12 / 100 * config.l_s12_target
-        print(f"{config.l_s12_target=}")
-        print(f"{l_s_absolute_error=}")
-
-        fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (
-            t.values[0] if -l_h_absolute_error < t.values[2] < l_h_absolute_error else None,
-            t.values[1] if -l_s_absolute_error < t.values[3] < l_s_absolute_error else None), target_names=["volume in m³", "loss in W"])
-        fig.update_layout(
-            title=f"{study_name}: Filtering l_h_absolute_error = {l_h_absolute_error * 100} %, l_s_absolute_error = {l_s_absolute_error * 100} %.")
-        fig.write_html(
-            f"{config.working_directory}/{study_name}_error_lh_{l_h_absolute_error}_error_ls_{l_s_absolute_error}"
-            f"_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
-        fig.show()
-
-    @staticmethod
-    def show_study_results3(study_name: str, config: StoSingleInputConfig,
-                            error_difference_inductance_sum_percent, storage: str = 'sqlite') -> None:
-        """Show the results of a study.
-
-        A local .html file is generated under config.working_directory to store the interactive plotly plots on disk.
-
-        :param study_name: Name of the study
-        :type study_name: str
-        :param config: Integrated transformer configuration file
-        :type config: ItoSingleInputConfig
-        :param error_difference_inductance_sum_percent: |err(L_s12) + err(L_h)| in %
-        :type error_difference_inductance_sum_percent: float
-        :param storage: storage, e.g. 'sqlite' or path to postgresql-database
-        :type storage: str
-
-        """
-        if storage == 'sqlite':
-            storage = f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3"
-
-        time_start = datetime.datetime.now()
-        print(f"Start loading study {study_name} from database")
-        study = optuna.load_study(study_name=study_name,
-                                  storage=storage)
-
-        print(f"Loaded study {study_name} contains {len(study.trials)} trials.")
-        time_stop = datetime.datetime.now()
-        print(f"Finished loading study {study_name} from database in time: {time_stop - time_start}")
-
-        print(f"{error_difference_inductance_sum_percent=}")
-
-        time_start = datetime.datetime.now()
-        print("start generating Pareto front....")
-        fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (
-            t.values[0] if error_difference_inductance_sum_percent > t.values[2] else None,
-            t.values[1] if error_difference_inductance_sum_percent > t.values[2] else None), target_names=["volume in m³", "loss in W"])
-        fig.update_layout(title=f"{study_name}: Filtering {error_difference_inductance_sum_percent} % of |err(Ls_12)| + |err(L_h)|")
-        time_stop = datetime.datetime.now()
-        print(f"Finished generating Pareto front in time: {time_stop - time_start}")
-
-        fig.write_html(
-            f"{config.working_directory}/{study_name}_error_diff_{error_difference_inductance_sum_percent}%_"
-            f"{datetime.datetime.now().isoformat(timespec='minutes')}.html")
-        fig.show()
-
-    @staticmethod
-    def re_simulate_single_result(study_name: str, config: StoSingleInputConfig, number_trial: int,
-                                  fft_filter_value_factor: float = 0.01, mesh_accuracy: float = 0.5,
-                                  storage: str = "sqlite"):
-        """Re-Simulates a FEM simulation from an optuna study.
-
-        Performs a single simulation study (inductance, core loss, winding loss) and shows the geometry of
-        number_trial design inside the study 'study_name'. Loads from an optuna study and is very slow.
-
-        Note: This function does not use the fft_filter_value_factor and mesh_accuracy from the config-file.
-        The values are given separate. In case of re-simulation, you may want to have more accurate results.
-
-        :param study_name: name of the study
-        :type study_name: str
-        :param config: stacked transformer configuration file
-        :type config: StoSingleInputConfig
-        :param number_trial: number of trial to simulate
-        :type number_trial: int
-        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all amplitudes below 1 % of
-            the maximum amplitude from the result-frequency list
-        :type fft_filter_value_factor: float
-        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations,
-            e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
-        :type mesh_accuracy: float
-        :param storage: storage of the study
-        :type storage: str
-        """
-        target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
-
-        if storage == "sqlite":
-            storage = f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3"
-
-        time_start = datetime.datetime.now()
-        print(f"Start loading study {study_name} from database")
-        loaded_study = optuna.create_study(study_name=study_name,
-                                           storage=storage,
-                                           load_if_exists=True)
-
-        print(f"Loaded study {study_name} contains {len(loaded_study.trials)} trials.")
-        time_stop = datetime.datetime.now()
-        print(f"Finished loading study {study_name} from database in time: {time_stop - time_start}")
-
-        loaded_trial = loaded_study.trials[number_trial]
-        loaded_trial_params = loaded_trial.params
-
-        # suggest core geometry
-        core_inner_diameter = loaded_trial_params["core_inner_diameter"]
-        window_w = loaded_trial_params["window_w"]
-        air_gap_transformer = loaded_trial_params["air_gap_transformer"]
-        # inner_coil_insulation = trial_params["inner_coil_insulation"]
-        iso_left_core = loaded_trial_params["iso_left_core"]
-
-        primary_litz_wire = loaded_trial_params["primary_litz_wire"]
-
-        primary_litz_parameters = ff.litz_database()[primary_litz_wire]
-        primary_litz_diameter = 2 * primary_litz_parameters["conductor_radii"]
-
-        # Will always be calculated from the given parameters
-        available_width = window_w - iso_left_core - config.insulations.iso_right_core
-
-        # Re-calculation of top window coil
-        # Theoretically also 0 coil turns possible (number_rows_coil_winding must then be recalculated to avoid neg. values)
-        primary_coil_turns = loaded_trial_params["primary_coil_turns"]
-        # Note: int() is used to round down.
-        number_rows_coil_winding = int((primary_coil_turns * (
-            primary_litz_diameter + config.insulations.iso_primary_to_primary) - config.insulations.iso_primary_inner_bobbin) / available_width) + 1
-        window_h_top = config.insulations.iso_top_core + config.insulations.iso_bot_core + number_rows_coil_winding * primary_litz_diameter + (
-            number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
-
-        primary_additional_bobbin = config.insulations.iso_primary_inner_bobbin - iso_left_core
-
-        # Maximum coil air gap depends on the maximum window height top
-        air_gap_coil = loaded_trial_params["air_gap_coil"]
-
-        # suggest categorical
-        core_material = Material(loaded_trial_params["material"])
-        foil_thickness = loaded_trial_params["foil_thickness"]
-
-        if config.max_transformer_total_height is not None:
-            # Maximum transformer height
-            window_h_bot_max = config.max_transformer_total_height - 3 * core_inner_diameter / 4 - window_h_top
-            window_h_bot_min = config.window_h_bot_min_max_list[0]
-            if window_h_bot_min > window_h_bot_max:
-                print(f"{number_rows_coil_winding=}")
-                print(f"{window_h_top=}")
-                raise ValueError(f"{window_h_bot_min=} > {window_h_bot_max=}")
-
-            window_h_bot = loaded_trial_params["window_h_bot"]
-
-        else:
-            window_h_bot = loaded_trial_params["window_h_bot"]
-
-        geo = femmt.MagneticComponent(component_type=femmt.ComponentType.IntegratedTransformer,
-                                      working_directory=target_and_fixed_parameters.working_directories.fem_working_directory,
-                                      verbosity=femmt.Verbosity.Silent,
-                                      simulation_name=f"Single_Case_{loaded_trial._trial_id - 1}")
-        # Note: The _trial_id starts counting from 1, while the normal cases count from zero. So a correction needs to be made
-
-        geo.update_mesh_accuracies(mesh_accuracy, mesh_accuracy, mesh_accuracy, mesh_accuracy)
-
-        core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
-                                                           window_h_top=window_h_top, window_h_bot=window_h_bot)
-
-        core = femmt.Core(core_type=femmt.CoreType.Stacked, core_dimensions=core_dimensions,
-                          material=core_material, temperature=config.temperature,
-                          frequency=target_and_fixed_parameters.fundamental_frequency,
-                          permeability_datasource=config.permeability_datasource,
-                          permeability_datatype=config.permeability_datatype,
-                          permeability_measurement_setup=config.permeability_measurement_setup,
-                          permittivity_datasource=config.permittivity_datasource,
-                          permittivity_datatype=config.permittivity_datatype,
-                          permittivity_measurement_setup=config.permittivity_measurement_setup)
-
-        geo.set_core(core)
-
-        air_gaps = femmt.AirGaps(femmt.AirGapMethod.Stacked, core)
-        air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, air_gap_coil,
-                             stacked_position=femmt.StackedPosition.Top)
-        air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, air_gap_transformer,
-                             stacked_position=femmt.StackedPosition.Bot)
-        geo.set_air_gaps(air_gaps)
-
-        # set_center_tapped_windings() automatically places the condu
-        insulation, coil_window, transformer_window = femmt.functions_topologies.set_center_tapped_windings(
-            core=core,
-
-            # primary litz
-            primary_additional_bobbin=primary_additional_bobbin,
-            primary_turns=config.n_target,
-            primary_radius=primary_litz_parameters["conductor_radii"],
-            primary_number_strands=primary_litz_parameters["strands_numbers"],
-            primary_strand_radius=primary_litz_parameters["strand_radii"],
-
-            # secondary foil
-            secondary_parallel_turns=2,
-            secondary_thickness_foil=foil_thickness,
-
-            # insulation
-            iso_top_core=config.insulations.iso_top_core, iso_bot_core=config.insulations.iso_bot_core,
-            iso_left_core=iso_left_core, iso_right_core=config.insulations.iso_right_core,
-            iso_primary_to_primary=config.insulations.iso_primary_to_primary,
-            iso_secondary_to_secondary=config.insulations.iso_secondary_to_secondary,
-            iso_primary_to_secondary=config.insulations.iso_primary_to_secondary,
-            bobbin_coil_top=config.insulations.iso_top_core,
-            bobbin_coil_bot=config.insulations.iso_bot_core,
-            bobbin_coil_left=config.insulations.iso_primary_inner_bobbin,
-            bobbin_coil_right=config.insulations.iso_right_core,
-            center_foil_additional_bobbin=0e-3,
-            interleaving_scheme=InterleavingSchemesFoilLitz(loaded_trial_params['interleaving_scheme']),
-
-            # misc
-            interleaving_type=CenterTappedInterleavingType(loaded_trial_params['interleaving_type']),
-            primary_coil_turns=primary_coil_turns,
-            winding_temperature=config.temperature)
-
-        geo.set_insulation(insulation)
-        geo.set_winding_windows([coil_window, transformer_window])
-
-        geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=True)
-
-        center_tapped_study_excitation = geo.stacked_core_center_tapped_pre_study(
-            time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec,
-                                   target_and_fixed_parameters.current_extracted_1_vec],
-                                  [target_and_fixed_parameters.time_extracted_vec,
-                                   target_and_fixed_parameters.current_extracted_2_vec]],
-            fft_filter_value_factor=fft_filter_value_factor)
-
-        geo.stacked_core_center_tapped_study(center_tapped_study_excitation,
-                                             number_primary_coil_turns=primary_coil_turns)
-
-    @staticmethod
-    def re_simulate_from_df(df: pd.DataFrame, config: StoSingleInputConfig, number_trial: int,
-                            fft_filter_value_factor: float = 0.01, mesh_accuracy: float = 0.5,
-                            show_simulation_results: bool = False):
-        """Perform a single FEM simulation from a given pandas dataframe created by an optuna study.
-
-        Performs a single simulation study (inductance, core loss, winding loss) and shows the geometry of
-        number_trial design inside the study 'study_name'. Loads from a pandas dataframe and is very fast.
-
-        Note: This function does not use the fft_filter_value_factor and mesh_accuracy from the config-file.
-        The values are given separate. In case of re-simulation, you may want to have more accurate results.
-
-        :param df: pandas dataframe with the loaded study
-        :type df: pandas dataframe
-        :param config: stacked transformer configuration file
-        :type config: StoSingleInputConfig
-        :param number_trial: number of trial to simulate
-        :type number_trial: int
-        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all amplitudes below 1 % of
-            the maximum amplitude from the result-frequency list
-        :type fft_filter_value_factor: float
-        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations,
-            e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
-        :type mesh_accuracy: float
-        :param show_simulation_results: visualize the simulation results of the FEM simulation
-        :type show_simulation_results: bool
-        """
-        target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
-
-        loaded_trial_params = df.iloc[number_trial]
-
-        # suggest core geometry
-        core_inner_diameter = loaded_trial_params["params_core_inner_diameter"]
-        window_w = loaded_trial_params["params_window_w"]
-        air_gap_transformer = loaded_trial_params["params_air_gap_transformer"]
-        # inner_coil_insulation = trial_params["inner_coil_insulation"]
-        iso_left_core = loaded_trial_params["params_iso_left_core"]
-
-        primary_litz_wire = loaded_trial_params["params_primary_litz_wire"]
-
-        primary_litz_parameters = ff.litz_database()[primary_litz_wire]
-        primary_litz_diameter = 2 * primary_litz_parameters["conductor_radii"]
-
-        # Will always be calculated from the given parameters
-        available_width = window_w - iso_left_core - config.insulations.iso_right_core
-
-        # Re-calculation of top window coil
-        # Theoretically also 0 coil turns possible (number_rows_coil_winding must then be recalculated to avoid neg. values)
-        primary_coil_turns = int(loaded_trial_params["params_primary_coil_turns"])
-        # Note: int() is used to round down.
-        number_rows_coil_winding = int((primary_coil_turns * (
-            primary_litz_diameter + config.insulations.iso_primary_to_primary) - config.insulations.iso_primary_inner_bobbin) / available_width) + 1
-        window_h_top = config.insulations.iso_top_core + config.insulations.iso_bot_core + number_rows_coil_winding * primary_litz_diameter + (
-            number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
-
-        primary_additional_bobbin = config.insulations.iso_primary_inner_bobbin - iso_left_core
-
-        # Maximum coil air gap depends on the maximum window height top
-        air_gap_coil = loaded_trial_params["params_air_gap_coil"]
-
-        # suggest categorical
-        core_material = Material(loaded_trial_params["params_material"])
-        foil_thickness = loaded_trial_params["params_foil_thickness"]
-
-        if config.max_transformer_total_height is not None:
-            # Maximum transformer height
-            window_h_bot_max = config.max_transformer_total_height - 3 * core_inner_diameter / 4 - window_h_top
-            window_h_bot_min = config.window_h_bot_min_max_list[0]
-            if window_h_bot_min > window_h_bot_max:
-                print(f"{number_rows_coil_winding=}")
-                print(f"{window_h_top=}")
-                raise ValueError(f"{window_h_bot_min=} > {window_h_bot_max=}")
-
-            window_h_bot = loaded_trial_params["params_window_h_bot"]
-
-        else:
-            window_h_bot = loaded_trial_params["params_window_h_bot"]
-
-        geo = femmt.MagneticComponent(component_type=femmt.ComponentType.IntegratedTransformer,
-                                      working_directory=target_and_fixed_parameters.working_directories.fem_working_directory,
-                                      verbosity=femmt.Verbosity.Silent,
-                                      simulation_name=f"Single_Case_{loaded_trial_params['number']}")
-
-        geo.update_mesh_accuracies(mesh_accuracy_air_gaps=mesh_accuracy, mesh_accuracy_core=mesh_accuracy,
-                                   mesh_accuracy_window=mesh_accuracy, mesh_accuracy_conductor=mesh_accuracy)
-
-        geo.update_mesh_accuracies(mesh_accuracy, mesh_accuracy, mesh_accuracy, mesh_accuracy)
-
-        core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
-                                                           window_h_top=window_h_top, window_h_bot=window_h_bot)
-
-        core = femmt.Core(core_type=femmt.CoreType.Stacked, core_dimensions=core_dimensions,
-                          material=core_material, temperature=config.temperature,
-                          frequency=target_and_fixed_parameters.fundamental_frequency,
-                          permeability_datasource=config.permeability_datasource,
-                          permeability_datatype=config.permeability_datatype,
-                          permeability_measurement_setup=config.permeability_measurement_setup,
-                          permittivity_datasource=config.permittivity_datasource,
-                          permittivity_datatype=config.permittivity_datatype,
-                          permittivity_measurement_setup=config.permittivity_measurement_setup)
-
-        geo.set_core(core)
-
-        air_gaps = femmt.AirGaps(femmt.AirGapMethod.Stacked, core)
-        air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, air_gap_coil,
-                             stacked_position=femmt.StackedPosition.Top)
-        air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, air_gap_transformer,
-                             stacked_position=femmt.StackedPosition.Bot)
-        geo.set_air_gaps(air_gaps)
-
-        # set_center_tapped_windings() automatically places the condu
-        insulation, coil_window, transformer_window = femmt.functions_topologies.set_center_tapped_windings(
-            core=core,
-
-            # primary litz
-            primary_additional_bobbin=primary_additional_bobbin,
-            primary_turns=config.n_target,
-            primary_radius=primary_litz_parameters["conductor_radii"],
-            primary_number_strands=primary_litz_parameters["strands_numbers"],
-            primary_strand_radius=primary_litz_parameters["strand_radii"],
-
-            # secondary foil
-            secondary_parallel_turns=2,
-            secondary_thickness_foil=foil_thickness,
-
-            # insulation
-            iso_top_core=config.insulations.iso_top_core, iso_bot_core=config.insulations.iso_bot_core,
-            iso_left_core=iso_left_core, iso_right_core=config.insulations.iso_right_core,
-            iso_primary_to_primary=config.insulations.iso_primary_to_primary,
-            iso_secondary_to_secondary=config.insulations.iso_secondary_to_secondary,
-            iso_primary_to_secondary=config.insulations.iso_primary_to_secondary,
-            bobbin_coil_top=config.insulations.iso_top_core,
-            bobbin_coil_bot=config.insulations.iso_bot_core,
-            bobbin_coil_left=config.insulations.iso_primary_inner_bobbin,
-            bobbin_coil_right=config.insulations.iso_right_core,
-            center_foil_additional_bobbin=0e-3,
-            interleaving_scheme=InterleavingSchemesFoilLitz(loaded_trial_params['params_interleaving_scheme']),
-
-            # misc
-            interleaving_type=CenterTappedInterleavingType(loaded_trial_params['params_interleaving_type']),
-            primary_coil_turns=primary_coil_turns,
-            winding_temperature=config.temperature)
-
-        geo.set_insulation(insulation)
-        geo.set_winding_windows([coil_window, transformer_window])
-
-        geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency,
-                         pre_visualize_geometry=show_simulation_results)
-
-        center_tapped_study_excitation = geo.stacked_core_center_tapped_pre_study(
-            time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec,
-                                   target_and_fixed_parameters.current_extracted_1_vec],
-                                  [target_and_fixed_parameters.time_extracted_vec,
-                                   target_and_fixed_parameters.current_extracted_2_vec]],
-            fft_filter_value_factor=fft_filter_value_factor)
-
-        geo.stacked_core_center_tapped_study(center_tapped_study_excitation,
-                                             number_primary_coil_turns=primary_coil_turns)
-
-        return geo
-
-    @staticmethod
-    def save_png_from_df(df: pd.DataFrame, config: StoSingleInputConfig, number_trial: int):
-        """
-        Create the geometry of specified trials_numbers.
-
-        Note: This function does not use the fft_filter_value_factor and mesh_accuracy from the config-file.
-        The values are given separate. In case of re-simulation, you may want to have more accurate results.
-
-        :param df: pandas dataframe with the loaded study
-        :type df: pandas dataframe
-        :param config: stacked transformer configuration file
-        :type config: StoSingleInputConfig
-        :param number_trial: number of trial to simulate
-        :type number_trial: int
-        """
-        target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
-
-        loaded_trial_params = df.iloc[number_trial]
-
-        # suggest core geometry
-        core_inner_diameter = loaded_trial_params["params_core_inner_diameter"]
-        window_w = loaded_trial_params["params_window_w"]
-        air_gap_transformer = loaded_trial_params["params_air_gap_transformer"]
-        # inner_coil_insulation = trial_params["inner_coil_insulation"]
-        iso_left_core = loaded_trial_params["params_iso_left_core"]
-
-        primary_litz_wire = loaded_trial_params["params_primary_litz_wire"]
-
-        primary_litz_parameters = ff.litz_database()[primary_litz_wire]
-        primary_litz_diameter = 2 * primary_litz_parameters["conductor_radii"]
-
-        # Will always be calculated from the given parameters
-        available_width = window_w - iso_left_core - config.insulations.iso_right_core
-
-        # Re-calculation of top window coil
-        # Theoretically also 0 coil turns possible (number_rows_coil_winding must then be recalculated to avoid neg. values)
-        primary_coil_turns = int(loaded_trial_params["params_primary_coil_turns"])
-        # Note: int() is used to round down.
-        number_rows_coil_winding = int((primary_coil_turns * (
-            primary_litz_diameter + config.insulations.iso_primary_to_primary) - config.insulations.iso_primary_inner_bobbin) / available_width) + 1
-        window_h_top = config.insulations.iso_top_core + config.insulations.iso_bot_core + number_rows_coil_winding * primary_litz_diameter + (
-            number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
-
-        primary_additional_bobbin = config.insulations.iso_primary_inner_bobbin - iso_left_core
-
-        # Maximum coil air gap depends on the maximum window height top
-        air_gap_coil = loaded_trial_params["params_air_gap_coil"]
-
-        # suggest categorical
-        core_material = Material(loaded_trial_params["params_material"])
-        foil_thickness = loaded_trial_params["params_foil_thickness"]
-
-        if config.max_transformer_total_height is not None:
-            # Maximum transformer height
-            window_h_bot_max = config.max_transformer_total_height - 3 * core_inner_diameter / 4 - window_h_top
-            window_h_bot_min = config.window_h_bot_min_max_list[0]
-            if window_h_bot_min > window_h_bot_max:
-                print(f"{number_rows_coil_winding=}")
-                print(f"{window_h_top=}")
-                raise ValueError(f"{window_h_bot_min=} > {window_h_bot_max=}")
-
-            window_h_bot = loaded_trial_params["params_window_h_bot"]
-
-        else:
-            window_h_bot = loaded_trial_params["params_window_h_bot"]
-
-        geo = femmt.MagneticComponent(component_type=femmt.ComponentType.IntegratedTransformer,
-                                      working_directory=target_and_fixed_parameters.working_directories.fem_working_directory,
-                                      verbosity=femmt.Verbosity.Silent,
-                                      simulation_name=f"Single_Case_{loaded_trial_params['number']}")
-
-        core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
-                                                           window_h_top=window_h_top, window_h_bot=window_h_bot)
-
-        core = femmt.Core(core_type=femmt.CoreType.Stacked, core_dimensions=core_dimensions,
-                          material=core_material, temperature=config.temperature,
-                          frequency=target_and_fixed_parameters.fundamental_frequency,
-                          permeability_datasource=config.permeability_datasource,
-                          permeability_datatype=config.permeability_datatype,
-                          permeability_measurement_setup=config.permeability_measurement_setup,
-                          permittivity_datasource=config.permittivity_datasource,
-                          permittivity_datatype=config.permittivity_datatype,
-                          permittivity_measurement_setup=config.permittivity_measurement_setup)
-
-        geo.set_core(core)
-
-        air_gaps = femmt.AirGaps(femmt.AirGapMethod.Stacked, core)
-        air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, air_gap_coil,
-                             stacked_position=femmt.StackedPosition.Top)
-        air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, air_gap_transformer,
-                             stacked_position=femmt.StackedPosition.Bot)
-        geo.set_air_gaps(air_gaps)
-
-        # set_center_tapped_windings() automatically places the condu
-        insulation, coil_window, transformer_window = femmt.functions_topologies.set_center_tapped_windings(
-            core=core,
-
-            # primary litz
-            primary_additional_bobbin=primary_additional_bobbin,
-            primary_turns=config.n_target,
-            primary_radius=primary_litz_parameters["conductor_radii"],
-            primary_number_strands=primary_litz_parameters["strands_numbers"],
-            primary_strand_radius=primary_litz_parameters["strand_radii"],
-
-            # secondary foil
-            secondary_parallel_turns=2,
-            secondary_thickness_foil=foil_thickness,
-
-            # insulation
-            iso_top_core=config.insulations.iso_top_core, iso_bot_core=config.insulations.iso_bot_core,
-            iso_left_core=iso_left_core, iso_right_core=config.insulations.iso_right_core,
-            iso_primary_to_primary=config.insulations.iso_primary_to_primary,
-            iso_secondary_to_secondary=config.insulations.iso_secondary_to_secondary,
-            iso_primary_to_secondary=config.insulations.iso_primary_to_secondary,
-            bobbin_coil_top=config.insulations.iso_top_core,
-            bobbin_coil_bot=config.insulations.iso_bot_core,
-            bobbin_coil_left=config.insulations.iso_primary_inner_bobbin,
-            bobbin_coil_right=config.insulations.iso_right_core,
-            center_foil_additional_bobbin=0e-3,
-            interleaving_scheme=InterleavingSchemesFoilLitz(loaded_trial_params['params_interleaving_scheme']),
-
-            # misc
-            interleaving_type=CenterTappedInterleavingType(loaded_trial_params['params_interleaving_type']),
-            primary_coil_turns=primary_coil_turns,
-            winding_temperature=config.temperature)
-
-        geo.set_insulation(insulation)
-        geo.set_winding_windows([coil_window, transformer_window])
-
-        geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, save_png=True)
-        shutil.copy(geo.mesh.hybrid_color_png_file, os.path.join(geo.file_data.working_directory, f'{config.working_directory}/drawings/{number_trial}.png'))
-
-    @staticmethod
-    def thermal_simulation_from_geo(geo, thermal_config: ThermalConfig, flag_insulation: bool = False,
-                                    show_visual_outputs: bool = True):
-        """Perform the thermal simulation for the transformer.
-
-        :param geo: geometry object
-        :type geo: femmt.Component
-        :param thermal_config: thermal configuration file
-        :type thermal_config: ThermalConfig
-        :param flag_insulation: True to simulate insulations. As insulations are not fully supported yet,
-             the insulation is set to false
-        :type flag_insulation: bool
-        :param show_visual_outputs: True to show visual simulation result
-        :type show_visual_outputs: bool
-
-        """
-        geo.thermal_simulation(thermal_config.thermal_conductivity_dict, thermal_config.boundary_temperatures,
-                               thermal_config.boundary_flags, thermal_config.case_gap_top,
-                               thermal_config.case_gap_right, thermal_config.case_gap_bot,
-                               show_visual_outputs, color_scheme=femmt.colors_ba_jonas,
-                               colors_geometry=femmt.colors_geometry_ba_jonas, flag_insulation=flag_insulation)
-
-    @staticmethod
-    def df_plot_pareto_front(df: pd.DataFrame, sum_inductance_error_percent: float):
-        """Plot an interactive Pareto diagram (losses vs. volume) to select the transformers to re-simulate.
-
-        :param df: Dataframe, generated from an optuna study (exported by optuna)
-        :type df: pd.Dataframe
-        :param sum_inductance_error_percent: maximum allowed error of |error(L_s12)| + |error(L_h)| in %
-        :type sum_inductance_error_percent: float
-        """
-        print(df.head())
-        df_pareto = df[df["values_2"] < sum_inductance_error_percent]
-
-        names = df_pareto["number"].to_numpy()
-        fig, ax = plt.subplots()
-        sc = plt.scatter(df_pareto["values_0"], df_pareto["values_1"], s=10)
-
-        annot = ax.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
-                            bbox=dict(boxstyle="round", fc="w"),
-                            arrowprops=dict(arrowstyle="->"))
-        annot.set_visible(False)
-
-        def update_annot(ind):
-            pos = sc.get_offsets()[ind["ind"][0]]
-            annot.xy = pos
-            text = f"{[names[n] for n in ind['ind']]}"
-            annot.set_text(text)
-            annot.get_bbox_patch().set_alpha(0.4)
-
-        def hover(event):
-            vis = annot.get_visible()
-            if event.inaxes == ax:
-                cont, ind = sc.contains(event)
-                if cont:
-                    update_annot(ind)
-                    annot.set_visible(True)
-                    fig.canvas.draw_idle()
+            Search the given fem_results_folder_path for .json log files and parse them into a pandas dataframe.
+
+            :param reluctance_df: Pandas Dataframe of reluctance model simulation results
+            :type reluctance_df: pd.DataFrame
+            :param fem_results_folder_path: Folder with FEM simulation results, simulation results must be named like 'case_123.json'
+            :type fem_results_folder_path: str
+            :return: Pandas dataframe containing reluctance model results and results from FEM simulations
+            :rtype: pd.DataFrame
+            """
+            files_in_folder = [f for f in os.listdir(fem_results_folder_path) if os.path.isfile(os.path.join(fem_results_folder_path, f))]
+            print(files_in_folder)
+            print(len(files_in_folder))
+
+            # add new columns to the dataframe, init values with None
+            reluctance_df['fem_inductance'] = None
+            reluctance_df['fem_p_loss_winding'] = None
+            reluctance_df['fem_eddy_core'] = None
+            reluctance_df['fem_core'] = None
+
+            for file in files_in_folder:
+                with open(os.path.join(fem_results_folder_path, file), 'r') as log_file:
+                    scanned_log_dict = json.load(log_file)
+
+                index = int(file.replace("case_", "").replace(".json", ""))
+                # only write FEM simulation log results to df in case of reluctance number simulation is already present there
+                if index in reluctance_df["number"]:
+                    reluctance_df.at[index, 'fem_inductance'] = scanned_log_dict['single_sweeps'][0]['winding1']['flux_over_current'][0]
+                    reluctance_df.at[index, 'fem_p_loss_winding'] = (
+                        scanned_log_dict['total_losses']['winding1']['total'] + scanned_log_dict['total_losses']['winding2']['total'])
+                    reluctance_df.at[index, 'fem_eddy_core'] = scanned_log_dict['total_losses']['eddy_core']
+                    reluctance_df.at[index, 'fem_core'] = scanned_log_dict['total_losses']['core']
+
+            # final loss calculation
+            reluctance_df["combined_losses"] = reluctance_df["fem_eddy_core"] + reluctance_df["fem_p_loss_winding"] + reluctance_df["user_attrs_p_hyst"]
+
+            return reluctance_df
+
+        @staticmethod
+        def full_simulation(df_geometry: pd.DataFrame, current_waveform: List, stacked_transformer_config_filepath: str, process_number: int = 1,
+                            show_visual_outputs: bool = False, print_derivations: bool = False):
+            """
+            Reluctance model (hysteresis losses) and FEM simulation (winding losses and eddy current losses) for geometries from df_geometry.
+
+            :param df_geometry: Pandas dataframe with geometries
+            :type df_geometry: pd.DataFrame
+            :param current_waveform: Current waveform to simulate
+            :type current_waveform: List
+            :param stacked_transformer_config_filepath: Filepath of the inductor optimization configuration file
+            :type stacked_transformer_config_filepath: str
+            :param process_number: process number to run the simulation on
+            :type process_number: int
+            :param show_visual_outputs: True to show visual outpus (geometries)
+            :type show_visual_outputs: bool
+            :param print_derivations: True to print derivation from FEM simulaton to reluctance model
+            :type print_derivations: bool
+            """
+            for index, _ in df_geometry.iterrows():
+
+                local_config = StackedTransformerOptimization.ReluctanceModel.load_config(stacked_transformer_config_filepath)
+
+                if local_config.core_name_list is not None:
+                    # using fixed core sizes from the database with flexible height.
+                    core_name = df_geometry['params_core_name'][index]
+                    core = ff.core_database()[core_name]
+                    core_inner_diameter = core["core_inner_diameter"]
+                    window_w = core["window_w"]
                 else:
-                    if vis:
-                        annot.set_visible(False)
-                        fig.canvas.draw_idle()
+                    core_inner_diameter = df_geometry['params_core_inner_diameter'][index]
+                    window_w = df_geometry['params_window_w'][index]
 
-        fig.canvas.mpl_connect("motion_notify_event", hover)
+                # overwrite the old time-current vector with the new one
+                local_config.time_current_vec = current_waveform
+                target_and_fix_parameters = StackedTransformerOptimization.ReluctanceModel.calculate_fix_parameters(local_config)
 
-        plt.xlabel('Volume in m³')
-        plt.ylabel('Losses in W')
-        plt.title(f"|error(L_s12)| +  |error(L_h)| < {sum_inductance_error_percent} %")
-        plt.grid()
-        plt.show()
+                working_directory = target_and_fix_parameters.working_directories.fem_working_directory
+                if not os.path.exists(working_directory):
+                    os.mkdir(working_directory)
+                working_directory = os.path.join(
+                    target_and_fix_parameters.working_directories.fem_working_directory, f"process_{process_number}")
 
-    @staticmethod
-    def create_full_report(df: pd.DataFrame, trials_numbers: list[int], config: StoSingleInputConfig,
-                           thermal_config: ThermalConfig,
-                           current_waveforms_operating_points: List[CurrentWorkingPoint],
-                           fft_filter_value_factor: float = 0.01, mesh_accuracy: float = 0.5):
-        """Create for several geometries and several working points a report.
+                # fem_input = FemInput(
+                #    # general parameters
+                #    working_directory=working_directory,
+                #    simulation_name="xx",
 
-        Simulates magnetoquasistatic and thermal for all given geometries and current working points.
-        Summarizes the losses and temperatures for every working point and geometry.
+                #    # material and geometry parameters
+                #    material_name=df_geometry['params_material_name'][index],
+                #    primary_litz_wire_name=df_geometry['params_primary_litz_name'][index],
+                #    secondary_litz_wire_name=df_geometry['params_secondary_litz_name'][index],
+                #    core_inner_diameter=core_inner_diameter,
+                #    window_w=window_w,
+                #    window_h_top=df_geometry["user_attrs_window_h_top"][index].item(),
+                #    window_h_bot=df_geometry["params_window_h_bot"][index].item(),
+                #    air_gap_length_top=df_geometry["user_attrs_l_top_air_gap"][index].item(),
+                #    air_gap_length_bot=df_geometry["user_attrs_l_bot_air_gap"][index].item(),
+                #    turns_primary_top=int(df_geometry["params_n_p_top"][index].item()),
+                #    turns_primary_bot=int(df_geometry["params_n_p_bot"][index].item()),
+                #    turns_secondary_bot=int(df_geometry["params_n_s_bot"][index].item()),
+                #    insulations=local_config.insulations,
 
-        :param df: Dataframe, generated from an optuna study (exported by optuna)
-        :type df: pd.Dataframe
-        :param trials_numbers: List of trial numbers to re-simulate
-        :type trials_numbers: List[int]
-        :param config: stacked transformer optimization configuration file
-        :type config: StoSingleInputConfig
-        :param thermal_config: thermal configuration file
-        :type thermal_config: ThermalConfig
-        :param current_waveforms_operating_points: Trial numbers in a list to re-simulate
-        :type current_waveforms_operating_points: List[int]
-        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all
-            amplitudes below 1 % of the maximum amplitude from the result-frequency list
-        :type fft_filter_value_factor: float
-        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations,
-            e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
-        :type mesh_accuracy: float
-        """
-        report_df = pd.DataFrame()
+                #    # data sources
+                #    material_data_sources=local_config.material_data_sources,
 
-        for trial_number in trials_numbers:
-            simulation_waveforms_dict = {"trial": trial_number}
+                #    # operating point conditions
+                #    temperature=local_config.temperature,
+                #    fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
+                #    time_current_1_vec=[list(target_and_fix_parameters.time_extracted_vec), list(target_and_fix_parameters.current_extracted_1_vec)],
+                #    time_current_2_vec=[list(target_and_fix_parameters.time_extracted_vec), list(target_and_fix_parameters.current_extracted_2_vec)]
+                # )
 
-            for count_current_waveform, current_waveform in enumerate(current_waveforms_operating_points):
-                # update currents in the config file
-                config.time_current_1_vec = current_waveforms_operating_points[
-                    count_current_waveform].time_current_1_vec
-                config.time_current_2_vec = current_waveforms_operating_points[
-                    count_current_waveform].time_current_2_vec
+                # pd.read_csv("~/Downloads/Pandas_trial.csv", header=0, index_col=0, delimiter=';')
+                # fem_output = StackedTransformerOptimization.FemSimulation.single_fem_simulation(fem_input, show_visual_outputs)
 
-                # perform the electromagnetic simulation
-                geo_sim = femmt.StackedTransformerOptimization.re_simulate_from_df(df, config,
-                                                                                   number_trial=trial_number,
-                                                                                   show_simulation_results=False,
-                                                                                   fft_filter_value_factor=fft_filter_value_factor,
-                                                                                   mesh_accuracy=mesh_accuracy)
-                # perform the thermal simulation
-                femmt.StackedTransformerOptimization.thermal_simulation_from_geo(geo_sim, thermal_config,
-                                                                                 show_visual_outputs=False)
+                litz_wire_primary_dict = ff.litz_database()[df_geometry['params_primary_litz_name'][index]]
+                litz_wire_diameter_primary = 2 * litz_wire_primary_dict["conductor_radii"]
+                litz_wire_secondary_dict = ff.litz_database()[df_geometry['params_secondary_litz_name'][index]]
+                litz_wire_diameter_secondary = 2 * litz_wire_secondary_dict["conductor_radii"]
 
-                electromagnetoquasistatic_result_dict = geo_sim.read_log()
-                thermal_result_dict = geo_sim.read_thermal_log()
+                # material properties
+                material_db = mdb.MaterialDatabase(is_silent=True)
 
-                simulation_waveform_dict = {
-                    f"total_loss_{current_waveform.name}": electromagnetoquasistatic_result_dict["total_losses"][
-                        "total_losses"],
-                    f"max_temp_core_{current_waveform.name}": thermal_result_dict["core_parts"]["total"]["max"],
-                    f"max_temp_winding_{current_waveform.name}": thermal_result_dict["windings"]["total"]["max"],
-                    "volume": electromagnetoquasistatic_result_dict["misc"]["core_2daxi_total_volume"]}
+                material_dto: mdb.MaterialCurve = material_db.material_data_interpolation_to_dto(
+                    df_geometry['params_material_name'][index], target_and_fix_parameters.fundamental_frequency, local_config.temperature)
+                # instantiate material-specific model
+                magnet_material_model: mh.loss.LossModel = mh.loss.LossModel(material=df_geometry['params_material_name'][index], team="paderborn")
 
-                simulation_waveforms_dict.update(simulation_waveform_dict)
+                reluctance_model_input = ReluctanceModelInput(
+                    target_inductance_matrix=fr.calculate_inductance_matrix_from_ls_lh_n(local_config.l_s12_target, local_config.l_h_target,
+                                                                                         local_config.n_target),
+                    core_inner_diameter=core_inner_diameter,
+                    window_w=window_w,
+                    window_h_bot=df_geometry["params_window_h_bot"][index].item(),
+                    window_h_top=df_geometry["user_attrs_window_h_top"][index].item(),
+                    turns_1_top=int(df_geometry["params_n_p_top"][index].item()),
+                    turns_1_bot=int(df_geometry["params_n_p_bot"][index].item()),
+                    turns_2_bot=int(df_geometry["params_n_s_bot"][index].item()),
+                    litz_wire_name_1=df_geometry['params_primary_litz_name'][index],
+                    litz_wire_diameter_1=litz_wire_diameter_primary,
+                    litz_wire_name_2=df_geometry['params_secondary_litz_name'][index],
+                    litz_wire_diameter_2=litz_wire_diameter_secondary,
 
-            simulation_df = pd.DataFrame(data=simulation_waveforms_dict, index=[0])
+                    insulations=local_config.insulations,
+                    material_dto=material_dto,
+                    magnet_material_model=magnet_material_model,
 
-            report_df = pd.concat([report_df, simulation_df], axis=0, ignore_index=True)
+                    temperature=local_config.temperature,
+                    time_extracted_vec=target_and_fix_parameters.time_extracted_vec,
+                    current_extracted_vec_1=target_and_fix_parameters.current_extracted_1_vec,
+                    current_extracted_vec_2=target_and_fix_parameters.current_extracted_2_vec,
+                    fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
 
-        report_df.to_csv(f'{config.working_directory}/summary.csv')
-        print(f"Report exported to {config.working_directory}/summary.csv")
+                    i_rms_1=target_and_fix_parameters.i_rms_1,
+                    i_rms_2=target_and_fix_parameters.i_rms_2,
 
-    @staticmethod
-    def create_pngs(df: pd.DataFrame, trials_numbers: list[int], config: StoSingleInputConfig):
-        """
-        Create the geometry of specified trials_numbers and saves a screenshot in png format for each trial.
+                    primary_litz_dict=litz_wire_primary_dict,
+                    secondary_litz_dict=litz_wire_secondary_dict,
 
-        Storage format "trial_number.png" as follows:
-        f'{config.working_directory}/drawings/{number_trial}.png')
+                    # winding 1
+                    fft_frequency_list_1=target_and_fix_parameters.fft_frequency_list_1,
+                    fft_amplitude_list_1=target_and_fix_parameters.fft_amplitude_list_1,
+                    fft_phases_list_1=target_and_fix_parameters.fft_phases_list_1,
 
-        :param df: Dataframe, generated from an optuna study (exported by optuna)
-        :type df: pd.Dataframe
-        :param trials_numbers: List of trial numbers to re-simulate
-        :type trials_numbers: List[int]
-        :param config: stacked transformer optimization configuration file
-        :type config: StoSingleInputConfig
-        """
-        if not os.path.exists(f'{config.working_directory}/drawings'):
-            os.mkdir(f'{config.working_directory}/drawings')
-        for trial_number in trials_numbers:
-            femmt.StackedTransformerOptimization.save_png_from_df(df, config, number_trial=trial_number, show_simulation_results=False)
+                    # winding 2
+                    fft_frequency_list_2=target_and_fix_parameters.fft_frequency_list_2,
+                    fft_amplitude_list_2=target_and_fix_parameters.fft_amplitude_list_2,
+                    fft_phases_list_2=target_and_fix_parameters.fft_phases_list_2
+                )
 
-    @staticmethod
-    def study_to_df(study_name: str, database_url: str):
-        """Create a dataframe from a study.
+                reluctance_output: ReluctanceModelOutput = StackedTransformerOptimization.ReluctanceModel.single_reluctance_model_simulation(
+                    reluctance_model_input)
 
-        :param study_name: name of study
-        :type study_name: str
-        :param database_url: url of database
-        :type database_url: str
-        """
-        loaded_study = optuna.create_study(study_name=study_name, storage=database_url, load_if_exists=True)
-        df = loaded_study.trials_dataframe()
-        df.to_csv(f'{study_name}.csv')
+                # p_total = reluctance_output.p_hyst + fem_output.eddy_core + fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2
+                p_total = reluctance_output.p_loss
+
+                # if print_derivations:
+                #    print(f"Inductance l_h reluctance: {local_config.l_h_target}")
+                #    print(f"Inductance l_h FEM: {fem_output.l_h_conc}")
+                #    print(f"Inductance l_h derivation: {(fem_output.l_h_conc - local_config.l_h_target) / local_config.l_h_target * 100} %")
+                #    print(f"Inductance l_s reluctance: {local_config.l_s12_target}")
+                #    print(f"Inductance l_s FEM: {fem_output.l_s_conc}")
+                #    print(f"Inductance l_s derivation: {(fem_output.l_s_conc - local_config.l_s12_target) / local_config.l_s12_target * 100} %")
+                #    print(f"Volume reluctance: {reluctance_output.volume}")
+                #    print(f"Volume FEM: {fem_output.volume}")
+                #    print(f"Volume derivation: {(reluctance_output.volume - fem_output.volume) / reluctance_output.volume * 100} %")
+
+                #    print(f"P_winding_both reluctance: {reluctance_output.winding_1_loss + reluctance_output.winding_2_loss}")
+                #    print(f"P_winding_both FEM: {fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2}")
+                #    winding_derivation = ((fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2 - \
+                #                           (reluctance_output.winding_1_loss + reluctance_output.winding_2_loss)) / \
+                #                          (fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2) * 100)
+                #    print(f"P_winding_both derivation: "
+                #          f"{winding_derivation}")
+                #    print(f"P_hyst reluctance: {reluctance_output.p_hyst}")
+                #    print(f"P_hyst FEM: {fem_output.core}")
+                #    print(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.core) / reluctance_output.p_hyst * 100}")
+
+                return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink
