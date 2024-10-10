@@ -475,7 +475,7 @@ class StackedTransformerOptimization:
 
                 p_winding_2 += proximity_factor_assumption_2 * secondary_resistance * reluctance_input.fft_amplitude_list_2[count] ** 2
 
-            p_loss = p_hyst + p_winding_1_top + p_winding_1_bot + p_winding_2
+            p_loss_total = p_hyst + p_winding_1_top + p_winding_1_bot + p_winding_2
 
             area_to_heat_sink = r_outer ** 2 * np.pi
 
@@ -494,7 +494,7 @@ class StackedTransformerOptimization:
                 l_bot_air_gap=l_bot_air_gap,
                 volume=volume,
                 area_to_heat_sink=area_to_heat_sink,
-                p_loss=p_loss,
+                p_loss=p_loss_total,
             )
 
             return reluctance_output
@@ -1030,7 +1030,8 @@ class StackedTransformerOptimization:
                 index = int(file.replace("case_", "").replace(".json", ""))
 
                 reluctance_df.at[index, 'fem_inductance'] = scanned_log_dict['single_sweeps'][0]['winding1']['flux_over_current'][0]
-                reluctance_df.at[index, 'fem_p_loss_winding'] = scanned_log_dict['total_losses']['winding1']['total']
+                reluctance_df.at[index, 'fem_p_loss_winding'] = (
+                    scanned_log_dict['total_losses']['winding1']['total'] + scanned_log_dict['total_losses']['winding2']['total'])
                 reluctance_df.at[index, 'fem_eddy_core'] = scanned_log_dict['total_losses']['eddy_core']
                 reluctance_df.at[index, 'fem_core'] = scanned_log_dict['total_losses']['core']
 
@@ -1041,7 +1042,7 @@ class StackedTransformerOptimization:
 
         @staticmethod
         def full_simulation(df_geometry: pd.DataFrame, current_waveform: List, stacked_transformer_config_filepath: str, process_number: int = 1,
-                            show_visual_outputs: bool = False):
+                            show_visual_outputs: bool = False, print_derivations: bool = False):
             """
             Reluctance model (hysteresis losses) and FEM simulation (winding losses and eddy current losses) for geometries from df_geometry.
 
@@ -1055,6 +1056,8 @@ class StackedTransformerOptimization:
             :type process_number: int
             :param show_visual_outputs: True to show visual outpus (geometries)
             :type show_visual_outputs: bool
+            :param print_derivations: True to print derivation from FEM simulaton to reluctance model
+            :type print_derivations: bool
             """
             for index, _ in df_geometry.iterrows():
 
@@ -1080,39 +1083,38 @@ class StackedTransformerOptimization:
                 working_directory = os.path.join(
                     target_and_fix_parameters.working_directories.fem_working_directory, f"process_{process_number}")
 
-                fem_input = FemInput(
-                    # general parameters
-                    working_directory=working_directory,
-                    simulation_name="xx",
+                # fem_input = FemInput(
+                #    # general parameters
+                #    working_directory=working_directory,
+                #    simulation_name="xx",
 
-                    # material and geometry parameters
-                    material_name=df_geometry['params_material_name'][index],
-                    primary_litz_wire_name=df_geometry['params_primary_litz_name'][index],
-                    secondary_litz_wire_name=df_geometry['params_secondary_litz_name'][index],
-                    core_inner_diameter=core_inner_diameter,
-                    window_w=window_w,
-                    window_h_top=df_geometry["user_attrs_window_h_top"][index].item(),
-                    window_h_bot=df_geometry["params_window_h_bot"][index].item(),
-                    air_gap_length_top=df_geometry["user_attrs_l_top_air_gap"][index].item(),
-                    air_gap_length_bot=df_geometry["user_attrs_l_bot_air_gap"][index].item(),
-                    turns_primary_top=int(df_geometry["params_n_p_top"][index].item()),
-                    turns_primary_bot=int(df_geometry["params_n_p_bot"][index].item()),
-                    turns_secondary_bot=int(df_geometry["params_n_s_bot"][index].item()),
-                    insulations=local_config.insulations,
+                #    # material and geometry parameters
+                #    material_name=df_geometry['params_material_name'][index],
+                #    primary_litz_wire_name=df_geometry['params_primary_litz_name'][index],
+                #    secondary_litz_wire_name=df_geometry['params_secondary_litz_name'][index],
+                #    core_inner_diameter=core_inner_diameter,
+                #    window_w=window_w,
+                #    window_h_top=df_geometry["user_attrs_window_h_top"][index].item(),
+                #    window_h_bot=df_geometry["params_window_h_bot"][index].item(),
+                #    air_gap_length_top=df_geometry["user_attrs_l_top_air_gap"][index].item(),
+                #    air_gap_length_bot=df_geometry["user_attrs_l_bot_air_gap"][index].item(),
+                #    turns_primary_top=int(df_geometry["params_n_p_top"][index].item()),
+                #    turns_primary_bot=int(df_geometry["params_n_p_bot"][index].item()),
+                #    turns_secondary_bot=int(df_geometry["params_n_s_bot"][index].item()),
+                #    insulations=local_config.insulations,
 
-                    # data sources
-                    material_data_sources=local_config.material_data_sources,
+                #    # data sources
+                #    material_data_sources=local_config.material_data_sources,
 
-                    # operating point conditions
-                    temperature=local_config.temperature,
-                    fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
-                    time_current_1_vec=[list(target_and_fix_parameters.time_extracted_vec), list(target_and_fix_parameters.current_extracted_1_vec)],
-                    time_current_2_vec=[list(target_and_fix_parameters.time_extracted_vec), list(target_and_fix_parameters.current_extracted_2_vec)]
-                )
+                #    # operating point conditions
+                #    temperature=local_config.temperature,
+                #    fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
+                #    time_current_1_vec=[list(target_and_fix_parameters.time_extracted_vec), list(target_and_fix_parameters.current_extracted_1_vec)],
+                #    time_current_2_vec=[list(target_and_fix_parameters.time_extracted_vec), list(target_and_fix_parameters.current_extracted_2_vec)]
+                # )
 
-                pd.read_csv("~/Downloads/Pandas_trial.csv", header=0, index_col=0, delimiter=';')
-
-                fem_output = StackedTransformerOptimization.FemSimulation.single_fem_simulation(fem_input, show_visual_outputs)
+                # pd.read_csv("~/Downloads/Pandas_trial.csv", header=0, index_col=0, delimiter=';')
+                # fem_output = StackedTransformerOptimization.FemSimulation.single_fem_simulation(fem_input, show_visual_outputs)
 
                 litz_wire_primary_dict = ff.litz_database()[df_geometry['params_primary_litz_name'][index]]
                 litz_wire_diameter_primary = 2 * litz_wire_primary_dict["conductor_radii"]
@@ -1172,27 +1174,29 @@ class StackedTransformerOptimization:
                 reluctance_output: ReluctanceModelOutput = StackedTransformerOptimization.ReluctanceModel.single_reluctance_model_simulation(
                     reluctance_model_input)
 
-                p_total = reluctance_output.p_hyst + fem_output.eddy_core + fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2
+                # p_total = reluctance_output.p_hyst + fem_output.eddy_core + fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2
+                p_total = reluctance_output.p_loss
 
-                print(f"Inductance l_h reluctance: {local_config.l_h_target}")
-                print(f"Inductance l_h FEM: {fem_output.l_h_conc}")
-                print(f"Inductance l_h derivation: {(fem_output.l_h_conc - local_config.l_h_target) / local_config.l_h_target * 100} %")
-                print(f"Inductance l_s reluctance: {local_config.l_s12_target}")
-                print(f"Inductance l_s FEM: {fem_output.l_s_conc}")
-                print(f"Inductance l_s derivation: {(fem_output.l_s_conc - local_config.l_s12_target) / local_config.l_s12_target * 100} %")
-                print(f"Volume reluctance: {reluctance_output.volume}")
-                print(f"Volume FEM: {fem_output.volume}")
-                print(f"Volume derivation: {(reluctance_output.volume - fem_output.volume) / reluctance_output.volume * 100} %")
+                # if print_derivations:
+                #    print(f"Inductance l_h reluctance: {local_config.l_h_target}")
+                #    print(f"Inductance l_h FEM: {fem_output.l_h_conc}")
+                #    print(f"Inductance l_h derivation: {(fem_output.l_h_conc - local_config.l_h_target) / local_config.l_h_target * 100} %")
+                #    print(f"Inductance l_s reluctance: {local_config.l_s12_target}")
+                #    print(f"Inductance l_s FEM: {fem_output.l_s_conc}")
+                #    print(f"Inductance l_s derivation: {(fem_output.l_s_conc - local_config.l_s12_target) / local_config.l_s12_target * 100} %")
+                #    print(f"Volume reluctance: {reluctance_output.volume}")
+                #    print(f"Volume FEM: {fem_output.volume}")
+                #    print(f"Volume derivation: {(reluctance_output.volume - fem_output.volume) / reluctance_output.volume * 100} %")
 
-                print(f"P_winding_both reluctance: {reluctance_output.winding_1_loss + reluctance_output.winding_2_loss}")
-                print(f"P_winding_both FEM: {fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2}")
-                winding_derivation = ((fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2 - \
-                                       (reluctance_output.winding_1_loss + reluctance_output.winding_2_loss)) / \
-                                      (fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2) * 100)
-                print(f"P_winding_both derivation: "
-                      f"{winding_derivation}")
-                print(f"P_hyst reluctance: {reluctance_output.p_hyst}")
-                print(f"P_hyst FEM: {fem_output.core}")
-                print(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.core) / reluctance_output.p_hyst * 100}")
+                #    print(f"P_winding_both reluctance: {reluctance_output.winding_1_loss + reluctance_output.winding_2_loss}")
+                #    print(f"P_winding_both FEM: {fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2}")
+                #    winding_derivation = ((fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2 - \
+                #                           (reluctance_output.winding_1_loss + reluctance_output.winding_2_loss)) / \
+                #                          (fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2) * 100)
+                #    print(f"P_winding_both derivation: "
+                #          f"{winding_derivation}")
+                #    print(f"P_hyst reluctance: {reluctance_output.p_hyst}")
+                #    print(f"P_hyst FEM: {fem_output.core}")
+                #    print(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.core) / reluctance_output.p_hyst * 100}")
 
                 return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink

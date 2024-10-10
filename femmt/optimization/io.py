@@ -889,33 +889,33 @@ class InductorOptimization:
                 working_directory = os.path.join(
                     target_and_fix_parameters.working_directories.fem_working_directory, f"process_{process_number}")
 
-                fem_input = FemInput(
-                    # general parameters
-                    working_directory=working_directory,
-                    simulation_name='xx',
+                # fem_input = FemInput(
+                #    # general parameters
+                #    working_directory=working_directory,
+                #    simulation_name='xx',
 
-                    # material and geometry parameters
-                    material_name=df_geometry['params_material_name'][index],
-                    litz_wire_name=df_geometry['params_litz_wire_name'][index],
-                    core_inner_diameter=core_inner_diameter,
-                    window_w=window_w,
-                    window_h=df_geometry["params_window_h"][index],
-                    air_gap_length=df_geometry['user_attrs_l_air_gap'][index],
-                    turns=int(df_geometry['params_turns'][index].item()),
-                    insulations=local_config.insulations,
+                #    # material and geometry parameters
+                #    material_name=df_geometry['params_material_name'][index],
+                #    litz_wire_name=df_geometry['params_litz_wire_name'][index],
+                #    core_inner_diameter=core_inner_diameter,
+                #    window_w=window_w,
+                #    window_h=df_geometry["params_window_h"][index],
+                #    air_gap_length=df_geometry['user_attrs_l_air_gap'][index],
+                #    turns=int(df_geometry['params_turns'][index].item()),
+                #    insulations=local_config.insulations,
 
-                    # data sources
-                    material_data_sources=local_config.material_data_sources,
+                #    # data sources
+                #    material_data_sources=local_config.material_data_sources,
 
-                    # operating point conditions
-                    temperature=local_config.temperature,
-                    fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
-                    fft_frequency_list=target_and_fix_parameters.fft_frequency_list,
-                    fft_amplitude_list=target_and_fix_parameters.fft_amplitude_list,
-                    fft_phases_list=target_and_fix_parameters.fft_phases_list
-                )
+                #    # operating point conditions
+                #    temperature=local_config.temperature,
+                #    fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
+                #    fft_frequency_list=target_and_fix_parameters.fft_frequency_list,
+                #    fft_amplitude_list=target_and_fix_parameters.fft_amplitude_list,
+                #    fft_phases_list=target_and_fix_parameters.fft_phases_list
+                # )
 
-                fem_output = InductorOptimization.FemSimulation.single_fem_simulation(fem_input, False)
+                # fem_output = InductorOptimization.FemSimulation.single_fem_simulation(fem_input, False)
 
                 litz_wire = ff.litz_database()[df_geometry['params_litz_wire_name'][index]]
                 litz_wire_diameter = 2 * litz_wire["conductor_radii"]
@@ -951,23 +951,25 @@ class InductorOptimization:
 
                 reluctance_output: ReluctanceModelOutput = InductorOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_input)
 
-                p_core = reluctance_output.p_hyst + fem_output.fem_eddy_core + fem_output.fem_p_loss_winding
+                # p_total = reluctance_output.p_hyst + fem_output.fem_eddy_core + fem_output.fem_p_loss_winding
+                # workaround
+                p_total = reluctance_output.p_loss_total
 
-                if print_derivations:
-                    print(f"Inductance reluctance: {local_config.target_inductance}")
-                    print(f"Inductance FEM: {fem_output.fem_inductance}")
-                    print(f"Inductance derivation: {(fem_output.fem_inductance - local_config.target_inductance) / local_config.target_inductance * 100} %")
-                    print(f"Volume reluctance: {reluctance_output.volume}")
-                    print(f"Volume FEM: {fem_output.volume}")
-                    print(f"Volume derivation: {(reluctance_output.volume - fem_output.volume) / reluctance_output.volume * 100} %")
-                    print(f"P_winding reluctance: {reluctance_output.p_winding}")
-                    print(f"P_winding FEM: {fem_output.fem_p_loss_winding}")
-                    print(f"P_winding derivation: {(fem_output.fem_p_loss_winding - reluctance_output.p_winding) / fem_output.fem_p_loss_winding * 100}")
-                    print(f"P_hyst reluctance: {reluctance_output.p_hyst}")
-                    print(f"P_hyst FEM: {fem_output.fem_core_total}")
-                    print(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.fem_core_total) / reluctance_output.p_hyst * 100}")
+                # if print_derivations:
+                #     print(f"Inductance reluctance: {local_config.target_inductance}")
+                #     print(f"Inductance FEM: {fem_output.fem_inductance}")
+                #     print(f"Inductance derivation: {(fem_output.fem_inductance - local_config.target_inductance) / local_config.target_inductance * 100} %")
+                #     print(f"Volume reluctance: {reluctance_output.volume}")
+                #     print(f"Volume FEM: {fem_output.volume}")
+                #     print(f"Volume derivation: {(reluctance_output.volume - fem_output.volume) / reluctance_output.volume * 100} %")
+                #     print(f"P_winding reluctance: {reluctance_output.p_winding}")
+                #     print(f"P_winding FEM: {fem_output.fem_p_loss_winding}")
+                #     print(f"P_winding derivation: {(fem_output.fem_p_loss_winding - reluctance_output.p_winding) / fem_output.fem_p_loss_winding * 100}")
+                #     print(f"P_hyst reluctance: {reluctance_output.p_hyst}")
+                #     print(f"P_hyst FEM: {fem_output.fem_core_total}")
+                #     print(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.fem_core_total) / reluctance_output.p_hyst * 100}")
 
-                return reluctance_output.volume, p_core, reluctance_output.area_to_heat_sink
+                return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink
 
         @staticmethod
         def filter_combined_loss_list_df(df: pd.DataFrame, factor_min_dc_losses: float = 1.2, factor_max_dc_losses: float = 10) -> pd.DataFrame:
