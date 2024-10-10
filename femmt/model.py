@@ -667,8 +667,15 @@ class Insulation:
 
     cond_cond: List[List[
         float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
-    core_cond: List[
-        float]  # list with size 4x1, with respectively isolation of cond_n -> [top_core, bot_core, left_core, right_core]
+    # core_cond: List[
+    #     float]  # list with size 4x1, with respectively isolation of cond_n -> [top_core, bot_core, left_core, right_core]
+    # top_section_core_cond: List[
+    #     float]  # Insulation values for the top section of integrated transformers
+    # bot_section_core_cond: List[
+    #     float]  # Insulation values for the bottom section of integrated transformers
+    core_cond = None  # Core insulations, initially None
+    top_section_core_cond = None  # Top section insulations for integrated transformers, initially None
+    bot_section_core_cond = None  # Bottom section insulations for integrated transformers, initially None
 
     flag_insulation: bool = True
     max_aspect_ratio: float
@@ -732,15 +739,77 @@ class Insulation:
         self.core_cond = [top_core, bot_core, left_core, right_core]
         self.core_cond = [top_core, bot_core, left_core, right_core]
 
-    def to_dict(self):
-        """Transfer object parameters to a dictionary. Important method to create the final result-log."""
-        if len(self.cond_cond) == 0:
-            return {}
+    def add_top_section_core_insulations(self, top_core: float, bot_core: float, left_core: float, right_core: float):
+        """
+        Add insulations for the top section for integrated transformers.
 
-        return {
-            "inner_winding_insulations": self.cond_cond,
-            "core_insulations": self.core_cond
+        :param top_core: Insulation between winding window and top section of the top section core
+        :type top_core: float
+        :param bot_core: Insulation between winding window and the bottom section of the top section core
+        :type bot_core: float
+        :param left_core: Insulation between winding window and left of the top section core
+        :type left_core: float
+        :param right_core: Insulation between winding window and right of the top section core
+        :type right_core: float
+        """
+        if top_core is None:
+            top_core = 0
+        if bot_core is None:
+            bot_core = 0
+        if left_core is None:
+            left_core = 0
+        if right_core is None:
+            right_core = 0
+
+        self.top_section_core_cond = [top_core, bot_core, left_core, right_core]
+
+    def add_bottom_section_core_insulations(self, top_core: float, bot_core: float, left_core: float, right_core: float):
+        """
+        Add insulations for the top section for integrated transformers.
+
+        :param top_core: Insulation between winding window and top section of the bot section core
+        :type top_core: float
+        :param bot_core: Insulation between winding window and the bottom section of the bot section core
+        :type bot_core: float
+        :param left_core: Insulation between winding window and left of the bot section core
+        :type left_core: float
+        :param right_core: Insulation between winding window and right of the bot section core
+        :type right_core: float
+        """
+        if bot_core is None:
+            bot_core = 0
+        if left_core is None:
+            left_core = 0
+        if right_core is None:
+            right_core = 0
+
+        self.bot_section_core_cond = [top_core, bot_core, left_core, right_core]
+
+    # def to_dict(self):
+    #     """Transfer object parameters to a dictionary. Important method to create the final result-log."""
+    #     if len(self.cond_cond) == 0:
+    #         return {}
+    #
+    #     return {
+    #         "inner_winding_insulations": self.cond_cond,
+    #         "core_insulations": self.core_cond
+    #     }
+    def to_dict(self):
+        """Transfer object parameters to a dictionary."""
+        result = {
+            "inner_winding_insulations": self.cond_cond
         }
+
+        if self.core_cond:
+            result["core_insulations"] = self.core_cond
+
+        if self.top_section_core_cond:
+            result["top_section_core_insulations"] = self.top_section_core_cond
+
+        if self.bot_section_core_cond:
+            result["bottom_section_core_insulations"] = self.bot_section_core_cond
+
+        return result
 
 
 @dataclass
@@ -1017,10 +1086,16 @@ class WindingWindow:
         self.air_gaps: AirGaps = air_gaps
 
         if self.core.core_type == CoreType.Single:
-            self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[1]
-            self.max_top_bound = core.window_h / 2 - insulations.core_cond[0]
-            self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
-            self.max_right_bound = core.r_inner - insulations.core_cond[3]
+            if self.stray_path:
+                self.max_bot_bound = -core.window_h / 2 + insulations.bot_section_core_cond[1]
+                self.max_top_bound = core.window_h / 2 - insulations.top_section_core_cond[0]
+                self.max_left_bound = core.core_inner_diameter / 2 + insulations.top_section_core_cond[2]
+                self.max_right_bound = core.r_inner - insulations.top_section_core_cond[3]
+            else:
+                self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[1]
+                self.max_top_bound = core.window_h / 2 - insulations.core_cond[0]
+                self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
+                self.max_right_bound = core.r_inner - insulations.core_cond[3]
         elif self.core.core_type == CoreType.Stacked:  # top, bot, left, right
             self.max_bot_bound = -core.window_h_bot / 2 + insulations.core_cond[1]
             self.max_top_bound = core.window_h_bot / 2 + core.window_h_top + core.core_thickness - insulations.core_cond[0]

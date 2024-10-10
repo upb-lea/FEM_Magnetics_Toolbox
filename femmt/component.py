@@ -452,11 +452,17 @@ class MagneticComponent:
         :param insulation: insulation object
         :type insulation: Insulation
         """
-        if insulation.cond_cond is None or not insulation.cond_cond:
-            raise Exception("insulations between the conductors must be set")
+        # For integrated transformers, check if top and bottom core insulations are set
+        if self.component_type == ComponentType.IntegratedTransformer and self.stray_path:
+            if (insulation.top_section_core_cond is None or not insulation.top_section_core_cond) and (
+                    insulation.bot_section_core_cond is None or not insulation.bot_section_core_cond):
+                raise Exception("Insulations for the top and bottom core sections must be set for integrated transformers")
+        else:
+            if insulation.cond_cond is None or not insulation.cond_cond:
+                raise Exception("insulations between the conductors must be set")
 
-        if insulation.core_cond is None or not insulation.core_cond:
-            raise Exception("insulations between the core and the conductors must be set")
+            if insulation.core_cond is None or not insulation.core_cond:
+                raise Exception("insulations between the core and the conductors must be set")
 
         self.insulation = insulation
 

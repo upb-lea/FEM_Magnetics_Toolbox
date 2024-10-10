@@ -126,8 +126,9 @@ def basic_example_transformer_integrated(onelab_folder: str = None, show_visual_
     geo.set_air_gaps(air_gaps)
 
     # 4. set insulations
-    insulation = fmt.Insulation(flag_insulation=False)
-    insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
+    insulation = fmt.Insulation(flag_insulation=True)
+    insulation.add_top_section_core_insulations(0.001, 0.001, 0.002, 0.001)
+    insulation.add_bottom_section_core_insulations(0.001, 0.001, 0.002, 0.001)
     insulation.add_winding_insulations([[0.0002, 0.001],
                                         [0.001, 0.0002]])
     geo.set_insulation(insulation)

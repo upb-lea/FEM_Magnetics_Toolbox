@@ -36,6 +36,8 @@ class TwoDaxiSymmetric:
     p_air_gaps: np.ndarray
     # p_conductor: List[List[float]]
     p_iso_core: List[List[float]]
+    p_iso_top_core: List[List[float]]
+    p_iso_bot_core: List[List[float]]
     p_iso_pri_sec: List[List[float]]
 
     def __init__(self, core: Core, mesh_data: MeshData, air_gaps: AirGaps, winding_windows: List[WindingWindow],
@@ -63,6 +65,8 @@ class TwoDaxiSymmetric:
         self.p_air_gaps = np.zeros((4 * air_gaps.number, 4))
         self.p_conductor = []
         self.p_iso_core = []
+        self.p_iso_top_core = []
+        self.p_iso_bot_core = []
         self.p_iso_pri_sec = []
 
         for i in range(number_of_windings):
@@ -1345,9 +1349,273 @@ class TwoDaxiSymmetric:
             return  # if flag_insulation is False, just return without drawing insulations
 
         if self.component_type == ComponentType.IntegratedTransformer:
-            # TODO: insulations implement for integrated_transformers
-            # TODO Change back to warnings?
-            self.femmt_print("Insulations are not set because they are not implemented for integrated transformers.")
+            if not self.stray_path:
+
+                # TODO: insulations implement for integrated_transformers
+                # TODO Change back to warnings?
+                self.femmt_print("Insulations are not set because they are not implemented for integrated transformers.")
+            else:
+                window_h = self.core.window_h
+                iso = self.insulation
+                mesh_data = self.mesh_data
+                # Since there are many cases in which alternating conductors would lead to slightly different
+                # mesh densities a simplification is made: Just use the lowest mesh density to be safe all the time.
+                mesh_density_to_winding = min(mesh_data.c_conductor)
+
+                mesh_density_to_core = mesh_data.c_window
+                if self.insulation.max_aspect_ratio == 0:
+                    # If no aspect ratio is set insulations will not be drawn
+                    return
+                else:
+                    insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
+
+                # self.p_iso_core = []  # Order: Left, Top, Right, Bot
+                self.p_iso_top_core = []
+                self.p_iso_bot_core = []
+                self.p_iso_pri_sec = []
+                # Useful dimensions needed for calculating some points
+                start_index = self.stray_path.start_index
+                air_gap_1_position = self.air_gaps.midpoints[start_index][1]
+                air_gap_1_height = self.air_gaps.midpoints[start_index][2]
+                air_gap_2_position = self.air_gaps.midpoints[start_index + 1][1]
+                air_gap_2_height = self.air_gaps.midpoints[start_index + 1][2]
+                y_top_stray_path = air_gap_2_position - (air_gap_2_height / 2)
+                y_bot_stray_path = air_gap_1_position + (air_gap_1_height / 2)
+
+                # Useful points for insulation creation
+                left_x = self.core.core_inner_diameter / 2 + insulation_delta
+                right_x = self.r_inner - insulation_delta
+                top_section_top_y = window_h / 2 - insulation_delta
+                top_section_bot_y = y_top_stray_path
+                bot_section_top_y = y_bot_stray_path
+                bot_section_bot_y = -window_h / 2 + insulation_delta
+
+                # Useful lengths
+                # top core
+                top_section_left_iso_width = iso.top_section_core_cond[2] - insulation_delta - insulation_delta
+                top_section_top_iso_height = iso.top_section_core_cond[0] - insulation_delta - insulation_delta
+                top_section_right_iso_width = iso.top_section_core_cond[3] - insulation_delta - insulation_delta
+                top_section_bot_iso_height = iso.top_section_core_cond[1] - insulation_delta - insulation_delta
+                # bot core
+                bot_section_left_iso_width = iso.bot_section_core_cond[2] - insulation_delta - insulation_delta
+                bot_section_top_iso_height = iso.bot_section_core_cond[0] - insulation_delta - insulation_delta
+                bot_section_right_iso_width = iso.bot_section_core_cond[3] - insulation_delta - insulation_delta
+                bot_section_bot_iso_height = iso.bot_section_core_cond[1] - insulation_delta - insulation_delta
+
+                # Core to Pri insulation
+                # top core points
+                iso_top_core_left = [
+                    [
+                        left_x,
+                        top_section_top_y - top_section_top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        left_x + top_section_left_iso_width,
+                        top_section_top_y - top_section_top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        left_x + top_section_left_iso_width,
+                        top_section_bot_y + top_section_bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        left_x,
+                        top_section_bot_y + top_section_bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ]
+                ]
+                iso_top_core_top = [
+                    [
+                        left_x,
+                        top_section_top_y,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x,
+                        top_section_top_y,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x,
+                        top_section_top_y - top_section_top_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        left_x,
+                        top_section_top_y - top_section_top_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ]
+                ]
+                iso_top_core_right = [
+                    [
+                        right_x - top_section_right_iso_width,
+                        top_section_top_y - top_section_top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        right_x,
+                        top_section_top_y - top_section_top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x,
+                        top_section_bot_y + top_section_bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x - top_section_right_iso_width,
+                        top_section_bot_y + top_section_bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ]
+                ]
+                iso_top_core_bot = [
+                    [
+                        left_x,
+                        top_section_bot_y + top_section_bot_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        right_x,
+                        top_section_bot_y + top_section_bot_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        right_x,
+                        top_section_bot_y,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        left_x,
+                        top_section_bot_y,
+                        0,
+                        mesh_density_to_core
+                    ]
+                ]
+                # bot core points
+                iso_bot_core_left = [
+                    [
+                        left_x,
+                        bot_section_top_y - bot_section_top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        left_x + bot_section_left_iso_width,
+                        bot_section_top_y - bot_section_top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        left_x + bot_section_left_iso_width,
+                        bot_section_bot_y + bot_section_bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        left_x,
+                        bot_section_bot_y + bot_section_bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ]
+                ]
+                iso_bot_core_top = [
+                    [
+                        left_x,
+                        bot_section_top_y,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x,
+                        bot_section_top_y,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x,
+                        bot_section_top_y - bot_section_top_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        left_x,
+                        bot_section_top_y - bot_section_top_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ]
+                ]
+                iso_bot_core_right = [
+                    [
+                        right_x - bot_section_right_iso_width,
+                        bot_section_top_y - bot_section_top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        right_x,
+                        bot_section_top_y - bot_section_top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x,
+                        bot_section_bot_y + bot_section_bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x - bot_section_right_iso_width,
+                        bot_section_bot_y + bot_section_bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ]
+                ]
+                iso_bot_core_bot = [
+                    [
+                        left_x,
+                        bot_section_bot_y + bot_section_bot_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        right_x,
+                        bot_section_bot_y + bot_section_bot_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        right_x,
+                        bot_section_bot_y,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        left_x,
+                        bot_section_bot_y,
+                        0,
+                        mesh_density_to_core
+                    ]
+                ]
+                self.p_iso_top_core = [iso_top_core_left, iso_top_core_top, iso_top_core_right, iso_top_core_bot]
+                self.p_iso_bot_core = [iso_bot_core_left, iso_bot_core_top, iso_bot_core_right, iso_bot_core_bot]
+
         else:
             window_h = self.core.window_h
             iso = self.insulation
