@@ -1028,12 +1028,13 @@ class StackedTransformerOptimization:
                     scanned_log_dict = json.load(log_file)
 
                 index = int(file.replace("case_", "").replace(".json", ""))
-
-                reluctance_df.at[index, 'fem_inductance'] = scanned_log_dict['single_sweeps'][0]['winding1']['flux_over_current'][0]
-                reluctance_df.at[index, 'fem_p_loss_winding'] = (
-                    scanned_log_dict['total_losses']['winding1']['total'] + scanned_log_dict['total_losses']['winding2']['total'])
-                reluctance_df.at[index, 'fem_eddy_core'] = scanned_log_dict['total_losses']['eddy_core']
-                reluctance_df.at[index, 'fem_core'] = scanned_log_dict['total_losses']['core']
+                # only write FEM simulation log results to df in case of reluctance number simulation is already present there
+                if index in reluctance_df["number"]:
+                    reluctance_df.at[index, 'fem_inductance'] = scanned_log_dict['single_sweeps'][0]['winding1']['flux_over_current'][0]
+                    reluctance_df.at[index, 'fem_p_loss_winding'] = (
+                        scanned_log_dict['total_losses']['winding1']['total'] + scanned_log_dict['total_losses']['winding2']['total'])
+                    reluctance_df.at[index, 'fem_eddy_core'] = scanned_log_dict['total_losses']['eddy_core']
+                    reluctance_df.at[index, 'fem_core'] = scanned_log_dict['total_losses']['core']
 
             # final loss calculation
             reluctance_df["combined_losses"] = reluctance_df["fem_eddy_core"] + reluctance_df["fem_p_loss_winding"] + reluctance_df["user_attrs_p_hyst"]
