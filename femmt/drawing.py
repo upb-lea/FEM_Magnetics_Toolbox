@@ -1386,7 +1386,7 @@ class TwoDaxiSymmetric:
                 y_top_stray_path = air_gap_2_position - (air_gap_2_height / 2)
                 y_bot_stray_path = air_gap_1_position + (air_gap_1_height / 2)
                 top_section_top_y = window_h / 2 - insulation_delta
-                top_section_bot_y = y_top_stray_path - insulation_delta
+                top_section_bot_y = y_top_stray_path + insulation_delta
                 bot_section_top_y = y_bot_stray_path - insulation_delta
                 bot_section_bot_y = -window_h / 2 + insulation_delta
             else:
