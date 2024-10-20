@@ -313,8 +313,7 @@ class MagneticComponent:
             "winding_tags": self.mesh.ps_cond,
             "air_gaps_tag": self.mesh.ps_air_gaps if self.air_gaps.number > 0 else None,
             "boundary_regions": self.mesh.thermal_boundary_region_tags,
-            "insulations_tag": self.mesh.ps_insulation if flag_insulation and len(
-                self.insulation.core_cond) == 4 else None
+            "insulations_tag": self.mesh.ps_insulation if flag_insulation else None
         }
 
         # Core area -> Is needed to estimate the heat flux

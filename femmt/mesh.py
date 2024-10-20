@@ -1631,7 +1631,7 @@ class Mesh:
         # air and Air gaps
         if self.model.core.core_type == CoreType.Single:
             self.ps_air = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air, tag=110000)
-            self.ps_air_gaps = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air_gaps, tag=110001)  # trying by Othman for stacked transformer
+            self.ps_air_gaps = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air_gaps, tag=110001)
         elif self.model.core.core_type == CoreType.Stacked:
             air_total = self.plane_surface_air_bot + self.plane_surface_air_top
             self.ps_air_gaps = gmsh.model.geo.addPhysicalGroup(2, air_total, tag=110001)
@@ -1639,7 +1639,17 @@ class Mesh:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # insulations
         # TODO Currently insulations can only have the same material
-        self.ps_insulation = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_iso_core)
+        # self.ps_insulation = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_iso_core)
+        self.ps_insulation = []
+        if self.model.core.core_type == CoreType.Single:
+            if self.stray_path:
+                self.ps_insulation.append(gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_iso_top_core))
+                self.ps_insulation.append(gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_iso_bot_core))
+            else:
+                self.ps_insulation.append(gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_iso_core))
+        elif self.model.core.core_type == CoreType.Stacked:
+            self.ps_insulation.append(gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_iso_top_core))
+            self.ps_insulation.append(gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_iso_bot_core))
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Boundary
@@ -1680,7 +1690,17 @@ class Mesh:
                 gmsh.model.setPhysicalName(2, self.ps_cond[num][i], f"COND{num + 1}")
         gmsh.model.setPhysicalName(2, self.ps_air, "AIR")
         gmsh.model.setPhysicalName(2, self.ps_air_gaps, "AIR_GAPS")
-        gmsh.model.setPhysicalName(2, self.ps_insulation, "insulationS")
+        # gmsh.model.setPhysicalName(2, self.ps_insulation, "insulationS")
+        if self.model.core.core_type == CoreType.Single:
+            if self.stray_path:
+                gmsh.model.setPhysicalName(2, self.ps_insulation[0], "INSULATION_TOP")
+                gmsh.model.setPhysicalName(2, self.ps_insulation[1], "INSULATION_BOTTOM")
+            else:
+                gmsh.model.setPhysicalName(2, self.ps_insulation[0], "INSULATION")
+
+        elif self.model.core.core_type == CoreType.Stacked:
+            gmsh.model.setPhysicalName(2, self.ps_insulation[0], "INSULATION_TOP")
+            gmsh.model.setPhysicalName(2, self.ps_insulation[1], "INSULATION_BOTTOM")
 
         # Synchronize
         gmsh.model.geo.synchronize()
@@ -1720,8 +1740,23 @@ class Mesh:
                                     color_scheme[colors_geometry["winding"][color_index]][2], recursive=True)
 
         # insulation color (inner insulation / bobbin)
-        gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core], color_insulation[0], color_insulation[1],
-                            color_insulation[2], recursive=True)
+        # gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core], color_insulation[0], color_insulation[1],
+        #                     color_insulation[2], recursive=True)
+        if self.model.core.core_type == CoreType.Single:
+            if self.stray_path:
+                gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_top_core], color_insulation[0], color_insulation[1], color_insulation[2],
+                                    recursive=True)
+                gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_bot_core], color_insulation[0], color_insulation[1], color_insulation[2],
+                                    recursive=True)
+            else:
+                gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core], color_insulation[0], color_insulation[1], color_insulation[2],
+                                    recursive=True)
+
+        elif self.model.core.core_type == CoreType.Stacked:
+            gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_top_core], color_insulation[0], color_insulation[1], color_insulation[2],
+                                recursive=True)
+            gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_bot_core], color_insulation[0], color_insulation[1], color_insulation[2],
+                                recursive=True)
 
         if visualize_before:
             gmsh.fltk.run()
