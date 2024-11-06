@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" data-content_root="./">
 <head>
@@ -6,18 +8,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>1 FEM Magnetics Toolbox (FEMMT) &mdash; FEM Magnetics Toolbox 0.5.4 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script src="_static/jquery.js?v=5d32c60e"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=e1a677a5"></script>
-        <script src="_static/doctools.js?v=9a2dae69"></script>
-        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=e1a677a5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -54,24 +52,27 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#documentation"><span class="sectnum">1.2 </span>Documentation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#installation"><span class="sectnum">1.3 </span>Installation</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#onelab-installation"><span class="sectnum">1.3.1 </span>ONELAB installation</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#install-femmt"><span class="sectnum">1.3.2 </span>Install FEMMT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#literature"><span class="sectnum">1.3 </span>Literature</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installation"><span class="sectnum">1.4 </span>Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#onelab-installation"><span class="sectnum">1.4.1 </span>ONELAB installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#further-steps-for-macos-arm"><span class="sectnum">1.4.2 </span>Further steps for macOS(ARM)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#install-femmt"><span class="sectnum">1.4.3 </span>Install FEMMT</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#minimal-example"><span class="sectnum">1.4 </span>Minimal example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#gui-experimental"><span class="sectnum">1.5 </span>GUI (Experimental)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#bug-reports"><span class="sectnum">1.6 </span>Bug Reports</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#contributing"><span class="sectnum">1.7 </span>Contributing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#changelog"><span class="sectnum">1.8 </span>Changelog</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#license"><span class="sectnum">1.9 </span>License</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#history-and-project-status"><span class="sectnum">1.10 </span>History and project status</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#femmt-development-version-for-developers-only"><span class="sectnum">1.11 </span>FEMMT development version (for developers only)</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#basics"><span class="sectnum">1.11.1 </span>Basics</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#counting-arrow-system"><span class="sectnum">1.11.2 </span>Counting arrow system</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#minimal-example"><span class="sectnum">1.5 </span>Minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#gui-experimental"><span class="sectnum">1.6 </span>GUI (Experimental)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting"><span class="sectnum">1.7 </span>Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#bug-reports"><span class="sectnum">1.8 </span>Bug Reports</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#contributing"><span class="sectnum">1.9 </span>Contributing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#changelog"><span class="sectnum">1.10 </span>Changelog</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#license"><span class="sectnum">1.11 </span>License</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#history-and-project-status"><span class="sectnum">1.12 </span>History and project status</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#femmt-development-version-for-developers-only"><span class="sectnum">1.13 </span>FEMMT development version (for developers only)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#basics"><span class="sectnum">1.13.1 </span>Basics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#counting-arrow-system"><span class="sectnum">1.13.2 </span>Counting arrow system</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#id1"><span class="sectnum">1.12 </span>GUI (Experimental)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id1"><span class="sectnum">1.14 </span>GUI (Experimental)</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="#user-guide-how-to-create-a-femmt-model"><span class="sectnum">2 </span>User Guide: How to create a FEMMT model</a><ul>
@@ -377,6 +378,8 @@
 <p>Python toolbox to generate preconfigured figures for FEM simulation tools in power electronics.</p>
 <p>The toolbox is accessible via python code or a graphical user interface
 (GUI), which current development status is experimental.</p>
+<p>All core shapes are simulated as 2D symmetric cores, as shown in the figure.</p>
+<p><img alt="geometry_translated" src="_images/geometry_translated.png" /></p>
 <section id="overview-features">
 <h2><span class="sectnum">1.1 </span>Overview features<a class="headerlink" href="#overview-features" title="Link to this heading"></a></h2>
 <section id="stable-features">
@@ -385,24 +388,24 @@
 <li><dl class="simple">
 <dt>Component features:</dt><dd><ul>
 <li><p>2D axi-symmetric cylindrical simplification</p></li>
-<li><p><a class="reference external" href="../../femmt/examples/basic_inductor.py">Inductor</a>, <a class="reference external" href="../../femmt/examples/basic_transformer.py">2-winding transformer</a>, <a class="reference external" href="../../femmt/examples/basic_transformer_6_windings.py">n-winding transformer</a></p></li>
+<li><p><a class="reference external" href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/femmt/examples/basic_inductor.py">Inductor</a>, <a class="reference external" href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/femmt/examples/basic_transformer.py">2-winding transformer</a>, <a class="reference external" href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/femmt/examples/basic_transformer_6_windings.py">n-winding transformer</a></p></li>
 <li><p>Arbitrary (distributed) air gap positioning in center leg</p></li>
 <li><p>Variety of winding interleaving schemes</p></li>
 <li><dl class="simple">
 <dt>Special geometries:</dt><dd><ul>
-<li><p><a class="reference external" href="../../femmt/examples/basic_transformer_center_tapped.py">Center tapped transformer</a></p></li>
-<li><p><a class="reference external" href="../../femmt/examples/basic_transformer_integrated.py">Magnetic shunt</a> (transformer with integrated inductor)</p></li>
-<li><p><a class="reference external" href="../../femmt/examples/basic_transformer_stacked.py">Stacked core</a> (transformer with integrated inductor)</p></li>
+<li><p><a class="reference external" href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/femmt/examples/basic_transformer_center_tapped.py">Center tapped transformer</a></p></li>
+<li><p><a class="reference external" href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/femmt/examples/basic_transformer_integrated.py">Magnetic shunt</a> (transformer with integrated inductor)</p></li>
+<li><p><a class="reference external" href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/femmt/examples/basic_transformer_stacked.py">Stacked core</a> (transformer with integrated inductor)</p></li>
 </ul>
 </dd>
 </dl>
 </li>
-<li><p>Round litz wire</p></li>
+<li><p>Round litz wire, implemented according to <a class="reference external" href="https://ieeexplore.ieee.org/document/9007233">Niyomsatian et al.: Frequency-domain homogenization for litz-wire bundles in finite element calculations</a></p></li>
 <li><p>Round and rectangular solid wires</p></li>
 <li><p>Different winding schemes (hexagonal, left/right, top/down, …)</p></li>
 <li><p>Parallel connection of solid wires</p></li>
 <li><p>Insulation distances (winding2core, winding2winding)</p></li>
-<li><p>Many <a class="reference external" href="../../femmt/examples/">examples</a>. to learn and understand FEMMT</p></li>
+<li><p>Many <a class="reference external" href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/tree/main/femmt/examples">examples</a> to learn and understand FEMMT</p></li>
 <li><dl class="simple">
 <dt>Databases</dt><dd><ul>
 <li><p>Litz wire database</p></li>
@@ -422,7 +425,7 @@
 <li><p>Implemented using <a class="reference external" href="https://onelab.info/">ONELAB</a></p></li>
 <li><p>Current excitation</p></li>
 <li><p>Frequency domain solver</p></li>
-<li><p>Litz wire loss model for proximity and skin effect (Niyomsatian et al.: Frequency-domain homogenization for impedance characterization of litz-wire transformers in 2-D finite element models)</p></li>
+<li><p>Litz wire loss model for proximity and skin effect (<a class="reference external" href="https://ieeexplore.ieee.org/document/7695378">Niyomsatian et al.: Frequency-domain homogenization for impedance characterization of litz-wire transformers in 2-D finite element models</a>)</p></li>
 <li><dl class="simple">
 <dt>Core loss calculation for real materials (data from material database)</dt><dd><ul>
 <li><p>Amplitude dependent loss angle (Local resolution of complex permeability)</p></li>
@@ -478,7 +481,7 @@
 </li>
 <li><dl class="simple">
 <dt>Solver features:</dt><dd><ul>
-<li><p>Time domain solver</p></li>
+<li><p>Time domain solver is experimental</p></li>
 </ul>
 </dd>
 </dl>
@@ -536,11 +539,18 @@
 <h2><span class="sectnum">1.2 </span>Documentation<a class="headerlink" href="#documentation" title="Link to this heading"></a></h2>
 <p>Please have a look at the <a class="reference external" href="https://upb-lea.github.io/FEM_Magnetics_Toolbox/intro.html">documentation</a>. You will find tutorials and a function description.</p>
 </section>
+<section id="literature">
+<h2><span class="sectnum">1.3 </span>Literature<a class="headerlink" href="#literature" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://ieeexplore.ieee.org/document/9862128">An Open-Source FEM Magnetics Toolbox for Power Electronic Magnetic Components</a></p></li>
+<li><p><a class="reference external" href="https://ieeexplore.ieee.org/document/9907554">An Open-Source FEM Magnetic Toolbox for Calculating Electric and Thermal Behavior of Power Electronic Magnetic Components</a></p></li>
+</ul>
+</section>
 <section id="installation">
-<h2><span class="sectnum">1.3 </span>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
+<h2><span class="sectnum">1.4 </span>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
 <p>To run FEMMT python (version 3.10 or above) and onelab is needed.</p>
 <section id="onelab-installation">
-<h3><span class="sectnum">1.3.1 </span>ONELAB installation<a class="headerlink" href="#onelab-installation" title="Link to this heading"></a></h3>
+<h3><span class="sectnum">1.4.1 </span>ONELAB installation<a class="headerlink" href="#onelab-installation" title="Link to this heading"></a></h3>
 <ul class="simple">
 <li><p>Go to <a class="reference external" href="https://onelab.info/">https://onelab.info/</a></p></li>
 <li><p>Download the Desktop Version for your OS (Windows, Linux or macOS)</p></li>
@@ -548,8 +558,20 @@
 later when installing FEMMT.</p></li>
 </ul>
 </section>
+<section id="further-steps-for-macos-arm">
+<h3><span class="sectnum">1.4.2 </span>Further steps for macOS(ARM)<a class="headerlink" href="#further-steps-for-macos-arm" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Go to <a class="reference external" href="https://onelab.info/">https://onelab.info/</a></p></li>
+<li><p>Download the Desktop Version for Windows</p></li>
+<li><p>Copy the “conveks.py” and “Onelab.py” files and paste them into the “onelab” folder</p></li>
+<li><p>Go to <a class="reference external" href="http://getdp.info/">http://getdp.info/</a></p></li>
+<li><p>Download the macOS(ARM) Version</p></li>
+<li><p>Open the downloaded folder, navigate to “bin” and copy the “getdp” application file</p></li>
+<li><p>Paste the copied file into your “onelab” folder</p></li>
+</ul>
+</section>
 <section id="install-femmt">
-<h3><span class="sectnum">1.3.2 </span>Install FEMMT<a class="headerlink" href="#install-femmt" title="Link to this heading"></a></h3>
+<h3><span class="sectnum">1.4.3 </span>Install FEMMT<a class="headerlink" href="#install-femmt" title="Link to this heading"></a></h3>
 <p>FEMMT can be installed using the python pip package manager.
 This is the stable release version (recommended).</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">femmt</span>
@@ -559,45 +581,54 @@ This is the stable release version (recommended).</p>
 </section>
 </section>
 <section id="minimal-example">
-<h2><span class="sectnum">1.4 </span>Minimal example<a class="headerlink" href="#minimal-example" title="Link to this heading"></a></h2>
+<h2><span class="sectnum">1.5 </span>Minimal example<a class="headerlink" href="#minimal-example" title="Link to this heading"></a></h2>
 <p>This toolbox is able to build a complete FEM simulation from simple
 Python code. The following figure shows the Python code on the left and
 the corresponding FEM simulation on the right. <img alt="FEMMT_Screenshot" src="_images/FEMMT_Screenshot.png" /></p>
-<p>To run a minimal example please have a look at the <a class="reference external" href="../../femmt/examples/">examples</a>.</p>
+<p>To run a minimal example please have a look at the <a class="reference external" href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/tree/main/femmt/examples">examples</a>.</p>
 </section>
 <section id="gui-experimental">
-<h2><span class="sectnum">1.5 </span>GUI (Experimental)<a class="headerlink" href="#gui-experimental" title="Link to this heading"></a></h2>
+<h2><span class="sectnum">1.6 </span>GUI (Experimental)<a class="headerlink" href="#gui-experimental" title="Link to this heading"></a></h2>
 <p>There is a first preview for a GUI. Installing this is a bit cumbersome
 at first, but will be simplified in the future:</p>
 <ul class="simple">
 <li><p>Download the complete repository via <code class="docutils literal notranslate"><span class="pre">Code</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Download</span> <span class="pre">ZIP</span></code> and unpack it.</p></li>
 <li><p>Or clone the repository</p></li>
 <li><p>Install the development version of femmt using <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.</span></code></p></li>
-<li><p>Run python <code class="docutils literal notranslate"><span class="pre">.../path-to_femmt../../femmt/gui/femmt_gui.py</span></code></p></li>
+<li><p>Run python <code class="docutils literal notranslate"><span class="pre">.../path-to_femmt/femmt/gui/femmt_gui.py</span></code></p></li>
 </ul>
 <p>Please note, the GUI is experimental.</p>
 <p><img alt="femmt_gui_definition" src="_images/femmt_gui_definition.png" /></p>
 </section>
+<section id="troubleshooting">
+<h2><span class="sectnum">1.7 </span>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<p>If the working directory is within OneDrive, there are problems writing .dat files, which are basic for FEMMT. The following error messages appear:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">The</span> <span class="n">system</span> <span class="n">cannot</span> <span class="n">find</span> <span class="n">the</span> <span class="n">file</span> <span class="n">specified</span><span class="p">:</span> <span class="n">your_directory</span><span class="o">/</span><span class="n">femmt</span><span class="o">/</span><span class="n">electro_magnetic</span><span class="o">/</span><span class="n">Strands_Coefficients</span><span class="o">/</span><span class="n">coeff</span><span class="o">/</span><span class="n">pB_RS_la0</span><span class="mf">.6_4</span><span class="n">layer</span><span class="o">.</span><span class="n">dat</span>
+<span class="ne">FileNotFoundError</span><span class="p">:</span> <span class="p">[</span><span class="n">Errno</span> <span class="mi">2</span><span class="p">]</span> <span class="n">No</span> <span class="n">such</span> <span class="n">file</span> <span class="ow">or</span> <span class="n">directory</span><span class="p">:</span> <span class="n">your_directory</span><span class="o">/</span><span class="n">results</span><span class="o">/</span><span class="n">values</span><span class="o">/</span><span class="n">j2F_1</span><span class="o">.</span><span class="n">dat</span>
+</pre></div>
+</div>
+<p>The solution is to place the working directory of FEMMT including the Python virtual environment outside the OneDrive folder.</p>
+</section>
 <section id="bug-reports">
-<h2><span class="sectnum">1.6 </span>Bug Reports<a class="headerlink" href="#bug-reports" title="Link to this heading"></a></h2>
+<h2><span class="sectnum">1.8 </span>Bug Reports<a class="headerlink" href="#bug-reports" title="Link to this heading"></a></h2>
 <p>Please use the issues report button within github to report bugs.</p>
 </section>
 <section id="contributing">
-<h2><span class="sectnum">1.7 </span>Contributing<a class="headerlink" href="#contributing" title="Link to this heading"></a></h2>
+<h2><span class="sectnum">1.9 </span>Contributing<a class="headerlink" href="#contributing" title="Link to this heading"></a></h2>
 <p>Pull requests are welcome. For major changes, please open an issue first
 to discuss what you would like to change. For contributing, please refer
-to this <a class="reference external" href="../../Contributing.rst">section</a>.</p>
+to this <a class="reference external" href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/Contributing.rst">section</a>.</p>
 </section>
 <section id="changelog">
-<h2><span class="sectnum">1.8 </span>Changelog<a class="headerlink" href="#changelog" title="Link to this heading"></a></h2>
-<p>Find the changelog <a class="reference external" href="../../CHANGELOG.md">here</a>.</p>
+<h2><span class="sectnum">1.10 </span>Changelog<a class="headerlink" href="#changelog" title="Link to this heading"></a></h2>
+<p>Find the changelog <a class="reference external" href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/CHANGELOG.md">here</a>.</p>
 </section>
 <section id="license">
-<h2><span class="sectnum">1.9 </span>License<a class="headerlink" href="#license" title="Link to this heading"></a></h2>
+<h2><span class="sectnum">1.11 </span>License<a class="headerlink" href="#license" title="Link to this heading"></a></h2>
 <p><a class="reference external" href="https://choosealicense.com/licenses/gpl-3.0/">GPLv3</a></p>
 </section>
 <section id="history-and-project-status">
-<h2><span class="sectnum">1.10 </span>History and project status<a class="headerlink" href="#history-and-project-status" title="Link to this heading"></a></h2>
+<h2><span class="sectnum">1.12 </span>History and project status<a class="headerlink" href="#history-and-project-status" title="Link to this heading"></a></h2>
 <p>This project was initially written in matlab using FEMM simulation tool.
 It became clear that the project was no longer a small project. The
 project should be completely rewritten, because many new complex levels
@@ -605,7 +636,7 @@ have been added. To place the project in the open source world, the
 programming language python is used.</p>
 </section>
 <section id="femmt-development-version-for-developers-only">
-<h2><span class="sectnum">1.11 </span>FEMMT development version (for developers only)<a class="headerlink" href="#femmt-development-version-for-developers-only" title="Link to this heading"></a></h2>
+<h2><span class="sectnum">1.13 </span>FEMMT development version (for developers only)<a class="headerlink" href="#femmt-development-version-for-developers-only" title="Link to this heading"></a></h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>If you want to make changes to the code of FEMMT (e.g. to fix a bug), you should read this section carefully.</p>
@@ -629,7 +660,7 @@ Also have a look at the <a class="reference external" href="/developers_notes.md
 </pre></div>
 </div>
 <section id="basics">
-<h3><span class="sectnum">1.11.1 </span>Basics<a class="headerlink" href="#basics" title="Link to this heading"></a></h3>
+<h3><span class="sectnum">1.13.1 </span>Basics<a class="headerlink" href="#basics" title="Link to this heading"></a></h3>
 <p>The magnetic component can be an inductor, a transformer, or a
 transformer with integrated stray path. The parameterization process is
 divided into the following steps:</p>
@@ -660,13 +691,13 @@ In it you can find</p>
 <p>For a more detailed guide on how to create a model, please have a look <a class="reference internal" href="#user-guide-model-creation"><span class="std std-ref">here</span></a>.</p>
 </section>
 <section id="counting-arrow-system">
-<h3><span class="sectnum">1.11.2 </span>Counting arrow system<a class="headerlink" href="#counting-arrow-system" title="Link to this heading"></a></h3>
+<h3><span class="sectnum">1.13.2 </span>Counting arrow system<a class="headerlink" href="#counting-arrow-system" title="Link to this heading"></a></h3>
 <p>Defined as depicted here:</p>
 <p><img alt="image_counting_arrow_system" src="_images/counting_arrow_system.png" /></p>
 </section>
 </section>
 <section id="id1">
-<h2><span class="sectnum">1.12 </span>GUI (Experimental)<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<h2><span class="sectnum">1.14 </span>GUI (Experimental)<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
 <p>There is a first preview for a GUI. Installing this is a bit cumbersome
 at first, but will be simplified in the future:</p>
 <ul class="simple">
@@ -724,11 +755,13 @@ dimensions of the winding window) are taken from the data sheet.
 Afterwards, a corresponding geometry is generated automatically.</p>
 <p>The following graphics always show only a sectional view of the core
 geometry.</p>
-<a class="reference internal image-reference" href="_images/geometry_translated.png"><img alt="_images/geometry_translated.png" src="_images/geometry_translated.png" style="width: 800px;" /></a>
+<a class="reference internal image-reference" href="_images/geometry_translated.png"><img alt="_images/geometry_translated.png" src="_images/geometry_translated.png" style="width: 800px;" />
+</a>
 <p>After creating a MagneticComponent, a core needs to be created. The core
 needs spatial parameters as well as material parameters. The neccessary
 spatial parameters are shown in the image below.</p>
-<a class="reference internal image-reference" href="_images/geometry_core.png"><img alt="_images/geometry_core.png" src="_images/geometry_core.png" style="width: 800px;" /></a>
+<a class="reference internal image-reference" href="_images/geometry_core.png"><img alt="_images/geometry_core.png" src="_images/geometry_core.png" style="width: 800px;" />
+</a>
 <p>Core spatial parameters can be entered manually but FEMMT provides a
 database of different practical cores. This database can be accessed
 using:</p>
@@ -772,7 +805,8 @@ represents the bottom end and 100 the top end of the winding window.</p></li>
 <li><p><strong>Manually</strong>: The specific y-coordinate needs to be entered
 manually.</p></li>
 </ul>
-<a class="reference internal image-reference" href="_images/geometry_air_gap.png"><img alt="_images/geometry_air_gap.png" src="_images/geometry_air_gap.png" style="width: 800px;" /></a>
+<a class="reference internal image-reference" href="_images/geometry_air_gap.png"><img alt="_images/geometry_air_gap.png" src="_images/geometry_air_gap.png" style="width: 800px;" />
+</a>
 <p>Have a look at the following example on how to create an air gap object
 and add it to the model:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">air_gaps</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">AirGaps</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">AirGapMethod</span><span class="o">.</span><span class="n">Percent</span><span class="p">,</span> <span class="n">core</span><span class="o">=</span><span class="n">core</span><span class="p">)</span>
@@ -802,7 +836,8 @@ the insulations between turns of the same winding. Importantly, these values are
 sequence in which conductors are added to each winding. Instead, the organization is based on the winding number
 with conductors sorted in ascending order of these numbers. Thus, the first sublist (index 0) corresponds to
 the winding with the lowest number, the second sublist (index 1) to the winding with the next lowest number, and so on.</p>
-<a class="reference internal image-reference" href="_images/geometry_insulation.png"><img alt="_images/geometry_insulation.png" src="_images/geometry_insulation.png" style="width: 800px;" /></a>
+<a class="reference internal image-reference" href="_images/geometry_insulation.png"><img alt="_images/geometry_insulation.png" src="_images/geometry_insulation.png" style="width: 800px;" />
+</a>
 <p>This is how to create an insulation object and add certain insulations:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">insulation</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">Insulation</span><span class="p">(</span><span class="n">flag_insulation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">insulation</span><span class="o">.</span><span class="n">add_core_insulations</span><span class="p">(</span><span class="mf">0.001</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">,</span> <span class="mf">0.002</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">)</span>
@@ -840,7 +875,8 @@ top_right, bottom_left, bottom_right. In this case the horizontal and
 vertical split factors can be used to set the sizes of each grid
 cell.</p></li>
 </ul>
-<a class="reference internal image-reference" href="_images/geometry_winding_windows.png"><img alt="_images/geometry_winding_windows.png" src="_images/geometry_winding_windows.png" style="width: 800px;" /></a>
+<a class="reference internal image-reference" href="_images/geometry_winding_windows.png"><img alt="_images/geometry_winding_windows.png" src="_images/geometry_winding_windows.png" style="width: 800px;" />
+</a>
 <p>In addition to that 2 virtual winding windows can be combined to one
 (this is not possible for (top_left, bottom_right) or (top_right,
 bottom_left) combinations). This is done using the combine_vww()
@@ -1226,7 +1262,8 @@ results during the time domain simulation.</p>
 <p>Gmsh windows open at various points in the simulations, e.g. to display the geometry or simulation results. To continue (e.g. to start the simulation from the geometry view), simply close the window.</p>
 </div>
 <p>The results should look like this:</p>
-<a class="reference internal image-reference" href="_images/user_guide_example_simulation.png"><img alt="_images/user_guide_example_simulation.png" src="_images/user_guide_example_simulation.png" style="width: 350px;" /></a>
+<a class="reference internal image-reference" href="_images/user_guide_example_simulation.png"><img alt="_images/user_guide_example_simulation.png" src="_images/user_guide_example_simulation.png" style="width: 350px;" />
+</a>
 </section>
 <section id="mesh-customization">
 <h2><span class="sectnum">2.8 </span>Mesh Customization<a class="headerlink" href="#mesh-customization" title="Link to this heading"></a></h2>
@@ -1283,7 +1320,8 @@ shapes and edges.</p></li>
 </ol>
 <p>The options panel allows users to control the visibility and labeling of these different element types within the meshing
 software gmsh as shown in the figure.</p>
-<a class="reference internal image-reference" href="_images/msh_panel.png"><img alt="_images/msh_panel.png" src="_images/msh_panel.png" style="width: 500px;" /></a>
+<a class="reference internal image-reference" href="_images/msh_panel.png"><img alt="_images/msh_panel.png" src="_images/msh_panel.png" style="width: 500px;" />
+</a>
 <p><strong>Option 2: From the Output Simulation File</strong></p>
 <p>For visualizing mesh details from the output simulation file:</p>
 <ol class="arabic simple">
@@ -1293,7 +1331,8 @@ software gmsh as shown in the figure.</p>
 </ol>
 <p>Both options provide insights into how well the different model parts are meshed, which is crucial for ensuring the accuracy of simulation results. The figure
 below shows the mesh direct from the simulation output of an inductor.</p>
-<a class="reference internal image-reference" href="_images/msh_simulation.png"><img alt="_images/msh_simulation.png" src="_images/msh_simulation.png" style="width: 400px;" /></a>
+<a class="reference internal image-reference" href="_images/msh_simulation.png"><img alt="_images/msh_simulation.png" src="_images/msh_simulation.png" style="width: 400px;" />
+</a>
 </section>
 </section>
 <section id="optional-create-thermal-simulation">
@@ -1319,7 +1358,8 @@ the edge of the case (dirichlet boundary condition)</p></li>
 set to a neumann boundary condition ignoring the temperature
 parameter</p></li>
 </ul>
-<a class="reference internal image-reference" href="_images/geometry_thermal.png"><img alt="_images/geometry_thermal.png" src="_images/geometry_thermal.png" style="width: 800px;" /></a>
+<a class="reference internal image-reference" href="_images/geometry_thermal.png"><img alt="_images/geometry_thermal.png" src="_images/geometry_thermal.png" style="width: 800px;" />
+</a>
 <p>Have a look at this example on how to set the parameters since the
 dictionary keywords are important to write correctly:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">thermal_conductivity_dict</span> <span class="o">=</span> <span class="p">{</span>
@@ -1402,7 +1442,8 @@ the simulation can be run:</p>
 </pre></div>
 </div>
 <p>The following image shows the simulation results:</p>
-<a class="reference internal image-reference" href="_images/user_guide_example_thermal_simulation.png"><img alt="_images/user_guide_example_thermal_simulation.png" src="_images/user_guide_example_thermal_simulation.png" style="width: 350px;" /></a>
+<a class="reference internal image-reference" href="_images/user_guide_example_thermal_simulation.png"><img alt="_images/user_guide_example_thermal_simulation.png" src="_images/user_guide_example_thermal_simulation.png" style="width: 350px;" />
+</a>
 </section>
 <section id="how-to-read-the-result-log">
 <h2><span class="sectnum">2.10 </span>How to Read the Result Log<a class="headerlink" href="#how-to-read-the-result-log" title="Link to this heading"></a></h2>
