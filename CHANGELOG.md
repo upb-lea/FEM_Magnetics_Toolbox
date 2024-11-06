@@ -8,9 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Winding schemes for square and foil windings
+- Reluctance model run before FEM simulation run (check for saturation)
+- Inductor optimization routine (experimental)
 
 ### Changed
 - give time domain simulation examples the prefix 'experimental_' to avoid misunderstandings
+- Improved: Litz wire loss calculation (proximity factor calculation from litz wire parameters)
 
 ### Fixed
 - Add winding insulation to the inductor optimization example
