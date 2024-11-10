@@ -27,7 +27,6 @@ class Conductor:
     arrangements of the conductors in several winding windows (hexagonal or square packing, interleaved, ...) in
     this class only the conductor parameters are specified. 
     """
-
     # TODO More documentation
     conductor_type: ConductorType
     conductor_arrangement: Optional[ConductorArrangement] = None
@@ -47,8 +46,7 @@ class Conductor:
     # Not used in femmt_classes. Only needed for to_dict()
     conductivity: Optional[Conductivity] = None
 
-    def __init__(self, winding_number: int, conductivity: Conductivity, parallel: bool = False,
-                 winding_material_temperature: float = 100):
+    def __init__(self, winding_number: int, conductivity: Conductivity, parallel: bool = False, winding_material_temperature: float = 100):
         """Create a conductor object.
 
         The winding_number sets the order of the conductors. Every conductor needs to have a unique winding number.
@@ -111,8 +109,7 @@ class Conductor:
         self.conductor_radius = conductor_radius
         self.a_cell = np.pi * conductor_radius ** 2
 
-    def set_litz_round_conductor(self, conductor_radius: Optional[float], number_strands: Optional[int],
-                                 strand_radius: Optional[float],
+    def set_litz_round_conductor(self, conductor_radius: Optional[float], number_strands: Optional[int], strand_radius: Optional[float],
                                  fill_factor: Optional[float], conductor_arrangement: ConductorArrangement):
         """
         Set a round conductor made of litz wire.
@@ -189,7 +186,6 @@ class Core:
     frequency = 0: mu_r_abs only used if non_linear == False
     frequency > 0: mu_r_abs is used
     """
-
     # Standard material data
     material: str
 
@@ -355,12 +351,9 @@ class Core:
             self.sigma = 0
             if self.material != "custom":
                 self.permeability_type = PermeabilityType.FromData
-                self.mu_r_abs = self.material_database.get_material_attribute(material_name=self.material,
-                                                                              attribute="initial_permeability")
+                self.mu_r_abs = self.material_database.get_material_attribute(material_name=self.material, attribute="initial_permeability")
 
-                steinmetz_data = self.material_database.get_steinmetz_data(material_name=self.material,
-                                                                           type="Steinmetz",
-                                                                           datasource="measurements")
+                steinmetz_data = self.material_database.get_steinmetz_data(material_name=self.material, type="Steinmetz", datasource="measurements")
                 self.ki = steinmetz_data['ki']
                 self.alpha = steinmetz_data['alpha']
                 self.beta = steinmetz_data['beta']
@@ -390,8 +383,7 @@ class Core:
             if self.permittivity["datasource"] == MaterialDataSource.Custom:
                 self.sigma = sigma  # from user
             else:
-                self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material,
-                                                                               attribute="resistivity")
+                self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material, attribute="resistivity")
 
             if self.permeability["datasource"] == MaterialDataSource.Custom:
                 # this is a service for the user:
@@ -403,8 +395,7 @@ class Core:
                     self.permeability_type = PermeabilityType.RealValue
             else:
                 self.permeability_type = PermeabilityType.FromData
-                self.mu_r_abs = self.material_database.get_material_attribute(material_name=self.material,
-                                                                              attribute="initial_permeability")
+                self.mu_r_abs = self.material_database.get_material_attribute(material_name=self.material, attribute="initial_permeability")
 
         else:
             raise Exception("Loss approach {loss_approach.value} is not implemented")
@@ -437,10 +428,8 @@ class Core:
         :type frequency: float
         """
         if self.permittivity["datasource"] == MaterialDataSource.Measurement:
-            epsilon_r, phi_epsilon_deg = self.material_database.get_permittivity(temperature=self.temperature,
-                                                                                 frequency=frequency,
-                                                                                 material_name=self.material,
-                                                                                 datasource=self.permittivity["datasource"],
+            epsilon_r, phi_epsilon_deg = self.material_database.get_permittivity(temperature=self.temperature, frequency=frequency,
+                                                                                 material_name=self.material, datasource=self.permittivity["datasource"],
                                                                                  measurement_setup=self.permittivity["measurement_setup"],
                                                                                  datatype=self.permittivity["datatype"])
             self.complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(phi_epsilon_deg)), np.sin(np.deg2rad(phi_epsilon_deg)))
@@ -464,12 +453,9 @@ class Core:
         """
         if self.mdb_verbosity == Verbosity.ToConsole:
             print(f"{self.permeability['datasource']=}")
-        self.material_database.permeability_data_to_pro_file(temperature=self.temperature, frequency=frequency,
-                                                             material_name=self.material,
-                                                             datasource=self.permeability["datasource"],
-                                                             datatype=self.permeability["datatype"],
-                                                             measurement_setup=self.permeability["measurement_setup"],
-                                                             parent_directory=electro_magnetic_folder,
+        self.material_database.permeability_data_to_pro_file(temperature=self.temperature, frequency=frequency, material_name=self.material,
+                                                             datasource=self.permeability["datasource"], datatype=self.permeability["datatype"],
+                                                             measurement_setup=self.permeability["measurement_setup"], parent_directory=electro_magnetic_folder,
                                                              plot_interpolation=plot_interpolation)
 
     def to_dict(self):
@@ -528,7 +514,6 @@ class AirGaps:
 
     An air gap can be added with the add_air_gap function. It is possible to set different positions and heights.
     """
-
     core: Core
     midpoints: List[List[float]]  #: list: [position_tag, air_gap_position, air_gap_h]
     number: int
@@ -552,8 +537,7 @@ class AirGaps:
         self.number = 0
         self.air_gap_settings = []
 
-    def add_air_gap(self, leg_position: AirGapLegPosition, height: float, position_value: Optional[float] = 0,
-                    stacked_position: StackedPosition = None):
+    def add_air_gap(self, leg_position: AirGapLegPosition, height: float, position_value: Optional[float] = 0, stacked_position: StackedPosition = None):
         """
         Brings a single air gap to the core.
 
@@ -573,8 +557,7 @@ class AirGaps:
             "stacked_position": stacked_position})
 
         for index, midpoint in enumerate(self.midpoints):
-            if midpoint[0] == leg_position and midpoint[1] + midpoint[2] < position_value - height \
-                    and midpoint[1] - midpoint[2] > position_value + height:
+            if midpoint[0] == leg_position and midpoint[1] + midpoint[2] < position_value - height and midpoint[1] - midpoint[2] > position_value + height:
                 raise Exception(f"Air gaps {index} and {len(self.midpoints)} are overlapping")
 
         if leg_position == AirGapLegPosition.LeftLeg or leg_position == AirGapLegPosition.RightLeg:
@@ -665,10 +648,8 @@ class Insulation:
     In general, it is not necessary to add an insulation object at all when no insulation is needed.
     """
 
-    cond_cond: List[List[
-        float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
-    core_cond: List[
-        float]  # list with size 4x1, with respectively isolation of cond_n -> [top_core, bot_core, left_core, right_core]
+    cond_cond: List[List[float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
+    core_cond: List[float]  # list with size 4x1, with respectively isolation of cond_n -> [top_core, bot_core, left_core, right_core]
 
     flag_insulation: bool = True
     max_aspect_ratio: float
@@ -754,7 +735,6 @@ class StrayPath:
     The length parameter sets the length of the tablet starting at the y-axis (not the right side of the center core). It therefore
     determines the air gap between the tablet and the outer core leg.
     """
-
     # TODO: Thickness of the stray path must be fitted for the real Tablet (effective area of the "stray air gap" is different in axi-symmetric approximation)
     start_index: int  # Air gaps are sorted from lowest to highest. This index refers to the air_gap index bottom up
     length: float  # Resembles the length of the whole tablet starting from the y-axis
@@ -769,7 +749,6 @@ class VirtualWindingWindow:
 
     An instance of this class will be automatically created when the Winding is added to the MagneticComponent
     """
-
     # Rectangular frame:
     bot_bound: float
     top_bound: float
@@ -861,8 +840,7 @@ class VirtualWindingWindow:
         if winding_scheme is WindingScheme.FoilHorizontal and foil_horizontal_placing_strategy is None:
             raise Exception("When winding scheme is FoilHorizontal a foil_horizontal_placing_strategy must be set ")
 
-    def set_interleaved_winding(self, conductor1: Conductor, turns1: int, conductor2: Conductor, turns2: int,
-                                winding_scheme: InterleavedWindingScheme):
+    def set_interleaved_winding(self, conductor1: Conductor, turns1: int, conductor2: Conductor, turns2: int, winding_scheme: InterleavedWindingScheme):
         """Set an interleaved winding to the current virtual winding window. An interleaved winding always contains two conductors.
 
         If a conductor is primary or secondary is determined by the value of the winding number of the conductor. The order of the function parameters
@@ -886,13 +864,8 @@ class VirtualWindingWindow:
         self.winding_is_set = True
         self.wrap_para = None
 
-    def set_center_tapped_winding(self,
-                                  conductor1: Conductor, turns1: int,
-                                  conductor2: Conductor, turns2: int,
-                                  conductor3: Conductor, turns3: int,
-                                  insulation_primary_to_primary: float,
-                                  insulation_secondary_to_secondary: float,
-                                  insulation_primary_to_secondary: float):
+    def set_center_tapped_winding(self, conductor1: Conductor, turns1: int, conductor2: Conductor, turns2: int, conductor3: Conductor, turns3: int,
+                                  insulation_primary_to_primary: float, insulation_secondary_to_secondary: float, insulation_primary_to_secondary: float):
         """
         Set a center tapped winding scheme.
 
@@ -919,8 +892,7 @@ class VirtualWindingWindow:
         # self.winding_insulation = define_center_tapped_insulation(primary_to_primary=2e-4,
         #                                                           secondary_to_secondary=2e-4,
         #                                                           primary_to_secondary=5e-4)
-        self.winding_insulation = [insulation_primary_to_primary, insulation_secondary_to_secondary,
-                                   insulation_primary_to_secondary]
+        self.winding_insulation = [insulation_primary_to_primary, insulation_secondary_to_secondary, insulation_primary_to_secondary]
         self.winding_type = WindingType.CenterTappedGroup
         self.winding_scheme = None  # TODO: center tapped maybe add vertical or sth. like this
         self.windings = [conductor1, conductor2, conductor3]
@@ -972,7 +944,6 @@ class WindingWindow:
 
     Depending on the type different virtual winding windows are created by this class which then contain the different conductors.
     """
-
     max_bot_bound: float
     max_top_bound: float
     max_left_bound: float
@@ -1037,8 +1008,7 @@ class WindingWindow:
             "max_top_bound": self.max_top_bound,
             "max_left_bound": self.max_left_bound,
             "max_right_bound": self.max_right_bound,
-            "virtual_winding_windows": [virtual_winding_window.to_dict() for virtual_winding_window in
-                                        self.virtual_winding_windows],
+            "virtual_winding_windows": [virtual_winding_window.to_dict() for virtual_winding_window in self.virtual_winding_windows],
         }
 
     def split_window(self, split_type: WindingWindowSplit, split_distance: float = 0,
@@ -1103,11 +1073,8 @@ class WindingWindow:
         # Check for every possible split type and return the corresponding VirtualWindingWindows
         if split_type == WindingWindowSplit.NoSplit:
 
-            complete = VirtualWindingWindow(
-                bot_bound=self.max_bot_bound,
-                top_bound=self.max_top_bound,
-                left_bound=self.max_left_bound,
-                right_bound=self.max_right_bound)
+            complete = VirtualWindingWindow(bot_bound=self.max_bot_bound, top_bound=self.max_top_bound,
+                                            left_bound=self.max_left_bound, right_bound=self.max_right_bound)
 
             self.virtual_winding_windows = [complete]
             return complete
@@ -1119,68 +1086,35 @@ class WindingWindow:
                 else:
                     bobbin_def[index] = 0
 
-            complete = VirtualWindingWindow(
-                top_bound=self.max_top_bound + bobbin_def[0],
-                bot_bound=self.max_bot_bound - bobbin_def[1],
-                left_bound=self.max_left_bound - bobbin_def[2],
-                right_bound=self.max_right_bound + bobbin_def[3])
+            complete = VirtualWindingWindow(top_bound=self.max_top_bound + bobbin_def[0], bot_bound=self.max_bot_bound - bobbin_def[1],
+                                            left_bound=self.max_left_bound - bobbin_def[2], right_bound=self.max_right_bound + bobbin_def[3])
             self.virtual_winding_windows = [complete]
             return complete
-
         elif split_type == WindingWindowSplit.VerticalSplit:
-            right = VirtualWindingWindow(
-                bot_bound=self.max_bot_bound,
-                top_bound=self.max_top_bound,
-                left_bound=vertical_split + split_distance / 2,
-                right_bound=self.max_right_bound)
-
-            left = VirtualWindingWindow(
-                bot_bound=self.max_bot_bound,
-                top_bound=self.max_top_bound,
-                left_bound=self.max_left_bound,
-                right_bound=vertical_split - split_distance / 2)
+            right = VirtualWindingWindow(top_bound=self.max_top_bound, bot_bound=self.max_bot_bound,
+                                         left_bound=vertical_split + split_distance / 2, right_bound=self.max_right_bound)
+            left = VirtualWindingWindow(bot_bound=self.max_bot_bound, top_bound=self.max_top_bound,
+                                        left_bound=self.max_left_bound, right_bound=vertical_split - split_distance / 2)
 
             self.virtual_winding_windows = [left, right]
             return left, right
         elif split_type == WindingWindowSplit.HorizontalSplit:
-            top = VirtualWindingWindow(
-                bot_bound=horizontal_split + split_distance / 2,
-                top_bound=self.max_top_bound,
-                left_bound=self.max_left_bound,
-                right_bound=self.max_right_bound)
-
-            bot = VirtualWindingWindow(
-                bot_bound=self.max_bot_bound,
-                top_bound=horizontal_split - split_distance / 2,
-                left_bound=self.max_left_bound,
-                right_bound=self.max_right_bound)
+            top = VirtualWindingWindow(bot_bound=horizontal_split + split_distance / 2, top_bound=self.max_top_bound,
+                                       left_bound=self.max_left_bound, right_bound=self.max_right_bound)
+            bot = VirtualWindingWindow(bot_bound=self.max_bot_bound, top_bound=horizontal_split - split_distance / 2,
+                                       left_bound=self.max_left_bound, right_bound=self.max_right_bound)
 
             self.virtual_winding_windows = [top, bot]
             return top, bot
         elif split_type == WindingWindowSplit.HorizontalAndVerticalSplit:
-            top_left = VirtualWindingWindow(
-                bot_bound=horizontal_split + split_distance / 2,
-                top_bound=self.max_top_bound,
-                left_bound=self.max_left_bound,
-                right_bound=vertical_split - split_distance / 2)
-
-            top_right = VirtualWindingWindow(
-                bot_bound=horizontal_split + split_distance / 2,
-                top_bound=self.max_top_bound,
-                left_bound=vertical_split + split_distance / 2,
-                right_bound=self.max_right_bound)
-
-            bot_left = VirtualWindingWindow(
-                bot_bound=self.max_bot_bound,
-                top_bound=horizontal_split - split_distance / 2,
-                left_bound=self.max_left_bound,
-                right_bound=vertical_split - split_distance / 2)
-
-            bot_right = VirtualWindingWindow(
-                bot_bound=self.max_bot_bound,
-                top_bound=horizontal_split - split_distance / 2,
-                left_bound=vertical_split + split_distance / 2,
-                right_bound=self.max_right_bound)
+            top_left = VirtualWindingWindow(bot_bound=horizontal_split + split_distance / 2, top_bound=self.max_top_bound,
+                                            left_bound=self.max_left_bound, right_bound=vertical_split - split_distance / 2)
+            top_right = VirtualWindingWindow(bot_bound=horizontal_split + split_distance / 2, top_bound=self.max_top_bound,
+                                             left_bound=vertical_split + split_distance / 2, right_bound=self.max_right_bound)
+            bot_left = VirtualWindingWindow(bot_bound=self.max_bot_bound, top_bound=horizontal_split - split_distance / 2,
+                                            left_bound=self.max_left_bound, right_bound=vertical_split - split_distance / 2)
+            bot_right = VirtualWindingWindow(bot_bound=self.max_bot_bound, top_bound=horizontal_split - split_distance / 2,
+                                             left_bound=vertical_split + split_distance / 2, right_bound=self.max_right_bound)
 
             self.virtual_winding_windows = [top_left, top_right, bot_left, bot_right]
             return top_left, top_right, bot_left, bot_right
@@ -1211,8 +1145,7 @@ class WindingWindow:
             vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
             split_distance = distance  # here, the distance between the two vwws is set automatically
         else:
-            horizontal_splits = self.max_top_bound - abs(self.max_bot_bound - self.max_top_bound) * np.array(
-                horizontal_split_factors)
+            horizontal_splits = self.max_top_bound - abs(self.max_bot_bound - self.max_top_bound) * np.array(horizontal_split_factors)
             # horizontal_splits = self.max_top_bound - np.abs(self.max_bot_bound - self.max_top_bound) * np.array(horizontal_split_factors)
 
             vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
@@ -1221,42 +1154,25 @@ class WindingWindow:
         self.Right_cells = []
         self.virtual_winding_windows = []
         # Create the first pair of virtual winding windows
-        self.Left_cells.append(VirtualWindingWindow(
-            bot_bound=horizontal_splits[0] + split_distance / 2,
-            top_bound=self.max_top_bound,
-            left_bound=self.max_left_bound,
-            right_bound=vertical_split - split_distance / 2))
-
-        self.Right_cells.append(VirtualWindingWindow(
-            bot_bound=horizontal_splits[0] + split_distance / 2,
-            top_bound=self.max_top_bound,
-            left_bound=vertical_split + split_distance / 2,
-            right_bound=self.max_right_bound))
+        self.Left_cells.append(VirtualWindingWindow(bot_bound=horizontal_splits[0] + split_distance / 2, top_bound=self.max_top_bound,
+                                                    left_bound=self.max_left_bound, right_bound=vertical_split - split_distance / 2))
+        self.Right_cells.append(VirtualWindingWindow(bot_bound=horizontal_splits[0] + split_distance / 2, top_bound=self.max_top_bound,
+                                                     left_bound=vertical_split + split_distance / 2, right_bound=self.max_right_bound))
 
         # Create the remaining pairs of virtual winding windows
         for i in range(1, len(horizontal_splits)):
-            self.Left_cells.append(VirtualWindingWindow(
-                bot_bound=horizontal_splits[i] + split_distance / 2,
-                top_bound=horizontal_splits[i - 1] + split_distance / 2,
-                left_bound=self.max_left_bound,
-                right_bound=vertical_split - split_distance / 2))
-            self.Right_cells.append(VirtualWindingWindow(
-                bot_bound=horizontal_splits[i] + split_distance / 2,
-                top_bound=horizontal_splits[i - 1] + split_distance / 2,
-                left_bound=vertical_split + split_distance / 2,
-                right_bound=self.max_right_bound))
+            self.Left_cells.append(VirtualWindingWindow(bot_bound=horizontal_splits[i] + split_distance / 2,
+                                                        top_bound=horizontal_splits[i - 1] + split_distance / 2,
+                                                        left_bound=self.max_left_bound, right_bound=vertical_split - split_distance / 2))
+            self.Right_cells.append(VirtualWindingWindow(bot_bound=horizontal_splits[i] + split_distance / 2,
+                                                         top_bound=horizontal_splits[i - 1] + split_distance / 2,
+                                                         left_bound=vertical_split + split_distance / 2, right_bound=self.max_right_bound))
 
         # Create the last pair of virtual winding windows
-        self.Left_cells.append(VirtualWindingWindow(
-            bot_bound=self.max_bot_bound,
-            top_bound=horizontal_splits[-1] - split_distance / 2,
-            left_bound=self.max_left_bound,
-            right_bound=vertical_split - split_distance / 2))
-        self.Right_cells.append(VirtualWindingWindow(
-            bot_bound=self.max_bot_bound,
-            top_bound=horizontal_splits[-1] - split_distance / 2,
-            left_bound=vertical_split + split_distance / 2,
-            right_bound=self.max_right_bound))
+        self.Left_cells.append(VirtualWindingWindow(bot_bound=self.max_bot_bound, top_bound=horizontal_splits[-1] - split_distance / 2,
+                                                    left_bound=self.max_left_bound, right_bound=vertical_split - split_distance / 2))
+        self.Right_cells.append(VirtualWindingWindow(bot_bound=self.max_bot_bound, top_bound=horizontal_splits[-1] - split_distance / 2,
+                                                     left_bound=vertical_split + split_distance / 2, right_bound=self.max_right_bound))
 
         # Loop through the number of horizontal splits (plus one to account for the last cells)
         # Append each pair of left and right cells to the virtual_winding_windows list.
@@ -1268,8 +1184,7 @@ class WindingWindow:
         # we return the combined list of all virtual winding windows.
         return self.virtual_winding_windows
 
-    def flexible_split(self, split_distance: float = 0,
-                       horizontal_split_factors: Optional[List[float]] = None,
+    def flexible_split(self, split_distance: float = 0, horizontal_split_factors: Optional[List[float]] = None,
                        vertical_split_factors: Optional[List[List[float]]] = None) -> List[VirtualWindingWindow]:
         """
         Flexible split function to divide a window into sections based on provided horizontal and vertical split factors.
@@ -1297,7 +1212,6 @@ class WindingWindow:
             vertical_splits = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factors
             split_distance = distance  # here, the distance between the two vwws is set automatically
         else:
-
             horizontal_splits = np.array(horizontal_split_factors)
             horizontal_splits = np.sort(np.clip(horizontal_splits, 0, 1))
             horizontal_splits = self.max_bot_bound + (self.max_top_bound - self.max_bot_bound) * horizontal_splits
@@ -1313,20 +1227,12 @@ class WindingWindow:
                 vertical_splits = np.concatenate(([self.max_left_bound], vertical_splits, [self.max_right_bound]))
 
                 for j in range(len(vertical_splits) - 1):
-                    cells.append(VirtualWindingWindow(
-                        bot_bound=self.max_bot_bound,
-                        top_bound=self.max_top_bound,
-                        left_bound=vertical_splits[j],
-                        right_bound=vertical_splits[j + 1]
-                    ))
+                    cells.append(VirtualWindingWindow(bot_bound=self.max_bot_bound, top_bound=self.max_top_bound,
+                                                      left_bound=vertical_splits[j], right_bound=vertical_splits[j + 1]))
         elif len(vertical_split_factors) == 0 and len(horizontal_split_factors) > 0:  # Only horizontal splits
             for i in range(len(horizontal_splits) - 1):
-                cells.append(VirtualWindingWindow(
-                    bot_bound=horizontal_splits[i],
-                    top_bound=horizontal_splits[i + 1],
-                    left_bound=self.max_left_bound,
-                    right_bound=self.max_right_bound
-                ))
+                cells.append(VirtualWindingWindow(bot_bound=horizontal_splits[i], top_bound=horizontal_splits[i + 1],
+                                                  left_bound=self.max_left_bound, right_bound=self.max_right_bound))
         else:  # Both horizontal and vertical splits or no splits
             for i in range(len(horizontal_splits) - 1):
                 vertical_splits = np.array(vertical_split_factors[i]) if vertical_split_factors[i] else []
@@ -1335,12 +1241,8 @@ class WindingWindow:
                 vertical_splits = np.concatenate(([self.max_left_bound], vertical_splits, [self.max_right_bound]))
 
                 for j in range(len(vertical_splits) - 1):
-                    cells.append(VirtualWindingWindow(
-                        bot_bound=horizontal_splits[i],
-                        top_bound=horizontal_splits[i + 1],
-                        left_bound=vertical_splits[j],
-                        right_bound=vertical_splits[j + 1]
-                    ))
+                    cells.append(VirtualWindingWindow(bot_bound=horizontal_splits[i], top_bound=horizontal_splits[i + 1],
+                                                      left_bound=vertical_splits[j], right_bound=vertical_splits[j + 1]))
 
         self.virtual_winding_windows = cells
         return self.virtual_winding_windows
@@ -1376,11 +1278,8 @@ class WindingWindow:
                         winding_scheme_type.append(WindingType.CenterTappedGroup)
 
                     self.virtual_winding_windows.append(
-                        VirtualWindingWindow(
-                            bot_bound=self.max_bot_bound + vertical_space_used_last,
-                            top_bound=self.max_bot_bound + vertical_space_used,
-                            left_bound=self.max_left_bound + additional_bobbin,
-                            right_bound=self.max_right_bound))
+                        VirtualWindingWindow(bot_bound=self.max_bot_bound + vertical_space_used_last, top_bound=self.max_bot_bound + vertical_space_used,
+                                             left_bound=self.max_left_bound + additional_bobbin, right_bound=self.max_right_bound))
 
         return self.virtual_winding_windows, winding_scheme_type
 
@@ -1404,10 +1303,8 @@ class WindingWindow:
         self.virtual_winding_windows.remove(vww1)
         self.virtual_winding_windows.remove(vww2)
 
-        new_vww = VirtualWindingWindow(bot_bound=min(vww1.bot_bound, vww2.bot_bound),
-                                       top_bound=max(vww1.top_bound, vww2.top_bound),
-                                       left_bound=min(vww1.left_bound, vww2.left_bound),
-                                       right_bound=max(vww1.right_bound, vww2.right_bound))
+        new_vww = VirtualWindingWindow(bot_bound=min(vww1.bot_bound, vww2.bot_bound), top_bound=max(vww1.top_bound, vww2.top_bound),
+                                       left_bound=min(vww1.left_bound, vww2.left_bound), right_bound=max(vww1.right_bound, vww2.right_bound))
 
         self.virtual_winding_windows.append(new_vww)
 
@@ -1453,11 +1350,8 @@ class WindingWindow:
             vertical_splits.append(self.max_top_bound)
 
             for j in range(0, len(vertical_splits) - 1):
-                self.cells.append(VirtualWindingWindow(
-                    bot_bound=vertical_splits[j],
-                    top_bound=vertical_splits[j+1],
-                    left_bound=horizontal_splits[i],
-                    right_bound=horizontal_splits[i+1]))
+                self.cells.append(VirtualWindingWindow(bot_bound=vertical_splits[j], top_bound=vertical_splits[j+1],
+                                                       left_bound=horizontal_splits[i], right_bound=horizontal_splits[i+1]))
 
         # Loop through the number of horizontal splits (plus one to account for the last cells)
         # Append each pair of left and right cells to the virtual_winding_windows list.
