@@ -8,6 +8,8 @@ import os
 import warnings
 from typing import Union, List, Tuple, Dict
 from scipy.integrate import quadrature
+import pandas as pd
+import win32com.client
 
 
 # Third parry libraries
@@ -1843,6 +1845,186 @@ def hysteresis_current_excitation(input_time_current_vectors: List[List[List[flo
         hyst_phases_deg.append(
             fr.phases_deg_from_time_current(time_current_vector[0], time_current_vector[1])[0])
     return hyst_frequency, hyst_current_amplitudes, hyst_phases_deg
+
+def close_excel_file_if_open(filepath):
+    """
+    Close the specified Excel file if it is currently open.
+
+    :param filepath: The path to the Excel file to close.
+    :type filepath: str
+    """
+    # Get the absolute path
+    filepath = os.path.abspath(filepath)
+
+    try:
+        excel = win32com.client.Dispatch("Excel.Application")
+        for workbook in excel.Workbooks:
+            if workbook.FullName.lower() == filepath.lower():
+                workbook.Close(SaveChanges=False)
+                return
+        excel.Quit()
+    except Exception as e:
+        print(f"Unable to close Excel. Error: {e}")
+
+def json_to_excel(json_file_path, output_excel_path):
+    """
+    Extract data from the electrostatic simulation and write it into a log file.
+
+    :param json_file_path: file path in .json form to compare.
+    :type json_file_path: str.
+    :param output_excel_path: where you save the .xlsx file.
+    :type output_excel_path: str.
+    """
+    # Trying to close the Excel file if it's open
+    close_excel_file_if_open(output_excel_path)
+    # Load the JSON data from the file
+    with open(json_file_path, 'r') as json_file:
+        data = json.load(json_file)
+
+    # Prepare the different data sections
+    charges_data = []
+    energy_data = []
+    average_voltages_data = []
+    capacitances_within_data = []
+    capacitances_between_data = []
+    capacitances_between_turns_core_data = []
+
+    # Extract charges
+    charge_value = data.get("charges", None)
+    if charge_value is not None:
+        charges_data.append({"Charge Type": "Total Charge", "Value (Coulombs)": charge_value})
+
+    # Extract energy
+    for key, value in data.get("energy", {}).items():
+        energy_data.append({"Energy Type": key, "Value (Joules)": value})
+
+    # Extract average voltages
+    for region, voltage in data.get("average_voltages", {}).items():
+        average_voltages_data.append({"Region": region, "Average Voltage (V)": voltage})
+
+    # Extract capacitance within windings
+    for winding, turns in data.get("capacitances", {}).get("within_winding", {}).items():
+        for turn, connections in turns.items():
+            for target_turn, capacitance_value in connections.items():
+                capacitances_within_data.append({
+                    "Winding": winding,
+                    "Turn": turn,
+                    "To Turn": target_turn,
+                    "Capacitance (F)": capacitance_value
+                })
+
+    # Extract capacitance between windings
+    for winding1, windings in data.get("capacitances", {}).get("between_windings", {}).items():
+        for winding2, turns in windings.items():
+            for turn1, connections in turns.items():
+                for turn2, capacitance_value in connections.items():
+                    capacitances_between_data.append({
+                        "Winding 1": winding1,
+                        "Turn 1": turn1,
+                        "Winding 2": winding2,
+                        "Turn 2": turn2,
+                        "Capacitance (F)": capacitance_value
+                    })
+    # Extract capacitance between turns and core
+    for winding, turns in data.get("capacitances", {}).get("between_turns_core", {}).items():
+        for turn, capacitance_value in turns.items():
+            capacitances_between_turns_core_data.append({
+                "Winding": winding,
+                "Turn": turn,
+                "Capacitance to Core (F)": capacitance_value
+            })
+
+    # Create DataFrames for each section
+    charges_df = pd.DataFrame(charges_data)
+    energy_df = pd.DataFrame(energy_data)
+    average_voltages_df = pd.DataFrame(average_voltages_data)
+    capacitances_within_df = pd.DataFrame(capacitances_within_data)
+    capacitances_between_df = pd.DataFrame(capacitances_between_data)
+    capacitances_between_turns_core_df = pd.DataFrame(capacitances_between_turns_core_data)
+
+    # Write to Excel file with multiple sheets
+    with pd.ExcelWriter(output_excel_path) as writer:
+        if not charges_df.empty:
+            charges_df.to_excel(writer, sheet_name='Charges', index=False)
+            worksheet = writer.sheets['Charges']
+            worksheet.set_column('A:B', 30)
+        if not energy_df.empty:
+            energy_df.to_excel(writer, sheet_name='Energy', index=False)
+            worksheet = writer.sheets['Energy']
+            worksheet.set_column('A:B', 30)
+        if not average_voltages_df.empty:
+            average_voltages_df.to_excel(writer, sheet_name='Average_Voltages', index=False)
+            worksheet = writer.sheets['Average_Voltages']
+            worksheet.set_column('A:E', 30)
+        if not capacitances_within_df.empty:
+            capacitances_within_df.to_excel(writer, sheet_name='Capacitances_Within', index=False)
+            worksheet = writer.sheets['Capacitances_Within']
+            worksheet.set_column('A:D', 30)
+        if not capacitances_between_df.empty:
+            capacitances_between_df.to_excel(writer, sheet_name='Capacitances_Between', index=False)
+            worksheet = writer.sheets['Capacitances_Between']
+            worksheet.set_column('A:E', 30)
+        if not capacitances_between_turns_core_df.empty:
+            capacitances_between_turns_core_df.to_excel(writer, sheet_name='Turns_Core', index=False)
+            worksheet = writer.sheets['Turns_Core']
+            worksheet.set_column('A:C', 30)
+
+def compare_excel_files(femmt_excel_path, femm_excel_path, comparison_output_path):
+    """
+    Compare two Excel files (FEMMT and FEMM) and generate a new Excel file with comparison results.
+
+    This function loads two Excel files, one generated by FEMMT and the other by FEMM, compares the data across
+    all common sheets, and calculates the differences between corresponding values. The results include:
+    - Absolute Difference
+    - Relative Error
+    - Relative Error Percentage
+
+    The comparison is saved into a new Excel file, with each comparison in a separate sheet named after
+    the original sheet with the "_Comparison" suffix.
+
+    :param femmt_excel_path: Path to the Excel file generated by FEMMT.
+    :type femmt_excel_path: str
+    :param femm_excel_path: Path to the Excel file generated by FEMM.
+    :type femm_excel_path: str
+    :param comparison_output_path: Path to save the resulting comparison Excel file.
+    :type comparison_output_path: str
+    """
+    # Trying to close the Excel file if it's open
+    close_excel_file_if_open(comparison_output_path)
+    # Load both Excel files, get all sheets
+    femmt_sheets = pd.read_excel(femmt_excel_path, sheet_name=None)
+    femm_sheets = pd.read_excel(femm_excel_path, sheet_name=None)
+
+    # Define sheets to compare
+    sheets_to_compare = femmt_sheets.keys()
+
+    # Create an Excel writer for the output
+    with pd.ExcelWriter(comparison_output_path, engine='xlsxwriter') as writer:
+        # Iterate through each sheet to compare
+        for sheet_name in sheets_to_compare:
+            if sheet_name in femm_sheets:
+                # Load DataFrames for the current sheet
+                femmt_df = femmt_sheets[sheet_name]
+                femm_df = femm_sheets[sheet_name]
+                # Rename columns (FEMMT and FEMM)
+                femmt_df.columns = [f"{col}_FEMMT" for col in femmt_df.columns]
+                femm_df.columns = [f"{col}_FEMM" for col in femm_df.columns]
+
+                # Concatenate both DataFrames side by side
+                comparison_df = pd.concat([femmt_df, femm_df], axis=1)
+
+                # Calculating difference, relative error, and relative error in percentage for columns
+                for femmt_col, femm_col in zip(femmt_df.columns, femm_df.columns):
+                    col_name = femmt_col.replace("_FEMMT", "")
+                    if np.issubdtype(comparison_df[femmt_col].dtype, np.number) and np.issubdtype(comparison_df[femm_col].dtype, np.number):
+                        comparison_df[f"{col_name}_Difference"] = comparison_df[femmt_col] - comparison_df[femm_col]
+                        comparison_df[f"{col_name}_Relative_Error"] = comparison_df[f"{col_name}_Difference"] / comparison_df[femmt_col].replace(0, np.nan)
+                        comparison_df[f"{col_name}_Error_Percent"] = comparison_df[f"{col_name}_Relative_Error"] * 100
+
+                # Writing to the Excel output file
+                comparison_df.to_excel(writer, sheet_name=f"{sheet_name}_Comparison", index=False)
+                worksheet = writer.sheets[f"{sheet_name}_Comparison"]
+                worksheet.set_column('A:Z', 35)
 
 
 if __name__ == '__main__':
