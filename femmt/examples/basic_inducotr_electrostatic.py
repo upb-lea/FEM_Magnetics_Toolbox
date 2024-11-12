@@ -57,7 +57,7 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
     # 3. set air gap parameters
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
-    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0002, 90)
+    # air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0002, 90)
     geo.set_air_gaps(air_gaps)
 
     # 4. set insulations

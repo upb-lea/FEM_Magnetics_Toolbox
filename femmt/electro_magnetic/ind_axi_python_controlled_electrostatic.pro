@@ -310,6 +310,12 @@ PostProcessing {
           }
 	  }
       }
+      // Stored Energy in the whole domain
+      { Name energy_Core; Value {
+              Integral { [ CoefGeo * epsilon[] / 2. * SquNorm[{d u0}] ];
+                In Core; Jacobian Vol; Integration II; }
+            }
+          }
       // Charges on the non conducting domain
       { Name Charge; Value {
               Integral { [ CoefGeo * epsilon[] * Norm[{d u0}] ];

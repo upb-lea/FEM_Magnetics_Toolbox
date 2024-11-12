@@ -4104,6 +4104,7 @@ class MagneticComponent:
 
         log_dict["charges"] = self.load_result("charge", res_type="value", last_n=1)[0]
         log_dict["energy"]["stored_air"] = self.load_result("Energy_Stored_Air", res_type="value", last_n=1)[0]
+        log_dict["energy"]["stored_core"] = self.load_result("Energy_Stored_Core", res_type="value", last_n=1)[0]
         log_dict["average_voltages"]["core"] = self.load_result("Avg_Core_voltage", res_type="circuit", last_n=1)[0]
         log_dict["energy"]["stored_component"] = self.load_result("Energy_Stored_Component", res_type="value", last_n=1)[0]
 
@@ -5654,6 +5655,8 @@ class MagneticComponent:
 
         # Select the core
         femm.eo_groupselectblock(1)
+        stored_energy_core = femm.eo_blockintegral(0)
+        log_dict["energy"]["stored_core"] = stored_energy_core[0]
         # Select air inside the core
         femm.eo_groupselectblock(2)
         stored_energy = femm.eo_blockintegral(0)
