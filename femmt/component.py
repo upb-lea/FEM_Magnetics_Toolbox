@@ -5657,6 +5657,9 @@ class MagneticComponent:
         femm.eo_groupselectblock(1)
         stored_energy_core = femm.eo_blockintegral(0)
         log_dict["energy"]["stored_core"] = stored_energy_core[0]
+        femm.eo_clearblock()
+        # select the core
+        femm.eo_groupselectblock(1)
         # Select air inside the core
         femm.eo_groupselectblock(2)
         stored_energy = femm.eo_blockintegral(0)
