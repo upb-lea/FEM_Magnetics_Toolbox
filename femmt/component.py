@@ -1607,7 +1607,7 @@ class MagneticComponent:
         self.write_and_calculate_common_log(inductance_dict=inductance_dict)
         self.calculate_and_write_freq_domain_log(number_frequency_simulations=len(frequency_list), current_amplitude_list=current_list_list,
                                                  frequencies=frequency_list, phase_deg_list=phi_deg_list_list,
-                                                 core_hyst_losses=core_hyst_loss)
+                                                 core_hyst_losses=core_hyst_loss, inductance_dict=inductance_dict)
         self.log_reluctance_and_inductance()
         if show_last_fem_simulation:
             self.write_simulation_parameters_to_pro_files()
@@ -2961,7 +2961,7 @@ class MagneticComponent:
                     print(f"Log file not found at {log_file_path}. Skipping comparison.")
 
         if len(self.windings) == 2:
-            # Self inductances
+            # Self inductances. Only real parts are taken into account, this is for the LOSSLESS equivalent circuit.
             self.L_1_1 = self_inductances[0].real
             self.L_2_2 = self_inductances[1].real
 
@@ -2971,45 +2971,13 @@ class MagneticComponent:
             # Mean coupling factor
             k = mean_coupling_factors[0][1]
 
-            # # 2 winding transformer
-            # # Turns Ratio n=N1/N2
-            # primary_turns = 0
-            # secondary_turns = 0
-            # for ww in self.winding_windows:
-            #     for vww in ww.virtual_winding_windows:
-            #         primary_turns += vww.turns[0]
-            #         secondary_turns += vww.turns[1]
-            # n = primary_turns / secondary_turns
-            #
-            # self.femmt_print(f"\n"
-            #                f"Turns Ratio:\n"
-            #                f"n = {n}\n"
-            #                )
-            #
-            #
-            # l_s1 = self.L_1_1 - self.M * n
-            # l_s2 = self.L_2_2 - self.M / n
-            # l_h = self.M * n
-            # self.femmt_print(f"\n"
-            #                f"T-ECD (primary side transformed):\n"
-            #                f"[Under-determined System: 'Transformation Ratio' := 'Turns Ratio']\n"
-            #                f"    - Transformation Ratio: n\n"
-            #                f"    - Primary Side Stray Inductance: L_s1\n"
-            #                f"    - Secondary Side Stray Inductance: L_s2\n"
-            #                f"    - Primary Side Main Inductance: L_h\n"
-            #                f"n := n = {n}\n"
-            #                f"L_s1 = L_1_1 - M * n = {l_s1}\n"
-            #                f"L_s2 = L_2_2 - M / n = {l_s2}\n"
-            #                f"L_h = M * n = {l_h}\n"
-            #                )
-
             # Stray Inductance concentrated on Primary Side
             self.n_conc = self.M / self.L_2_2
             self.L_s_conc = (1 - k ** 2) * self.L_1_1
             self.L_h_conc = self.M ** 2 / self.L_2_2
 
             self.femmt_print(f"\n"
-                             f"T-ECD (primary side concentrated):\n"
+                             f"Lossless T-ECD (primary side concentrated):\n"
                              f"[Under-determined System: n := M / L_2_2  -->  L_s2 = L_2_2 - M / n = 0]\n"
                              f"    - Transformation Ratio: n\n"
                              f"    - (Primary) Stray Inductance: L_s1\n"
@@ -3030,7 +2998,7 @@ class MagneticComponent:
             return dataclasses.asdict(inductance)
 
         if len(self.windings) == 3:
-            # Self inductances
+            # Self inductances. Only real parts are taken into account, this is for the LOSSLESS equivalent circuit.
             self.L_1_1 = self_inductances[0].real
             self.L_2_2 = self_inductances[1].real
             self.L_3_3 = self_inductances[2].real
@@ -3055,7 +3023,7 @@ class MagneticComponent:
             self.L_s23 = self.L_s2 + (self.n_13 / self.n_12) ** 2 * self.L_s3
 
             self.femmt_print(f"\n"
-                             f"T-ECD (Lh on primary side):\n"
+                             f"Lossless T-ECD (Lh on primary side):\n"
                              f"    - Primary Side Stray Inductance: L_s1\n"
                              f"    - Secondary Side Stray Inductance: L_s2\n"
                              f"    - Tertiary Side Stray Inductance: L_s3\n"
@@ -3074,23 +3042,6 @@ class MagneticComponent:
                              f"L_s13 = L_s1 + n_13**2 * L_s3 = {self.L_s13}\n"
                              f"L_s23 = L_s2 + (n_13/n_12)**2 * L_s3 = {self.L_s23}\n"
                              )
-            """
-            # Stray Inductance concentrated on Primary Side
-            self.n_conc = self.M / self.L_2_2
-            self.L_s_conc = (1 - k ** 2) * self.L_1_1
-            self.L_h_conc = self.M ** 2 / self.L_2_2
-
-            self.femmt_print(f"\n"
-                f"T-ECD (primary side concentrated):\n"
-                f"[Underdetermined System: n := M / L_2_2  -->  L_s2 = L_2_2 - M / n = 0]\n"
-                f"    - Transformation Ratio: n\n"
-                f"    - (Primary) Stray Inductance: L_s1\n"
-                f"    - Primary Side Main Inductance: L_h\n"
-                f"n := M / L_2_2 = k * Sqrt(L_1_1 / L_2_2) = {self.n_conc}\n"
-                f"L_s1 = (1 - k^2) * L_1_1 = {self.L_s_conc}\n"
-                f"L_h = M^2 / L_2_2 = k^2 * L_1_1 = {self.L_h_conc}\n"
-                )
-            """
 
             inductances = ThreeWindingTransformerInductance(
                 M_12=self.M_12,
@@ -3109,8 +3060,6 @@ class MagneticComponent:
             )
             # self.compare_and_plot_inductance_matrices()
             return dataclasses.asdict(inductances)
-
-        # self.visualize()
 
     def get_steinmetz_loss(self, peak_current: float = None, ki: float = 1, alpha: float = 1.2, beta: float = 2.2,
                            t_rise: float = 3e-6, t_fall: float = 3e-6,
@@ -3374,7 +3323,7 @@ class MagneticComponent:
 
     def calculate_and_write_freq_domain_log(self, number_frequency_simulations: int = 1, current_amplitude_list: List = None,
                                             phase_deg_list: List = None, frequencies: List = None,
-                                            core_hyst_losses: List[float] = None):
+                                            core_hyst_losses: List[float] = None, inductance_dict: Optional[List] = None):
         """
         Read back the results from the .dat result files created by the ONELAB simulation client.
 
@@ -3405,6 +3354,8 @@ class MagneticComponent:
             the external value is used in the result-log. Otherwise, the hysteresis losses of the
             fundamental frequency is used
         :type core_hyst_losses: List[float]
+        :param inductance_dict: Given inductance dictionary to write to the result log.
+        :type inductance_dict: Dict
         """
         fundamental_index = 0  # index of the fundamental frequency
 
@@ -3650,15 +3601,18 @@ class MagneticComponent:
             log_dict["total_losses"]["eddy_core"] + log_dict["total_losses"]["all_windings"]
 
         # final_log_dict: freq dict + common dict
-        common_log_dict = self.write_and_calculate_common_log()
+        common_log_dict = self.write_and_calculate_common_log(inductance_dict=inductance_dict)
         final_log_dict = {**log_dict, **common_log_dict}
         # ====== save data as JSON ======
         with open(self.file_data.e_m_results_log_path, "w+", encoding='utf-8') as outfile:
             json.dump(final_log_dict, outfile, indent=2, ensure_ascii=False)
 
-    def calculate_and_write_time_domain_log(self):
+    def calculate_and_write_time_domain_log(self, inductance_dict: Optional[List] = None):
         """
         Process and log the results of time domain simulations.
+
+        :param inductance_dict: Given inductance dictionary to write to the result log.
+        :type inductance_dict: Dict
 
         Reads back the results from the simulation output files and stores them in a JSON format.
         The log includes detailed information about each time step of the simulation, as well as average and total losses.
@@ -3873,7 +3827,7 @@ class MagneticComponent:
                     log_dict["total_losses"]["eddy_core"] + \
                     log_dict["total_losses"]["all_windings_losses"]
 
-        common_log_dict = self.write_and_calculate_common_log()
+        common_log_dict = self.write_and_calculate_common_log(inductance_dict=inductance_dict)
         final_log_dict = {**log_dict, **common_log_dict}
         with open(self.file_data.e_m_results_log_path, "w+", encoding='utf-8') as outfile:
             json.dump(final_log_dict, outfile, indent=2, ensure_ascii=False)
@@ -3923,7 +3877,6 @@ class MagneticComponent:
 
         # ---- Print current configuration ----
         log_dict["simulation_settings"] = MagneticComponent.encode_settings(self)
-
         if isinstance(inductance_dict, Dict):
             log_dict["inductances"] = inductance_dict
 

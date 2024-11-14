@@ -9,7 +9,6 @@ To continue with the next simulation (or end the program), you need to close thi
 folder .../femmt/examples/example_results/simulation_file_name/results/log_electro_magnetic.json. and .../results_thermal.json.
 """
 import femmt as fmt
-import materialdatabase as mdb
 import os
 
 
@@ -119,14 +118,14 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     core = fmt.Core(core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
                     detailed_core_model=False,
-                    material=mdb.Material.N49, temperature=45, frequency=inductor_frequency,
+                    material=fmt.Material.N49, temperature=45, frequency=inductor_frequency,
                     # permeability_datasource="manufacturer_datasheet",
                     permeability_datasource=fmt.MaterialDataSource.Measurement,
                     permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                    permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
+                    permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
                     permittivity_datasource=fmt.MaterialDataSource.Measurement,
                     permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                    permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+                    permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
 
     geo.set_core(core)
 
