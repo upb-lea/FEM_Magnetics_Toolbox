@@ -19,7 +19,7 @@ import gmsh
 
 # Local libraries
 import femmt.functions as ff
-from femmt.enumerations import ComponentType, ConductorType, WindingType, CoreType, Verbosity
+from femmt.enumerations import SimulationType, ComponentType, ConductorType, WindingType, CoreType, Verbosity
 from femmt.data import FileData
 from femmt.model import Conductor, Core, StrayPath, AirGaps, Insulation, WindingWindow
 from femmt.drawing import TwoDaxiSymmetric
@@ -32,6 +32,7 @@ class Mesh:
     core: Core
     stray_path: StrayPath
     insulation: Insulation
+    simulation_type: SimulationType
     component_type: ComponentType
     windings: List[Conductor]
     winding_windows: List[WindingWindow]
@@ -82,6 +83,7 @@ class Mesh:
         self.core = model.core
         self.stray_path = model.stray_path
         self.insulation = model.insulation
+        self.simulation_type = model.simulation_type
         self.component_type = model.component_type
         self.windings = windings
         self.air_gaps = model.air_gaps
@@ -1241,6 +1243,8 @@ class Mesh:
         self.femmt_print("Electro Magnetic Mesh Generation in Gmsh (write physical entities)")
 
         self.PN_BOUND = 111111
+        # Needed for electrostatic simulation
+        self.PN_BOUND_LEFT = 111112
         self.PN_AIR = 110000
         self.PN_CORE = 120000
         self.PN_COND_SOLID = 130000
@@ -1309,7 +1313,19 @@ class Mesh:
         set_physical_surface_air()
 
         def set_physical_line_bound():
-            self.pc_bound = gmsh.model.geo.addPhysicalGroup(1, self.l_bound_tmp, tag=self.PN_BOUND)
+            if self.simulation_type == SimulationType.ElectroStatic:
+                if self.core.core_type == CoreType.Single:
+                    values_to_exclude = [3, 4, 5, 6, 7]
+                elif self.core.core_type == CoreType.Stacked:
+                    values_to_exclude = [2, 3, 4, 5, 6]
+
+                rest_of_values = [value for value in self.l_bound_tmp if value not in values_to_exclude]
+                self.pc_bound_left = gmsh.model.geo.addPhysicalGroup(1, rest_of_values, tag=self.PN_BOUND_LEFT)
+
+                # Set the rest of the boundary as a separate physical group (excluding axisymmetric boundaries)
+                self.pc_bound = gmsh.model.geo.addPhysicalGroup(1, values_to_exclude, tag=self.PN_BOUND)
+            else:
+                self.pc_bound = gmsh.model.geo.addPhysicalGroup(1, self.l_bound_tmp, tag=self.PN_BOUND)
 
         set_physical_line_bound()
 

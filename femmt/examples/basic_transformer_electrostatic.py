@@ -89,8 +89,9 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     geo.set_winding_windows([winding_window])
 
     # 8. start simulation with given frequency, currents and phases
+    # [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     geo.create_model(freq=0, pre_visualize_geometry=show_visual_outputs)
-    voltages = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]]
+    voltages = [[10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150], [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]]
     geo.electrostatic_simulation(voltage=voltages, ground_core=False, ground_outer_boundary=False,
                                  show_fem_simulation_results=show_visual_outputs, save_to_excel=True)
 

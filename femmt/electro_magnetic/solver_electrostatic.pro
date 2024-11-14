@@ -59,7 +59,6 @@ FunctionSpace {
     }
   }
 }
-
 Formulation {
   { Name Electrostatic_Potential ; Type FemEquation ;
     Quantity {
@@ -76,6 +75,8 @@ Formulation {
 //		In DomainCC ; Jacobian Vol ; Integration II ; }
       Integral { [ epsilon[] * Dof{d u0} , {d u0} ];
         In Domain; Jacobian Vol; Integration II; }
+      //Integral { [ epsilon[] * Norm[{d u0}] , {u0} ]; In Sur_Neu_Ele; Jacobian Sur; Integration II; }
+      //Integral { [ 0 , {u0} ]; In Sur_Neu_Ele; Jacobian Sur; Integration II; }
 	  For n In {1:n_windings}
 	    GlobalTerm { [ -Dof{Q} , {U} ]; In Winding~{n}; }
 	  EndFor

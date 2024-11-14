@@ -426,7 +426,7 @@ class MagneticComponent:
         # Create model
         self.two_d_axi = TwoDaxiSymmetric(self.core, self.mesh_data, self.air_gaps, self.winding_windows,
                                           self.stray_path,
-                                          self.insulation, self.component_type, len(self.windings), self.verbosity,
+                                          self.insulation, self.simulation_type, self.component_type, len(self.windings), self.verbosity,
                                           self.logger)
         self.two_d_axi.draw_model()
 
@@ -3301,7 +3301,11 @@ class MagneticComponent:
             text_file.write("Flag_Freq_Domain = 0;\n")
             text_file.write("Flag_Time_Domain = 0;\n")
 
-        # Frequency
+        # Airgap number
+        if self.simulation_type == SimulationType.ElectroStatic:
+            text_file.write("n_airgaps = {};\n".format(len(self.air_gaps.midpoints)))
+
+            # Frequency
         if not self.simulation_type == SimulationType.ElectroStatic:
             text_file.write("Freq = %s;\n" % self.frequency)
             text_file.write(f"delta = {self.delta};\n")
@@ -4503,8 +4507,7 @@ class MagneticComponent:
             gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
             gmsh.option.setNumber(f"View[{view}].NbIso", 40)
             gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
-            # gmsh.option.setNumber(f"View[{view}].VectorType", 5)
-            # gmsh.option.setNumber(f"View[{view}].GlyphLocation", 2)
+
             view += 1
 
             # Displacement Field
@@ -5577,7 +5580,10 @@ class MagneticComponent:
                 turn_index += 1
 
         # Define an open boundary condition for electrostatics
-        femm.ei_makeABC()
+        if not ground_outer_boundary and not ground_core:
+            femm.ei_makeABC(5, 0.5, 0.0, 0.0, 1)
+        else:
+            femm.ei_makeABC()
         # femm.ei_makeABC(5, 0.5, 0.0, 0.0, 1)
 
         # == Labels/Designations ==
@@ -5749,9 +5755,8 @@ class MagneticComponent:
                             capacitance = 2 * stored_energy / (voltage_difference ** 2)
                             capacitance_within[winding_name][turn_name][f"to_Turn_{j + 1}"] = capacitance
 
-        # Capacitance between different windings
+        # # Capacitance between different windings
         capacitance_between = {}
-
         for w1_index in range(len(voltages)):
             for w2_index in range(w1_index + 1, len(voltages)):
                 winding1_voltages = voltages[w1_index]
@@ -5791,6 +5796,69 @@ class MagneticComponent:
                             if turn2_name not in capacitance_between[winding2_name][winding1_name]:
                                 capacitance_between[winding2_name][winding1_name][turn2_name] = {}
                             capacitance_between[winding2_name][winding1_name][turn2_name][f"to_{turn1_name}"] = capacitance
+        # for w1_index in range(len(voltages)):
+        #     for w2_index in range(w1_index + 1, len(voltages)):
+        #         winding1_voltages = voltages[w1_index]
+        #         winding2_voltages = voltages[w2_index]
+        #         winding1_name = f"Winding_{w1_index + 1}"
+        #         winding2_name = f"Winding_{w2_index + 1}"
+        #
+        #         if winding1_name not in capacitance_between:
+        #             capacitance_between[winding1_name] = {}
+        #
+        #         # Calculate capacitance between every pair of turns from different windings
+        #         for i, voltage1 in enumerate(winding1_voltages):
+        #             turn1_name = f"Turn_{i + 1}"
+        #             if winding2_name not in capacitance_between[winding1_name]:
+        #                 capacitance_between[winding1_name][winding2_name] = {}
+        #             if turn1_name not in capacitance_between[winding1_name][winding2_name]:
+        #                 capacitance_between[winding1_name][winding2_name][turn1_name] = {}
+        #
+        #             for j, voltage2 in enumerate(winding2_voltages):
+        #                 turn2_name = f"Turn_{j + 1}"
+        #                 voltage_difference = abs(voltage2 - voltage1)
+        #
+        #                 if voltage_difference == 0:
+        #                     if stored_energy == 0:
+        #                         capacitance_between[winding1_name][winding2_name][turn1_name][f"to_{turn2_name}"] = float('NaN')
+        #                     else:
+        #                         capacitance_between[winding1_name][winding2_name][turn1_name][f"to_{turn2_name}"] = float('Infinity')
+        #                 else:
+        #                     capacitance = 2 * stored_energy / (voltage_difference ** 2)
+        #                     capacitance_between[winding1_name][winding2_name][turn1_name][f"to_{turn2_name}"] = capacitance
+        #
+        # # Calculate capacitance from winding2 to winding1 explicitly
+        # for w2_index in range(len(voltages)):
+        #     for w1_index in range(w2_index + 1, len(voltages)):
+        #         winding1_voltages = voltages[w1_index]
+        #         winding2_voltages = voltages[w2_index]
+        #         winding1_name = f"Winding_{w1_index + 1}"
+        #         winding2_name = f"Winding_{w2_index + 1}"
+        #
+        #         if winding2_name not in capacitance_between:
+        #             capacitance_between[winding2_name] = {}
+        #
+        #         # Calculate capacitance between every pair of turns from different windings
+        #         for j, voltage2 in enumerate(winding2_voltages):
+        #             turn2_name = f"Turn_{j + 1}"
+        #             if winding1_name not in capacitance_between[winding2_name]:
+        #                 #capacitance_between[winding2_name][winding1_name] = {}
+        #                 capacitance_between[winding1_name][winding2_name] = {}
+        #             if turn2_name not in capacitance_between[winding2_name][winding1_name]:
+        #                 capacitance_between[winding2_name][winding1_name][turn2_name] = {}
+        #
+        #             for i, voltage1 in enumerate(winding1_voltages):
+        #                 turn1_name = f"Turn_{i + 1}"
+        #                 voltage_difference = abs(voltage1 - voltage2)
+        #
+        #                 if voltage_difference == 0:
+        #                     if stored_energy == 0:
+        #                         capacitance_between[winding2_name][winding1_name][turn2_name][f"to_{turn1_name}"] = float('NaN')
+        #                     else:
+        #                         capacitance_between[winding2_name][winding1_name][turn2_name][f"to_{turn1_name}"] = float('Infinity')
+        #                 else:
+        #                     capacitance = 2 * stored_energy / (voltage_difference ** 2)
+        #                     capacitance_between[winding2_name][winding1_name][turn2_name][f"to_{turn1_name}"] = capacitance
 
         # Capacitance between each turn and the core
         capacitance_between_turns_core = {}

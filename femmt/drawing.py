@@ -23,6 +23,7 @@ class TwoDaxiSymmetric:
     stray_path: StrayPath
     insulation: Insulation
     component_type: ComponentType
+    simulation_type: SimulationType
     mesh_data: MeshData
     number_of_windings: int
     verbosity: Verbosity
@@ -39,11 +40,13 @@ class TwoDaxiSymmetric:
     p_iso_pri_sec: List[List[float]]
 
     def __init__(self, core: Core, mesh_data: MeshData, air_gaps: AirGaps, winding_windows: List[WindingWindow],
-                 stray_path: StrayPath, insulation: Insulation, component_type: ComponentType, number_of_windings: int, verbosity: Verbosity, logger: Logger):
+                 stray_path: StrayPath, insulation: Insulation, simulation_type: SimulationType, component_type: ComponentType, number_of_windings: int,
+                 verbosity: Verbosity, logger: Logger):
         self.core = core
         self.mesh_data = mesh_data
         self.winding_windows = winding_windows
         self.air_gaps = air_gaps
+        self.simulation_type = simulation_type
         self.component_type = component_type
         self.stray_path = stray_path
         self.insulation = insulation

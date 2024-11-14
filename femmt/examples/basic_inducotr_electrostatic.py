@@ -61,7 +61,7 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
     geo.set_air_gaps(air_gaps)
 
     # 4. set insulations
-    insulation = fmt.Insulation(flag_insulation=True)
+    insulation = fmt.Insulation(flag_insulation=False)
     insulation.add_core_insulations(0.001, 0.001, 0.003, 0.001)
     insulation.add_winding_insulations([[0.0010]])
     geo.set_insulation(insulation)
@@ -83,11 +83,11 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
     # 8. create the model
     geo.create_model(freq=inductor_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False, skin_mesh_factor=0.5)
     # 8. run electrostatic simulation
-    geo.electrostatic_simulation(voltage=[[10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]], ground_core=True, ground_outer_boundary=False,
+    geo.electrostatic_simulation(voltage=[[10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]], ground_core=False, ground_outer_boundary=True,
                                  show_fem_simulation_results=show_visual_outputs, save_to_excel=True)
     # Call the electrostatic FEMM simulation function
     voltages = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]
-    geo.femm_reference_electrostatic(voltages=[voltages], ground_core=True, ground_outer_boundary=False,
+    geo.femm_reference_electrostatic(voltages=[voltages], ground_core=False, ground_outer_boundary=True,
                                      non_visualize=0, save_to_excel=True, compare_excel_files_to_femmt=True, mesh_size_conductor=0.0)
 
 

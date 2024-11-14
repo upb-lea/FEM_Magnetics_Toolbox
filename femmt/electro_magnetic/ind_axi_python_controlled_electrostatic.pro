@@ -18,6 +18,7 @@ n_windings              = Number_of_Windings; // Number of windings
 // Physical numbers
 // ----------------------
 OUTBND                  = 111111;
+BOUND_LEFT             = 111112;
 AIR                     = 110000;
 AIR_EXT                 = 110001;
 AIR_COND                = 1000000;
@@ -65,12 +66,17 @@ Group {
     // Non-Conducting Domain (Air)
     DomainCC = Region[{Air}];
 
-    // Add the Core region to the non-conducting domain region
+    // Add the Core region to the appropriate domain region
     If (Flag_ground_OutBoundary)
-        // If the outer boundary is grounded, the core should be floating
-        DomainCC += Region[{Core}];
+        If (Flag_ground_core)
+            // If both the core and the outer boundary are grounded, add the core to DomainC
+            DomainC += Region[{Core}];
+        Else
+            // If the outer boundary is grounded but not the core, the core should be floating
+            DomainCC += Region[{Core}];
+        EndIf
     Else
-        // If the outer boundary is NOT grounded, handle the core according to the core flag
+        // If the outer boundary is NOT grounded
         If (Flag_ground_core)
             DomainC += Region[{Core}];
         Else
@@ -79,6 +85,19 @@ Group {
     EndIf
 
     // Boundary Conditions (Outer boundary to define potential)
+    // Neumann boundary conditions should be applied at the left du its symmetry
+    // Neumann boundary conditions specify the derivative of the function ( here is the derivative of the voltage(electric flux)) normal to the boundary.
+    // This means that there is no electric flux across a boundary
+    // This implies insulation or symmetry (no flow of electric charge across the boundary).
+    // Note that Since there are no non-homogeneous Neumann conditions in our code, Sur_Neu_Ele can be defined as empty.
+    // Otherwise, surface with imposed non-homogeneous Neumann boundary conditions (on n.d = -n . (epsilon grad v)), so nd[] function should be defined in our
+    // code as (epsilon[] * Norm[{d u0}]), look to the solver.
+    // non-homogeneous indicates that the derivative of the voltage (electric flux) is not equal to zero
+    // But as we do not have non-homogeneous boundary conditions, this will not affect our results here.
+    Sur_Neu_Ele = Region[{BOUND_LEFT}];
+    // Dirichlet boundary conditions specify the value of the function (here is the voltage) directly on the boundary.
+    // For instance, setting a boundary to be at 0 volts (ground).
+    // OUTBND does not include the BOUND_TOP_LEFT and BOUND_BOT_LEFT.
     OuterBoundary = Region[{OUTBND}];
 
     // Add Winding Regions to the Core Domain
@@ -87,7 +106,6 @@ Group {
     EndFor
 
     // Initialize the Main Domain
-
     For n In {1:n_windings}
       DomainCond~{n} += Region[{Winding~{n}}] ;
     EndFor
