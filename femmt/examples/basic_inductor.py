@@ -10,6 +10,7 @@ folder .../femmt/examples/example_results/simulation_file_name/results/log_elect
 """
 import femmt as fmt
 import os
+import numpy as np
 
 
 def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
@@ -106,19 +107,26 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     if onelab_folder is not None:
         geo.file_data.onelab_folder_path = onelab_folder
 
-    inductor_frequency = 270000
+    inductor_frequency = 99000
 
     # 2. set core parameters
     core_db = fmt.core_database()["PQ 40/40"]
-    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
-                                                    window_w=core_db["window_w"],
-                                                    window_h=core_db["window_h"],
-                                                    core_h=core_db["core_h"])
+    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"],
+                                                    window_h=core_db["window_h"], core_h=core_db["core_h"])
 
-    core = fmt.Core(core_type=fmt.CoreType.Single,
-                    core_dimensions=core_dimensions,
-                    detailed_core_model=False,
-                    material=fmt.Material.N49, temperature=45, frequency=inductor_frequency,
+    mc = fmt.MagneticCircuit(core_inner_diameter=[core_db["core_inner_diameter"]], window_h=[core_db["window_h"]], window_w=[core_db["window_w"]],
+                             no_of_turns=[14], n_air_gaps=[1], air_gap_h=[0.0005], air_gap_position=[50], mu_r_abs=[1500],
+                             mult_air_gap_type=['center_distributed'], air_gap_method='Percent', component_type="inductor", sim_type='sweep')
+    print("Reluctance-calc: ", mc.data_matrix)
+    print("Reluctance-calc: ")
+    print(type(mc.data_matrix))
+    print(len(mc.data_matrix))
+    print(mc.data_matrix[0][9]*4.5/((core_db["core_inner_diameter"]/2)**2)/np.pi/14)
+    print(mc.data_matrix[0][9])
+    print(type(mc.data_matrix[0][9]))
+
+    core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions, detailed_core_model=False,
+                    material=fmt.Material.N49, temperature=50, frequency=inductor_frequency,
                     # permeability_datasource="manufacturer_datasheet",
                     permeability_datasource=fmt.MaterialDataSource.Measurement,
                     permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
@@ -160,8 +168,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     geo.create_model(freq=inductor_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
 
     # 6.a. start simulation
-    geo.single_simulation(freq=inductor_frequency, current=[4.5],
-                          plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
+    geo.single_simulation(freq=inductor_frequency, current=[4.5], plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
 
     # geo.femm_reference(freq=inductor_frequency, current=[4.5], sign=[1], non_visualize=0)
 
@@ -174,7 +181,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # 9. start simulation
 
     # 7. prepare and start thermal simulation
-    example_thermal_simulation(show_visual_outputs, flag_insulation=True)
+    # example_thermal_simulation(show_visual_outputs, flag_insulation=True)
 
 
 if __name__ == "__main__":

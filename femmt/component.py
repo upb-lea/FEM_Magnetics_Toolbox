@@ -614,10 +614,10 @@ class MagneticComponent:
             if self.core.permittivity["datasource"] == "measurements" or self.core.permittivity["datasource"] == "datasheet":
                 epsilon_r, epsilon_phi_deg = mdb.MaterialDatabase(self.verbosity == Verbosity.Silent).get_permittivity(
                     temperature=self.core.temperature, frequency=self.frequency, material_name=self.core.material,
-                    datasource=self.core.permittivity["datasource"],datatype=self.core.permittivity["datatype"],
-                    measurement_setup=self.core.permittivity["measurement_setup"],interpolation_type="linear")
+                    datasource=self.core.permittivity["datasource"], datatype=self.core.permittivity["datatype"],
+                    measurement_setup=self.core.permittivity["measurement_setup"], interpolation_type="linear")
 
-                complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(epsilon_phi_deg)),np.sin(np.deg2rad(epsilon_phi_deg)))
+                complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(epsilon_phi_deg)), np.sin(np.deg2rad(epsilon_phi_deg)))
                 self.femmt_print(f"{complex_permittivity=}\n"
                                  f"{epsilon_r=}\n"
                                  f"{epsilon_phi_deg=}")
