@@ -5315,11 +5315,17 @@ class MagneticComponent:
                 # in case of sigma is a complex number, it is given as a list and needs to translated to complex.
                 settings["core"]["sigma"] = complex(settings["core"]["sigma"][0], settings["core"]["sigma"][1])
 
+            settings["core"]["permeability_datasource"] = \
+                MaterialDataSource(settings["core"]["permeability_datasource"])
+            settings["core"]["permittivity_datasource"] = \
+                MaterialDataSource(settings["core"]["permittivity_datasource"])
+
             if settings["core"]["material"] != 'custom':
                 # a custom core does not need a material, measurement_setup and _datatype
                 settings["core"]["material"] = Material(settings["core"]["material"])
-                settings["core"]["permeability_measurement_setup"] = \
-                    MeasurementSetup(settings["core"]["permeability_measurement_setup"])
+                if settings["core"]["permeability_datasource"] != "manufacturer_datasheet":
+                    settings["core"]["permeability_measurement_setup"] = \
+                        MeasurementSetup(settings["core"]["permeability_measurement_setup"])
                 settings["core"]["permeability_datatype"] = \
                     MeasurementDataType(settings["core"]["permeability_datatype"])
                 settings["core"]["permittivity_measurement_setup"] = \
@@ -5327,10 +5333,6 @@ class MagneticComponent:
                 settings["core"]["permittivity_datatype"] = \
                     MeasurementDataType(settings["core"]["permittivity_datatype"])
 
-            settings["core"]["permeability_datasource"] = \
-                MaterialDataSource(settings["core"]["permeability_datasource"])
-            settings["core"]["permittivity_datasource"] = \
-                MaterialDataSource(settings["core"]["permittivity_datasource"])
 
             core = Core(core_dimensions=core_dimensions, **settings["core"])
             geo.set_core(core)
@@ -5387,7 +5389,20 @@ class MagneticComponent:
                         winding_scheme = WindingScheme[vww["winding_scheme"]] if vww["winding_scheme"] \
                             is not None else None
                         wrap_para_type = WrapParaType[vww["wrap_para"]] if vww["wrap_para"] is not None else None
-                        new_vww.set_winding(conductors[0], turns[winding_number], winding_scheme, wrap_para_type)
+                        alignment = Align[vww["alignment"]] if vww["alignment"] is not None else None
+                        placing_strategy = ConductorDistribution[vww["placing_strategy"]] if vww["placing_strategy"] is not None else None
+                        zigzag = vww["zigzag"] if vww["zigzag"] is not None else None
+                        foil_vertical_placing_strategy = FoilVerticalDistribution[vww["foil_vertical_placing_strategy"]] if vww["foil_vertical_placing_strategy"] is not None else None
+                        foil_horizontal_placing_strategy = FoilHorizontalDistribution[vww["foil_horizontal_placing_strategy"]] if vww["foil_horizontal_placing_strategy"] is not None else None
+                        new_vww.set_winding(conductor=conductors[0],
+                                            turns=turns[winding_number],
+                                            winding_scheme=winding_scheme,
+                                            alignment=alignment,
+                                            placing_strategy=placing_strategy,
+                                            zigzag=zigzag,
+                                            wrap_para_type=wrap_para_type,
+                                            foil_vertical_placing_strategy=foil_vertical_placing_strategy,
+                                            foil_horizontal_placing_strategy=foil_horizontal_placing_strategy)
                         print(turns[0])
                     elif winding_type == WindingType.TwoInterleaved:
                         new_vww.set_interleaved_winding(conductors[0], turns[0], conductors[1], turns[1],

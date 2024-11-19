@@ -802,6 +802,11 @@ class VirtualWindingWindow:
         :param right_bound: Right bound
         :type right_bound: float
         """
+        self.zigzag = None
+        self.foil_horizontal_placing_strategy = None
+        self.foil_vertical_placing_strategy = None
+        self.placing_strategy = None
+        self.alignment = None
         self.bot_bound = bot_bound
         self.top_bound = top_bound
         self.left_bound = left_bound
@@ -944,6 +949,11 @@ class VirtualWindingWindow:
                 "right_bound": self.right_bound,
                 "winding_type": self.winding_type.name,
                 "winding_scheme": self.winding_scheme.name if self.winding_scheme is not None else None,
+                "alignment": self.alignment.name,
+                "zigzag": self.zigzag,
+                "foil_horizontal_placing_strategy": self.foil_horizontal_placing_strategy.name,
+                "foil_vertical_placing_strategy": self.foil_vertical_placing_strategy.name,
+                "placing_strategy": self.placing_strategy.name,
                 "wrap_para": self.wrap_para.name if self.wrap_para is not None else None,
                 "windings": [winding.to_dict() for winding in self.windings],
                 "turns": self.turns,
@@ -957,6 +967,11 @@ class VirtualWindingWindow:
                 "left_bound": self.left_bound,
                 "right_bound": self.right_bound,
                 "winding_type": self.winding_type.name,
+                "alignment": self.alignment.name if self.alignment is not None else None,
+                "zigzag": self.zigzag,
+                "foil_horizontal_placing_strategy": self.foil_horizontal_placing_strategy.name if self.foil_horizontal_placing_strategy is not None else None,
+                "foil_vertical_placing_strategy": self.foil_vertical_placing_strategy.name if self.foil_vertical_placing_strategy is not None else None,
+                "placing_strategy": self.placing_strategy.name if self.placing_strategy is not None else None,
                 "winding_scheme": self.winding_scheme.name if self.winding_scheme is not None else None,
                 "wrap_para": self.wrap_para.name if self.wrap_para is not None else None,
                 "windings": [winding.to_dict() for winding in self.windings],
