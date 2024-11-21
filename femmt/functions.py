@@ -2026,6 +2026,122 @@ def compare_excel_files(femmt_excel_path, femm_excel_path, comparison_output_pat
                 worksheet = writer.sheets[f"{sheet_name}_Comparison"]
                 worksheet.set_column('A:Z', 35)
 
+def load_voltage_and_calculate_magnitude(file_path: str):
+    """
+    Load the voltage values from the given file, calculate the magnitude for each complex voltage value.
+
+    :param file_path: Path to the voltage result file.
+    :type file_path: str
+    :return: List of voltage magnitudes for each turn.
+    :rtype: list
+    """
+    magnitudes = []
+
+    with open(file_path, 'r') as file:
+        for line in file:
+            if line.startswith("# U on"):
+                # Skip the line with labels
+                continue
+
+            # Split the line and ignore the first zero value
+            values = line.split()[1:]
+
+            # Separate real and imaginary parts
+            real_parts = values[0::2]
+            imag_parts = values[1::2]
+
+            # Convert real and imaginary parts to float and calculate magnitudes
+            for real, imag in zip(real_parts, imag_parts):
+                real = float(real)
+                imag = float(imag)
+                magnitude = np.sqrt(real**2 + imag**2)
+                magnitudes.append(magnitude)
+
+    return magnitudes
+
+def load_voltage_winding_and_calculate_magnitude(file_path: str):
+    """
+    Load the voltage values from the given file, calculate the average magnitude for each winding.
+
+    :param file_path: Path to the voltage result file.
+    :type file_path: str
+    :return: Average voltage magnitude for the winding.
+    :rtype: float
+    """
+    total_real = 0.0
+    total_imag = 0.0
+    count = 0
+
+    with open(file_path, 'r') as file:
+        for line in file:
+            if line.startswith("# U on"):
+                # Skip the line with labels
+                continue
+
+            # Split the line and ignore the first zero value
+            values = line.split()[1:]
+
+            # Separate real and imaginary parts
+            real_parts = values[0::2]
+            imag_parts = values[1::2]
+
+            # Convert real and imaginary parts to float and sum them
+            for real, imag in zip(real_parts, imag_parts):
+                total_real += float(real)
+                total_imag += float(imag)
+                count += 1
+
+    # Calculate magnitude
+    magnitude = np.sqrt(total_real**2 + total_imag**2)
+
+    return magnitude
+
+
+def update_capacitance_matrix(key, value, capacitance_matrix_nodes):
+    """
+    Update the capacitance matrix with the value obtained from the current run.
+    """
+    if key not in capacitance_matrix_nodes:
+        capacitance_matrix_nodes[key] = []
+    capacitance_matrix_nodes[key].append(value)
+
+
+def calculate_self_capacitances(capacitance_matrix_nodes):
+    """
+    Calculate the self-capacitances (C_AA, C_BB, etc.) after all simulations are run.
+    """
+    for i, node in enumerate(["A", "B", "C", "D", "E"]):
+        node_key = f"C_{node}{node}"
+        if node == "E":
+            capacitance_matrix_nodes[node_key] = sum(
+                capacitance_matrix_nodes.get(f"C_{node}{other_node}", [0])[-1]
+                for other_node in ["A", "B", "C", "D"]
+            )
+        else:
+            capacitance_matrix_nodes[node_key] = sum(
+                capacitance_matrix_nodes.get(f"C_{node}{other_node}", [0])[-1]
+                for other_node in ["A", "B", "C", "D", "E"] if other_node != node
+            )
+
+def display_capacitance_matrix(capacitance_matrix):
+    # Extract nodes and sort them
+    nodes = sorted(set([key[2] for key in capacitance_matrix.keys()]))  # Extract node labels (A, B, C, D, E)
+    node_indices = {node: index for index, node in enumerate(nodes)}
+
+    # Initialize a matrix with zeros
+    n = len(nodes)
+    matrix = np.zeros((n, n))
+
+    # Fill the matrix using capacitance values
+    for key, value in capacitance_matrix.items():
+        node1, node2 = key[2], key[3]
+        i, j = node_indices[node1], node_indices[node2]
+        matrix[i, j] = value
+
+    # Print matrix in the formatted style
+    print("Capacitance Matrix:")
+    for row in matrix:
+        print(" ".join([f"{elem:.5e}" for elem in row]))
 
 if __name__ == '__main__':
     pass

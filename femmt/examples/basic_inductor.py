@@ -109,24 +109,32 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     inductor_frequency = 270000
 
     # 2. set core parameters
-    core_db = fmt.core_database()["PQ 40/40"]
-    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
-                                                    window_w=core_db["window_w"],
-                                                    window_h=core_db["window_h"],
-                                                    core_h=core_db["core_h"])
-
-    core = fmt.Core(core_type=fmt.CoreType.Single,
-                    core_dimensions=core_dimensions,
-                    detailed_core_model=False,
-                    material=fmt.Material.N49, temperature=45, frequency=inductor_frequency,
-                    # permeability_datasource="manufacturer_datasheet",
-                    permeability_datasource=fmt.MaterialDataSource.Measurement,
-                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                    permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
-                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                    permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
-
+    # core_db = fmt.core_database()["PQ 40/40"]
+    # core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
+    #                                                 window_w=core_db["window_w"],
+    #                                                 window_h=core_db["window_h"],
+    #                                                 core_h=core_db["core_h"])
+    #
+    # core = fmt.Core(core_type=fmt.CoreType.Single,
+    #                 core_dimensions=core_dimensions,
+    #                 detailed_core_model=False,
+    #                 material=fmt.Material.N49, temperature=45, frequency=inductor_frequency,
+    #                 # permeability_datasource="manufacturer_datasheet",
+    #                 permeability_datasource=fmt.MaterialDataSource.Measurement,
+    #                 permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+    #                 permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
+    #                 permittivity_datasource=fmt.MaterialDataSource.Measurement,
+    #                 permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+    #                 permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+    #
+    # geo.set_core(core)
+    # 2. set core parameters
+    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295,
+                                                    core_h=0.04)
+    core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
+                    permeability_datasource=fmt.MaterialDataSource.Custom,
+                    permittivity_datasource=fmt.MaterialDataSource.Custom,
+                    detailed_core_model=False)
     geo.set_core(core)
 
     # 3. set air gap parameters
@@ -138,7 +146,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # 4. set insulations
     insulation = fmt.Insulation(flag_insulation=True)
     insulation.add_core_insulations(0.001, 0.001, 0.003, 0.001)
-    insulation.add_winding_insulations([[0.0005]])
+    insulation.add_winding_insulations([[0.0010]])
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -152,7 +160,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
     # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
     # 7. add conductor to vww and add winding window to MagneticComponent
-    vww.set_winding(winding, 14, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.HorizontalRightward_VerticalUpward,
+    vww.set_winding(winding, 3, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.VerticalDownward_HorizontalRightward,
                     zigzag=True)
     geo.set_winding_windows([winding_window])
 
@@ -160,8 +168,9 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     geo.create_model(freq=inductor_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
 
     # 6.a. start simulation
-    geo.single_simulation(freq=inductor_frequency, current=[4.5],
+    geo.single_simulation(freq=inductor_frequency, current=[1],
                           plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
+    geo.get_capacitance(ground_core=True, ground_outer_boundary=False, show_fem_simulation_results=False)
 
     # geo.femm_reference(freq=inductor_frequency, current=[4.5], sign=[1], non_visualize=0)
 
@@ -174,7 +183,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # 9. start simulation
 
     # 7. prepare and start thermal simulation
-    example_thermal_simulation(show_visual_outputs, flag_insulation=True)
+    # example_thermal_simulation(show_visual_outputs, flag_insulation=True)
 
 
 if __name__ == "__main__":

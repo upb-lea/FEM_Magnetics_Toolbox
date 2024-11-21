@@ -77,18 +77,18 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
     # winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
     # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
     # 7. add conductor to vww and add winding window to MagneticComponent
-    vww.set_winding(winding, 14, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.VerticalDownward_HorizontalRightward,
+    vww.set_winding(winding, 3, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.VerticalDownward_HorizontalRightward,
                     zigzag=True)
     geo.set_winding_windows([winding_window])
     # 8. create the model
     geo.create_model(freq=inductor_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False, skin_mesh_factor=0.5)
     # 8. run electrostatic simulation
-    geo.electrostatic_simulation(voltage=[[10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]], ground_core=False, ground_outer_boundary=True,
-                                 show_fem_simulation_results=show_visual_outputs, save_to_excel=True)
+    geo.electrostatic_simulation(voltage=[[5, 0, 0]], ground_core=True, ground_outer_boundary=False,
+                                 show_fem_simulation_results=show_visual_outputs, save_to_excel=False)
     # Call the electrostatic FEMM simulation function
-    voltages = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]
-    geo.femm_reference_electrostatic(voltages=[voltages], ground_core=False, ground_outer_boundary=True,
-                                     non_visualize=0, save_to_excel=True, compare_excel_files_to_femmt=True, mesh_size_conductor=0.0)
+    # voltages = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]
+    geo.femm_reference_electrostatic(voltages=[[5, 0, 0]], ground_core=True, ground_outer_boundary=False,
+                                     non_visualize=0, save_to_excel=False, compare_excel_files_to_femmt=False, mesh_size_conductor=0.0)
 
 
 if __name__ == "__main__":

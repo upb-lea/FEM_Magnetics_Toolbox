@@ -84,18 +84,25 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     # winding2.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
-    bot.set_winding(winding2, 14, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
-    top.set_winding(winding1, 15, None, fmt.Align.ToEdges, fmt.ConductorDistribution.HorizontalRightward_VerticalUpward, zigzag=False)
+    bot.set_winding(winding2, 2, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
+    top.set_winding(winding1, 5, None, fmt.Align.ToEdges, fmt.ConductorDistribution.HorizontalRightward_VerticalUpward, zigzag=False)
     geo.set_winding_windows([winding_window])
 
     # 8. start simulation with given frequency, currents and phases
     # [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    # [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150]
+    # [30, 35, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]
+    # [20, 40, 60, 80, 100]
     geo.create_model(freq=0, pre_visualize_geometry=show_visual_outputs)
-    voltages = [[10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150], [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]]
-    geo.electrostatic_simulation(voltage=voltages, ground_core=False, ground_outer_boundary=False,
+    voltages = [[20, 1, 0, 0, 0], [0, 0]]
+    # voltages = [
+    #     [10 if i == 0 else 0 for i in range(5)],  # Only turn 1 in winding 1 excited
+    #     [0, 0]  # Winding 2 remains at zero volts
+    # ]
+    geo.electrostatic_simulation(voltage=voltages, ground_core=True, ground_outer_boundary=False,
                                  show_fem_simulation_results=show_visual_outputs, save_to_excel=True)
 
-    geo.femm_reference_electrostatic(voltages=voltages, ground_core=False, ground_outer_boundary=False, non_visualize=0, save_to_excel=True,
+    geo.femm_reference_electrostatic(voltages=voltages, ground_core=True, ground_outer_boundary=False, non_visualize=0, save_to_excel=True,
                                      compare_excel_files_to_femmt=True)
 
 

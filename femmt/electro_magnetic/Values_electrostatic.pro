@@ -7,6 +7,8 @@ PostOperation Get_global UsingPost EleSta {
 
   // Charge
   Print[ Charge[Air], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"charge.dat"], LastTimeStepOnly, StoreInVariable $charge];
+  Print[ Charge_Core[Core], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"charge_Core.dat"], LastTimeStepOnly, StoreInVariable $charge_Core];
+
   // Capacitance
   If (Flag_voltage)
       // Calculate and print capacitance through the stored energy
@@ -57,6 +59,82 @@ PostOperation Get_global UsingPost EleSta {
   For n In {1:n_windings}
          Print[ C, OnRegion Winding~{n}, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"C_%g.dat"], n] , LastTimeStepOnly];
   EndFor
+
+
+  // print voltages for each turn
+  For winding_number In {1:n_windings}
+    nbturns~{winding_number} = NbrCond~{winding_number} / SymFactor;
+
+    // Print voltage for each turn in the winding
+    For turn_number In {1:nbturns~{winding_number}}
+        Print[ U~{winding_number}~{turn_number},
+                       OnRegion Turn~{winding_number}~{turn_number}, Format Table, File > Sprintf[StrCat[DirResValsVoltage~{winding_number},
+                        "voltage_%g_%g.dat"], winding_number, turn_number], LastTimeStepOnly, StoreInVariable $U~{winding_number}~{turn_number}];
+    EndFor
+ EndFor
+
+  // print charges for each turn
+  For winding_number In {1:n_windings}
+    nbturns~{winding_number} = NbrCond~{winding_number} / SymFactor;
+
+    // Print charge for each turn in the winding
+    For turn_number In {1:nbturns~{winding_number}}
+        Print[ Q~{winding_number}~{turn_number},
+                       OnRegion Turn~{winding_number}~{turn_number}, Format Table, File > Sprintf[StrCat[DirResValsCharge~{winding_number},
+                        "Charge_%g_%g.dat"], winding_number, turn_number], LastTimeStepOnly, StoreInVariable $Q~{winding_number}~{turn_number}];
+    EndFor
+  EndFor
+
+  // Capacitances from QV relation
+  If (Flag_voltage)
+      // Capacitance Calculation Between Turns for Each Winding (from charges)
+        For winding_number In {1:n_windings}
+            nbturns~{winding_number} = NbrCond~{winding_number} / SymFactor;
+
+            // Loop through each turn to define its capacitance relative to other turns
+            For turn_number1 In {1:nbturns~{winding_number}}
+                // Print the self-capacitance value
+                Print[Capacitance_Turn_Self~{winding_number}~{turn_number1},
+                      OnRegion Turn~{winding_number}~{turn_number1},
+                      Format Table,
+                      File > Sprintf[StrCat[DirResValsCapacitanceFromQV~{winding_number}, "C_%g_%g_Core.dat"], winding_number, turn_number1],
+                      LastTimeStepOnly];
+                For turn_number2 In {1:nbturns~{winding_number}}
+                    // Calculate capacitance for every pair of turns, where turn_number1 is the reference voltage turn
+                    If (turn_number1 == turn_number2)
+                        // Print the self-capacitance value
+                        Print[Capacitance_Turn_Self~{winding_number}~{turn_number1},
+                              OnRegion Turn~{winding_number}~{turn_number1},
+                              Format Table,
+                              File > Sprintf[StrCat[DirResValsCapacitanceFromQV~{winding_number}, "C_%g_%g_%g.dat"], winding_number, turn_number1, turn_number2],
+                              LastTimeStepOnly];
+                    Else
+                        // Print the mutual capacitance value
+                        Print[Capacitance_Turn~{winding_number}~{turn_number1}~{turn_number2},
+                              OnRegion Turn~{winding_number}~{turn_number1},
+                              Format Table,
+                              File > Sprintf[StrCat[DirResValsCapacitanceFromQV~{winding_number}, "C_%g_%g_%g.dat"], winding_number, turn_number1, turn_number2],
+                              LastTimeStepOnly];
+                    EndIf
+                EndFor
+            EndFor
+        EndFor
+  EndIf
+
+
+
+  // print charge and voltage for each turn in separate file (Just another way)
+  For winding_number In {1:n_windings}
+    nbturns~{winding_number} = NbrCond~{winding_number} / SymFactor;
+
+    // Print charge for each turn in the winding
+    For turn_number In {1:nbturns~{winding_number}}
+        Print[ U, OnRegion Turn~{winding_number}~{turn_number}, Format TimeTable,
+               File > Sprintf[StrCat[DirResCirc, "U_%g_%g.dat"], winding_number, turn_number], LastTimeStepOnly];
+        Print[ Q, OnRegion Turn~{winding_number}~{turn_number}, Format TimeTable,
+               File > Sprintf[StrCat[DirResCirc, "Q_%g_%g.dat"], winding_number, turn_number], LastTimeStepOnly];
+    EndFor
+ EndFor
   //Print[ u0_avg_core, OnRegion Core, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"Core_voltage.dat"], n] , LastTimeStepOnly];
   //Print[ u0_avg_core[ Core ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"Core_voltage.dat"]];
   //Print[ u0_avg_core, OnGlobal, Format TimeTable, File > StrCat[DirResVals,"Core_voltage.dat"]];

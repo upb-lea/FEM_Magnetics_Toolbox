@@ -204,9 +204,9 @@ Constraint {
                     EndFor
                 EndFor
             EndIf
-            If(Flag_ground_core)
-                { Region Core ; Type Assign ; Value 0; }
-            EndIf
+//            If(Flag_ground_core)
+//                { Region Core ; Type Assign ; Value 0; }
+//            EndIf
         }
     }
     { Name Dirichlet_Ele; Type Assign;
@@ -234,6 +234,9 @@ Resolution {
       CreateDir[DirResValsCapacitance];
       For n In {1:n_windings}
           CreateDir[DirResValsWinding~{n}];
+          CreateDir[DirResValsCharge~{n}];
+          CreateDir[DirResValsVoltage~{n}];
+          CreateDir[DirResValsCapacitanceFromQV~{n}];
           nbturns~{n} = NbrCond~{n} / SymFactor;
           For turn In {1:nbturns~{n}}
              CreateDir[DirResValsTurn~{turn}];
@@ -306,10 +309,10 @@ PostProcessing {
       }
       // Global charges
       { Name Q; Value {
-          Term { [ {Q} ]; In DomainC; }
+          Term { [ CoefGeo * {Q} ]; In DomainC; }
         }
       }
-      // These C need to be reviewed
+       // These C need to be reviewed
       { Name C; Value {
           Term { [ {Q}/{U} ]; In DomainC; }
         }
@@ -340,8 +343,77 @@ PostProcessing {
                 In DomainCC; Jacobian Vol; Integration II; }
             }
        }
+
+      { Name Charge_Core; Value {
+              Integral { [ CoefGeo * epsilon[] * Norm[{d u0}] ];
+                In Core; Jacobian Vol; Integration II; }
+            }
+       }
       // Average voltage of the core
       { Name Avg_Voltage_Core; Value {Integral { [ {u0} / SurfCore[] ]; In Region[{Core}]; Jacobian Sur; Integration II; }}}
+
+      // Voltages of every turn to print them in different files
+      For winding_number In {1:n_windings}
+        nbturns~{winding_number} = NbrCond~{winding_number} / SymFactor;
+
+        // Print charge for each turn in the winding
+        For turn_number In {1:nbturns~{winding_number}}
+            { Name U~{winding_number}~{turn_number}; Value {
+                 Term { [ {U} ]; In Turn~{winding_number}~{turn_number}; }
+                 }
+            }
+        EndFor
+      EndFor
+      // Charges of every turn to print them in different files
+      For winding_number In {1:n_windings}
+        nbturns~{winding_number} = NbrCond~{winding_number} / SymFactor;
+
+        // Print charge for each turn in the winding
+        For turn_number In {1:nbturns~{winding_number}}
+            { Name Q~{winding_number}~{turn_number}; Value {
+                 Term { [ CoefGeo * {Q} ]; In Turn~{winding_number}~{turn_number}; }
+                 }
+            }
+        EndFor
+      EndFor
+
+      // Capacitance Calculation Between Turns for Each Winding ( from charges)
+      For winding_number In {1:n_windings}
+            nbturns~{winding_number} = NbrCond~{winding_number} / SymFactor;
+
+            // Loop through each turn to define its capacitance relative to other turns
+            For turn_number1 In {1:nbturns~{winding_number}}
+                    { Name Capacitance_Turn_Core~{winding_number}~{turn_number1}; Value {
+                          Term { Type Global;
+                                 [ $Q~{winding_number}~{turn_number1} / $U~{winding_number}~{turn_number1} ];
+                                 In Turn~{winding_number}~{turn_number1}; }
+                        }
+                    }
+
+                For turn_number2 In {1:nbturns~{winding_number}}
+                    // Calculate capacitance for every pair of turns, where turn_number1 is the reference voltage turn
+                    If (turn_number1 == turn_number2)
+                        // Self-capacitance (Q / V, with V being the turn voltage)
+                        { Name Capacitance_Turn_Self~{winding_number}~{turn_number1}; Value {
+                              Term { Type Global;
+                                     [ $Q~{winding_number}~{turn_number1}  / $U~{winding_number}~{turn_number1} ];
+                                     In Turn~{winding_number}~{turn_number1}; }
+                            }
+                        }
+                    Else
+                        // Mutual capacitance between different turns (Q_turn2 / V_turn1)
+                        { Name Capacitance_Turn~{winding_number}~{turn_number1}~{turn_number2}; Value {
+                              Term { Type Global;
+                                     [ $Q~{winding_number}~{turn_number2} / $U~{winding_number}~{turn_number1} ];
+                                     In Turn~{winding_number}~{turn_number1}; }
+                            }
+                        }
+                    EndIf
+                EndFor
+            EndFor
+      EndFor
+
+
 
       If (Flag_voltage)
          // Calculate capacitance through the stored energy
@@ -355,7 +427,7 @@ PostProcessing {
                 { Name Capacitance_Between_Turns_Core~{winding_number}~{turn_number1}; Value {
                     Term { Type Global;
                       [ 2 * $energy_Component / ((Val_Potential_Turn~{winding_number}~{turn_number1} - $Avg_Voltage_Core) * (Val_Potential_Turn~{winding_number}~{turn_number1} - $Avg_Voltage_Core)) ];
-                      In Domain; }
+                      In DomainCond~{winding_number}~{turn_number1}; }
                     }
                 }
                 For turn_number2 In {1:nbturns~{winding_number}}
@@ -372,7 +444,7 @@ PostProcessing {
                     { Name Capacitance_Between_Turns~{winding_number}~{turn_number1}~{turn_number2}; Value {
                         Term { Type Global;
                           [ 2 * $energy_Component / (VoltageDifference_Pair~{winding_number}~{turn_number1}~{turn_number2} * VoltageDifference_Pair~{winding_number}~{turn_number1}~{turn_number2}) ];
-                          In Domain; }
+                          In DomainCond~{winding_number}~{turn_number1}; }
                         }
                     }
 
@@ -390,7 +462,7 @@ PostProcessing {
                       { Name Capacitance_Cross~{winding_number}~{turn_number1}~{other_winding_number}~{turn_number2} ;
                        Value { Term { Type Global;
                         [ 2 * $energy_Component / (VoltageDifference_Cross~{winding_number}~{turn_number1}~{other_winding_number}~{turn_number2} *
-                         VoltageDifference_Cross~{winding_number}~{turn_number1}~{other_winding_number}~{turn_number2}) ] ; In Domain; } } }
+                         VoltageDifference_Cross~{winding_number}~{turn_number1}~{other_winding_number}~{turn_number2}) ] ; In DomainCond~{winding_number}~{turn_number1}; } } }
                     EndFor
                   EndIf
                 EndFor
