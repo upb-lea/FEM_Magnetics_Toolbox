@@ -69,19 +69,32 @@ class GroupPro:
         self.regions.update(more_regions)
 
     def create_file(self, file_path: str, air_gaps_enabled: bool = False, insulation_enabled: bool = False):
+        """
+        Create some onelab specific result files.
+
+        :param file_path: file path
+        :type file_path: str
+        :param air_gaps_enabled: "True" to enable air gaps
+        :type air_gaps_enabled: bool
+        :param insulation_enabled: "True" to enable insulations
+        :type insulation_enabled: bool
+        """
         with open(file_path, "w") as fd:
             fd.write("Group {\n")
             for key, value in self.regions.items():
                 fd.write(f"\t{key} = Region[{value}];\n")
-            air_gaps = ", air_gaps" if air_gaps_enabled else ""
+            air_gaps = ""
+            if air_gaps_enabled:
+                air_gaps = ", air_gaps"
             insulation = ""
             if insulation_enabled:
-                insulation = ", insulation_total"
+                insulation = ", insulation"
 
             fd.write(f"\tCold = Region[{{air, case_top, case_top_right, case_right, case_bot_right, case_bot{air_gaps}{insulation}}}];\n")
             fd.write("\tWarm = Region[{core_total, windings_total}];\n")
             fd.write("\tTotal = Region[{Warm, Cold}];\n")
             fd.write("}")
+
 
 class ParametersPro:
     """Define the parameter.pro file for the thermal simulation."""
@@ -176,7 +189,7 @@ class FunctionPro:
 class PostOperationPro:
     """For creating a post_operation.pro."""
 
-    statements: List[str]    
+    statements: List[str]
 
     def __init__(self):
         self.statements = []

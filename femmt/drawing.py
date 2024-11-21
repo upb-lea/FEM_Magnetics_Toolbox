@@ -1394,7 +1394,7 @@ class TwoDaxiSymmetric:
                 window_h_bot = self.core.window_h_bot
                 top_section_top_y = window_h_bot / 2 + self.core.core_thickness + window_h_top - insulation_delta
                 top_section_bot_y = window_h_bot / 2 + self.core.core_thickness + insulation_delta
-                bot_section_top_y = window_h_bot / 2 + insulation_delta
+                bot_section_top_y = window_h_bot / 2 - insulation_delta
                 bot_section_bot_y = -window_h_bot / 2 + insulation_delta
 
             # Useful lengths

@@ -65,12 +65,12 @@ def create_case(boundary_regions: Dict, boundary_physical_groups: Dict, boundary
     })
 
 
-def create_insulation(insulation_tags: List, k_iso, function_pro: FunctionPro, group_pro: GroupPro):
+def create_insulation(insulation_tag, k_iso, function_pro: FunctionPro, group_pro: GroupPro):
     """
     Create insulations for thermal simulation.
 
-    :param insulation_tags: List of insulation tags.
-    :type insulation_tags: List
+    :param insulation_tag:
+    :type insulation_tag:
     :param k_iso: Thermal conductivity of the insulation
     :type k_iso: float
     :param function_pro: function.pro file
@@ -78,28 +78,11 @@ def create_insulation(insulation_tags: List, k_iso, function_pro: FunctionPro, g
     :param group_pro: group.pro file
     :type group_pro: GroupPro
     """
-    k = {}
-    regions = {}
-    insulation_total_str = "{"
+    k_iso = {"insulation": k_iso}
 
-    if len(insulation_tags) == 1:
-        # Single insulation part
-        name = "insulation"
-        k[name] = k_iso
-        regions[name] = insulation_tags[0]
-        insulation_total_str += f"{name}"
-    elif len(insulation_tags) == 2:
-        # Two insulation parts: top and bottom
-        k["insulation_top"] = k_iso
-        regions["insulation_top"] = insulation_tags[0]
-        k["insulation_bottom"] = k_iso
-        regions["insulation_bottom"] = insulation_tags[1]
-        insulation_total_str += "insulation_top, insulation_bottom"
-    # Define the insulation_total region
-    regions["insulation_total"] = insulation_total_str + "}"
-    # Update the function_pro and group_pro objects with the newly computed dictionaries
-    group_pro.add_regions(regions)
-    function_pro.add_dicts(k, {})
+    function_pro.add_dicts(k_iso, None)
+    group_pro.add_regions({"insulation": insulation_tag})
+
 
 def create_background(background_tag, k_air: float, function_pro: FunctionPro, group_pro: GroupPro):
     """
@@ -233,7 +216,7 @@ def create_windings(winding_tags: List, k_windings: float, winding_losses, condu
 def create_post_operation(thermal_file_path: str, thermal_influx_file_path: str, thermal_material_file_path: str,
                           sensor_points_file: str, core_file: str, insulation_file: str, winding_file: str,
                           windings: list, core_parts: list, print_sensor_values: bool,
-                          post_operation_pro: PostOperationPro, flag_insulation: bool, insulation_parts: list):
+                          post_operation_pro: PostOperationPro, flag_insulation: bool):
     """
     Configure post-operation properties for a thermal simulation.
 
@@ -303,12 +286,8 @@ def create_post_operation(thermal_file_path: str, thermal_influx_file_path: str,
                 core_append = True
 
     # Adding temperature post-operation statement for insulation if insulation is present
-    if flag_insulation and insulation_parts is not None:
-        if len(insulation_parts) == 1:
-            post_operation_pro.add_on_elements_of_statement("T", "insulation", insulation_file, "GmshParsed", 0, "insulation")
-        elif len(insulation_parts) == 2:
-            post_operation_pro.add_on_elements_of_statement("T", "insulation_top", insulation_file, "GmshParsed", 0, "insulation_top")
-            post_operation_pro.add_on_elements_of_statement("T", "insulation_bottom", insulation_file, "GmshParsed", 0, "insulation_bottom", append=True)
+    if flag_insulation:
+        post_operation_pro.add_on_elements_of_statement("T", "insulation", insulation_file, "SimpleTable", 0)
 
     # Adding temperature post-operation statements for each winding, considering the case of parallel windings
     append = False
@@ -513,56 +492,18 @@ def post_operation(case_volume: float, output_file: str, sensor_points_file: str
         "misc": misc
     }
 
-    # if flag_insulation and insulation_file is not None:  # The flag is to check if the thermal simulation with insulation or without
-    #     # insulations
-    #     insulation_values = parse_simple_table(insulation_file)
-    #     insulation_min = insulation_values.min()
-    #     insulation_max = insulation_values.max()
-    #     insulation_mean = insulation_values.mean()
-    #
-    #     data["insulations"] = {
-    #         "min": insulation_min,
-    #         "max": insulation_max,
-    #         "mean": insulation_mean
-    #     }
-    if flag_insulation and insulation_file is not None:
-        insulation_values = parse_gmsh_parsed(insulation_file)
-        insulations = {}
+    if flag_insulation and insulation_file is not None:  # The flag is to check if the thermal simulation with insulation or without
+        # insulations
+        insulation_values = parse_simple_table(insulation_file)
+        insulation_min = insulation_values.min()
+        insulation_max = insulation_values.max()
+        insulation_mean = insulation_values.mean()
 
-        insulation_min = float('inf')
-        insulation_max = -float('inf')
-        mean_sum = 0
-
-        # Handle different insulation parts
-        for insulation_name, insulation_data in insulation_values.items():
-            insulations[insulation_name] = {
-                "min": insulation_data.min(),
-                "max": insulation_data.max(),
-                "mean": insulation_data.mean()
-            }
-            # Update global min, max, mean
-            current_min = insulation_data.min()
-            current_max = insulation_data.max()
-            current_mean = insulation_data.mean()
-
-            if current_min < insulation_min:
-                insulation_min = current_min
-
-            if current_max > insulation_max:
-                insulation_max = current_max
-
-            mean_sum += current_mean
-
-        # Add the total insulation data if there are multiple parts
-        if len(insulation_values) > 1:
-            insulations["total"] = {
-                "min": insulation_min,
-                "max": insulation_max,
-                "mean": mean_sum / len(insulation_values.keys())
-            }
-
-        # Add insulation data to output
-        data["insulations"] = insulations
+        data["insulations"] = {
+            "min": insulation_min,
+            "max": insulation_max,
+            "mean": insulation_mean
+        }
 
     if sensor_point_values is not None:
         data["sensor_points"] = sensor_point_values
@@ -664,21 +605,12 @@ def run_thermal(file_data: FileData, tags_dict: Dict, thermal_conductivity_dict:
                              thermal_conductivity_dict["air_gaps"], function_pro, group_pro)
     create_windings(tags_dict["winding_tags"], thermal_conductivity_dict["winding"], winding_losses, conductor_radii,
                     wire_distances, function_pro, group_pro)
-    if flag_insulation:
-        create_insulation(tags_dict["insulations_tag"], thermal_conductivity_dict["insulation"], function_pro, group_pro)
-    # Insulation parts should be passed only if insulation is enabled, otherwise None
-    insulation_parts = tags_dict["insulations_tag"] if flag_insulation else None
 
-    # Create post-operation with or without insulation
-    create_post_operation(
-        map_pos_file, influx_pos_file, material_pos_file, sensor_points_file, core_file,
-        insulation_file, winding_file, tags_dict["winding_tags"], tags_dict["core_tags"], print_sensor_values,
-        post_operation_pro, flag_insulation, insulation_parts
-    )
+    create_insulation(tags_dict["insulations_tag"], thermal_conductivity_dict["insulation"], function_pro, group_pro) if flag_insulation else None
 
-    # create_post_operation(map_pos_file, influx_pos_file, material_pos_file, sensor_points_file, core_file,
-    #                       insulation_file, winding_file, tags_dict["winding_tags"], tags_dict["core_tags"], print_sensor_values,
-    #                       post_operation_pro, flag_insulation)
+    create_post_operation(map_pos_file, influx_pos_file, material_pos_file, sensor_points_file, core_file,
+                          insulation_file, winding_file, tags_dict["winding_tags"], tags_dict["core_tags"], print_sensor_values,
+                          post_operation_pro, flag_insulation)
 
     # Create files
     parameters_pro.create_file(parameters_file)
