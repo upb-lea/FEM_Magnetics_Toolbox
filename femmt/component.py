@@ -3357,46 +3357,48 @@ class MagneticComponent:
             sweep_dict["core_eddy_losses"] = self.load_result(res_name="CoreEddyCurrentLosses", last_n=number_frequency_simulations)[single_simulation]
             sweep_dict["core_hyst_losses"] = self.load_result(res_name="p_hyst", last_n=number_frequency_simulations)[single_simulation]
 
-            # area of center leg: A = pi * (diameter_center_leg / 2)^2 (A = pi * r^2)
-            center_leg_area = np.pi * (float(common_log_dict["simulation_settings"]["core"]["core_inner_diameter"]) / 2) ** 2
-            # approx. magnetic flux density of center leg: b = phi / A_center_leg / N (N: no. of winding turns | phi: magnetic flux)
-            b_field = abs(complex(winding_dict["flux"][0], winding_dict["flux"][1])) / center_leg_area / winding_dict["number_turns"]
-
             # differentiate between single_simulation and sweep_simulation
-            # if number_frequency_simulations > 1:
-            #     # sweep_simulation -> get frequencies from passed currents
-            #     # steinmetz_losses = mdb.calc_steinmetz_equation(material_name=common_log_dict["simulation_settings"]["core"]["material"],
-            #     #                                                measurement_setup="MagNet", frequency=frequencies[single_simulation], b_field=b_field,
-            #     #                                                temperature=common_log_dict["simulation_settings"]["core"]["temperature"])
-            #     steinmetz_dict = mdb.calc_steinmetz_FEM_simulation(core_inner_diameter=common_log_dict["simulation_settings"]["core"]["core_inner_diameter"],
-            #                                                        frequency=frequencies[single_simulation], Standard_SE=True, IGSE=False,
-            #                                                        temperature=common_log_dict["simulation_settings"]["core"]["temperature"],
-            #                                                        magnetizing_flux_peak=abs(complex(winding_dict["flux"][0], winding_dict["flux"][1])),
-            #                                                        b_field_shape=[], core_volume=common_log_dict["misc"]["core_2daxi_volume"],
-            #                                                        no_of_turns=winding_dict["number_turns"], measurement_setup="MagNet",
-            #                                                        material_name=common_log_dict["simulation_settings"]["core"]["material"])
-            # else:
-            #     # single_simulation -> get frequency from instance variable
-            #     # steinmetz_losses = mdb.calc_steinmetz_equation(material_name=common_log_dict["simulation_settings"]["core"]["material"],
-            #     #                                                measurement_setup="MagNet", frequency=self.frequency, b_field=b_field,
-            #     #                                                temperature=common_log_dict["simulation_settings"]["core"]["temperature"])
-            #     steinmetz_dict = mdb.calc_steinmetz_FEM_simulation(core_inner_diameter=common_log_dict["simulation_settings"]["core"]["core_inner_diameter"],
-            #                                                        frequency=self.frequency, Standard_SE=True, IGSE=False,
-            #                                                        temperature=common_log_dict["simulation_settings"]["core"]["temperature"],
-            #                                                        magnetizing_flux_peak=abs(complex(winding_dict["flux"][0], winding_dict["flux"][1])),
-            #                                                        b_field_shape=[], core_volume=common_log_dict["misc"]["core_2daxi_volume"],
-            #                                                        no_of_turns=winding_dict["number_turns"], measurement_setup="MagNet",
-            #                                                        material_name=common_log_dict["simulation_settings"]["core"]["material"])
-            # sweep_dict = {**sweep_dict, **steinmetz_dict}
+            if self.component_type == ComponentType.Inductor:
 
-            # print(b_field)
-            # print(steinmetz_losses * common_log_dict["misc"]["core_2daxi_volume"])
-            # sweep_dict["core_hyst_losses_steinmetz"] = steinmetz_losses * common_log_dict["misc"]["core_2daxi_volume"]
-            x = np.linspace(0, 2 * np.pi, 1024)
-            b_wave = np.sin(x) * b_field  # in T
-            sweep_dict["core_hyst_losses_magnet"] = mdb.calc_powerloss_from_MagNet_model(
-                material_name=common_log_dict["simulation_settings"]["core"]["material"], team_name="paderborn", b_wave=b_wave, frequency=self.frequency,
-                temperature=common_log_dict["simulation_settings"]["core"]["temperature"]) * common_log_dict["misc"]["core_2daxi_volume"]
+                steinmetz_dict, MagNet_dict = {}, {}
+
+                # area of center leg: A = pi * (diameter_center_leg / 2)^2 (A = pi * r^2)
+                center_leg_area = np.pi * (float(common_log_dict["simulation_settings"]["core"]["core_inner_diameter"]) / 2) ** 2
+                # approx. magnetic flux density of center leg: b = phi / A_center_leg / N (N: no. of winding turns | phi: magnetic flux)
+                b_field = abs(complex(winding_dict["flux"][0], winding_dict["flux"][1])) / center_leg_area / winding_dict["number_turns"]
+                x = np.linspace(0, 2 * np.pi, 1024)
+                b_wave = np.sin(x) * b_field  # in T
+                if number_frequency_simulations > 1:
+                    # sweep_simulation -> get frequencies from passed currents
+                    steinmetz_dict = mdb.calc_steinmetz_FEM_simulation(
+                        core_inner_diameter=common_log_dict["simulation_settings"]["core"]["core_inner_diameter"], frequency=frequencies[single_simulation],
+                        temperature=common_log_dict["simulation_settings"]["core"]["temperature"],
+                        magnetizing_flux_peak=abs(complex(winding_dict["flux"][0], winding_dict["flux"][1])), b_wave=[],
+                        core_volume=common_log_dict["misc"]["core_2daxi_volume"], no_of_turns=winding_dict["number_turns"], measurement_setup="MagNet",
+                        material_name=common_log_dict["simulation_settings"]["core"]["material"], Standard_SE=True, IGSE=False)
+
+                    MagNet_dict = mdb.calc_MagNet_FEM_simulation(
+                        material_name=common_log_dict["simulation_settings"]["core"]["material"], b_wave=b_wave, frequency=frequencies[single_simulation],
+                        temperature=common_log_dict["simulation_settings"]["core"]["temperature"], core_volume=common_log_dict["misc"]["core_2daxi_volume"],
+                        MagNet_PB=True, MagNet_Sydney=False)
+                else:
+                    # single_simulation -> get frequency from instance variable
+                    steinmetz_dict = mdb.calc_steinmetz_FEM_simulation(
+                        core_inner_diameter=common_log_dict["simulation_settings"]["core"]["core_inner_diameter"], frequency=self.frequency,
+                        temperature=common_log_dict["simulation_settings"]["core"]["temperature"],
+                        magnetizing_flux_peak=abs(complex(winding_dict["flux"][0], winding_dict["flux"][1])), b_wave=[],
+                        core_volume=common_log_dict["misc"]["core_2daxi_volume"], no_of_turns=winding_dict["number_turns"], measurement_setup="MagNet",
+                        material_name=common_log_dict["simulation_settings"]["core"]["material"], Standard_SE=True, IGSE=False)
+
+                    MagNet_dict = mdb.calc_MagNet_FEM_simulation(
+                        material_name=common_log_dict["simulation_settings"]["core"]["material"], b_wave=b_wave, frequency=self.frequency,
+                        temperature=common_log_dict["simulation_settings"]["core"]["temperature"], core_volume=common_log_dict["misc"]["core_2daxi_volume"],
+                        MagNet_PB=True, MagNet_Sydney=False)
+
+                sweep_dict = {**sweep_dict, **steinmetz_dict}
+                sweep_dict = {**sweep_dict, **MagNet_dict}
+
+
 
             # Core Part losses
             # If there are multiple core parts, calculate losses for each part individually
