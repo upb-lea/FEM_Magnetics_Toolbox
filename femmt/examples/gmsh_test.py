@@ -1,57 +1,175 @@
 import gmsh
+import matplotlib.pyplot as plt
 import numpy as np
 import re
+from matplotlib import pyplot
+import time
 
-no_of_air_gaps = 1
+# nubmer of air gasp
+no_of_air_gaps = 4
+# number of points that are necessary to describe the outer line of the core (the points are the corners of the core)
 points_of_core = 10 + 4 * no_of_air_gaps
 
 gmsh.initialize()
-gmsh.open("C:/Users/schacht/PycharmProjects/FEM_Magnetics_Toolbox/femmt/examples/example_results/basic_inductor/mesh/electro_magnetic.msh")
+start = time.time()
+# path of gmsh-file needed
+# gmsh.open("C:/Users/schacht/PycharmProjects/FEM_Magnetics_Toolbox/femmt/examples/example_results/basic_inductor/mesh/electro_magnetic.msh")
+gmsh.open("C:/Users/sebas/Desktop/Python/FEM_Magnetics_Toolbox/femmt/examples/example_results/basic_inductor/mesh/electro_magnetic.msh")
 
-dim = -1
-tag = -1
+# path of Magb.pos needed (file containing the data of the magnetic flux density for the mesh)
+# path = 'C:/Users/schacht/PycharmProjects/FEM_Magnetics_Toolbox/femmt/examples/example_results/basic_inductor/results/fields/Magb.pos'
+path = 'C:/Users/sebas/Desktop/Python/FEM_Magnetics_Toolbox/femmt/examples/example_results/basic_inductor/results/fields/Magb.pos'
 
-nodeTags, coords, parametricCoord = gmsh.model.mesh.getNodes(dim, tag)
+# read in Magb.pos <- data of magnetic flux density
+with open(path, 'r') as file:
+    content = file.read()  # type of content: string
 
+print("1", time.time()-start)
+start = time.time()
+
+# find both occurrence of "Magnitude B-Field / T" in Magb.pos
+indexes = [m.start() for m in re.finditer('"Magnitude B-Field / T"', content)]
+# filter magnetic flux density out of Magb.pos(data is between the both occurrences of "Magnitude B-Field / T") and put data into list
+data = [float(x) for x in content[indexes[0]:indexes[1]].split()[11:-3]]
+# divide long list into lists for every triangle/mesh-cell
+chunks = [data[x:x+5] for x in range(0, len(data), 5)]
+# put lists in right format -> [TriangleTag, MagFluxDenOfNode1, MagFluxDenOfNode2, MagFluxDenOfNode3]
+# before [TriangleTag, 3, MagFluxDenOfNode1, MagFluxDenOfNode2, MagFluxDenOfNode3]
+TriangleMagneticFluxDensity = [[x[0], x[2], x[3], x[4]] for x in chunks]
+# print(TriangleMagneticFluxDensity)
+# print(len(TriangleMagneticFluxDensity))
+
+# get all triangles with there tags and node and put them in right format -> [TriangleTag, NodeTag1, NodeTag2, NodeTag3]
+TriangleTags, TriangleNodeTags = gmsh.model.mesh.getElementsByType(elementType=2)
+TriangleNodeTags = TriangleNodeTags.reshape((-1, 3))
+TriangleNodeTags = [[TriangleTags[index], value[0], value[1], value[2]] for index, value in enumerate(TriangleNodeTags)]
+
+# append the average of the magnetic flux density on every triangle
+for index, TriangleNode in enumerate(TriangleNodeTags):
+    TriangleNodeTags[index].append(np.mean(TriangleMagneticFluxDensity[index][1:]))
+# print(TriangleNodeTags)
+# print(len(TriangleNodeTags))
+
+print("2", time.time()-start)
+start = time.time()
+
+# create a dict with the NodeTag as key and the corresponding value of the magnetic flux density of the node as value e.g. {755: 0.00547812 ...}
+NodeMagneticFlux = {}
+for index, node in enumerate(TriangleNodeTags):
+    NodeMagneticFlux[node[1]] = TriangleMagneticFluxDensity[index][1]
+    NodeMagneticFlux[node[2]] = TriangleMagneticFluxDensity[index][2]
+    NodeMagneticFlux[node[3]] = TriangleMagneticFluxDensity[index][3]
+# print(NodeMagneticFlux)
+# print(len(NodeMagneticFlux))
+
+# get the coordinates for all nodes
+NodeTags, coords, parametricCoord = gmsh.model.mesh.getNodes()
 coords = coords.reshape((-1, 3))
+NodeCoords = [[NodeTags[index], value[0], value[1], value[2]] for index, value in enumerate(coords)]
 
-# print(nodeTags)
-# print(coords)
+# get the coordinates of the corners of the core
 xyz = coords.reshape(-1, 3)
 coords_of_core = xyz[0:points_of_core]
+x_coords = sorted(set([a[0] for a in coords_of_core]))
+y_coords = sorted(set([a[1] for a in coords_of_core]))
+# print(x_coords)
+# print(y_coords)
 
-x_coords = [a[0] for a in coords_of_core]
-y_coords = [a[1] for a in coords_of_core]
-print(sorted(set(x_coords)))
-print(sorted(set(y_coords)))
-print(sorted(set(abs(np.array(y_coords)))))
-print(xyz[0:points_of_core+1])
-print(xyz[755])
-print(xyz[832])
-print(xyz[931])
-print(xyz[5598])
-print(xyz[5630])
-print("test")
-print(xyz[5630])
-print(list(gmsh.model.mesh.getNode(5631)))
+print("3", time.time()-start)
+start = time.time()
+core_nodes = NodeCoords.copy()
+# get all nodes that are not positioned in the core or on the boundaries of the core
+# nodes_outside_of_core = []
+for node in NodeCoords:
+    for i in range(no_of_air_gaps+1):
+        if i == 0:
+            if (x_coords[1] < node[1] < x_coords[2]) and (y_coords[1] < node[2] < y_coords[-2]):  # x1 < x < x2 AND -y1 < y < y1
+                core_nodes.remove(node)
+                # nodes_outside_of_core.append(node)
+        else:
+            if not (i*2+3 == no_of_air_gaps):
+                if (0 <= node[1] <= x_coords[1]) and (y_coords[i*2] < node[2] < y_coords[i*2+1]):  # 0 <= x <= x1 AND yx < y < yx+1
+                    core_nodes.remove(node)
+                    # nodes_outside_of_core.append(node)
+# print(nodes_outside_of_core)
+
+print("4", time.time()-start)
+start = time.time()
+
+# get all nodes that are positioned in the core
+# core_nodes = NodeCoords.copy()
+# for node in nodes_outside_of_core:
+#     core_nodes.remove(node)
+
+print("5", time.time()-start)
+start = time.time()
+
+# append the magnetic flux density on the core_nodes [NodeTag, x-coordinate, y-coordinate, z-coordinate, magnetic flux density]
+for index, node in enumerate(core_nodes):
+    core_nodes[index].append(NodeMagneticFlux[node[0]])
+# print(len(nodes_outside_of_core))
+# print(len(core_nodes))
+# print(len(core_nodes) + len(nodes_outside_of_core))
+# print(len(NodeCoords))
+
+print("6", time.time()-start)
+start = time.time()
+
+# get all triangle that are inside the core
+core_node_Tags = [x[0] for x in core_nodes]
+core_triangles = []
+for TriangleNode in TriangleNodeTags:
+    if (TriangleNode[1] in core_node_Tags) and (TriangleNode[2] in core_node_Tags) and (TriangleNode[3] in core_node_Tags):
+        core_triangles.append(TriangleNode)
+# print(core_triangles)
+# print(len(core_triangles))
+
+print("7", time.time()-start)
+start = time.time()
+
+surface_area = 0
+for index, TriangleNode in enumerate(core_triangles):
+
+    xi = xyz[int(TriangleNode[1:4][0]-1), :]
+    xj = xyz[int(TriangleNode[1:4][1]-1), :]
+    xk = xyz[int(TriangleNode[1:4][2]-1), :]
+
+    a = np.sqrt(np.dot(xi - xj, xi - xj))
+    b = np.sqrt(np.dot(xi - xk, xi - xk))
+    c = np.sqrt(np.dot(xj - xk, xj - xk))
+
+    s = (a+b+c)/2
+    dA = np.sqrt(s*(s-a)*(s-b)*(s-c))
+
+    core_triangles[index].append(dA)
+
+    surface_area += dA
+print("area of core:", surface_area)
+# print(core_triangles)
+print(len(core_triangles))
+
+# x_coords_core = [x[1] for x in core_nodes]
+# y_coords_core = [x[2] for x in core_nodes]
+# flux_density = [x[4] for x in core_nodes]
+
+
 # for tag, xyz_e in zip(nodeTags, xyz):
 #     print(f"Node # {tag} is at {xyz_e}")
 
-defined_element_type = gmsh.model.mesh.getElementTypes()
-print(f"{defined_element_type=}")
 
-eletype = 2
-tag = -1
-eleTags, nodeTags = gmsh.model.mesh.getElementsByType(eletype, tag)
+# fig, ax = plt.subplots(1, 1)
+# # ax.plot(x_coords_core, y_coords_core, marker="o", markersize=2, linestyle="None")
+# plt.scatter(x_coords_core, y_coords_core, c=flux_density, cmap='plasma', linewidths=0.1)
+# plt.colorbar()
+# plt.grid()
+# plt.show(block=False)
+# # plt.draw()
 
-nodeTags = nodeTags.reshape((-1, 3))
-
-print(eleTags)
-print(nodeTags)
 
 surface_area = 0.0
-
-for tag, nodes in zip(eleTags, nodeTags):
+TriangleTags, TriangleNodeTags = gmsh.model.mesh.getElementsByType(elementType=2)
+TriangleNodeTags = TriangleNodeTags.reshape((-1, 3))
+for tag, nodes in zip(TriangleTags, TriangleNodeTags):
     # print(f"Element # {tag} has nodes {nodes}")
 
     xi = xyz[int(nodes[0]-1), :]
@@ -66,43 +184,20 @@ for tag, nodes in zip(eleTags, nodeTags):
     dA = np.sqrt(s*(s-a)*(s-b)*(s-c))
 
     surface_area += dA
-
 print(surface_area)
 
-eletype = 15
-tag = -1
-eleTags, nodeTags = gmsh.model.mesh.getElementsByType(eletype, tag)
+# defined_element_type = gmsh.model.mesh.getElementTypes()
+# print(f"{defined_element_type=}")
 
+# Points
+# eleTags, nodeTags = gmsh.model.mesh.getElementsByType(elementType=1)
 # print(eleTags)
+# print(nodeTags)
 
-eletype = 1
-tag = -1
-eleTags, nodeTags = gmsh.model.mesh.getElementsByType(eletype, tag)
-
+# Lines
+# eleTags, nodeTags = gmsh.model.mesh.getElementsByType(elementType=15)
 # print(eleTags)
 # print(nodeTags)
 
 gmsh.fltk.run()
-
 gmsh.finalize()
-
-
-path = 'C:/Users/schacht/PycharmProjects/FEM_Magnetics_Toolbox/femmt/examples/example_results/basic_inductor/results/fields/Magb.pos'
-
-with open(path, 'r') as file:
-    content = file.read()
-
-# print(content)
-# print(type(content))
-# print(len(content))
-# print([m.start() for m in re.finditer('"Magnitude B-Field / T"', content)])
-indexes = [m.start() for m in re.finditer('"Magnitude B-Field / T"', content)]
-# print(content[indexes[0]:indexes[1]].split()[11:-3])
-print(len(content[indexes[0]:indexes[1]].split()[11:-3]))
-data = [float(x) for x in content[indexes[0]:indexes[1]].split()[11:-3]]
-chunks = [data[x:x+5] for x in range(0, len(data), 5)]
-print(chunks)
-print(len(chunks))
-
-# print([i for i, x in enumerate(content[2793144:6028848].split()[11:-3]) if x == "3"])
-# print(content.find('"Magnitude B-Field / T"'))
