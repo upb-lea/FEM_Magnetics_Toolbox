@@ -147,16 +147,18 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     # winding2.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
-    bot.set_winding(winding2, 10, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
-    top.set_winding(winding1, 10, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
+    bot.set_winding(winding2, 3, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
+    top.set_winding(winding1, 3, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
     geo.set_winding_windows([winding_window])
 
     # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=200000, pre_visualize_geometry=show_visual_outputs)
     geo.single_simulation(freq=200000, current=[2, 2], phi_deg=[0, 180],
                           show_fem_simulation_results=show_visual_outputs)
+    geo.get_capacitance(ground_core=True, ground_outer_boundary=False, show_fem_simulation_results=False, show_turn_capacitances=True, show_winding_capacitances=False)
 
-    example_thermal_simulation(show_visual_outputs, flag_insulation=True)
+    #example_thermal_simulation(show_visual_outputs, flag_insulation=True)
+    #geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
 
 
 if __name__ == "__main__":

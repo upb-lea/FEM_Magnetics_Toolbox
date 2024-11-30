@@ -5,6 +5,7 @@ import pkg_resources
 import subprocess
 import sys
 import os
+import re
 import warnings
 from typing import Union, List, Tuple, Dict
 from scipy.integrate import quadrature
@@ -2061,7 +2062,7 @@ def load_voltage_and_calculate_magnitude(file_path: str):
 
 def load_voltage_winding_and_calculate_magnitude(file_path: str):
     """
-    Load the voltage values from the given file, calculate the average magnitude for each winding.
+    Load the voltage values from the given file, calculate magnitude for each winding.
 
     :param file_path: Path to the voltage result file.
     :type file_path: str
@@ -2096,15 +2097,36 @@ def load_voltage_winding_and_calculate_magnitude(file_path: str):
 
     return magnitude
 
-
-def update_capacitance_matrix(key, value, capacitance_matrix_nodes):
+def load_charges_and_sum(file_path: str):
     """
-    Update the capacitance matrix with the value obtained from the current run.
-    """
-    if key not in capacitance_matrix_nodes:
-        capacitance_matrix_nodes[key] = []
-    capacitance_matrix_nodes[key].append(value)
+    Load the charges values from the given file, sum them for each winding.
+    It is needed as the total charges can not be printed for the whole winding from pro files.
 
+
+    :param file_path: Path to the charge result file.
+    :type file_path: str
+    :return: charges for the winding.
+    :rtype: float
+    """
+
+    total_charge = 0.0
+
+    with open(file_path, 'r') as file:
+        for line_index, line in enumerate(file, start=1):
+            if line.startswith("# Q on"):
+                # Skip the header line
+                continue
+
+            # Only process every third line starting from line 3
+            if (line_index - 3) % 3 == 0:
+                # Split the line and ignore the first zero value
+                values = line.split()[1:]
+
+                # Sum up all the charges on this line
+                for value in values:
+                    total_charge += float(value)
+
+    return total_charge
 
 def calculate_self_capacitances(capacitance_matrix_nodes):
     """
@@ -2142,6 +2164,67 @@ def display_capacitance_matrix(capacitance_matrix):
     print("Capacitance Matrix:")
     for row in matrix:
         print(" ".join([f"{elem:.5e}" for elem in row]))
+
+
+def print_capacitance_matrix_from_log(capacitance_log_path):
+    """
+    Display capacitance matrices for all windings from the given log file.
+    """
+    # Load the capacitance log file
+    with open(capacitance_log_path, "r", encoding='utf-8') as infile:
+        log_dict = json.load(infile)
+
+    for winding_key, winding_data in log_dict["electrostatic"].items():
+        # Find the winding capacitance matrix in the log
+        matrix_key = f"Capacitance_matrix_Turns_of_{winding_key.lower()}"
+        if matrix_key in winding_data:
+            winding_matrix = winding_data[matrix_key]
+            # Extract turn numbers and determine the matrix size
+            all_turns = set()
+
+            # Extract turns from self capacitance and mutual capacitance
+            for cap_key in winding_matrix["self_capacitance"].keys():
+                if "Core" not in cap_key:  # Exclude capacitance to core
+                    turn_index = int(cap_key[1])  # Get the turn index (always a single digit here)
+                    all_turns.add(turn_index)
+
+            for cap_key in winding_matrix["mutual_capacitance"].keys():
+                turn_indices = cap_key[1:]  # Extract turn indices (e.g., '12' -> '1' and '2')
+                turn1_index = int(turn_indices[0])
+                turn2_index = int(turn_indices[1])
+                all_turns.update([turn1_index, turn2_index])
+
+            # Sort the turns and determine the size of the matrix
+            turns = sorted(list(all_turns))
+            n = len(turns)
+
+            # Initialize capacitance matrix with NaN to represent missing values
+            capacitance_matrix = np.full((n, n), np.nan)
+
+            # Fill the self-capacitance values
+            for cap_name, value in winding_matrix["self_capacitance"].items():
+                if value not in [float('inf'), float('-inf'), 0]:
+                    turn_index = int(cap_name[1]) - 1  # Convert 1-based index to 0-based
+                    if turn_index < n:  # Avoid index out of bounds
+                        capacitance_matrix[turn_index, turn_index] = value
+
+            # Fill the mutual capacitance values
+            for cap_name, value in winding_matrix["mutual_capacitance"].items():
+                if value not in [float('inf'), float('-inf'), 0]:
+                    turn1_index = int(cap_name[1]) - 1  # Convert to 0-based index
+                    turn2_index = int(cap_name[2]) - 1  # Convert to 0-based index
+                    if turn1_index < n and turn2_index < n:  # Avoid index out of bounds
+                        capacitance_matrix[turn1_index, turn2_index] = value
+                        capacitance_matrix[turn2_index, turn1_index] = value  # Symmetric
+
+            # Print the capacitance matrix in the desired format
+            print(f"\nCapacitance Matrix of turns of {winding_key}:")
+            for i in range(n):
+                row_values = [
+                    f"{capacitance_matrix[i][j]:.5e}" if not np.isnan(capacitance_matrix[i][j]) else "N/A" for j in range(n)
+                ]
+                print(" ".join(row_values))
+
 
 if __name__ == '__main__':
     pass

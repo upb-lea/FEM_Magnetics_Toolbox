@@ -204,9 +204,6 @@ Constraint {
                     EndFor
                 EndFor
             EndIf
-//            If(Flag_ground_core)
-//                { Region Core ; Type Assign ; Value 0; }
-//            EndIf
         }
     }
     { Name Dirichlet_Ele; Type Assign;
@@ -312,41 +309,18 @@ PostProcessing {
           Term { [ CoefGeo * {Q} ]; In DomainC; }
         }
       }
-       // These C need to be reviewed
-      { Name C; Value {
-          Term { [ {Q}/{U} ]; In DomainC; }
-        }
-      }
-      // Stored Energy in the whole domain
-      { Name energy_Component; Value {
-              Integral { [ CoefGeo * epsilon[] / 2. * SquNorm[{d u0}] ];
-                In DomainCC; Jacobian Vol; Integration II; }
-            }
-          }
-      // Stored Energy in the air
-      { Name energy_Air; Value {
+      // Stored Energy
+      { Name energy; Value {
           Integral { Type Global;
             [ CoefGeo * epsilon[] / 2. * SquNorm[{d u0}] ];
-            In Air; Jacobian Vol; Integration II;
+            In Domain; Jacobian Vol; Integration II;
           }
 	  }
       }
-      // Stored Energy in the whole domain
-      { Name energy_Core; Value {
-              Integral { [ CoefGeo * epsilon[] / 2. * SquNorm[{d u0}] ];
-                In Core; Jacobian Vol; Integration II; }
-            }
-          }
-      // Charges on the non conducting domain
+
       { Name Charge; Value {
               Integral { [ CoefGeo * epsilon[] * Norm[{d u0}] ];
-                In DomainCC; Jacobian Vol; Integration II; }
-            }
-       }
-
-      { Name Charge_Core; Value {
-              Integral { [ CoefGeo * epsilon[] * Norm[{d u0}] ];
-                In Core; Jacobian Vol; Integration II; }
+                In Domain; Jacobian Vol; Integration II; }
             }
        }
       // Average voltage of the core
@@ -377,6 +351,7 @@ PostProcessing {
         EndFor
       EndFor
 
+
       // Capacitance Calculation Between Turns for Each Winding ( from charges)
       For winding_number In {1:n_windings}
             nbturns~{winding_number} = NbrCond~{winding_number} / SymFactor;
@@ -385,7 +360,7 @@ PostProcessing {
             For turn_number1 In {1:nbturns~{winding_number}}
                     { Name Capacitance_Turn_Core~{winding_number}~{turn_number1}; Value {
                           Term { Type Global;
-                                 [ $Q~{winding_number}~{turn_number1} / $U~{winding_number}~{turn_number1} ];
+                                 [ $Charge_Core / ($U~{winding_number}~{turn_number1} - $Avg_Voltage_Core) ];
                                  In Turn~{winding_number}~{turn_number1}; }
                         }
                     }
@@ -413,10 +388,31 @@ PostProcessing {
             EndFor
       EndFor
 
+      // Capacitance Calculation Between Turns of Different Windings
+      For winding_number1 In {1:n_windings}
+        nbturns1~{winding_number1} = NbrCond~{winding_number1} / SymFactor;
 
+        For winding_number2 In {1:n_windings}
+            If (winding_number1 != winding_number2)
+                nbturns2~{winding_number2} = NbrCond~{winding_number2} / SymFactor;
 
+                For turn_number1 In {1:nbturns1~{winding_number1}}
+                    For turn_number2 In {1:nbturns2~{winding_number2}}
+                        // Mutual capacitance between different turns in different windings (Q_turn2 / V_turn1)
+                        { Name Capacitance_Turn_Windings~{winding_number1}~{turn_number1}~{winding_number2}~{turn_number2}; Value {
+                              Term { Type Global;
+                                     [ $Q~{winding_number2}~{turn_number2} / $U~{winding_number1}~{turn_number1} ];
+                                     In Turn~{winding_number1}~{turn_number1}; }
+                            }
+                        }
+                    EndFor
+                EndFor
+            EndIf
+        EndFor
+      EndFor
+
+      // Calculate capacitance through the stored energy
       If (Flag_voltage)
-         // Calculate capacitance through the stored energy
         For winding_number In {1:n_windings}
             nbturns~{winding_number} = NbrCond~{winding_number} / SymFactor;
 

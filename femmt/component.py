@@ -3004,12 +3004,12 @@ class MagneticComponent:
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing
     def get_capacitance(self, ground_core: bool = False,
-                                 ground_outer_boundary: bool = False, plot_interpolation: bool = False, show_fem_simulation_results: bool = True,
-                                 benchmark: bool = False, save_to_excel: bool = False):
-        """Function for extracting the capacitance"""
+                        ground_outer_boundary: bool = False, show_turn_capacitances: bool = False, show_winding_capacitances: bool = False,
+                        plot_interpolation: bool = False, show_fem_simulation_results: bool = True, benchmark: bool = False, save_to_excel: bool = False):
+        """Function for finding the capacitance"""
 
         res_path = self.file_data.e_m_circuit_folder_path
-        # Get all voltage result files from the folder (assuming they start with 'U_')
+        # Get all voltage result files from the folder
         voltage_files = [f for f in os.listdir(res_path) if f.startswith('U_') and f.endswith('.dat')]
 
         voltages = []
@@ -3018,55 +3018,74 @@ class MagneticComponent:
         for winding_index, voltage_file in enumerate(voltage_files):
             file_path = os.path.join(res_path, voltage_file)
             number_of_turns = ff.get_number_of_turns_of_winding(self.winding_windows, self.windings, winding_index)
-
-            # Use the updated load_voltage function to get the average magnitude
+            # Use the updated load_voltage function to get the magnitude of voltages from electromagnetic simulation
             magnitude = ff.load_voltage_winding_and_calculate_magnitude(file_path)
-            # winding_voltages = [(magnitude * ((turn + 1) / number_of_turns)) for turn in range(number_of_turns)]
             n_turns.append(number_of_turns)
             voltages.append(magnitude)
-        # Set the simulation type to ElectroStatic before running the open-circuit simulations
+
 
         voltage_excitation = max(voltages)
-        max_n_turn = max(n_turns)
+        # Set the simulation type to ElectroStatic before running the open-circuit simulations
         self.simulation_type = SimulationType.ElectroStatic
-        number_simulations = 0
-        # Check if there is only one winding
-        if len(self.windings) == 1:
-            winding_index = 0
-            number_of_turns = n_turns[winding_index]
-
-            # Iterate over each turn in the single winding
-            for turn_index in range(number_of_turns):
-                number_simulations += 1
-                # Set the voltage only for the current turn, all others are set to zero
-                winding_voltages = [voltage_excitation if turn == turn_index else 0 for turn in range(number_of_turns)]
-
-                # Set up the open circuit voltages for the only winding
-                open_circuit_voltages = [winding_voltages]
-
-                # Run the electrostatic simulation for each turn in the single winding
-                self.electrostatic_simulation(
-                    voltage=open_circuit_voltages,
-                    ground_core=ground_core,
-                    ground_outer_boundary=ground_outer_boundary,
-                    plot_interpolation=plot_interpolation,
-                    show_fem_simulation_results=show_fem_simulation_results,
-                    benchmark=benchmark,
-                    save_to_excel=save_to_excel
-                )
-
-        else:
-            # Run the open-circuit simulation for each winding
+        # show all capacitance turns for every winding
+        if show_turn_capacitances:
+            number_simulations = 0
+            # Check if there is only one winding
+            # if len(self.windings) == 1:
             for winding_index in range(len(self.windings)):
+                # winding_index = 0
+                number_of_turns = n_turns[winding_index]
 
-                # number_of_turns = ff.get_number_of_turns_of_winding(self.winding_windows, self.windings, winding_index)
-                winding_voltages = [(voltage_excitation * (turn + 1) / max_n_turn) for turn in range(max_n_turn)]
-                open_circuit_voltages = [
-                    winding_voltages if j == winding_index else [0] * ff.get_number_of_turns_of_winding(self.winding_windows, self.windings, j)
-                    for j in range(len(self.windings))
-                ]
+                # Iterate over each turn in the single winding
+                for turn_index in range(number_of_turns):
+                    number_simulations += 1
+                    # open_circuit_voltages = [winding_voltages]
+                    open_circuit_voltages = []
+                    for i in range(len(self.windings)):
+                        # Create winding voltages: voltage_excitation for the current turn, 0 for others
+                        if i == winding_index:
+                            #winding_voltages = [voltage_excitation if t == turn_index else 0 for t in range(number_of_turns)]
+                            winding_voltages = [voltage_excitation if t == turn_index else 0 for t in range(n_turns[i])]
+                        else:
+                            winding_voltages = [0] * n_turns[i]
 
-                # Run the electrostatic simulation for the current winding as the active one
+                        open_circuit_voltages.append(winding_voltages)
+
+                    # Run the electrostatic simulation for each turn in the single winding
+                    self.electrostatic_simulation(
+                        voltage=open_circuit_voltages,
+                        ground_core=ground_core,
+                        ground_outer_boundary=ground_outer_boundary,
+                        plot_interpolation=plot_interpolation,
+                        show_fem_simulation_results=show_fem_simulation_results,
+                        benchmark=benchmark,
+                        save_to_excel=save_to_excel
+                    )
+            self.write_capacitance_log(number_simulations)
+            ff.print_capacitance_matrix_from_log(self.file_data.capacitance_result_log_path)
+
+        # winding capacitance
+        if show_winding_capacitances:
+            number_simulations = 0
+            # Iterate over each winding configuration
+            for winding_index in range(len(self.windings)):
+                number_of_turns = n_turns[winding_index]
+
+                # Configuration 1: Excite only the first turn in the current winding, others remain zero
+                number_simulations += 1
+
+                open_circuit_voltages = []
+
+                for i in range(len(self.windings)):
+                    if i == winding_index:
+                        # Excite the first turn only for the current winding
+                        winding_voltages = [voltage_excitation if t == 0 else 0 for t in range(n_turns[i])]
+                    else:
+                        winding_voltages = [0] * n_turns[i]
+
+                    open_circuit_voltages.append(winding_voltages)
+
+                # Run the electrostatic simulation for the current configuration
                 self.electrostatic_simulation(
                     voltage=open_circuit_voltages,
                     ground_core=ground_core,
@@ -3076,7 +3095,59 @@ class MagneticComponent:
                     benchmark=benchmark,
                     save_to_excel=save_to_excel
                 )
-        self.write_capacitance_log(number_simulations)
+
+                # Configuration 2: Excite only the last turn in the current winding, others remain zero
+                number_simulations += 1
+
+                open_circuit_voltages = []
+
+                for i in range(len(self.windings)):
+                    if i == winding_index:
+                        # Excite the last turn only for the current winding
+                        winding_voltages = [voltage_excitation if t == number_of_turns - 1 else 0 for t in range(n_turns[i])]
+                    else:
+                        winding_voltages = [0] * n_turns[i]
+
+                    open_circuit_voltages.append(winding_voltages)
+
+                # Run the electrostatic simulation for the current configuration
+                self.electrostatic_simulation(
+                    voltage=open_circuit_voltages,
+                    ground_core=ground_core,
+                    ground_outer_boundary=ground_outer_boundary,
+                    plot_interpolation=plot_interpolation,
+                    show_fem_simulation_results=show_fem_simulation_results,
+                    benchmark=benchmark,
+                    save_to_excel=save_to_excel
+                )
+                # Configuration 3: Excite the entire current winding, all turns excited at once
+                number_simulations += 1
+
+                open_circuit_voltages = []
+
+                for i in range(len(self.windings)):
+                    if i == winding_index:
+                        # Excite all turns in the current winding
+                        winding_voltages = [voltage_excitation for t in range(n_turns[i])]
+                    else:
+                        winding_voltages = [0] * n_turns[i]
+
+                    open_circuit_voltages.append(winding_voltages)
+
+                # Run the electrostatic simulation for the current configuration
+                self.electrostatic_simulation(
+                    voltage=open_circuit_voltages,
+                    ground_core=ground_core,
+                    ground_outer_boundary=ground_outer_boundary,
+                    plot_interpolation=plot_interpolation,
+                    show_fem_simulation_results=show_fem_simulation_results,
+                    benchmark=benchmark,
+                    save_to_excel=save_to_excel
+                )
+                charge_file_path = os.path.join(res_path, f'Q_{winding_index + 1}.dat')
+                total_charge = ff.load_charges_and_sum(charge_file_path)
+
+
 
         return voltages
 
@@ -4199,7 +4270,7 @@ class MagneticComponent:
         # Extract charge and energy
         values_folder = self.file_data.e_m_values_folder_path
 
-        log_dict["charges"] = self.load_result("charge", res_type="value", last_n=1)[0]
+        log_dict["charges"] = self.load_result("charge_Air", res_type="value", last_n=1)[0]
         log_dict["energy"]["stored_air"] = self.load_result("Energy_Stored_Air", res_type="value", last_n=1)[0]
         log_dict["energy"]["stored_core"] = self.load_result("Energy_Stored_Core", res_type="value", last_n=1)[0]
         log_dict["average_voltages"]["core"] = self.load_result("Avg_Core_voltage", res_type="circuit", last_n=1)[0]
@@ -4282,18 +4353,35 @@ class MagneticComponent:
         """
         log the capacitance from files
         """
-        log_dict = {"capacitance": {}}
+        log_dict = {"electrostatic": {}}
+
+        # Placeholder dictionaries to accumulate capacitance values for the entire winding after all simulations
+        final_capacitance_matrix = {}
+
+        for winding_number in range(len(self.windings)):
+            final_capacitance_matrix[winding_number] = {
+                "self_capacitance": {},
+                "mutual_capacitance": {},
+                "capacitance_turns_with_diff_windings": {},
+                "capacitance_to_core": {}
+            }
+        # Winding names are needed to find the logging path
+        winding_name = ["winding_" + str(i) for i in range(1, len(self.windings) + 1)]
 
         for simulation_number in range(1, number_simulations + 1):
             # Create a key for each simulation
             simulation_key = f"Simulation_{simulation_number}"
-            log_dict["capacitance"][simulation_key] = {}
-
-            # Winding names are needed to find the logging path
-            winding_name = ["Winding_" + str(i) for i in range(1, len(self.windings) + 1)]
-
+            # log_dict["electrostatic"][simulation_key] = {}
+            # Iterate over the windings
+            # for winding_number in range(len(self.windings)):
 
             for winding_number in range(len(self.windings)):
+
+                winding_key = winding_name[winding_number]
+
+                # Ensure each winding has its dictionary
+                if winding_key not in log_dict["electrostatic"]:
+                    log_dict["electrostatic"][winding_key] = {"simulations": {}}
 
                 # dictionary
                 winding_dict = {"number_turns": None,
@@ -4301,6 +4389,7 @@ class MagneticComponent:
                                 "capacitance": {
                                     "self_capacitance": {},
                                     "mutual_capacitance": {},
+                                    "capacitance_turns_with_diff_windings": {},
                                     "capacitance_to_core": {}
                                 }}
                 # no. of turn
@@ -4316,23 +4405,13 @@ class MagneticComponent:
                     voltage_value = self.load_result(res_name=res_name, res_type="value", last_n=number_simulations)[simulation_number - 1]
                     winding_dict["voltages"][voltage_name] = voltage_value
                 # self capacitance
-                #for turn in range(0, turns):
-                # cap_name = f"C{turn + 1}{turn + 1}"
                 turn = simulation_number
                 cap_name = f"C{simulation_number}{simulation_number}"
                 res_name = os.path.join(winding_name[winding_number], "Capacitance_From_QV", f"C_{winding_number + 1}_{simulation_number}_{simulation_number}")
                 capacitance_value = self.load_result(res_name=res_name, res_type="value", last_n=number_simulations)[simulation_number - 1]
                 winding_dict["capacitance"]["self_capacitance"][cap_name] = capacitance_value
+                final_capacitance_matrix[winding_number]["self_capacitance"][cap_name] = capacitance_value
 
-                # Mutual Capacitance between turns in the Same Winding
-                # for turn1 in range(turns):
-                #     for turn2 in range(turn1 + 1, turns):
-                #         # cap_name = f"C{turn1 + 1}{turn2 + 1}"
-                #         cap_name = f"C{simulation_number}{turn2 + 1}"
-                #         res_name = os.path.join(winding_name[winding_number], "Capacitance_From_QV", f"C_{winding_number + 1}_{turn1 + 1}_{turn2 + 1}")
-                #         capacitance_value = self.load_result(res_name=res_name, res_type="value", last_n=number_simulations)[simulation_number - 1]
-                #         winding_dict["capacitance"]["mutual_capacitance"][cap_name] = capacitance_value
-                # Mutual Capacitance Between the Excited Turn and Other Turns
                 # Mutual Capacitance Between the Excited Turn and Other Turns
                 for turn2 in range(1, turns + 1):
                     if turn2 == turn:
@@ -4342,18 +4421,41 @@ class MagneticComponent:
                                             f"C_{winding_number + 1}_{turn}_{turn2}")
                     capacitance_value = self.load_result(res_name=res_name, res_type="value", last_n=number_simulations)[simulation_number - 1]
                     winding_dict["capacitance"]["mutual_capacitance"][cap_name] = capacitance_value
+                    final_capacitance_matrix[winding_number]["mutual_capacitance"][cap_name] = capacitance_value
                 # Capacitance between turns and the Core
-                for turn in range(0, turns):
+                #for turn in range(0, turns):
                     # cap_name = f"C{turn + 1}_Core"
-                    cap_name = f"C{simulation_number}_Core{turn + 1}"
-                    res_name = os.path.join(winding_name[winding_number], "Capacitance_From_QV", f"C_{winding_number + 1}_{turn + 1}_Core")
-                    capacitance_value = self.load_result(res_name=res_name, res_type="value", last_n=number_simulations)[simulation_number - 1]
-                    winding_dict["capacitance"]["capacitance_to_core"][cap_name] = capacitance_value
+                cap_name = f"C{turn}_Core{simulation_number}"
+                res_name = os.path.join(winding_name[winding_number], "Capacitance_From_QV", f"C_{winding_number + 1}_{turn}_Core")
+                capacitance_value = self.load_result(res_name=res_name, res_type="value", last_n=number_simulations)[simulation_number - 1]
+                winding_dict["capacitance"]["capacitance_to_core"][cap_name] = capacitance_value
+                final_capacitance_matrix[winding_number]["capacitance_to_core"][cap_name] = capacitance_value
+
+                # Capacitance Between Turns of Different Windings
+                for winding_number2 in range(len(self.windings)):
+                    if winding_number2 == winding_number:
+                        continue  # Skip the same winding
+
+                    turns2 = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                               winding_number=winding_number2)
+
+                    for turn2 in range(1, turns2 + 1):
+                        cap_name = f"C{winding_number + 1}_{turn}_W{winding_number2 + 1}_T{turn2}"
+                        res_name = os.path.join(winding_name[winding_number], "Capacitance_From_QV",
+                                                f"C_{winding_number + 1}_{turn}_{winding_number2 + 1}_{turn2}")
+                        capacitance_value = self.load_result(res_name=res_name, res_type="value", last_n=number_simulations)[simulation_number - 1]
+                        winding_dict["capacitance"]["capacitance_turns_with_diff_windings"][cap_name] = capacitance_value
+                        final_capacitance_matrix[winding_number]["capacitance_turns_with_diff_windings"][cap_name] = capacitance_value
 
             # Add the winding dictionary to the main log dictionary
-            log_dict["capacitance"][simulation_key][winding_name[winding_number]] = winding_dict
-            # log_dict["capacitance"][winding_name[winding_number]] = winding_dict
-
+            # log_dict["electrostatic"][simulation_key][winding_name[winding_number]] = winding_dict
+                log_dict["electrostatic"][winding_key]["simulations"][simulation_key] = winding_dict
+        # Add the final capacitance matrix to the log
+        for winding_number in range(len(self.windings)):
+            matrix_key = f"Capacitance_matrix_Turns_of_winding_{winding_number + 1}"
+            #log_dict["electrostatic"][matrix_key] = final_capacitance_matrix[winding_number]
+            winding_key = winding_name[winding_number]
+            log_dict["electrostatic"][winding_key][matrix_key] = final_capacitance_matrix[winding_number]
 
         # Write the capacitance matrix to a log file
         with open(self.file_data.capacitance_result_log_path, "w+", encoding='utf-8') as outfile:
@@ -4801,7 +4903,7 @@ class MagneticComponent:
                 view += 1
 
             # Electric Field
-            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "MagE.pos"))
+            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Efield.pos"))
             gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
             gmsh.option.setNumber(f"View[{view}].RangeType", 2)
             gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
@@ -4815,7 +4917,7 @@ class MagneticComponent:
             view += 1
 
             # Displacement Field
-            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "MagD.pos"))
+            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Dfield.pos"))
             gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
             gmsh.option.setNumber(f"View[{view}].RangeType", 2)
             gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
@@ -6100,69 +6202,6 @@ class MagneticComponent:
                             if turn2_name not in capacitance_between[winding2_name][winding1_name]:
                                 capacitance_between[winding2_name][winding1_name][turn2_name] = {}
                             capacitance_between[winding2_name][winding1_name][turn2_name][f"to_{turn1_name}"] = capacitance
-        # for w1_index in range(len(voltages)):
-        #     for w2_index in range(w1_index + 1, len(voltages)):
-        #         winding1_voltages = voltages[w1_index]
-        #         winding2_voltages = voltages[w2_index]
-        #         winding1_name = f"Winding_{w1_index + 1}"
-        #         winding2_name = f"Winding_{w2_index + 1}"
-        #
-        #         if winding1_name not in capacitance_between:
-        #             capacitance_between[winding1_name] = {}
-        #
-        #         # Calculate capacitance between every pair of turns from different windings
-        #         for i, voltage1 in enumerate(winding1_voltages):
-        #             turn1_name = f"Turn_{i + 1}"
-        #             if winding2_name not in capacitance_between[winding1_name]:
-        #                 capacitance_between[winding1_name][winding2_name] = {}
-        #             if turn1_name not in capacitance_between[winding1_name][winding2_name]:
-        #                 capacitance_between[winding1_name][winding2_name][turn1_name] = {}
-        #
-        #             for j, voltage2 in enumerate(winding2_voltages):
-        #                 turn2_name = f"Turn_{j + 1}"
-        #                 voltage_difference = abs(voltage2 - voltage1)
-        #
-        #                 if voltage_difference == 0:
-        #                     if stored_energy == 0:
-        #                         capacitance_between[winding1_name][winding2_name][turn1_name][f"to_{turn2_name}"] = float('NaN')
-        #                     else:
-        #                         capacitance_between[winding1_name][winding2_name][turn1_name][f"to_{turn2_name}"] = float('Infinity')
-        #                 else:
-        #                     capacitance = 2 * stored_energy / (voltage_difference ** 2)
-        #                     capacitance_between[winding1_name][winding2_name][turn1_name][f"to_{turn2_name}"] = capacitance
-        #
-        # # Calculate capacitance from winding2 to winding1 explicitly
-        # for w2_index in range(len(voltages)):
-        #     for w1_index in range(w2_index + 1, len(voltages)):
-        #         winding1_voltages = voltages[w1_index]
-        #         winding2_voltages = voltages[w2_index]
-        #         winding1_name = f"Winding_{w1_index + 1}"
-        #         winding2_name = f"Winding_{w2_index + 1}"
-        #
-        #         if winding2_name not in capacitance_between:
-        #             capacitance_between[winding2_name] = {}
-        #
-        #         # Calculate capacitance between every pair of turns from different windings
-        #         for j, voltage2 in enumerate(winding2_voltages):
-        #             turn2_name = f"Turn_{j + 1}"
-        #             if winding1_name not in capacitance_between[winding2_name]:
-        #                 #capacitance_between[winding2_name][winding1_name] = {}
-        #                 capacitance_between[winding1_name][winding2_name] = {}
-        #             if turn2_name not in capacitance_between[winding2_name][winding1_name]:
-        #                 capacitance_between[winding2_name][winding1_name][turn2_name] = {}
-        #
-        #             for i, voltage1 in enumerate(winding1_voltages):
-        #                 turn1_name = f"Turn_{i + 1}"
-        #                 voltage_difference = abs(voltage1 - voltage2)
-        #
-        #                 if voltage_difference == 0:
-        #                     if stored_energy == 0:
-        #                         capacitance_between[winding2_name][winding1_name][turn2_name][f"to_{turn1_name}"] = float('NaN')
-        #                     else:
-        #                         capacitance_between[winding2_name][winding1_name][turn2_name][f"to_{turn1_name}"] = float('Infinity')
-        #                 else:
-        #                     capacitance = 2 * stored_energy / (voltage_difference ** 2)
-        #                     capacitance_between[winding2_name][winding1_name][turn2_name][f"to_{turn1_name}"] = capacitance
 
         # Capacitance between each turn and the core
         capacitance_between_turns_core = {}
@@ -6506,6 +6545,7 @@ class MagneticComponent:
         femm.hi_loadsolution()
         input()  # So the window stays open
         # femm.closefemm()
+
 
     @staticmethod
     def encode_settings(o) -> Dict:

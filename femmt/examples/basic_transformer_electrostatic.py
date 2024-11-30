@@ -44,8 +44,8 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
         geo.file_data.onelab_folder_path = onelab_folder
 
     # 2. set core parameters
-    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295,
-                                                    core_h=0.04)
+    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.02, window_w=0.01, window_h=0.03,
+                                                    core_h=0.02)
     core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
                     permeability_datasource=fmt.MaterialDataSource.Custom,
                     permittivity_datasource=fmt.MaterialDataSource.Custom,
@@ -54,12 +54,12 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
 
     # 3. set air gap parameters
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.001, 50)
     geo.set_air_gaps(air_gaps)
 
     # 4. set insulation
-    insulation = fmt.Insulation(flag_insulation=True)
-    insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
+    insulation = fmt.Insulation(flag_insulation=False)
+    insulation.add_core_insulations(0.001, 0.001, 0.001, 0.001)
     insulation.add_winding_insulations([[0.0002, 0.001],
                                         [0.001, 0.0002]])
     geo.set_insulation(insulation)
@@ -70,7 +70,7 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
 
     # 6. create conductors and set parameters
     winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
-    winding1.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
+    winding1.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
 
     # winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
     # winding1.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
@@ -79,12 +79,12 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     # winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
     winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
-    winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
+    winding2.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
     winding2.parallel = False
     # winding2.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
-    bot.set_winding(winding2, 2, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
+    bot.set_winding(winding2, 3, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
     top.set_winding(winding1, 5, None, fmt.Align.ToEdges, fmt.ConductorDistribution.HorizontalRightward_VerticalUpward, zigzag=False)
     geo.set_winding_windows([winding_window])
 
@@ -94,16 +94,12 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     # [30, 35, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]
     # [20, 40, 60, 80, 100]
     geo.create_model(freq=0, pre_visualize_geometry=show_visual_outputs)
-    voltages = [[20, 1, 0, 0, 0], [0, 0]]
-    # voltages = [
-    #     [10 if i == 0 else 0 for i in range(5)],  # Only turn 1 in winding 1 excited
-    #     [0, 0]  # Winding 2 remains at zero volts
-    # ]
-    geo.electrostatic_simulation(voltage=voltages, ground_core=True, ground_outer_boundary=False,
-                                 show_fem_simulation_results=show_visual_outputs, save_to_excel=True)
+    voltages = [[5, 0, 0, 0, 0], [0, 0, 0]]
+    geo.electrostatic_simulation(voltage=voltages, ground_core=False, ground_outer_boundary=False,
+                                 show_fem_simulation_results=show_visual_outputs, save_to_excel=False)
 
-    geo.femm_reference_electrostatic(voltages=voltages, ground_core=True, ground_outer_boundary=False, non_visualize=0, save_to_excel=True,
-                                     compare_excel_files_to_femmt=True)
+    geo.femm_reference_electrostatic(voltages=voltages, ground_core=True, ground_outer_boundary=False, non_visualize=0, save_to_excel=False,
+                                     compare_excel_files_to_femmt=False)
 
 
 if __name__ == "__main__":
