@@ -1286,7 +1286,6 @@ def fixture_transformer_integrated_core_fixed_loss_angle(temp_folder: pytest.fix
 
         # 4. set insulations
         insulation = fmt.Insulation(flag_insulation=False)
-        # insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
         insulation.add_top_section_core_insulations(0.001, 0.001, 0.002, 0.001)
         insulation.add_bottom_section_core_insulations(0.001, 0.001, 0.002, 0.001)
         insulation.add_winding_insulations([[0.0002, 0.0005], [0.0005, 0.0002]])
@@ -1516,7 +1515,7 @@ def fixture_transformer_stacked_center_tapped(temp_folder: pytest.fixture):
                                case_gap_right, case_gap_bot, show_thermal_simulation_results=False,
                                color_scheme=fmt.colors_ba_jonas,
                                colors_geometry=fmt.colors_geometry_ba_jonas,
-                               flag_insulation=False)
+                               flag_insulation=True)
 
     except Exception as e:
         print("An error occurred while creating the femmt mesh files:", e)

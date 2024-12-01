@@ -159,7 +159,7 @@ def basic_example_transformer_integrated(onelab_folder: str = None, show_visual_
     # other simulation options:
     # -------------------------
     # geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
-    example_thermal_simulation(show_visual_outputs, flag_insulation=False)
+    example_thermal_simulation(show_visual_outputs, flag_insulation=True)
 
 
 if __name__ == "__main__":

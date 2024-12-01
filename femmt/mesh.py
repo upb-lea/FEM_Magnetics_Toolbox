@@ -859,7 +859,8 @@ class Mesh:
                 self.plane_surface_iso_bot_core.append(gmsh.model.geo.addPlaneSurface([cl]))
         return curve_loop_iso_core, curve_loop_iso_top_core, curve_loop_iso_bot_core
 
-    def air_single(self, l_core_air: list, l_air_gaps_air: list, curve_loop_air: list, curve_loop_cond: list, curve_loop_iso_core: list):
+    def air_single(self, l_core_air: list, l_air_gaps_air: list, curve_loop_air: list, curve_loop_cond: list, curve_loop_iso_core: list,
+                   curve_loop_iso_top_core: list, curve_loop_iso_bot_core: list):
         """
         Generate gmsh entities (points, lines, closed loops and planes) and draw the air gaps for the single core.
 
@@ -873,6 +874,10 @@ class Mesh:
         :type curve_loop_air: list
         :param curve_loop_iso_core: closed loop for core
         :type curve_loop_iso_core: list
+        :param curve_loop_iso_top_core: closed loop for top core
+        :type curve_loop_iso_top_core: list
+        :param curve_loop_iso_bot_core: closed loop for bot core
+        :type curve_loop_iso_bot_core: list
         """
         # Air
         # Points are partwise double designated
@@ -919,7 +924,8 @@ class Mesh:
 
         # The first curve loop represents the outer bounds: self.curve_loop_air (should only contain one element)
         # The other curve loops represent holes in the surface -> For each conductor as well as each insulation
-        self.plane_surface_air.append(gmsh.model.geo.addPlaneSurface(curve_loop_air + flatten_curve_loop_cond + curve_loop_iso_core))
+        self.plane_surface_air.append(gmsh.model.geo.addPlaneSurface(
+            curve_loop_air + flatten_curve_loop_cond + curve_loop_iso_core + curve_loop_iso_top_core + curve_loop_iso_bot_core))
 
         # if curve_loop_iso_core is not None:
         #    self.plane_surface_air.append(
@@ -928,7 +934,7 @@ class Mesh:
         # else:
         #     self.plane_surface_air.append(gmsh.model.geo.addPlaneSurface(curve_loop_air + flatten_curve_loop_cond))
 
-    def air_stacked(self, l_core_air: list, l_bound_air: List, curve_loop_cond: list, curve_loop_iso_top_core, curve_loop_iso_bot_core):
+    def air_stacked(self, l_core_air: list, l_bound_air: List, curve_loop_cond: list, curve_loop_iso_top_core: list, curve_loop_iso_bot_core: list):
         """
         Generate gmsh entities (points, lines, closed loops and planes) and draw the air gaps for the stacked core.
 
@@ -938,6 +944,10 @@ class Mesh:
         :type l_bound_air: List
         :param curve_loop_cond:
         :type curve_loop_cond: List
+        :param curve_loop_iso_top_core:
+        :type curve_loop_iso_top_core: List
+        :param curve_loop_iso_bot_core:
+        :type curve_loop_iso_bot_core: List
         """
         # Air
         # Points are partwise double designated
@@ -1015,16 +1025,12 @@ class Mesh:
         l_air_top = l_core_air[0:5] + [l_bound_air[0]]
         curve_loop_air_top = [gmsh.model.geo.addCurveLoop(l_air_top, -1, True)]
         flatten_curve_loop_cond_top = primary_in_top + secondary_in_top + tertiary_in_top
-        # curve_loop_iso_core_top = []  # TODO: insulations
-        #curve_loop_iso_top_core = primary_in_top + secondary_in_top + tertiary_in_top
         self.plane_surface_air_top.append(gmsh.model.geo.addPlaneSurface(curve_loop_air_top + flatten_curve_loop_cond_top + curve_loop_iso_top_core))
 
         # bot window
         l_air_bot = l_core_air[5:12] + [l_bound_air[1]]
         curve_loop_air_bot = [gmsh.model.geo.addCurveLoop(l_air_bot, -1, True)]
         flatten_curve_loop_cond_bot = primary_in_bot + secondary_in_bot + tertiary_in_bot
-        # curve_loop_iso_core_bot = []  # TODO: insulations
-        #curve_loop_iso_bot_core = primary_in_bot + secondary_in_bot + tertiary_in_bot
         self.plane_surface_air_bot.append(gmsh.model.geo.addPlaneSurface(curve_loop_air_bot + flatten_curve_loop_cond_bot + curve_loop_iso_bot_core))
 
         # TODO: How to select the conductors which are in the top and which are in the bot vww? -> Need to be cut out of the air...
@@ -1036,7 +1042,7 @@ class Mesh:
         # flatten_curve_loop_cond = [j for sub in curve_loop_cond for j in sub]
         # curve_loop_iso_core_bot = []  # TODO: insulations
         # self.plane_surface_air_bot.append(
-        #     gmsh.model.geo.addPlaneSurface(curve_loop_air_bot + flatten_curve_loop_cond_bot + curve_loop_iso_core_bot))
+        # gmsh.model.geo.addPlaneSurface(curve_loop_air_bot + flatten_curve_loop_cond_bot + curve_loop_iso_core_bot))
 
     def boundary(self, p_core: list, p_region: list, l_bound_core: list, l_bound_air: list, l_region: list):
         """
@@ -1176,10 +1182,17 @@ class Mesh:
                                     color_scheme[colors_geometry["winding"][winding_number]][2], recursive=True)
 
         # insulation color (inner insulation / bobbin)
-        gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core],
-                            color_scheme[colors_geometry["insulation"]][0], color_scheme[colors_geometry["insulation"]][1],
-                            color_scheme[colors_geometry["insulation"]][2], recursive=True)
-
+        if self.core.core_type == CoreType.Single and not self.stray_path:
+            gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core],
+                                color_scheme[colors_geometry["insulation"]][0], color_scheme[colors_geometry["insulation"]][1],
+                                color_scheme[colors_geometry["insulation"]][2], recursive=True)
+        else:
+            combined_insulation_surfaces = self.plane_surface_iso_top_core + self.plane_surface_iso_bot_core
+            gmsh.model.setColor([(2, iso) for iso in combined_insulation_surfaces],
+                                color_scheme[colors_geometry["insulation"]][0],
+                                color_scheme[colors_geometry["insulation"]][1],
+                                color_scheme[colors_geometry["insulation"]][2],
+                                recursive=True)
         if visualize_before:
             gmsh.fltk.run()
 
@@ -1254,7 +1267,7 @@ class Mesh:
 
         # Define mesh for air
         if self.core.core_type == CoreType.Single:
-            self.air_single(l_core_air, l_air_gaps_air, curve_loop_air, curve_loop_cond, curve_loop_iso_core)
+            self.air_single(l_core_air, l_air_gaps_air, curve_loop_air, curve_loop_cond, curve_loop_iso_core, curve_loop_iso_top_core, curve_loop_iso_bot_core)
         if self.core.core_type == CoreType.Stacked:
             self.air_stacked(l_core_air, l_bound_air, curve_loop_cond, curve_loop_iso_top_core, curve_loop_iso_bot_core)
 
@@ -1350,12 +1363,12 @@ class Mesh:
         def set_physical_surface_air():
             if self.model.core.core_type == CoreType.Single:
                 # These three areas self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
-                # must be
-                air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
+                surface_core_insulation = self.plane_surface_iso_core + self.plane_surface_iso_top_core + self.plane_surface_iso_bot_core
+                air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps + surface_core_insulation
                 self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_and_air_gaps, tag=self.PN_AIR)
                 # ps_air_ext = gmsh.model.geo.addPhysicalGroup(2, plane_surface_outer_air, tag=1001)
             elif self.model.core.core_type == CoreType.Stacked:
-                air_total = self.plane_surface_air_bot + self.plane_surface_air_top
+                air_total = self.plane_surface_air_bot + self.plane_surface_air_top + self.plane_surface_iso_top_core + self.plane_surface_iso_bot_core
                 self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_total, tag=self.PN_AIR)
 
         set_physical_surface_air()
