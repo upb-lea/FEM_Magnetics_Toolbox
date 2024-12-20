@@ -107,39 +107,44 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     if onelab_folder is not None:
         geo.file_data.onelab_folder_path = onelab_folder
 
-    inductor_frequency = 99000
+    inductor_frequency = 270000
 
     # 2. set core parameters
     core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"],
                                                     window_h=core_db["window_h"], core_h=core_db["core_h"])
 
-    mc = fmt.MagneticCircuit(core_inner_diameter=[core_db["core_inner_diameter"]], window_h=[core_db["window_h"]], window_w=[core_db["window_w"]],
-                             no_of_turns=[14], n_air_gaps=[1], air_gap_h=[0.0005], air_gap_position=[50], mu_r_abs=[1500],
-                             mult_air_gap_type=['center_distributed'], air_gap_method='Percent', component_type="inductor", sim_type='sweep')
-    print("Reluctance-calc: ", mc.data_matrix)
-    print("Reluctance-calc: ")
-    print(type(mc.data_matrix))
-    print(len(mc.data_matrix))
-    print(mc.data_matrix[0][9]*4.5/((core_db["core_inner_diameter"]/2)**2)/np.pi/14)
-    print(mc.data_matrix[0][9])
-    print(type(mc.data_matrix[0][9]))
+    # mc = fmt.MagneticCircuit(core_inner_diameter=[core_db["core_inner_diameter"]], window_h=[core_db["window_h"]], window_w=[core_db["window_w"]],
+    #                          no_of_turns=[14], n_air_gaps=[1], air_gap_h=[0.0005], air_gap_position=[50], mu_r_abs=[1500],
+    #                          mult_air_gap_type=['center_distributed'], air_gap_method='Percent', component_type="inductor", sim_type='sweep')
+    # print("Reluctance-calc: ", mc.data_matrix)
+    # print("Reluctance-calc: ")
+    # print(type(mc.data_matrix))
+    # print(mc.data_matrix[0].shape)
+    # print("magnetic flux density", mc.data_matrix[0][9]*4.5/((core_db["core_inner_diameter"]/2)**2)/np.pi/14)
+    # print("magnetic flux", mc.data_matrix[0][9]*4.5)
+    # print("inductance ", (14**2)/mc.reluctance)
+    # print("reluctance ", mc.reluctance)
+    # print(type(mc.data_matrix[0][9]))
 
     core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions, detailed_core_model=False,
-                    material=fmt.Material.N49, temperature=50, frequency=inductor_frequency,
+                    material=fmt.Material.N49, temperature=25, frequency=inductor_frequency,
                     # permeability_datasource="manufacturer_datasheet",
                     permeability_datasource=fmt.MaterialDataSource.Measurement,
                     permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
                     permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
                     permittivity_datasource=fmt.MaterialDataSource.Measurement,
                     permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                    permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+                    permittivity_measurement_setup=fmt.MeasurementSetup.LEA_MTB_small_signal, mdb_verbosity=fmt.Verbosity.Silent)
 
     geo.set_core(core)
 
     # 3. set air gap parameters
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
+    # air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 66)
+    # air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 60)
+    # air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 80)
     # air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0002, 90)
     geo.set_air_gaps(air_gaps)
 
@@ -163,6 +168,21 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     vww.set_winding(winding, 14, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.HorizontalRightward_VerticalUpward,
                     zigzag=True)
     geo.set_winding_windows([winding_window])
+
+    # print("")
+    # print("with MagneticCircuit")
+    # print("reluctance ", (14**2)/mc.data_matrix[0][9])
+    # print("inductance ", mc.data_matrix[0][9]*1e6)
+    # print("magnetic flux density ", mc.data_matrix[0][9]*4.5/14/((core_db["core_inner_diameter"]/2)**2)/np.pi)
+    # print("with MagneticComponent")
+    # print("reluctance ", geo.calculate_core_reluctance()[0])
+    # print("reluctance ", geo.air_gaps_reluctance()[0] + geo.calculate_core_reluctance()[0])
+    # print("inductance ", (14**2)/(geo.air_gaps_reluctance()[0] + geo.calculate_core_reluctance()[0])*1e6)
+    # print("magnetic flux density ", ((14**2)/(geo.air_gaps_reluctance()[0] + geo.calculate_core_reluctance()[0]))*4.5/14/((core_db["core_inner_diameter"]/2)**2)/np.pi)
+    # print(((14**2)/mc.data_matrix[0][9])/(geo.air_gaps_reluctance()[0] + geo.calculate_core_reluctance()[0]))
+    # print("")
+
+    geo.calc_hystersis_losses_based_on_reluctance(peak_magnetizing_current=2.25, Standard_SE=True)
 
     # 8. create the model
     geo.create_model(freq=inductor_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
