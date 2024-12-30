@@ -145,7 +145,8 @@ class MagneticComponent:
         self.current_density = []               # Defined for every conductor
         self.voltage = []                       # Defined for every conductor
         self.charge = []
-        self.v_ground_core = None
+        self.v_core = None
+        # self.v_ground_core = None
         self.v_ground_out_boundary = None
         self.capacitance_matrix_nodes = {}
         self.time = []                          # Defined for time domain simulation
@@ -1243,8 +1244,8 @@ class MagneticComponent:
             for num in range(len(self.windings)):
                 self.red_freq[num] = 0
 
-    def excitation_electrostatic(self, voltage: List[List[float]] = None, charge: List[List[float]] = None, ground_core: bool = False,
-                                 ground_outer_boundary: bool = False, plot_interpolation: bool = False):
+    def excitation_electrostatic(self, voltage: List[List[float]] = None, core_voltage: float = None, charge: List[List[float]] = None,
+                                ground_outer_boundary: bool = False, plot_interpolation: bool = False):
         """
         Run the electrostatic simulation.
 
@@ -1254,6 +1255,8 @@ class MagneticComponent:
         :type voltage: List[List[float]]
         :param charge: Values to apply to each turn in each winding as charges. Example: [[Q_turn_1, Q_turn_2], [Q_turn_3, Q_turn_4]]
         :type charge: List[List[float]]
+        :param core_voltage: excite the core with a voltage
+        :type core_voltage: float
         :param ground_core: If True, ground the core. Defaults to False.
         :type ground_core: bool
         :param ground_outer_boundary: If True, ground the outer boundary. Defaults to False.
@@ -1261,6 +1264,10 @@ class MagneticComponent:
         :param plot_interpolation: If True, plot the interpolation between the provided values for the material.
         :type plot_interpolation: bool
         """
+        # prevent ground the core and induce a voltage to it in the same time
+        # if ground_core and core_voltage is not None:
+        #     raise ValueError("Cannot use 'ground_core=True' and 'core_potential' at the same time. Choose one.")
+
         # Validate input
         if voltage is None and charge is None:
             raise ValueError("Either 'voltage_list' or 'charge_list' must be provided.")
@@ -1320,8 +1327,12 @@ class MagneticComponent:
                     # Assign voltage value to each turn in each winding
                     self.voltage[winding_index][turn_index] = value_list[winding_index][turn_index]
 
+        # assign a voltage to the core
+        # self.v_core = core_voltage if core_voltage else None
+        self.v_core = core_voltage if core_voltage is not None else None
+
         # Set grounding conditions for core and outer boundary
-        self.v_ground_core = 0 if ground_core else None
+        # self.v_ground_core = 0 if ground_core else None
         self.v_ground_out_boundary = 0 if ground_outer_boundary else None
 
         # Set reduced frequency as 0 for DC-like electrostatic setup
@@ -1570,9 +1581,9 @@ class MagneticComponent:
             if show_rolling_average:
                 self.get_rolling_average(window_size=rolling_avg_window_size)
 
-    def electrostatic_simulation(self, voltage: List[List[float]] = None, charge: List[List[float]] = None, ground_core: bool = False,
-                                 ground_outer_boundary: bool = False, plot_interpolation: bool = False, show_fem_simulation_results: bool = True,
-                                 benchmark: bool = False, save_to_excel: bool = False):
+    def electrostatic_simulation(self, voltage: List[List[float]] = None, charge: List[List[float]] = None, core_voltage: float = None,
+                                 ground_outer_boundary: bool = False, plot_interpolation: bool = False,
+                                 show_fem_simulation_results: bool = True, benchmark: bool = False, save_to_excel: bool = False):
         """
         Start an electrostatic ONELAB simulation.
 
@@ -1580,8 +1591,8 @@ class MagneticComponent:
         :type voltage: List[List[float]].
         :param charge: Charge is a list of list, indicating a voltage of each turn in every winding.
         :type charge: List[List[float]].
-        :param ground_core: default to false
-        :type ground_core: bool
+        :param core_voltage: assign a voltage to the core
+        :type core_voltage: float
         :param ground_outer_boundary: default to false
         :type ground_outer_boundary: bool
         :param plot_interpolation: Plot interpolation for the used material between the given data from the material database
@@ -1607,7 +1618,7 @@ class MagneticComponent:
             generate_electro_magnetic_mesh_time = time.time() - start_time
 
             start_time = time.time()
-            self.excitation_electrostatic(voltage=voltage, charge=charge, ground_core=ground_core,
+            self.excitation_electrostatic(voltage=voltage, charge=charge, core_voltage=core_voltage,
                                           ground_outer_boundary=ground_outer_boundary, plot_interpolation=plot_interpolation)
             self.check_create_empty_material_log()
             self.write_simulation_parameters_to_pro_files()
@@ -1635,7 +1646,7 @@ class MagneticComponent:
             return generate_electro_magnetic_mesh_time, prepare_simulation_time, real_simulation_time, logging_time
         else:
             self.mesh.generate_electro_magnetic_mesh()
-            self.excitation_electrostatic(voltage=voltage, charge=charge, ground_core=ground_core,
+            self.excitation_electrostatic(voltage=voltage, charge=charge, core_voltage=core_voltage,
                                           ground_outer_boundary=ground_outer_boundary, plot_interpolation=plot_interpolation)
             self.write_simulation_parameters_to_pro_files()
             self.simulate()
@@ -3151,6 +3162,17 @@ class MagneticComponent:
 
         return voltages
 
+    def get_total_charges(self):
+        res_path = self.file_data.e_m_circuit_folder_path
+        # Get all voltage result files from the folder
+        charges_total = []
+        # charge_files = [f for f in os.listdir(res_path) if f.startswith('Q_') and f.endswith('.dat')]
+        charge_files = ['Q_1.dat', 'Q_2.dat']
+        for charge_file in charge_files:
+            file_path = os.path.join(res_path, charge_file)
+            charge_sum = ff.load_charges_and_sum_them(file_path)
+            charges_total.append(charge_sum)
+        print(charges_total)
 
     def get_inductances(self, I0: float, op_frequency: float = 0, skin_mesh_factor: float = 1,
                         visualize_last_fem_simulation: bool = False, silent: bool = False, compare_with_inductance_from_reluctance: bool = False):
@@ -3570,11 +3592,14 @@ class MagneticComponent:
                     for turn_index, charge_value in enumerate(turns):
                         text_file.write(f"Charge_{winding_number + 1}_{turn_index + 1} = {charge_value};\n")
 
-                if self.v_ground_core == 0:
-                    text_file.write("Flag_ground_core = 1;\n")
-                    text_file.write("v_ground_core = 0;\n")
+                if self.v_core is not None:
+                    text_file.write("v_core = {};\n".format(self.v_core))
+                    text_file.write("Flag_excite_core = 1;\n")
+                    # text_file.write("Flag_ground_core = 0;\n")
                 else:
-                    text_file.write("Flag_ground_core = 0;\n")
+                        text_file.write("Flag_ground_core = 1;\n")
+                        # text_file.write("v_ground_core = 0;\n")
+                        text_file.write("Flag_excite_core = 0;\n")
 
                 if self.v_ground_out_boundary == 0:
                     text_file.write("Flag_ground_OutBoundary = 1;\n")
@@ -4903,7 +4928,7 @@ class MagneticComponent:
                 view += 1
 
             # Electric Field
-            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Efield.pos"))
+            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "MagE.pos"))
             gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
             gmsh.option.setNumber(f"View[{view}].RangeType", 2)
             gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
@@ -4917,7 +4942,7 @@ class MagneticComponent:
             view += 1
 
             # Displacement Field
-            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Dfield.pos"))
+            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "MagD.pos"))
             gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
             gmsh.option.setNumber(f"View[{view}].RangeType", 2)
             gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)

@@ -2097,6 +2097,33 @@ def load_voltage_winding_and_calculate_magnitude(file_path: str):
 
     return magnitude
 
+def load_charges_and_sum_them(file_path: str):
+    """
+        Load the voltage values from the given file, calculate magnitude for each winding.
+
+        :param file_path: Path to the voltage result file.
+        :type file_path: str
+        :return: Average voltage magnitude for the winding.
+        :rtype: float
+    """
+    total_charge = 0.0
+
+    with open(file_path, 'r') as file:
+        for line in file:
+            if line.startswith("# Q on"):
+                # Skip the line with labels
+                continue
+
+            # Split the line and ignore the first zero value
+            values = line.split()[1:]
+
+            # Convert real and imaginary parts to float and sum them
+            for value in values:
+                total_charge += float(value)
+
+    return total_charge
+
+
 def load_charges_and_sum(file_path: str):
     """
     Load the charges values from the given file, sum them for each winding.

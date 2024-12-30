@@ -46,14 +46,33 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
     inductor_frequency = 0
 
     # 2. set core parameters
-    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.02, window_w=0.01, window_h=0.03,
-                                                    core_h=0.02)
-    core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
-                    permeability_datasource=fmt.MaterialDataSource.Custom,
-                    permittivity_datasource=fmt.MaterialDataSource.Custom,
-                    detailed_core_model=False)
-    geo.set_core(core)
+    # core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.02, window_w=0.01, window_h=0.03,
+    #                                                 core_h=0.02)
+    # core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
+    #                 permeability_datasource=fmt.MaterialDataSource.Custom,
+    #                 permittivity_datasource=fmt.MaterialDataSource.Custom,
+    #                 detailed_core_model=False)
+    # geo.set_core(core)
+    # 2. set core parameters
+    core_db = fmt.core_database()["PQ 40/40"]
+    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
+                                                    window_w=core_db["window_w"],
+                                                    window_h=core_db["window_h"],
+                                                    core_h=core_db["core_h"])
 
+    core = fmt.Core(core_type=fmt.CoreType.Single,
+                    core_dimensions=core_dimensions,
+                    detailed_core_model=False,
+                    material=fmt.Material.N49, temperature=45, frequency=inductor_frequency,
+                    # permeability_datasource="manufacturer_datasheet",
+                    permeability_datasource=fmt.MaterialDataSource.Measurement,
+                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                    permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
+                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                    permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+
+    geo.set_core(core)
     # 3. set air gap parameters
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.001, 50)
@@ -63,7 +82,7 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
     # 4. set insulations
     insulation = fmt.Insulation(flag_insulation=False)
     insulation.add_core_insulations(0.001, 0.001, 0.001, 0.001)
-    insulation.add_winding_insulations([[0.0002]])
+    insulation.add_winding_insulations([[0.001]])
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -72,23 +91,25 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
 
     # 6. create conductor and set parameters: use solid wires
     winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=45)
-    winding.set_solid_round_conductor(conductor_radius=1.1506e-3, conductor_arrangement=fmt.ConductorArrangement.Square)
+    # winding.set_solid_round_conductor(conductor_radius=1.1506e-3, conductor_arrangement=fmt.ConductorArrangement.Square)
+    winding.set_solid_round_conductor(conductor_radius=0.4e-3, conductor_arrangement=fmt.ConductorArrangement.Square)
     winding.parallel = False  # set True to make the windings parallel, currently only for solid conductors
     # winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
     # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
     # 7. add conductor to vww and add winding window to MagneticComponent
-    vww.set_winding(winding, 5, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.HorizontalRightward_VerticalUpward,
-                    zigzag=False)
+    vww.set_winding(winding, 49, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.VerticalUpward_HorizontalRightward,
+                    zigzag=True)
     geo.set_winding_windows([winding_window])
     # 8. create the model
     geo.create_model(freq=inductor_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False, skin_mesh_factor=0.5)
     # 8. run electrostatic simulation
-    geo.electrostatic_simulation(voltage=[[1, 2, 3, 4, 5]], ground_core=False, ground_outer_boundary=False,
+    voltage_list = [5] + [0] * 48
+    geo.electrostatic_simulation(voltage=[voltage_list], core_voltage=0, ground_outer_boundary=False,
                                  show_fem_simulation_results=show_visual_outputs, save_to_excel=False)
     # Call the electrostatic FEMM simulation function
     # voltages = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]
-    geo.femm_reference_electrostatic(voltages=[[10, 0, 0, 0, 0]], ground_core=False, ground_outer_boundary=False,
-                                     non_visualize=0, save_to_excel=False, compare_excel_files_to_femmt=False, mesh_size_conductor=0.0)
+    # geo.femm_reference_electrostatic(voltages=[[10, 0, 0, 0, 0]], ground_core=False, ground_outer_boundary=False,
+    #                                  non_visualize=0, save_to_excel=False, compare_excel_files_to_femmt=False, mesh_size_conductor=0.0)
 
 
 if __name__ == "__main__":

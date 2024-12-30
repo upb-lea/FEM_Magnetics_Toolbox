@@ -974,6 +974,7 @@ class TwoDaxiSymmetric:
                                 x = start_x
                                 y = start_y
                                 i = 0
+                                counter = 0
                                 # Vertically movement
                                 if vertical_first:
                                     while i < turns and left_bound + winding.conductor_radius <= x <= right_bound - winding.conductor_radius:
@@ -988,7 +989,20 @@ class TwoDaxiSymmetric:
                                                 [x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
                                             self.p_conductor[num].append(
                                                 [x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                            y += step_y
+                                            if num == 0:
+                                                if counter == 0:
+                                                    y += step_y
+                                                elif counter == 1:
+                                                    y += step_y - 6.347e-5
+                                                elif counter == 2:
+                                                    y += step_y + 6.347e-5
+                                                elif counter == 3:
+                                                    y += step_y - 9.873e-5
+                                            if num == 1:
+                                                if counter == 0:
+                                                    y += step_y
+                                                elif counter == 1:
+                                                    y += step_y - 4.11e-5
                                             i += 1
                                         if not zigzag:
                                             # Start the next column with the same starting point (consistent direction)
@@ -998,7 +1012,11 @@ class TwoDaxiSymmetric:
                                             step_y *= -1
                                             y += step_y
                                         # Moving one step horizontally (right or left)
-                                        x += step_x
+                                        if num == 0:
+                                            x += step_x - 3.87e-5
+                                        elif num == 1:
+                                            x += step_x - 1.753e-5
+                                        counter +=1
                                 # Horizontally movement
                                 else:
                                     while i < turns and bot_bound + winding.conductor_radius <= y <= top_bound - winding.conductor_radius:

@@ -67,8 +67,8 @@ Group {
     DomainCC = Region[{Air}];
 
     // Add the Core region to the appropriate domain region
-    If (Flag_ground_OutBoundary)
-        If (Flag_ground_core)
+    /*If (Flag_ground_OutBoundary)
+        If (Flag_ground_core || Flag_excite_core)
             // If both the core and the outer boundary are grounded, add the core to DomainC
             DomainC += Region[{Core}];
         Else
@@ -77,7 +77,25 @@ Group {
         EndIf
     Else
         // If the outer boundary is NOT grounded
-        If (Flag_ground_core)
+        If (Flag_ground_core || Flag_excite_core)
+            DomainC += Region[{Core}];
+        Else
+            DomainCC += Region[{Core}];
+        EndIf
+    EndIf*/
+
+    // Add the Core region to the appropriate domain region
+    If (Flag_ground_OutBoundary)
+        If (Flag_excite_core)
+            // If both the core and the outer boundary are grounded, add the core to DomainC
+            DomainC += Region[{Core}];
+        Else
+            // If the outer boundary is grounded but not the core, the core should be floating
+            DomainCC += Region[{Core}];
+        EndIf
+    Else
+        // If the outer boundary is NOT grounded
+        If (Flag_excite_core)
             DomainC += Region[{Core}];
         Else
             DomainCC += Region[{Core}];
@@ -188,8 +206,13 @@ Constraint {
                 EndFor
             EndIf
 
-            If(Flag_ground_core)
+            /*If(Flag_ground_core)
                 { Region Core ; Type Assign ; Value 0; }
+            ElseIf(Flag_excite_core)
+                { Region Core ; Type Assign ; Value v_core; }
+            EndIf*/
+            If(Flag_excite_core)
+                { Region Core ; Type Assign ; Value v_core; }
             EndIf
         }
     }
@@ -203,6 +226,9 @@ Constraint {
                         { Region Turn~{winding_number}~{turn_number} ; Type Assign ; Value Cha_Potential_Turn~{winding_number}~{turn_number}; }
                     EndFor
                 EndFor
+            EndIf
+            If(Flag_excite_core)
+                { Region Core ; Type Assign ; Value v_core; }
             EndIf
         }
     }
