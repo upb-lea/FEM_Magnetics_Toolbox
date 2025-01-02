@@ -1095,15 +1095,15 @@ class WindingWindow:
 
                 # bot section
                 self.max_bot_bound_bot_section = -core.window_h / 2 + insulations.bot_section_core_cond[1]
-                self.max_top_bound_bot_section = y_bot_stray_path  - insulations.bot_section_core_cond[0]
+                self.max_top_bound_bot_section = y_bot_stray_path - insulations.bot_section_core_cond[0]
                 self.max_left_bound_bot_section = core.core_inner_diameter / 2 + insulations.bot_section_core_cond[2]
                 self.max_right_bound_bot_section = core.r_inner - insulations.bot_section_core_cond[3]
 
                 # General
-                self.max_bot_bound = -core.window_h / 2 + insulations.bot_section_core_cond[1]
-                self.max_top_bound = core.window_h / 2 - insulations.top_section_core_cond[0]
-                self.max_left_bound = core.core_inner_diameter / 2 + insulations.top_section_core_cond[2]
-                self.max_right_bound = core.r_inner - insulations.top_section_core_cond[3]
+                self.max_bot_bound = min(self.max_bot_bound_top_section, self.max_bot_bound_bot_section)
+                self.max_top_bound = max(self.max_top_bound_top_section, self.max_top_bound_bot_section)
+                self.max_left_bound = min(self.max_left_bound_top_section, self.max_left_bound_bot_section)
+                self.max_right_bound = max(self.max_right_bound_top_section, self.max_right_bound_bot_section)
             else:
                 self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[1]
                 self.max_top_bound = core.window_h / 2 - insulations.core_cond[0]
@@ -1187,13 +1187,8 @@ class WindingWindow:
 
         # Calculate split lengths
         if self.stray_path is not None and self.air_gaps is not None and self.air_gaps.number > self.stray_path.start_index:
-            air_gap_1_position = self.air_gaps.midpoints[self.stray_path.start_index][1]
-            air_gap_2_position = self.air_gaps.midpoints[self.stray_path.start_index + 1][1]
-            max_pos = max(air_gap_2_position, air_gap_1_position)
-            min_pos = min(air_gap_2_position, air_gap_1_position)
-            distance = max_pos - min_pos  # TODO: this is set in accordance to the midpoint of the air gap:
-            # TODO: should be changed to the core-cond isolation
-            horizontal_split = min_pos + distance / 2
+            distance = self.max_bot_bound_top_section - self.max_top_bound_bot_section
+            horizontal_split = self.max_top_bound_bot_section + distance / 2
             vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
             split_distance = distance  # here, the distance between the two vwws is set automatically
         else:
@@ -1247,14 +1242,14 @@ class WindingWindow:
             top = VirtualWindingWindow(
                 bot_bound=horizontal_split + split_distance / 2,
                 top_bound=self.max_top_bound,
-                left_bound=self.max_left_bound,
-                right_bound=self.max_right_bound)
+                left_bound=self.max_left_bound if not self.stray_path else self.max_left_bound_top_section,
+                right_bound=self.max_right_bound if not self.stray_path else self.max_right_bound_top_section)
 
             bot = VirtualWindingWindow(
                 bot_bound=self.max_bot_bound,
                 top_bound=horizontal_split - split_distance / 2,
-                left_bound=self.max_left_bound,
-                right_bound=self.max_right_bound)
+                left_bound=self.max_left_bound if not self.stray_path else self.max_left_bound_bot_section,
+                right_bound=self.max_right_bound if not self.stray_path else self.max_right_bound_bot_section)
 
             self.virtual_winding_windows = [top, bot]
             return top, bot
@@ -1302,13 +1297,8 @@ class WindingWindow:
         # Convert horizontal_split_factors to a numpy array
         horizontal_split_factors = np.array(horizontal_split_factors)
         if self.stray_path is not None and self.air_gaps is not None and self.air_gaps.number > self.stray_path.start_index:
-            air_gap_1_position = self.air_gaps.midpoints[self.stray_path.start_index][1]
-            air_gap_2_position = self.air_gaps.midpoints[self.stray_path.start_index + 1][1]
-            max_pos = max(air_gap_2_position, air_gap_1_position)
-            min_pos = min(air_gap_2_position, air_gap_1_position)
-            distance = max_pos - min_pos  # TODO: this is set in accordance to the midpoint of the air gap:
-            # TODO: should be changed to the core-cond isolation
-            horizontal_splits = min_pos + distance / 2
+            distance = self.max_bot_bound_top_section - self.max_top_bound_bot_section
+            horizontal_splits = self.max_top_bound_bot_section + distance / 2
             vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
             split_distance = distance  # here, the distance between the two vwws is set automatically
         else:
@@ -1388,13 +1378,8 @@ class WindingWindow:
             vertical_split_factors = [[]]
 
         if self.stray_path is not None and self.air_gaps is not None and self.air_gaps.number > self.stray_path.start_index:
-            air_gap_1_position = self.air_gaps.midpoints[self.stray_path.start_index][1]
-            air_gap_2_position = self.air_gaps.midpoints[self.stray_path.start_index + 1][1]
-            max_pos = max(air_gap_2_position, air_gap_1_position)
-            min_pos = min(air_gap_2_position, air_gap_1_position)
-            distance = max_pos - min_pos  # TODO: this is set in accordance to the midpoint of the air gap:
-            # TODO: should be changed to the core-cond isolation
-            horizontal_splits = min_pos + distance / 2
+            distance = self.max_bot_bound_top_section - self.max_top_bound_bot_section
+            horizontal_splits = self.max_top_bound_bot_section + distance / 2
             vertical_splits = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factors
             split_distance = distance  # here, the distance between the two vwws is set automatically
         else:
@@ -1528,13 +1513,8 @@ class WindingWindow:
         # Convert horizontal_split_factors to a numpy array
         horizontal_split_factors = np.array(horizontal_split_factors)
         if self.stray_path is not None and self.air_gaps is not None and self.air_gaps.number > self.stray_path.start_index:
-            air_gap_1_position = self.air_gaps.midpoints[self.stray_path.start_index][1]
-            air_gap_2_position = self.air_gaps.midpoints[self.stray_path.start_index + 1][1]
-            max_pos = max(air_gap_2_position, air_gap_1_position)
-            min_pos = min(air_gap_2_position, air_gap_1_position)
-            distance = max_pos - min_pos  # TODO: this is set in accordance to the midpoint of the air gap:
-            # TODO: should be changed to the core-cond isolation
-            horizontal_splits = min_pos + distance / 2
+            distance = self.max_bot_bound_top_section - self.max_top_bound_bot_section
+            horizontal_splits = self.max_top_bound_bot_section + distance / 2
             vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factors
             split_distance = distance  # here, the distance between the two vwws is set automatically
         else:
