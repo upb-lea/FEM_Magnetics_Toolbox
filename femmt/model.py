@@ -1080,6 +1080,26 @@ class WindingWindow:
 
         if self.core.core_type == CoreType.Single:
             if self.stray_path:
+                # needed for legnths
+                air_gap_1_position = self.air_gaps.midpoints[self.stray_path.start_index][1]
+                air_gap_1_height = self.air_gaps.midpoints[self.stray_path.start_index][2]
+                air_gap_2_position = self.air_gaps.midpoints[self.stray_path.start_index + 1][1]
+                air_gap_2_height = self.air_gaps.midpoints[self.stray_path.start_index + 1][2]
+                y_top_stray_path = air_gap_2_position - (air_gap_2_height / 2)
+                y_bot_stray_path = air_gap_1_position + (air_gap_1_height / 2)
+                # top section
+                self.max_bot_bound_top_section = y_top_stray_path + insulations.top_section_core_cond[1]
+                self.max_top_bound_top_section = core.window_h / 2 - insulations.top_section_core_cond[0]
+                self.max_left_bound_top_section = core.core_inner_diameter / 2 + insulations.top_section_core_cond[2]
+                self.max_right_bound_top_section = core.r_inner - insulations.top_section_core_cond[3]
+
+                # bot section
+                self.max_bot_bound_bot_section = -core.window_h / 2 + insulations.bot_section_core_cond[1]
+                self.max_top_bound_bot_section = y_bot_stray_path  - insulations.bot_section_core_cond[0]
+                self.max_left_bound_bot_section = core.core_inner_diameter / 2 + insulations.bot_section_core_cond[2]
+                self.max_right_bound_bot_section = core.r_inner - insulations.bot_section_core_cond[3]
+
+                # General
                 self.max_bot_bound = -core.window_h / 2 + insulations.bot_section_core_cond[1]
                 self.max_top_bound = core.window_h / 2 - insulations.top_section_core_cond[0]
                 self.max_left_bound = core.core_inner_diameter / 2 + insulations.top_section_core_cond[2]
@@ -1090,6 +1110,19 @@ class WindingWindow:
                 self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
                 self.max_right_bound = core.r_inner - insulations.core_cond[3]
         elif self.core.core_type == CoreType.Stacked:  # top, bot, left, right
+            # top section
+            self.max_bot_bound_top_section = core.window_h_bot / 2 + core.core_thickness + insulations.top_section_core_cond[1]
+            self.max_top_bound_top_section = core.window_h_bot / 2 + core.window_h_top + core.core_thickness - insulations.top_section_core_cond[0]
+            self.max_left_bound_top_section = core.core_inner_diameter / 2 + insulations.top_section_core_cond[2]
+            self.max_right_bound_top_section = core.r_inner - insulations.top_section_core_cond[3]
+
+            # bot section
+            self.max_bot_bound_bot_section = -core.window_h_bot / 2 + insulations.bot_section_core_cond[1]
+            self.max_top_bound_bot_section = core.window_h_bot / 2 - insulations.bot_section_core_cond[0]
+            self.max_left_bound_bot_section = core.core_inner_diameter / 2 + insulations.bot_section_core_cond[2]
+            self.max_right_bound_bot_section = core.r_inner - insulations.bot_section_core_cond[3]
+
+            # general
             self.max_bot_bound = -core.window_h_bot / 2 + insulations.bot_section_core_cond[1]
             self.max_top_bound = core.window_h_bot / 2 + core.window_h_top + core.core_thickness - insulations.top_section_core_cond[0]
             self.max_left_bound = core.core_inner_diameter / 2 + insulations.top_section_core_cond[2]

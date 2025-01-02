@@ -123,7 +123,7 @@ def basic_example_transformer_stacked(onelab_folder: str = None, show_visual_out
     # 4. set insulations
     insulation = fmt.Insulation(flag_insulation=True)
     # insulation.add_core_insulations(0.001, 0.001, 0.001, 0.001)  # [bot, top, left, right]
-    insulation.add_top_section_core_insulations(0.001, 0.001, 0.001, 0.001)
+    insulation.add_top_section_core_insulations(0.001, 0.002, 0.001, 0.001)
     insulation.add_bottom_section_core_insulations(0.001, 0.001, 0.001, 0.001)
     insulation.add_winding_insulations([[0.0001, 0.001],
                                         [0.001, 0.0002]])

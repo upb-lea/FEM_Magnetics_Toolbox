@@ -28,22 +28,32 @@ def create_stacked_winding_windows(core: Core, insulation: Insulation) -> (Windi
     max_pos = core.window_h_bot / 2 + core.core_inner_diameter / 4  # TODO: could also be done arbitrarily
     min_pos = core.window_h_bot / 2
     distance = max_pos - min_pos
-    horizontal_split = min_pos + distance / 2
+    # horizontal_split = min_pos + distance / 2
     if insulation.top_section_core_cond:
         insulation_top = min(insulation.top_section_core_cond)
     if insulation.bot_section_core_cond:
         insulation_bot = min(insulation.bot_section_core_cond)
     insulation.vww_insulations = distance + 2 * min(insulation_top, insulation_bot)
 
-    winding_window_top.max_bot_bound = horizontal_split + insulation.vww_insulations / 2
-    winding_window_top.max_top_bound = winding_window_top.max_top_bound
-    winding_window_top.max_left_bound = winding_window_top.max_left_bound
-    winding_window_top.max_right_bound = winding_window_top.max_right_bound
+    # winding_window_top.max_bot_bound = horizontal_split + insulation.vww_insulations / 2
+    # winding_window_top.max_top_bound = winding_window_top.max_top_bound
+    # winding_window_top.max_left_bound = winding_window_top.max_left_bound
+    # winding_window_top.max_right_bound = winding_window_top.max_right_bound
+
+    winding_window_top.max_bot_bound = winding_window_bot.max_bot_bound_top_section
+    winding_window_top.max_top_bound = winding_window_top.max_top_bound_top_section
+    winding_window_top.max_left_bound = winding_window_top.max_left_bound_top_section
+    winding_window_top.max_right_bound = winding_window_top.max_right_bound_top_section
+
+    # winding_window_bot.max_bot_bound = winding_window_bot.max_bot_bound
+    # winding_window_bot.max_top_bound = horizontal_split - insulation.vww_insulations / 2
+    # winding_window_bot.max_left_bound = winding_window_bot.max_left_bound
+    # winding_window_bot.max_right_bound = winding_window_bot.max_right_bound
 
     winding_window_bot.max_bot_bound = winding_window_bot.max_bot_bound
-    winding_window_bot.max_top_bound = horizontal_split - insulation.vww_insulations / 2
-    winding_window_bot.max_left_bound = winding_window_bot.max_left_bound
-    winding_window_bot.max_right_bound = winding_window_bot.max_right_bound
+    winding_window_bot.max_top_bound = winding_window_bot.max_top_bound_bot_section
+    winding_window_bot.max_left_bound = winding_window_bot.max_left_bound_bot_section
+    winding_window_bot.max_right_bound = winding_window_bot.max_right_bound_bot_section
 
     return winding_window_top, winding_window_bot
 
