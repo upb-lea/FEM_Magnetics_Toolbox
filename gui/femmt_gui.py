@@ -3047,7 +3047,6 @@ class MainWindow(QMainWindow):
         returns: femmt MagneticComponent
 
         """
-
         if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
             self.md_simulation_QLabel.setText('simulation starts...')
 
