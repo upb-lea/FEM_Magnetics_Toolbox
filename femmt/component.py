@@ -4263,7 +4263,7 @@ class MagneticComponent:
 
     def calculate_average_files(self):
         """
-        find the average value of all .dat files within the 'value' directory and each 'Winding_n' subdirectory.
+        Find the average value of all .dat files within the 'value' directory and each 'Winding_n' subdirectory.
 
         - For each .dat file, the method reads the time steps and corresponding data points.
         - Computes the average value by dividing the integral by the total duration of the time steps.
