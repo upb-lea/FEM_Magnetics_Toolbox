@@ -42,8 +42,6 @@ setup(
                       'gmsh>=4.13.1',
                       'onelab>=1.0',
                       'scipy~=1.12.0',
-                      'pytest',
-                      'pycodestyle',
                       'PyQt5>=5.15.6',
                       'mplcursors>=0.5.1',  # TODO Is this necessary?
                       'deepdiff>=6.2.1',  # comparing result dicts for pytests
