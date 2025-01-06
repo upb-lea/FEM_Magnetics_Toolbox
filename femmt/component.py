@@ -184,31 +184,31 @@ class MagneticComponent:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-        # 2 and 3 winding transformer inductance matrix
-        self.L_1_1 = None
-        self.L_2_2 = None
-        self.L_3_3 = None
-        self.M = None
-        self.M_12 = None
-        self.M_21 = None
-        self.M_13 = None
-        self.M_32 = None
-        self.M_32 = None
-        self.M_23 = None
-        self.Pv = None
-        # 2 and 3 winding transformer primary concentrated equivalent circuit
-        self.n_conc = None
-        self.L_s_conc = None
-        self.L_h_conc = None
-        self.L_s1 = None
-        self.L_s2 = None
-        self.L_s3 = None
-        self.L_h = None
-        self.L_s12 = None
-        self.L_s13 = None
-        self.L_s23 = None
-        self.n_12 = None
-        self.n_13 = None
+        # # 2 and 3 winding transformer inductance matrix
+        # self.L_1_1 = None
+        # self.L_2_2 = None
+        # self.L_3_3 = None
+        # self.M = None
+        # self.M_12 = None
+        # self.M_21 = None
+        # self.M_13 = None
+        # self.M_32 = None
+        # self.M_32 = None
+        # self.M_23 = None
+        # self.Pv = None
+        # # 2 and 3 winding transformer primary concentrated equivalent circuit
+        # self.n_conc = None
+        # self.L_s_conc = None
+        # self.L_h_conc = None
+        # self.L_s1 = None
+        # self.L_s2 = None
+        # self.L_s3 = None
+        # self.L_h = None
+        # self.L_s12 = None
+        # self.L_s13 = None
+        # self.L_s23 = None
+        # self.n_12 = None
+        # self.n_13 = None
 
         # -- FEMM variables --
         self.tot_loss_femm = None
@@ -1337,10 +1337,12 @@ class MagneticComponent:
 
     def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None,
                           plot_interpolation: bool = False, show_fem_simulation_results: bool = True,
-                          benchmark: bool = False):
+                          benchmark: bool = False, create_mesh: bool = True):
         """
         Start a _single_ electromagnetic ONELAB simulation.
 
+        :param create_mesh: flag to create a mesh
+        :type create_mesh: bool
         :param plot_interpolation:
         :param freq: frequency to simulate
         :type freq: float
@@ -1365,7 +1367,8 @@ class MagneticComponent:
         phi_deg = phi_deg or []
         if benchmark:
             start_time = time.time()
-            self.mesh.generate_electro_magnetic_mesh()
+            if create_mesh:
+                self.mesh.generate_electro_magnetic_mesh()
             generate_electro_magnetic_mesh_time = time.time() - start_time
 
             start_time = time.time()
@@ -1391,7 +1394,8 @@ class MagneticComponent:
 
             return generate_electro_magnetic_mesh_time, prepare_simulation_time, real_simulation_time, logging_time
         else:
-            self.mesh.generate_electro_magnetic_mesh()
+            if create_mesh:
+                self.mesh.generate_electro_magnetic_mesh()
             self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg,
                             plot_interpolation=plot_interpolation)  # frequency and current
             self.check_create_empty_material_log()
@@ -3248,32 +3252,25 @@ class MagneticComponent:
         # Material Properties
 
         # Core Material
-        # if self.frequency == 0:
-        if self.core.non_linear:
-            text_file.write("Flag_NL = 1;\n")
-            text_file.write(
-                f"Core_Material = {self.core.material};\n")  # relative permeability is defined at simulation runtime
-            # text_file.write(f"Flag_NL = 0;\n")
+        text_file.write("Flag_NL = 0;\n")
+        text_file.write(f"mur = {self.core.mu_r_abs};\n")  # mur is predefined to a fixed value
+        if self.core.permeability_type == PermeabilityType.FromData:
+            text_file.write("Flag_Permeability_From_Data = 1;\n")  # mur is predefined to a fixed value
         else:
-            text_file.write("Flag_NL = 0;\n")
-            text_file.write(f"mur = {self.core.mu_r_abs};\n")  # mur is predefined to a fixed value
-            if self.core.permeability_type == PermeabilityType.FromData:
-                text_file.write("Flag_Permeability_From_Data = 1;\n")  # mur is predefined to a fixed value
-            else:
-                text_file.write("Flag_Permeability_From_Data = 0;\n")  # mur is predefined to a fixed value
-            if self.core.permeability_type == PermeabilityType.FixedLossAngle:
-                # loss angle for complex representation of hysteresis loss
-                text_file.write(f"phi_mu_deg = {self.core.phi_mu_deg};\n")
-                # Real part of complex permeability
-                text_file.write(f"mur_real = {self.core.mu_r_abs * np.cos(np.deg2rad(self.core.phi_mu_deg))};\n")
-                # Imaginary part of complex permeability
-                text_file.write(
-                    f"mur_imag = {self.core.mu_r_abs * np.sin(np.deg2rad(self.core.phi_mu_deg))};\n")
-                # loss angle for complex representation of hysteresis loss
-                text_file.write("Flag_Fixed_Loss_Angle = 1;\n")
-            else:
-                text_file.write(
-                    "Flag_Fixed_Loss_Angle = 0;\n")  # loss angle for complex representation of hysteresis loss
+            text_file.write("Flag_Permeability_From_Data = 0;\n")  # mur is predefined to a fixed value
+        if self.core.permeability_type == PermeabilityType.FixedLossAngle:
+            # loss angle for complex representation of hysteresis loss
+            text_file.write(f"phi_mu_deg = {self.core.phi_mu_deg};\n")
+            # Real part of complex permeability
+            text_file.write(f"mur_real = {self.core.mu_r_abs * np.cos(np.deg2rad(self.core.phi_mu_deg))};\n")
+            # Imaginary part of complex permeability
+            text_file.write(
+                f"mur_imag = {self.core.mu_r_abs * np.sin(np.deg2rad(self.core.phi_mu_deg))};\n")
+            # loss angle for complex representation of hysteresis loss
+            text_file.write("Flag_Fixed_Loss_Angle = 1;\n")
+        else:
+            text_file.write(
+                "Flag_Fixed_Loss_Angle = 0;\n")  # loss angle for complex representation of hysteresis loss
 
         # if self.frequency != 0:
         #    text_file.write(f"Flag_NL = 0;\n")
@@ -5333,7 +5330,6 @@ class MagneticComponent:
                 settings["core"]["permittivity_datatype"] = \
                     MeasurementDataType(settings["core"]["permittivity_datatype"])
 
-
             core = Core(core_dimensions=core_dimensions, **settings["core"])
             geo.set_core(core)
 
@@ -5392,8 +5388,10 @@ class MagneticComponent:
                         alignment = Align[vww["alignment"]] if vww["alignment"] is not None else None
                         placing_strategy = ConductorDistribution[vww["placing_strategy"]] if vww["placing_strategy"] is not None else None
                         zigzag = vww["zigzag"] if vww["zigzag"] is not None else None
-                        foil_vertical_placing_strategy = FoilVerticalDistribution[vww["foil_vertical_placing_strategy"]] if vww["foil_vertical_placing_strategy"] is not None else None
-                        foil_horizontal_placing_strategy = FoilHorizontalDistribution[vww["foil_horizontal_placing_strategy"]] if vww["foil_horizontal_placing_strategy"] is not None else None
+                        foil_vertical_placing_strategy = \
+                            FoilVerticalDistribution[vww["foil_vertical_placing_strategy"]] if vww["foil_vertical_placing_strategy"] is not None else None
+                        foil_horizontal_placing_strategy = \
+                            FoilHorizontalDistribution[vww["foil_horizontal_placing_strategy"]] if vww["foil_horizontal_placing_strategy"] is not None else None
                         new_vww.set_winding(conductor=conductors[0],
                                             turns=turns[winding_number],
                                             winding_scheme=winding_scheme,

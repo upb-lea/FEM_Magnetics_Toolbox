@@ -182,13 +182,7 @@ class Conductor:
 
 
 class Core:
-    """
-    Creates the core base for the model.
-
-    # TODO More documentation and get rid of double initializations
-    frequency = 0: mu_r_abs only used if non_linear == False
-    frequency > 0: mu_r_abs is used
-    """
+    """Creates the core base for the model."""
 
     # Standard material data
     material: str
@@ -235,7 +229,6 @@ class Core:
                  permeability_datatype: MeasurementDataType = None,
                  permeability_measurement_setup: str = None,
                  phi_mu_deg: float = None,
-                 non_linear: bool = False,
 
                  # permittivity
                  permittivity_datasource: str = None,
@@ -262,8 +255,6 @@ class Core:
         :type phi_mu_deg: float, optional
         :param sigma: core conductivity, defaults to None
         :type sigma: float, optional
-        :param non_linear: _description_, defaults to False
-        :type non_linear: bool, optional
         :param detailed_core_model: Manual correction so cross-section of inner leg is not same as outer leg (PQ 40/40 only!!), defaults to False (recommended!)
         :type detailed_core_model: bool, optional
         """
@@ -332,7 +323,6 @@ class Core:
         self.permeability = {"datasource": permeability_datasource,
                              "measurement_setup": permeability_measurement_setup,
                              "datatype": permeability_datatype}
-        self.non_linear = non_linear
         self.mu_r_abs = mu_r_abs
         self.phi_mu_deg = phi_mu_deg
         self.loss_approach = loss_approach
@@ -409,14 +399,6 @@ class Core:
         else:
             raise Exception("Loss approach {loss_approach.value} is not implemented")
 
-        # Set attributes of core with given keywords
-        # TODO Should we allow this? Technically this is not how an user interface should be designed
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
-        # Needed because of to_dict
-        self.kwargs = kwargs
-
     def update_sigma(self, frequency: bool) -> None:
         """
         Update the core conductivity.
@@ -487,7 +469,6 @@ class Core:
                 "mu_r_abs": self.mu_r_abs,
                 "phi_mu_deg": self.phi_mu_deg,
                 "sigma": [self.sigma.real, self.sigma.imag],
-                "non_linear": self.non_linear,
                 "correct_outer_leg": self.correct_outer_leg,
                 "temperature": self.temperature,
                 "permeability_datasource": self.permeability["datasource"],
@@ -510,7 +491,6 @@ class Core:
                 "mu_r_abs": self.mu_r_abs,
                 "phi_mu_deg": self.phi_mu_deg,
                 "sigma": [self.sigma.real, self.sigma.imag],
-                "non_linear": self.non_linear,
                 "correct_outer_leg": self.correct_outer_leg,
                 "temperature": self.temperature,
                 "permeability_datasource": self.permeability["datasource"],
