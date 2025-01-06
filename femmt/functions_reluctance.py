@@ -204,7 +204,7 @@ def calculate_core_2daxi_total_volume(core_inner_diameter: Union[float, np.array
 def calculate_r_outer(core_inner_diameter: Union[float, np.array], window_w: Union[float, np.array],
                       outer_core_cross_section_scale: Union[float, np.array] = 1.0) -> Union[float, np.array]:
     """
-    calculate outer core radius.
+    Calculate outer core radius.
 
     Default assumption: outer core cross-section is same as inner core cross-section.
 
