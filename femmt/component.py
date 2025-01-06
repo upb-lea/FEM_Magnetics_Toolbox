@@ -2962,6 +2962,8 @@ class MagneticComponent:
         """
         Calculate the hysteresis losses based on different Steinmetz equations.
 
+        # TODO SORT THE FUNCTION CORRECT INTO component.py (right now under Post-Processing)
+
         :param peak_magnetizing_current: peak value of the magnetizing current
         :type peak_magnetizing_current: peak value of the magnetizing current
         :param measurement_setup: name of the measurement setup
@@ -3002,18 +3004,102 @@ class MagneticComponent:
 
         if Standard_SE:
             hyst_dict["Standard_SE"] = mdb.calc_steinmetz_equation(material_name=self.core.material, measurement_setup=measurement_setup,
-                                                                   frequency=self.core.frequency, b_field=b_field_peak, temperature=self.core.temperature)
+                                                                   frequency=self.core.frequency, b_field=b_field_peak,
+                                                                   temperature=self.core.temperature) * self.calculate_core_volume()
         if IGSE:
             hyst_dict["IGSE"] = mdb.calc_IGSE_equation(material_name=self.core.material, measurement_setup=measurement_setup, frequency=self.core.frequency,
-                                                       b_wave=b_wave, temperature=self.core.temperature)
+                                                       b_wave=b_wave, temperature=self.core.temperature) * self.calculate_core_volume()
         if MagNet_PB:
-            hyst_dict["MagNet_PB"] = mdb.calc_powerloss_from_MagNet_model(material_name=self.core.material, team_name="paderborn", b_wave=b_wave,
-                                                                          frequency=self.core.frequency, temperature=self.core.temperature)
+            hyst_dict["MagNet_PB"] = mdb.calc_powerloss_from_MagNet_model(material_name=self.core.material, team_name="paderborn",
+                                                                          b_wave=b_wave, frequency=self.core.frequency,
+                                                                          temperature=self.core.temperature) * self.calculate_core_volume()
         if MagNet_Sydney:
-            hyst_dict["MagNet_Sydney"] = mdb.calc_powerloss_from_MagNet_model(material_name=self.core.material, team_name="sydney", b_wave=b_wave,
-                                                                              frequency=self.core.frequency, temperature=self.core.temperature)
+            hyst_dict["MagNet_Sydney"] = mdb.calc_powerloss_from_MagNet_model(material_name=self.core.material, team_name="sydney",
+                                                                              b_wave=b_wave, frequency=self.core.frequency,
+                                                                              temperature=self.core.temperature) * self.calculate_core_volume()
 
         return hyst_dict
+
+    def calc_hystersis_losses_based_on_mesh_results(self, measurement_setup: str = "MagNet", b_wave: np.array = None,
+                                                    Standard_SE: bool = True, IGSE: bool = False, MagNet_PB: bool = False, MagNet_Sydney: bool = False):
+        flux, area = self.calc_magnetic_flux_density_based_on_simulation_results()
+        core_area = np.sum(area)
+
+        # multiply the normalized signal of the magnetic flux density with the peak value of the magnetic flux density, if not assume sine wave
+        if b_wave is None:
+            b_wave = np.array([np.sin(np.linspace(0, 2*np.pi, 1024)) * b for b in flux])
+        else:
+            b_wave = np.array(b_wave * b for b in flux)
+
+        hyst_dict = {}
+
+        if Standard_SE:
+            hyst_losses = mdb.calc_steinmetz_equation(material_name=self.core.material, measurement_setup=measurement_setup,
+                                                      frequency=self.core.frequency, b_field=flux, temperature=self.core.temperature)
+            hyst_dict["Standard_SE"] = (np.dot(hyst_losses, area)/core_area) * self.calculate_core_volume()
+
+        if IGSE:
+            hyst_losses = mdb.calc_IGSE_equation(material_name=self.core.material, measurement_setup=measurement_setup, frequency=self.core.frequency,
+                                                 b_wave=b_wave, temperature=self.core.temperature)
+            hyst_dict["IGSE"] = (np.dot(hyst_losses, area) / core_area) * self.calculate_core_volume()
+
+        if MagNet_PB:
+            hyst_losses = mdb.calc_powerloss_from_MagNet_model(material_name=self.core.material, team_name="paderborn", b_wave=b_wave,
+                                                               frequency=np.array([self.core.frequency]*b_wave.shape[0]),
+                                                               temperature=np.array([self.core.temperature]*b_wave.shape[0]))
+            hyst_dict["MagNet_PB"] = (np.dot(hyst_losses, area) / core_area) * self.calculate_core_volume()
+
+        if MagNet_Sydney:
+            hyst_losses = mdb.calc_powerloss_from_MagNet_model(material_name=self.core.material, team_name="sydney", b_wave=b_wave,
+                                                               frequency=np.array([self.core.frequency]*b_wave.shape[0]),
+                                                               temperature=np.array([self.core.temperature]*b_wave.shape[0]))
+            hyst_dict["MagNet_Sydney"] = (np.dot(hyst_losses, area) / core_area) * self.calculate_core_volume()
+
+        return hyst_dict
+
+    def calc_magnetic_flux_density_based_on_simulation_results(self):
+        with open(os.path.join(self.file_data.e_m_fields_folder_path, "Magb.pos"), 'r') as file:
+            content = file.read()  # type of content: str
+
+        # find both occurrence of "Magnitude B-Field / T", Elements and Nodes in Magb.pos
+        indexes_B_Field = np.array([m.start() for m in re.finditer('"Magnitude B-Field / T"', content)])
+        indexes_Elements = np.array([m.start() for m in re.finditer('Elements', content)])
+        indexes_Coords = np.array([m.start() for m in re.finditer('Nodes', content)])
+        # filter magnetic flux density out of Magb.pos(data is between the both occurrences of "Magnitude B-Field / T") and put data into list
+        data_B_Field = np.array([float(x) for x in content[indexes_B_Field[0]:indexes_B_Field[1]].split()[11:-3]])
+        data_Elements = np.array([int(x) for x in content[indexes_Elements[0]:indexes_Elements[1]].split()[2:-1]])
+        data_Coords = np.array([float(x) for x in content[indexes_Coords[0]:indexes_Coords[1]].split()[2:-1]])
+        # divide long list into lists for every triangle/mesh-cell
+        chunks_B_Field = [data_B_Field[x:x + 5] for x in range(0, data_B_Field.shape[0], 5)]
+        chunks_Elements = np.array([data_Elements[x:x + 8] for x in range(0, data_Elements.shape[0], 8)])
+        chunks_Coords = np.array([data_Coords[x:x + 4] for x in range(0, data_Coords.shape[0], 4)])
+
+        data_triangle = np.concatenate((chunks_Elements, np.array(chunks_B_Field)), axis=1)
+        Triangle_Core = [[x[0], x[5], x[6], x[7], np.mean(x[10:])] for x in data_triangle if x[3] // 10000 == 12]
+
+        xyz = np.array([np.array([x[1], x[2], x[3]]) for x in chunks_Coords])
+
+        surface_area = 0
+        for index, TriangleNode in enumerate(Triangle_Core):
+            xi = xyz[int(TriangleNode[1:4][0] - 1), :]
+            xj = xyz[int(TriangleNode[1:4][1] - 1), :]
+            xk = xyz[int(TriangleNode[1:4][2] - 1), :]
+
+            a = np.sqrt(np.dot(xi - xj, xi - xj))
+            b = np.sqrt(np.dot(xi - xk, xi - xk))
+            c = np.sqrt(np.dot(xj - xk, xj - xk))
+
+            s = (a + b + c) / 2
+            dA = np.sqrt(s * (s - a) * (s - b) * (s - c))
+
+            Triangle_Core[index].append(dA)
+
+            surface_area += dA
+
+        flux = np.array([x[-2] for x in Triangle_Core])
+        area = np.array([x[-1] for x in Triangle_Core])
+
+        return flux, area
 
     def get_steinmetz_loss(self, peak_current: float = None, ki: float = 1, alpha: float = 1.2, beta: float = 2.2, t_rise: float = 3e-6, t_fall: float = 3e-6,
                            f_switch: float = 100000, skin_mesh_factor: float = 0.5):
@@ -3711,8 +3797,7 @@ class MagneticComponent:
 
                 # losses_averages
                 if self.windings[winding_num].conductor_type == ConductorType.RoundLitz:
-                    losses_dict["winding_losses"] = \
-                        self.load_result(res_name=f"j2H_{winding_num + 1}", res_type="value", average=True)
+                    losses_dict["winding_losses"] = self.load_result(res_name=f"j2H_{winding_num + 1}", res_type="value", average=True)
 
                     if losses_dict["winding_losses"]:
                         losses_dict["winding_losses"] = losses_dict["winding_losses"][0]

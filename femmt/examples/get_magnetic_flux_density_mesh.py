@@ -4,60 +4,42 @@ import numpy as np
 import re
 from matplotlib import pyplot
 import time
+import os
+import inspect
 
 PLOT = True
 
 gmsh.initialize()
-start_tot = time.time()
-start = time.time()
-# path of gmsh-file needed
-# gmsh.open("C:/Users/schacht/PycharmProjects/FEM_Magnetics_Toolbox/femmt/examples/example_results/basic_inductor/mesh/electro_magnetic.msh")
-gmsh.open("C:/Users/sebas/Desktop/Python/FEM_Magnetics_Toolbox/femmt/examples/example_results/basic_inductor/mesh/electro_magnetic.msh")
-
 # path of Magb.pos needed (file containing the data of the magnetic flux density for the mesh)
-# path = 'C:/Users/schacht/PycharmProjects/FEM_Magnetics_Toolbox/femmt/examples/example_results/basic_inductor/results/fields/Magb.pos'
-path = 'C:/Users/sebas/Desktop/Python/FEM_Magnetics_Toolbox/femmt/examples/example_results/basic_inductor/results/fields/Magb.pos'
+caller_filename = inspect.stack()[0].filename
+path = os.path.join(os.path.dirname(caller_filename), "example_results/basic_inductor/results/fields/Magb.pos")
 
+start_tot = time.time()
 # read in Magb.pos <- data of magnetic flux density
 with open(path, 'r') as file:
     content = file.read()  # type of content: string
 
-print("1", time.time()-start)
-# start = time.time()
-
 # find both occurrence of "Magnitude B-Field / T" in Magb.pos
-indexes_B_Field = [m.start() for m in re.finditer('"Magnitude B-Field / T"', content)]
-indexes_Elements = [m.start() for m in re.finditer('Elements', content)]
+indexes_B_Field = np.array([m.start() for m in re.finditer('"Magnitude B-Field / T"', content)])
+indexes_Elements = np.array([m.start() for m in re.finditer('Elements', content)])
+indexes_Coords = np.array([m.start() for m in re.finditer('Nodes', content)])
 # filter magnetic flux density out of Magb.pos(data is between the both occurrences of "Magnitude B-Field / T") and put data into list
-data_B_Field = [float(x) for x in content[indexes_B_Field[0]:indexes_B_Field[1]].split()[11:-3]]
-data_Elements = [float(x) for x in content[indexes_Elements[0]:indexes_Elements[1]].split()[2:-1]]
+data_B_Field = np.array([float(x) for x in content[indexes_B_Field[0]:indexes_B_Field[1]].split()[11:-3]])
+data_Elements = np.array([int(x) for x in content[indexes_Elements[0]:indexes_Elements[1]].split()[2:-1]])
+data_Coords = np.array([float(x) for x in content[indexes_Coords[0]:indexes_Coords[1]].split()[2:-1]])
 # divide long list into lists for every triangle/mesh-cell
-chunks_B_Field = [data_B_Field[x:x+5] for x in range(0, len(data_B_Field), 5)]
-chunks_Elements = [data_Elements[x:x+8] for x in range(0, len(data_Elements), 8)]
+chunks_B_Field = [data_B_Field[x:x+5] for x in range(0, data_B_Field.shape[0], 5)]
+chunks_Elements = np.array([data_Elements[x:x+8] for x in range(0, data_Elements.shape[0], 8)])
+chunks_Coords = np.array([data_Coords[x:x+4] for x in range(0, data_Coords.shape[0], 4)])
 
-# print("2", time.time()-start)
 # start = time.time()
+data_triangle = np.concatenate((chunks_Elements, np.array(chunks_B_Field)), axis=1)
+Triangle_Core = [[x[0], x[5], x[6], x[7], np.mean(x[10:])] for x in data_triangle if x[3] // 10000 == 12]
+# Triangle_Core = [x.copy() for x in data_triangle if x[3] // 10000 == 12]
+# Triangle_Core = [[x[0], x[5], x[6], x[7], np.mean(x[10:])] for x in Triangle_Core]
+# print("1", time.time()-start)
 
-# get all triangles with there tags and node and put them in right format -> [TriangleTag, NodeTag1, NodeTag2, NodeTag3]
-TriangleTags, TriangleNodeTags = gmsh.model.mesh.getElementsByType(elementType=2)
-TriangleNodeTags = TriangleNodeTags.reshape((-1, 3))
-TriangleNodeTags = [[TriangleTags[index], value[0], value[1], value[2]] for index, value in enumerate(TriangleNodeTags)]
-
-# append the average of the magnetic flux density on every triangle
-Triangle_Core = []
-for index, TriangleNode in enumerate(TriangleNodeTags):
-    TriangleNodeTags[index].append(np.mean(chunks_B_Field[index][2:]))
-    TriangleNodeTags[index].append(chunks_Elements[index][3])
-
-Triangle_Core = []
-for TriangleNode in TriangleNodeTags:
-    if TriangleNode[-1] // 10000 == 12:
-        Triangle_Core.append(TriangleNode.copy())
-# get the coordinates for all nodes
-NodeTags, coords, parametricCoord = gmsh.model.mesh.getNodes()
-coords = coords.reshape((-1, 3))
-NodeCoords = [[NodeTags[index], value[0], value[1], value[2]] for index, value in enumerate(coords)]
-xyz = coords.reshape(-1, 3)
+xyz = np.array([np.array([x[1], x[2], x[3]]) for x in chunks_Coords])
 
 surface_area = 0
 for index, TriangleNode in enumerate(Triangle_Core):
@@ -76,14 +58,30 @@ for index, TriangleNode in enumerate(Triangle_Core):
     Triangle_Core[index].append(dA)
 
     surface_area += dA
-# print("area of core:", surface_area)
-# print("3", time.time()-start)
-# print(Triangle_Core)
+print("area of core:", surface_area)
 
-b_field_avg = np.sum([x[-3]*x[-1] for x in Triangle_Core])/surface_area
+flux_area = [[x[-2], x[-1]] for x in Triangle_Core]
+flux_area.append(surface_area)
 
 print("tot", time.time()-start_tot)
+
+flux = [x[-2] for x in Triangle_Core]
+b_field_avg = np.sum([x[-2]*x[-1] for x in Triangle_Core])/surface_area
 print(b_field_avg)
+print(np.mean(flux))
+# print(flux_area)
+
+# TriangleNodeTags = [x[0] for x in data_triangle]
+# path of gmsh-file needed
+gmsh.open(os.path.join(os.path.dirname(caller_filename), "example_results/basic_inductor/mesh/electro_magnetic.msh"))
+
+TriangleTags, TriangleNodeTags = gmsh.model.mesh.getElementsByType(elementType=2)
+TriangleNodeTags = TriangleNodeTags.reshape((-1, 3))
+TriangleNodeTags = [[TriangleTags[index], value[0], value[1], value[2]] for index, value in enumerate(TriangleNodeTags)]
+
+for index, TriangleNode in enumerate(TriangleNodeTags):
+    TriangleNodeTags[index].append(np.mean(chunks_B_Field[index][2:]))
+    TriangleNodeTags[index].append(chunks_Elements[index][3])
 
 if PLOT:
     Triangle_Core_All_Nodes = []
@@ -118,7 +116,6 @@ if PLOT:
     plt.colorbar()
     plt.grid()
     plt.show(block=False)
-    # # plt.draw()
 
 gmsh.fltk.run()
 gmsh.finalize()

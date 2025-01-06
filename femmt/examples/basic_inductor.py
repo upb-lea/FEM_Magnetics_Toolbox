@@ -182,14 +182,17 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # print(((14**2)/mc.data_matrix[0][9])/(geo.air_gaps_reluctance()[0] + geo.calculate_core_reluctance()[0]))
     # print("")
 
-    geo.calc_hystersis_losses_based_on_reluctance(peak_magnetizing_current=2.25, Standard_SE=True)
+    result = geo.calc_hystersis_losses_based_on_reluctance(peak_magnetizing_current=2.25, Standard_SE=True, MagNet_PB=True, MagNet_Sydney=True)
 
     # 8. create the model
     geo.create_model(freq=inductor_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
 
     # 6.a. start simulation
-    geo.single_simulation(freq=inductor_frequency, current=[4.5], plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
+    geo.single_simulation(freq=inductor_frequency, current=[2.25], plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
+    print(result)
 
+    result = geo.calc_hystersis_losses_based_on_mesh_results(Standard_SE=True, MagNet_PB=True, MagNet_Sydney=True)
+    print(result)
     # geo.femm_reference(freq=inductor_frequency, current=[4.5], sign=[1], non_visualize=0)
 
     # 6.b. Excitation Sweep Example
