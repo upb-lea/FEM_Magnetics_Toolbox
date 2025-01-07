@@ -7,7 +7,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>1 FEM Magnetics Toolbox (FEMMT) &mdash; FEM Magnetics Toolbox 0.5.4 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
@@ -726,7 +726,7 @@ simulation results (e.g. losses, inductance, …).</p>
 <code class="docutils literal notranslate"><span class="pre">ComponentType</span></code>. Currently this can be ‘<code class="docutils literal notranslate"><span class="pre">Inductor</span></code>’, ‘<code class="docutils literal notranslate"><span class="pre">Transformer</span></code>’ or
 ‘<code class="docutils literal notranslate"><span class="pre">IntegratedTransformer</span></code>’.</p>
 <p>This results to the following code:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">femmt</span> <span class="k">as</span> <span class="nn">fmt</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">femmt</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">fmt</span>
 
 <span class="n">geo</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">MagneticComponent</span><span class="p">(</span><span class="n">simulation_type</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">SimulationType</span><span class="o">.</span><span class="n">FreqDomain</span><span class="p">,</span>
                              <span class="n">component_type</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">ComponentType</span><span class="o">.</span><span class="n">Transformer</span><span class="p">,</span> <span class="n">working_directory</span><span class="o">=</span><span class="n">working_directory</span><span class="p">,</span>
@@ -1846,7 +1846,7 @@ simulation runs, False for a direct simulation</p></li>
 <dt class="field-odd">Example Code for Inductor<span class="colon">:</span></dt>
 <dd class="field-odd"><p></p></dd>
 </dl>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">femmt</span> <span class="k">as</span> <span class="nn">fmt</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">femmt</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">fmt</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">fs_list</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10000</span><span class="p">,</span> <span class="mi">30000</span><span class="p">,</span> <span class="mi">60000</span><span class="p">,</span> <span class="mi">100000</span><span class="p">,</span> <span class="mi">150000</span><span class="p">]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">amplitude_list_list</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">10</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">]]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">phase_list_list</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">10</span><span class="p">],</span> <span class="p">[</span><span class="mi">20</span><span class="p">],</span> <span class="p">[</span><span class="mi">30</span><span class="p">],</span> <span class="p">[</span><span class="mi">40</span><span class="p">],</span> <span class="p">[</span><span class="mi">50</span><span class="p">]]</span>
@@ -1858,7 +1858,7 @@ simulation runs, False for a direct simulation</p></li>
 <dt class="field-odd">Example Code for Transformer with 2 windings<span class="colon">:</span></dt>
 <dd class="field-odd"><p></p></dd>
 </dl>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">femmt</span> <span class="k">as</span> <span class="nn">fmt</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">femmt</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">fmt</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">fs_list</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10000</span><span class="p">,</span> <span class="mi">30000</span><span class="p">,</span> <span class="mi">60000</span><span class="p">,</span> <span class="mi">100000</span><span class="p">,</span> <span class="mi">150000</span><span class="p">]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">amplitude_list_list</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">]]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">phase_list_list</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">170</span><span class="p">],</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">180</span><span class="p">],</span> <span class="p">[</span><span class="mi">20</span><span class="p">,</span> <span class="mi">190</span><span class="p">],</span> <span class="p">[</span><span class="mi">30</span><span class="p">,</span> <span class="mi">200</span><span class="p">],</span> <span class="p">[</span><span class="mi">40</span><span class="p">,</span> <span class="mi">210</span><span class="p">],</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">220</span><span class="p">]]</span>
@@ -2930,8 +2930,8 @@ Switched-Mode Power Converter’ 2013.</p>
 <dt class="field-odd">Minimal Example<span class="colon">:</span></dt>
 <dd class="field-odd"><p></p></dd>
 </dl>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">femmt</span> <span class="k">as</span> <span class="nn">fmt</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">femmt</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">fmt</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">example_waveform</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.34</span><span class="p">,</span> <span class="mf">3.14</span><span class="p">,</span> <span class="mf">4.48</span><span class="p">,</span> <span class="mf">6.28</span><span class="p">],[</span><span class="o">-</span><span class="mf">175.69</span><span class="p">,</span> <span class="mf">103.47</span><span class="p">,</span> <span class="mf">175.69</span><span class="p">,</span> <span class="o">-</span><span class="mf">103.47</span><span class="p">,</span><span class="o">-</span><span class="mf">175.69</span><span class="p">]])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">out</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">fft</span><span class="p">(</span><span class="n">example_waveform</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="s1">&#39;yes&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;rad&#39;</span><span class="p">,</span> <span class="n">f0</span><span class="o">=</span><span class="mi">25000</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;ffT input current&#39;</span><span class="p">)</span>
 </pre></div>
@@ -2987,7 +2987,7 @@ Note: count 1 is DC component, count 2 is the fundamental frequency</p></li>
 <dt class="field-even">Example<span class="colon">:</span></dt>
 <dd class="field-even"><p></p></dd>
 </dl>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">femmt</span> <span class="k">as</span> <span class="nn">fmt</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">femmt</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">fmt</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">frequency_1</span> <span class="o">=</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">150</span><span class="p">,</span> <span class="mi">200</span><span class="p">]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">frequency_2</span> <span class="o">=</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">150</span><span class="p">,</span> <span class="mi">170</span><span class="p">,</span> <span class="mi">200</span><span class="p">]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">amplitude_1</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
@@ -3993,7 +3993,7 @@ to check all your files for correct linting.</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2024, LEA, Paderborn University.</p>
+    <p>&#169; Copyright 2025, LEA, Paderborn University.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
