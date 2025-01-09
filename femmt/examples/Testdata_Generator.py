@@ -60,7 +60,16 @@ class ChangeFolder:
 
             # Neuer Pfad und Dateiname
             #new_path = f"C:\\Users\\samet\\Bachelorarbeit\\Probe\\res\\Results_{self.simulation_number}.json"
-            new_path = f"/home/upb/stekiner/Bachelorarbeit/Results/control_new_log_electro_magnetic/Results_{self.simulation_number}.json"
+            new_path = f"/home/upb/stekiner/Bachelorarbeit/Results/added_log_electro_magnetic/Results_{self.simulation_number}.json"
+
+            shutil.copy(origin_path, new_path)
+
+            # origin_path = f"C:\\Users\\samet\\FEMMT\\GIT\\FEM_Magnetics_Toolbox\\femmt\\examples\\example_results\\parallel\\default\\model_{i}\\results\\log_electro_magnetic.json"
+            origin_path = f"/home/upb/stekiner/Bachelorarbeit/FEMMT/FEM_Magnetics_Toolbox/femmt/examples/example_results/parallel/default/model_{i}/results/log_coordinates_description.json"
+
+            # Neuer Pfad und Dateiname
+            # new_path = f"C:\\Users\\samet\\Bachelorarbeit\\Probe\\res\\Results_{self.simulation_number}.json"
+            new_path = f"/home/upb/stekiner/Bachelorarbeit/Results/added_log_coordinates_description/Coordinates_{self.simulation_number}.json"
 
             shutil.copy(origin_path, new_path)
 
@@ -86,9 +95,9 @@ def temperatures():
     return temperature_values
 
 
-def current():nn
+def current():
     # Denormalize and round the suggested current value
-    current_value = denormalize_and_round(Model_Values.next_sample_suggest[0], 0, 10, 2)
+    current_value = denormalize_and_round(Model_Values.next_sample_suggest[0], 0, 0.6, 2)
     return current_value
 
 

@@ -216,13 +216,16 @@ if __name__ == "__main__":
         number_of_air_gaps, air_gap_position = Testdata_Generator.airgapnumber_and_position()
 
         # This while loop checks if the windings fit into the winding window and if the magnetic table flow is too high. Every Iteration adds one winding turn
-        while (Testdata_Generator.check_windings_fit(winding_turns, Testdata_Generator.conductorradius(), Testdata_Generator.coreinsulation()[0],Testdata_Generator.coreinsulation()[1],
-                                                     Testdata_Generator.coreinsulation()[2],Testdata_Generator.coreinsulation()[3], Testdata_Generator.windowheight(), Testdata_Generator.windowwidth())
-               and Testdata_Generator.is_magnetic_flux_density_below_limit(winding_turns, Testdata_Generator.coreheight(), Testdata_Generator.current())):
+        # while (Testdata_Generator.check_windings_fit(winding_turns, Testdata_Generator.conductorradius(), Testdata_Generator.coreinsulation()[0],Testdata_Generator.coreinsulation()[1],
+        #                                              Testdata_Generator.coreinsulation()[2],Testdata_Generator.coreinsulation()[3], Testdata_Generator.windowheight(), Testdata_Generator.windowwidth())
+        #        and Testdata_Generator.is_magnetic_flux_density_below_limit(winding_turns, Testdata_Generator.coreheight(), Testdata_Generator.current())):
+
+        while (winding_turns < 10
+               and Testdata_Generator.is_magnetic_flux_density_below_limit(winding_turns,
+                                                                           Testdata_Generator.coreheight(),
+                                                                           Testdata_Generator.current())):
 
             print("Winding:", winding_turns)
-
-
 
             combinations = list(product(inductor_frequencies, temperatures))
 
