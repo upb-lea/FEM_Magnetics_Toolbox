@@ -1246,6 +1246,7 @@ class Mesh:
         # Needed for electrostatic simulation
         self.PN_BOUND_LEFT = 111112
         self.PN_AIR = 110000
+        self.PN_Insulation_Bobbin = 110010
         self.PN_CORE = 120000
         self.PN_COND_SOLID = 130000
         self.PN_ROUND_LITZ = 150000
@@ -1300,15 +1301,30 @@ class Mesh:
         set_physical_surface_conductor()
 
         def set_physical_surface_air():
-            if self.model.core.core_type == CoreType.Single:
-                # These three areas self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
-                # must be
-                air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
-                self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_and_air_gaps, tag=self.PN_AIR)
-                # ps_air_ext = gmsh.model.geo.addPhysicalGroup(2, plane_surface_outer_air, tag=1001)
-            elif self.model.core.core_type == CoreType.Stacked:
-                air_total = self.plane_surface_air_bot + self.plane_surface_air_top
-                self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_total, tag=self.PN_AIR)
+            if self.simulation_type == SimulationType.ElectroStatic:
+                if self.model.core.core_type == CoreType.Single:
+                    # These three areas self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
+                    # must be
+                    air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps
+                    self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_and_air_gaps, tag=self.PN_AIR)
+                    bobbin = self.plane_surface_iso_core
+                    self.ps_insulation = gmsh.model.geo.addPhysicalGroup(2, bobbin, tag=self.PN_Insulation_Bobbin)
+
+                    # ps_air_ext = gmsh.model.geo.addPhysicalGroup(2, plane_surface_outer_air, tag=1001)
+                elif self.model.core.core_type == CoreType.Stacked:
+                    air_total = self.plane_surface_air_bot + self.plane_surface_air_top
+                    self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_total, tag=self.PN_AIR)
+                    # to do, after merging the branch into main, the insulation here should be defined
+            else:
+                if self.model.core.core_type == CoreType.Single:
+                    # These three areas self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
+                    # must be
+                    air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
+                    self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_and_air_gaps, tag=self.PN_AIR)
+                    # ps_air_ext = gmsh.model.geo.addPhysicalGroup(2, plane_surface_outer_air, tag=1001)
+                elif self.model.core.core_type == CoreType.Stacked:
+                    air_total = self.plane_surface_air_bot + self.plane_surface_air_top
+                    self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_total, tag=self.PN_AIR)
 
         set_physical_surface_air()
 

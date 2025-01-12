@@ -12,10 +12,11 @@ M = np.array([
     [1, 1, 1, 1, 0, 0, 0, 1, 1, 0],  # Scenario 8
     [1, 1, 0, 0, 1, 1, 0, 1, 0, 1],  # Scenario 9
     [0, 0, 1, 1, 1, 1, 0, 0, 1, 1],  # Scenario 10
+    # [1, 0, 0, 1, 0, 1, 0, 1, 1, 1],
 ])
 
-
-
+M_squared = M ** 2
+print("Element-wise Squared Matrix M:\n", M_squared)
 # Define the energy vector (replace with your actual measured energies)
 # a little bit ok
 # We = np.array([
@@ -56,17 +57,31 @@ M = np.array([
 #     2.78124147619842E-11   # Scenario 10
 # ])
 # adjusting
-We = np.array([
-    1.107533022806718e-11,  # Scenario 1
-    2.998536727832599e-11,   # Scenario 2
-    2.441518883756004e-11,   # Scenario 3
-    1.126487136125143e-11,  # Scenario 4
-    3.436564097908541e-11,  # Scenario 5
-    3.11986239282366e-11,  # Scenario 6
-    2.014172856588652e-11,  # Scenario 7
-    1.534054057620717e-11,  # Scenario 8
-    2.924182091720404e-11,  # Scenario 9
-    3.222388455288184e-11   # Scenario 10
+# We_no_bobbin = np.array([
+#     1.107533022806718e-11,  # Scenario 1
+#     2.998536727832599e-11,   # Scenario 2
+#     2.441518883756004e-11,   # Scenario 3
+#     1.126487136125143e-11,  # Scenario 4
+#     3.436564097908541e-11,  # Scenario 5
+#     3.11986239282366e-11,  # Scenario 6
+#     2.014172856588652e-11,  # Scenario 7
+#     1.534054057620717e-11,  # Scenario 8
+#     2.924182091720404e-11,  # Scenario 9
+#     3.222388455288184e-11,   # Scenario 10
+#     # 1.114304711308078e-11
+# ])
+We_with_bobbin = np.array([
+    2.358792372177351e-11,  # Scenario 1
+    3.10183406267461e-11,   # Scenario 2
+    2.56393791428112e-11,   # Scenario 3
+    1.248543827275428e-11,  # Scenario 4
+    5.172790534894289e-11,  # Scenario 5
+    4.484317223246496e-11,  # Scenario 6
+    3.387134997216844e-11,  # Scenario 7
+    1.752841658974935e-11,  # Scenario 8
+    3.15035211362564e-11,  # Scenario 9
+    3.478179986637866e-11,   # Scenario 10
+    # 2.350977482015328e-11    # 11
 ])
 # old shit
 # We = np.array([
@@ -83,17 +98,18 @@ We = np.array([
 # ])
 
 # Ensure We is a column vector
-We = We.reshape((10, 1))
+# We = We_no_bobbin.reshape((10, 1))
+We = We_with_bobbin.reshape((10, 1))
 
 # Check if M is invertible by computing its determinant
-det_M = np.linalg.det(M)
+det_M = np.linalg.det(M_squared)
 print(f"Determinant of M: {det_M}")
 
 if det_M == 0:
     print("Matrix M is singular and cannot be inverted. Consider revising your simulation scenarios.")
 else:
     # Solve for C: C = M^{-1} * (2 * We)
-    C = np.linalg.inv(M).dot(2 * We)
+    C = np.linalg.inv(M_squared).dot(2 * We)
 
     # Flatten C to a 1D array for easier indexing
     C = C.flatten()
@@ -129,3 +145,13 @@ else:
     print(f"C_ACvsBDE (C1 + C2 + C5 + C6 + C7 + C9): {C_ACvsBDE:.5e} F")
     print(f"C_ADvsBCE (C1 + C2 + C3 + C4 + C7 + C10): {C_ADvsBCE:.5e} F")
     print(f"C_BC_ADE (C1 + C2 + C3 + C4 + C8 + C9): {C_BC_ADE:.5e} F")
+
+energy_with_bobbin = 7.676930117930947e-11
+energy_without_bobbin = 1.107533022806718e-11
+
+difference = energy_with_bobbin - energy_without_bobbin
+percentage_difference = (difference / energy_without_bobbin) * 100
+
+# Print the results
+print(f"Absolute difference in energy: {difference:e} joules")
+print(f"Percentage difference: {percentage_difference:.2f}%")

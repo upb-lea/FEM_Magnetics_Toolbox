@@ -54,11 +54,11 @@ def basic_example_transformer_electrostatic_ansys(onelab_folder: str = None, sho
     geo.set_core(core)
     # 3. set air gap parameters
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.001, 50)
     geo.set_air_gaps(air_gaps)
 
     # 4. set insulation
-    insulation = fmt.Insulation(flag_insulation=False)
+    insulation = fmt.Insulation(flag_insulation=True)
     insulation.add_core_insulations(0.001, 0.001, 0.001, 0.001)
     insulation.add_winding_insulations([[0.0002, 0.001],
                                         [0.001, 0.0002]])
@@ -87,7 +87,7 @@ def basic_example_transformer_electrostatic_ansys(onelab_folder: str = None, sho
 
     # 7. add conductor to vww and add winding window to MagneticComponent
     # top.set_winding(winding2, 15, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
-    bot.set_winding(winding2, 3, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
+    bot.set_winding(winding2, 3, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
     # bot.set_winding(winding1, 29, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
     top.set_winding(winding1, 5, None, fmt.Align.ToEdges, fmt.ConductorDistribution.HorizontalRightward_VerticalUpward, zigzag=False)
     geo.set_winding_windows([winding_window])
@@ -101,11 +101,13 @@ def basic_example_transformer_electrostatic_ansys(onelab_folder: str = None, sho
     # voltages = [[5, 0, 0, 0, 0, 0], [0, 0, 0]]
     # voltages_winding_1 = [1] * 29
     # voltages_winding_2 = [0] * 15
-    geo.electrostatic_simulation( voltage=[[0, 0, 0, 0 , 0], [1, 1, 1]], core_voltage=None, ground_outer_boundary=False,
+    geo.electrostatic_simulation( voltage=[[1, 2, 3, 4 , 5], [3, 6, 9]], core_voltage=0, ground_outer_boundary=False,
                                  show_fem_simulation_results=show_visual_outputs, save_to_excel=False)
-    geo.get_total_charges()
-    # geo.femm_reference_electrostatic(voltages=voltages, ground_core=True, ground_outer_boundary=False, non_visualize=0, save_to_excel=False,
-    #                                  compare_excel_files_to_femmt=False)
+    # geo.get_total_charges()
+    # voltage_1 = [0] + [1] * 4
+    # voltage_2 = [0] * 3
+    geo.femm_reference_electrostatic(voltages=[[1, 2, 3, 4 , 5], [3, 6, 9]], ground_core=True, ground_outer_boundary=False, non_visualize=0, save_to_excel=False,
+                                     compare_excel_files_to_femmt=False)
 
 if __name__ == "__main__":
     basic_example_transformer_electrostatic_ansys(show_visual_outputs=True)

@@ -5830,6 +5830,10 @@ class MagneticComponent:
         core_permittivity = 5000  # Value for core material permittivity
         femm.ei_addmaterial('CoreMaterial', core_permittivity, core_permittivity, 0)
 
+        # Insulation
+        insulation_permittivity = 5.5
+        femm.ei_addmaterial('InsulationMaterial', insulation_permittivity, insulation_permittivity, 0)
+
         # Conductor material
         femm.ei_addmaterial('Copper', 1, 1, 0)
 
@@ -5919,6 +5923,98 @@ class MagneticComponent:
                              self.two_d_axi.p_air_gaps[0, 1])
         else:
             raise Exception("Negative air gap number is not allowed")
+
+        # Add Insulation
+        if self.insulation.flag_insulation:
+            if self.insulation.max_aspect_ratio == 0:
+                # If no aspect ratio is set insulations will not be drawn
+                return
+            else:
+                insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
+
+            # Useful points for insulation creation
+            left_x = self.core.core_inner_diameter / 2 + insulation_delta
+            top_y = self.core.window_h / 2 - insulation_delta
+            right_x = self.core.r_inner - insulation_delta
+            bot_y = -self.core.window_h / 2 + insulation_delta
+
+            # Useful lengths
+            left_iso_width = self.insulation.core_cond[2] - insulation_delta - insulation_delta
+            top_iso_height = self.insulation.core_cond[0] - insulation_delta - insulation_delta
+            right_iso_width = self.insulation.core_cond[3] - insulation_delta - insulation_delta
+            bot_iso_height = self.insulation.core_cond[1] - insulation_delta - insulation_delta
+
+            # Left insulation
+            femm.ei_drawline(left_x,
+                             top_y - top_iso_height - insulation_delta,
+                             left_x + left_iso_width,
+                             top_y - top_iso_height - insulation_delta)
+            femm.ei_drawline(left_x + left_iso_width,
+                             top_y - top_iso_height - insulation_delta,
+                             left_x + left_iso_width,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(left_x + left_iso_width,
+                             bot_y + bot_iso_height + insulation_delta,
+                             left_x,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(left_x,
+                             bot_y + bot_iso_height + insulation_delta,
+                             left_x,
+                             top_y - top_iso_height - insulation_delta)
+
+            # top insulation
+            femm.ei_drawline(left_x,
+                             top_y,
+                             right_x,
+                             top_y)
+            femm.ei_drawline(right_x,
+                             top_y,
+                             right_x,
+                             top_y - top_iso_height)
+            femm.ei_drawline(right_x,
+                             top_y - top_iso_height,
+                             left_x,
+                             top_y - top_iso_height)
+            femm.ei_drawline(left_x,
+                             top_y - top_iso_height,
+                             left_x,
+                             top_y)
+
+            # right insulation
+            femm.ei_drawline(right_x - right_iso_width,
+                             top_y - top_iso_height - insulation_delta,
+                             right_x,
+                             top_y - top_iso_height - insulation_delta)
+            femm.ei_drawline(right_x,
+                             top_y - top_iso_height - insulation_delta,
+                             right_x,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(right_x,
+                             bot_y + bot_iso_height + insulation_delta,
+                             right_x - right_iso_width,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(right_x - right_iso_width,
+                             bot_y + bot_iso_height + insulation_delta,
+                             right_x - right_iso_width,
+                             top_y - top_iso_height - insulation_delta)
+            # bot insulation
+            femm.ei_drawline(left_x,
+                             bot_y + bot_iso_height,
+                             right_x,
+                             bot_y + bot_iso_height)
+            femm.ei_drawline(right_x,
+                             bot_y + bot_iso_height,
+                             right_x,
+                             bot_y)
+            femm.ei_drawline(right_x,
+                             bot_y,
+                             left_x,
+                             bot_y)
+            femm.ei_drawline(left_x,
+                             bot_y,
+                             left_x,
+                             bot_y + bot_iso_height)
+
         # Now select the segments to assign zero voltage for core
         if ground_core:
             boundary_segments = [
@@ -5989,7 +6085,7 @@ class MagneticComponent:
                 femm.ei_selectcircle(x_center, y_center, radius, 4)
 
                 conductor_name = f'Turn{turn_index + 1}'
-                femm.ei_setarcsegmentprop(2.5, '<None>', 0, turn_index + 4, conductor_name)
+                femm.ei_setarcsegmentprop(2.5, '<None>', 0, turn_index + 5, conductor_name)
                 femm.ei_clearselected()
 
                 # Add a block label at the center of the conductor turn
@@ -6002,7 +6098,7 @@ class MagneticComponent:
                 femm.ei_addconductorprop(conductor_name, winding_voltages[i], 0, 1)
 
                 # Set block properties, using a unique group for each conductor
-                femm.ei_setblockprop('Copper', automesh_conductor, mesh_size_conductor, turn_index + 4)
+                femm.ei_setblockprop('Copper', automesh_conductor, mesh_size_conductor, turn_index + 5)
 
                 # Clear selection to ensure no overlap in label assignments
                 femm.ei_clearselected()
@@ -6041,6 +6137,46 @@ class MagneticComponent:
         femm.ei_selectlabel(self.two_d_axi.p_outer[3, 0] + 0.001, self.two_d_axi.p_outer[3, 1] + 0.001)
         femm.ei_setblockprop('Air', automesh, mesh_size, 3)  # Assign 'Air' as the material
         femm.ei_clearselected()
+
+        # Add Block Labels for Insulation
+        if self.insulation.flag_insulation:
+            # Calculate positions for insulation block labels
+            left_insulation_label_x = left_x + left_iso_width / 2
+            left_insulation_label_y = (top_y - top_iso_height - insulation_delta + bot_y + bot_iso_height + insulation_delta) / 2
+
+            top_insulation_label_x = (left_x + right_x) / 2
+            top_insulation_label_y = top_y - top_iso_height / 2
+
+            right_insulation_label_x = right_x - right_iso_width / 2
+            right_insulation_label_y = (top_y - top_iso_height - insulation_delta + bot_y + bot_iso_height + insulation_delta) / 2
+
+            bot_insulation_label_x = (left_x + right_x) / 2
+            bot_insulation_label_y = bot_y + bot_iso_height / 2
+
+            # Add and set block properties for each insulation region
+            # Left insulation
+            femm.ei_addblocklabel(left_insulation_label_x, left_insulation_label_y)
+            femm.ei_selectlabel(left_insulation_label_x, left_insulation_label_y)
+            femm.ei_setblockprop('InsulationMaterial', automesh, mesh_size, 4)
+            femm.ei_clearselected()
+
+            # Top insulation
+            femm.ei_addblocklabel(top_insulation_label_x, top_insulation_label_y)
+            femm.ei_selectlabel(top_insulation_label_x, top_insulation_label_y)
+            femm.ei_setblockprop('InsulationMaterial', automesh, mesh_size, 4)
+            femm.ei_clearselected()
+
+            # Right insulation
+            femm.ei_addblocklabel(right_insulation_label_x, right_insulation_label_y)
+            femm.ei_selectlabel(right_insulation_label_x, right_insulation_label_y)
+            femm.ei_setblockprop('InsulationMaterial', automesh, mesh_size, 4)
+            femm.ei_clearselected()
+
+            # Bottom insulation
+            femm.ei_addblocklabel(bot_insulation_label_x, bot_insulation_label_y)
+            femm.ei_selectlabel(bot_insulation_label_x, bot_insulation_label_y)
+            femm.ei_setblockprop('InsulationMaterial', automesh, mesh_size, 4)
+            femm.ei_clearselected()
 
         # Save, analyze, and load the solution
         femm.ei_zoomnatural()
@@ -6100,6 +6236,13 @@ class MagneticComponent:
         # Select air inside the core
         femm.eo_groupselectblock(2)
         stored_energy = femm.eo_blockintegral(0)
+        if self.insulation.flag_insulation:
+            femm.eo_groupselectblock(4)
+            stored_energy_core = femm.eo_blockintegral(0)
+            log_dict["energy"]["stored_insulation"] = stored_energy_core[0]
+            femm.eo_clearblock()
+
+
         # if not ground_core and not ground_outer_boundary:
         #     # Select air outside the core
         #     femm.eo_groupselectblock(3)
@@ -6108,7 +6251,7 @@ class MagneticComponent:
             num_turns = int(self.two_d_axi.p_conductor[winding_index].shape[0] / 5)
             # Define the starting group index for the current winding
             base_turn_group = winding_index * num_turns
-            for turn_number in range(4, 4 + num_turns):
+            for turn_number in range(5, 5 + num_turns):
                 turn_group = base_turn_group + turn_number
                 femm.eo_groupselectblock(turn_group)
             # Get the stored energy in the component

@@ -22,6 +22,7 @@ BOUND_LEFT             = 111112;
 AIR                     = 110000;
 AIR_EXT                 = 110001;
 AIR_COND                = 1000000;
+Insulation              = 110010;
 CORE_PN                 = 120000;
 ExtGmsh                 = ".pos";
 
@@ -37,6 +38,7 @@ EndFor
 Group {
 
     Air  = Region[{AIR, AIR_EXT}];
+    // Insulation = Region[{Insulation}];
 
     // Core
     Core = Region[{}];
@@ -63,8 +65,9 @@ Group {
     EndFor
 
     // Domain Definitions
-    // Non-Conducting Domain (Air)
+    // Non-Conducting Domain (Air and Insulation)
     DomainCC = Region[{Air}];
+    DomainCC += Region[{Insulation}];
 
     // Add the Core region to the appropriate domain region
     /*If (Flag_ground_OutBoundary)
@@ -147,7 +150,7 @@ Group {
 Function {
 
   // Define relative permittivity (epsilon) for all regions
-  AreaCell[#{Air, Core}] = 1.;
+  AreaCell[#{Air, Insulation, Core}] = 1.;
   For n In {1:n_windings}
       AreaCell[#{Winding~{n}}] = 1.;
   EndFor
@@ -156,8 +159,10 @@ Function {
   // Materials
   er_air = 1;
   er_core = 5000;
+  er_bobbin = 5.5;
   epsilon[#{Air}] = e0 * er_air;
   epsilon[#{Core}] = e0 * er_core;
+  epsilon[#{Insulation}] = e0 * er_bobbin;
   // The winding permittivity is set to 1, but it does not play any role in the simulation.
   For winding_number In {1:n_windings}
       er_winding~{winding_number} = 1;

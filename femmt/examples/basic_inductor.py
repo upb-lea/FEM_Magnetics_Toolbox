@@ -170,7 +170,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # 6.a. start simulation
     geo.single_simulation(freq=inductor_frequency, current=[1],
                           plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
-    geo.get_capacitance(ground_core=True, ground_outer_boundary=False, show_fem_simulation_results=False, show_turn_capacitances=True)
+    # geo.get_capacitance(ground_core=True, ground_outer_boundary=False, show_fem_simulation_results=False, show_turn_capacitances=True)
 
     # geo.femm_reference(freq=inductor_frequency, current=[4.5], sign=[1], non_visualize=0)
 
@@ -183,7 +183,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # 9. start simulation
 
     # 7. prepare and start thermal simulation
-    # example_thermal_simulation(show_visual_outputs, flag_insulation=True)
+    example_thermal_simulation(show_visual_outputs, flag_insulation=True)
 
 
 if __name__ == "__main__":

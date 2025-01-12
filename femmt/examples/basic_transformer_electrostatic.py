@@ -148,8 +148,8 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
 
     # # Simulation 1 (V_A, V_B, V_C, V_D = 1, 0, 0 , 0)
     # # Create a linear voltage distribution along winding 1 from V_A to V_B
-    # V_A = 1.0
-    # V_B = 0.0
+    # V_A = 1
+    # V_B = 0
     # voltages_winding_1 = [
     #     V_A - (V_A - V_B) * i / (num_turns_w1 - 1)
     #     for i in range(num_turns_w1)
@@ -256,10 +256,20 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     voltages_winding_1 = [0] * num_turns_w1
     voltages_winding_2 = [1] * num_turns_w2
 
+    # # Simulation 11 (V_A, V_B, V_C, V_D = 0, 1, 1 , 1)
+    # # # Create a fixed voltage from C to D
+    # V_A = 0.0
+    # V_B = 1.0
+    # voltages_winding_1 = [
+    #     V_A + (V_B - V_A) * i / (num_turns_w1 - 1)
+    #     for i in range(num_turns_w1)
+    # ]
+    # voltages_winding_2 = [1] * num_turns_w2
+
     geo.electrostatic_simulation( voltage=[voltages_winding_1, voltages_winding_2], core_voltage=0, ground_outer_boundary=False,
                                  show_fem_simulation_results=show_visual_outputs, save_to_excel=False)
-    geo.get_total_charges()
-    # geo.femm_reference_electrostatic(voltages=voltages, ground_core=True, ground_outer_boundary=False, non_visualize=0, save_to_excel=False,
+    # geo.get_total_charges()
+    # geo.femm_reference_electrostatic(voltages=[voltages_winding_1, voltages_winding_2], ground_core=True, ground_outer_boundary=True, non_visualize=0, save_to_excel=False,
     #                                  compare_excel_files_to_femmt=False)
 
 if __name__ == "__main__":
