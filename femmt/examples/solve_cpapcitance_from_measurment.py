@@ -18,44 +18,8 @@ M = np.array([
 M_squared = M ** 2
 print("Element-wise Squared Matrix M:\n", M_squared)
 # Define the energy vector (replace with your actual measured energies)
-# a little bit ok
-# We = np.array([
-#     1.06419865439424E-11,  # Scenario 1
-#     4.73039528460407E-11,   # Scenario 2
-#     2.89205878975124E-11,   # Scenario 3
-#     1.40733123145817E-11,  # Scenario 4
-#     5.6876634073016E-11,  # Scenario 5
-#     3.27093626809716E-11,  # Scenario 6
-#     2.03412410765005E-11,  # Scenario 7
-#     1.66543080174277E-11,  # Scenario 8
-#     2.94952547619938E-11,  # Scenario 9
-#     5.45439675817757E-11   # Scenario 10
-# ])
+
 # with error 50%
-# We = np.array([
-#     1.345841649077666e-11,  # Scenario 1
-#     3.37605135169375e-11,   # Scenario 2
-#     3.043399332689536e-11,   # Scenario 3
-#     1.871339220701808e-11,  # Scenario 4
-#     3.638210566173711e-11,  # Scenario 5
-#     3.893581180112835e-11,  # Scenario 6
-#     2.997845514635252e-11,  # Scenario 7
-#     2.565655626511367e-11,  # Scenario 8
-#     3.640981437360513e-11,  # Scenario 9
-#     3.39436495009198e-11   # Scenario 10
-# ])
-# We = np.array([
-#     1.12005406805873E-11,  # Scenario 1
-#     2.64859326385962E-11,   # Scenario 2
-#     2.41637215441754E-11,   # Scenario 3
-#     1.50273531357139E-11,  # Scenario 4
-#     3.01284341153969E-11,  # Scenario 5
-#     3.12566420663081E-11,  # Scenario 6
-#     2.44722987552953E-11,  # Scenario 7
-#     2.00886286074554E-11,  # Scenario 8
-#     2.87949683295412E-11,  # Scenario 9
-#     2.78124147619842E-11   # Scenario 10
-# ])
 # adjusting
 # We_no_bobbin = np.array([
 #     1.107533022806718e-11,  # Scenario 1
@@ -70,37 +34,38 @@ print("Element-wise Squared Matrix M:\n", M_squared)
 #     3.222388455288184e-11,   # Scenario 10
 #     # 1.114304711308078e-11
 # ])
-We_with_bobbin = np.array([
-    2.358792372177351e-11,  # Scenario 1
-    3.10183406267461e-11,   # Scenario 2
-    2.56393791428112e-11,   # Scenario 3
-    1.248543827275428e-11,  # Scenario 4
-    5.172790534894289e-11,  # Scenario 5
-    4.484317223246496e-11,  # Scenario 6
-    3.387134997216844e-11,  # Scenario 7
-    1.752841658974935e-11,  # Scenario 8
-    3.15035211362564e-11,  # Scenario 9
-    3.478179986637866e-11,   # Scenario 10
+# We_with_bobbin = np.array([
+#     2.358792372177351e-11,  # Scenario 1
+#     3.10183406267461e-11,   # Scenario 2
+#     2.56393791428112e-11,   # Scenario 3
+#     1.248543827275428e-11,  # Scenario 4
+#     5.172790534894289e-11,  # Scenario 5
+#     4.484317223246496e-11,  # Scenario 6
+#     3.387134997216844e-11,  # Scenario 7
+#     1.752841658974935e-11,  # Scenario 8
+#     3.15035211362564e-11,  # Scenario 9
+#     3.478179986637866e-11,   # Scenario 10
+#     # 2.350977482015328e-11    # 11
+# ])
+# with modified boobin
+We_with_modified_bobbin = np.array([
+    2.28445470419967E-11,  # Scenario 1
+    3.052061386018125e-11,   # Scenario 2
+    2.462827943671277e-11,   # Scenario 3
+    1.178675793204942e-11,  # Scenario 4
+    5.01055464536329e-11,  # Scenario 5
+    4.315723991354992e-11,  # Scenario 6
+    3.241385446834553e-11,  # Scenario 7
+    1.614028079446477e-11,  # Scenario 8
+    3.028421087334619e-11,  # Scenario 9
+    3.323122435810969e-11,   # Scenario 10
     # 2.350977482015328e-11    # 11
 ])
-# old shit
-# We = np.array([
-#     1.045617431394952e-11,  # Scenario 1: C1
-#     3.748463916134838e-11,   # Scenario 2: C2
-#     2.710237624318629e-11,   # Scenario 3: C3
-#     1.23302350017277e-11,   # Scenario 4: C4
-#     4.46041974774413E-11,    # Scenario 5: C5
-#     3.17336413456305E-11,   # Scenario 6: C6
-#     2.00402189519157E-11,   # Scenario 7: C7
-#     1.55698207357283E-11,   # Scenario 8: C8
-#     2.9353760140396E-11,   # Scenario 9: C9
-#     4.23999282033767E-11    # Scenario 10: C10
-# ])
 
 # Ensure We is a column vector
 # We = We_no_bobbin.reshape((10, 1))
-We = We_with_bobbin.reshape((10, 1))
-
+# We = We_with_bobbin.reshape((10, 1))
+We = We_with_modified_bobbin.reshape((10, 1))
 # Check if M is invertible by computing its determinant
 det_M = np.linalg.det(M_squared)
 print(f"Determinant of M: {det_M}")
