@@ -989,36 +989,36 @@ class TwoDaxiSymmetric:
                                                 [x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
                                             self.p_conductor[num].append(
                                                 [x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                            # # 109-49 transformer
-                                            if num == 0:
-                                                if counter == 0:
-                                                    y += step_y
-                                                elif counter == 1:
-                                                    y += step_y - 6.347e-5
-                                                elif counter == 2:
-                                                    y += step_y + 6.347e-5
-                                                elif counter == 3:
-                                                    y += step_y - 9.873e-5
-                                            if num == 1:
-                                                if counter == 0:
-                                                    y += step_y
-                                                elif counter == 1:
-                                                    y += step_y - 4.11e-5
-                                            # # 109-49 transformer ( with the insulation delta for the bobbin)
+                                            # # # 109-49 transformer
                                             # if num == 0:
                                             #     if counter == 0:
                                             #         y += step_y
                                             #     elif counter == 1:
-                                            #         y += step_y - 6.26e-5
+                                            #         y += step_y - 6.347e-5
                                             #     elif counter == 2:
-                                            #         y += step_y + 6.26e-5
+                                            #         y += step_y + 6.347e-5
                                             #     elif counter == 3:
-                                            #         y += step_y - 9.747e-5
+                                            #         y += step_y - 9.873e-5
                                             # if num == 1:
                                             #     if counter == 0:
                                             #         y += step_y
                                             #     elif counter == 1:
-                                            #         y += step_y - 4.057e-5
+                                            #         y += step_y - 4.11e-5
+                                            # 109-49 transformer ( with the insulation delta for the bobbin)
+                                            if num == 0:
+                                                if counter == 0:
+                                                    y += step_y
+                                                elif counter == 1:
+                                                    y += step_y - 6.26e-5
+                                                elif counter == 2:
+                                                    y += step_y + 6.26e-5
+                                                elif counter == 3:
+                                                    y += step_y - 9.747e-5
+                                            if num == 1:
+                                                if counter == 0:
+                                                    y += step_y
+                                                elif counter == 1:
+                                                    y += step_y - 4.057e-5
                                             # # 59-56
                                             # if num == 0:
                                             #     if counter == 0:
@@ -1041,9 +1041,11 @@ class TwoDaxiSymmetric:
                                         # Moving one step horizontally (right or left)
                                         # 109-49
                                         if num == 0:
-                                            x += step_x - 3.87e-5
+                                            # x += step_x - 3.87e-5
+                                            x += step_x - 2.166e-5
                                         elif num == 1:
-                                            x += step_x - 1.753e-5
+                                            # x += step_x - 1.753e-5
+                                            x += step_x - 1.5653e-4
                                         # # 59-56
                                         # if num == 0:
                                         #     x += step_x + 0.155166875e-3
@@ -1418,150 +1420,286 @@ class TwoDaxiSymmetric:
             # Insulation between winding and core
             # Since an aspect ratio is given the insulation delta is calculated using the length of the longest side of the triangle,
             # which is always smaller than c_window.
-            if self.insulation.max_aspect_ratio == 0:
-                # If no aspect ratio is set insulations will not be drawn
-                return
+            if not self.simulation_type == SimulationType.ElectroStatic:
+
+                if self.insulation.max_aspect_ratio == 0:
+                    # If no aspect ratio is set insulations will not be drawn
+                    return
+                else:
+                    insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
+
+                self.p_iso_core = []  # Order: Left, Top, Right, Bot
+                self.p_iso_pri_sec = []
+
+                # Useful points for insulation creation
+                left_x = self.core.core_inner_diameter / 2 + insulation_delta
+                top_y = window_h / 2 - insulation_delta
+                right_x = self.r_inner - insulation_delta
+                bot_y = -window_h / 2 + insulation_delta
+                # # Useful lengths
+                # left_iso_width = iso.core_cond[2] - insulation_delta- insulation_delta
+                # top_iso_height = iso.core_cond[0] - insulation_delta - insulation_delta
+                # right_iso_width = iso.core_cond[3] - insulation_delta - insulation_delta
+                # bot_iso_height = iso.core_cond[1] - insulation_delta - insulation_delta
+
+                # Useful lengths
+                left_iso_width = iso.core_cond[2] - insulation_delta - insulation_delta
+                top_iso_height = iso.core_cond[0] - insulation_delta - insulation_delta
+                right_iso_width = iso.core_cond[3] - insulation_delta - insulation_delta
+                bot_iso_height = iso.core_cond[1] - insulation_delta - insulation_delta
+
+                # Core to Pri insulation
+                iso_core_left = [
+                    [
+                        left_x,
+                        top_y - top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        left_x + left_iso_width,
+                        top_y - top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        left_x + left_iso_width,
+                        bot_y + bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        left_x,
+                        bot_y + bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ]
+                ]
+                iso_core_top = [
+                    [
+                        left_x,
+                        top_y,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x,
+                        top_y,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x,
+                        top_y - top_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        left_x,
+                        top_y - top_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ]
+                ]
+                iso_core_right = [
+                    [
+                        right_x - right_iso_width,
+                        top_y - top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        right_x,
+                        top_y - top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x,
+                        bot_y + bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x - right_iso_width,
+                        bot_y + bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ]
+                ]
+                iso_core_bot = [
+                    [
+                        left_x,
+                        bot_y + bot_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        right_x,
+                        bot_y + bot_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        right_x,
+                        bot_y,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        left_x,
+                        bot_y,
+                        0,
+                        mesh_density_to_core
+                    ]
+                ]
+
+                self.p_iso_core = [iso_core_left, iso_core_top, iso_core_right, iso_core_bot]
             else:
-                insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
 
-                # Handle the insulation delta for electrostatic transformer
-                # top - bot
-                bobbin_height = 28.7e-3
-                insulation_delta_top_bot = (window_h - bobbin_height) / 2
-                # left
-                bobbin_inner_diameter = 17.5e-3 / 2
-                core_inner_diameter = self.core.core_inner_diameter / 2
-                # insulation_delta_left = bobbin_inner_diameter - core_inner_diameter
+                if self.insulation.max_aspect_ratio == 0:
+                    # If no aspect ratio is set insulations will not be drawn
+                    return
+                else:
+                    insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
 
+                    # Handle the insulation delta for electrostatic transformer
+                    # top - bot
+                    bobbin_height = 28.7e-3
+                    insulation_delta_top_bot = (window_h - bobbin_height) / 2
+                    # left
+                    bobbin_inner_diameter = 17.5e-3 / 2
+                    core_inner_diameter = self.core.core_inner_diameter / 2
+                    insulation_delta_left = bobbin_inner_diameter - core_inner_diameter
 
+                self.p_iso_core = []  # Order: Left, Top, Right, Bot
+                self.p_iso_pri_sec = []
 
-            self.p_iso_core = []  # Order: Left, Top, Right, Bot
-            self.p_iso_pri_sec = []
+                # Useful points for insulation creation
+                left_x = self.core.core_inner_diameter / 2 + insulation_delta_left
+                top_y = window_h / 2 - insulation_delta_top_bot
+                right_x = self.r_inner - insulation_delta
+                bot_y = -window_h / 2 + insulation_delta_top_bot
+                # # Useful lengths
+                # left_iso_width = iso.core_cond[2] - insulation_delta- insulation_delta
+                # top_iso_height = iso.core_cond[0] - insulation_delta - insulation_delta
+                # right_iso_width = iso.core_cond[3] - insulation_delta - insulation_delta
+                # bot_iso_height = iso.core_cond[1] - insulation_delta - insulation_delta
 
-            # Useful points for insulation creation
-            left_x = self.core.core_inner_diameter / 2 + insulation_delta
-            top_y = window_h / 2 - insulation_delta_top_bot
-            right_x = self.r_inner - insulation_delta
-            bot_y = -window_h / 2 + insulation_delta_top_bot
-            # # Useful lengths
-            # left_iso_width = iso.core_cond[2] - insulation_delta- insulation_delta
-            # top_iso_height = iso.core_cond[0] - insulation_delta - insulation_delta
-            # right_iso_width = iso.core_cond[3] - insulation_delta - insulation_delta
-            # bot_iso_height = iso.core_cond[1] - insulation_delta - insulation_delta
+                # Useful lengths
+                left_iso_width = iso.core_cond[2] - insulation_delta - insulation_delta
+                top_iso_height = iso.core_cond[0] - insulation_delta - insulation_delta
+                right_iso_width = iso.core_cond[3] - insulation_delta - insulation_delta
+                bot_iso_height = iso.core_cond[1] - insulation_delta - insulation_delta
 
-            # Useful lengths
-            left_iso_width = iso.core_cond[2] - insulation_delta - insulation_delta
-            top_iso_height = iso.core_cond[0] - insulation_delta_top_bot - insulation_delta_top_bot
-            right_iso_width = iso.core_cond[3] - insulation_delta - insulation_delta
-            bot_iso_height = iso.core_cond[1] - insulation_delta_top_bot - insulation_delta_top_bot
-
-            # Core to Pri insulation
-            iso_core_left = [
-                [
-                    left_x,
-                    top_y - top_iso_height - insulation_delta,
-                    0,
-                    mesh_density_to_core
-                ],
-                [
-                    left_x + left_iso_width,
-                    top_y - top_iso_height - insulation_delta,
-                    0,
-                    mesh_density_to_winding
-                ],
-                [
-                    left_x + left_iso_width,
-                    bot_y + bot_iso_height + insulation_delta,
-                    0,
-                    mesh_density_to_winding
-                ],
-                [
-                    left_x,
-                    bot_y + bot_iso_height + insulation_delta,
-                    0,
-                    mesh_density_to_core
+                # Core to Pri insulation
+                iso_core_left = [
+                    [
+                        left_x,
+                        top_y - top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        left_x + left_iso_width,
+                        top_y - top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        left_x + left_iso_width,
+                        bot_y + bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        left_x,
+                        bot_y + bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ]
                 ]
-            ]
-            iso_core_top = [
-                [
-                    left_x,
-                    top_y,
-                    0,
-                    mesh_density_to_core
-                ],
-                [
-                    right_x,
-                    top_y,
-                    0,
-                    mesh_density_to_core
-                ],
-                [
-                    right_x,
-                    top_y - top_iso_height,
-                    0,
-                    mesh_density_to_winding
-                ],
-                [
-                    left_x,
-                    top_y - top_iso_height,
-                    0,
-                    mesh_density_to_winding
+                iso_core_top = [
+                    [
+                        left_x,
+                        top_y,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x,
+                        top_y,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x,
+                        top_y - top_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        left_x,
+                        top_y - top_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ]
                 ]
-            ]
-            iso_core_right = [
-                [
-                    right_x - right_iso_width,
-                    top_y - top_iso_height - insulation_delta,
-                    0,
-                    mesh_density_to_winding
-                ],
-                [
-                    right_x,
-                    top_y - top_iso_height - insulation_delta,
-                    0,
-                    mesh_density_to_core
-                ],
-                [
-                    right_x,
-                    bot_y + bot_iso_height + insulation_delta,
-                    0,
-                    mesh_density_to_core
-                ],
-                [
-                    right_x - right_iso_width,
-                    bot_y + bot_iso_height + insulation_delta,
-                    0,
-                    mesh_density_to_winding
+                iso_core_right = [
+                    [
+                        right_x - right_iso_width,
+                        top_y - top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        right_x,
+                        top_y - top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x,
+                        bot_y + bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x - right_iso_width,
+                        bot_y + bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ]
                 ]
-            ]
-            iso_core_bot = [
-                [
-                    left_x,
-                    bot_y + bot_iso_height,
-                    0,
-                    mesh_density_to_winding
-                ],
-                [
-                    right_x,
-                    bot_y + bot_iso_height,
-                    0,
-                    mesh_density_to_winding
-                ],
-                [
-                    right_x,
-                    bot_y,
-                    0,
-                    mesh_density_to_core
-                ],
-                [
-                    left_x,
-                    bot_y,
-                    0,
-                    mesh_density_to_core
+                iso_core_bot = [
+                    [
+                        left_x,
+                        bot_y + bot_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        right_x,
+                        bot_y + bot_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        right_x,
+                        bot_y,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        left_x,
+                        bot_y,
+                        0,
+                        mesh_density_to_core
+                    ]
                 ]
-            ]
 
-            self.p_iso_core = [iso_core_left, iso_core_top, iso_core_right, iso_core_bot]
+                self.p_iso_core = [iso_core_left, iso_core_top, iso_core_right, iso_core_bot]
+
 
             """
             Currently there are only core to vww insulations

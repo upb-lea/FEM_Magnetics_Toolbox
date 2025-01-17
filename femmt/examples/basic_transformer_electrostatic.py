@@ -80,16 +80,16 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     # 4. set insulation
     insulation = fmt.Insulation(flag_insulation=True)
     # insulation.add_core_insulations(2.2e-3, 2.2e-3, 1.25e-3, 1.25e-3)
-    # core_insulation (measured)
-    insulation.add_core_insulations(1.7e-3, 1.7e-3, 1.25e-3, 1.25e-3)
-    # # core_insulation (from datasheet)
-    # insulation.add_core_insulations(1.55e-3, 1.55e-3, 1.25e-3, 1.25e-3)
-    # # # 109-49 transformer
-    insulation.add_winding_insulations([[1.887e-4, 0.095e-3],
-                                        [0.095e-3, 3.253e-4]])
-    # # # 109-49 transformer ( considering the bobbin insulation delta for top and bottom)
+    # # core_insulation (measured)
+    # insulation.add_core_insulations(1.7e-3, 1.7e-3, 1.25e-3, 1.25e-3)
+    # core_insulation (from datasheet)
+    insulation.add_core_insulations(1.55e-3, 1.55e-3, 1.25e-3, 1.25e-3)
+    # # # # 109-49 transformer
     # insulation.add_winding_insulations([[1.887e-4, 0.095e-3],
-    #                                     [0.095e-3, 3.283e-4]])
+    #                                     [0.095e-3, 3.253e-4]])
+    # # # 109-49 transformer ( considering the bobbin insulation delta for top and bottom)
+    insulation.add_winding_insulations([[1.7666e-4, 0.095e-3],
+                                        [0.095e-3, 3.1153e-4]])
     # 59-56 transformer
     # insulation.add_winding_insulations([[1.33125e-4, 0.095e-3],
     #                                     [0.095e-3, 1.88667e-4]])
@@ -100,7 +100,7 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     winding_window = fmt.WindingWindow(core, insulation)
     # bot, top = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit, split_distance=0.001)
     # 109-49
-    cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.398],
+    cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.472],
                                                        vertical_split_factors=None)
     # cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.],
     #                                                    vertical_split_factors=None)

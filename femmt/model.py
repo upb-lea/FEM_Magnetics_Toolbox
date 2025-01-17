@@ -1015,11 +1015,22 @@ class WindingWindow:
         self.core: Core = core
         self.stray_path: StrayPath = stray_path
         self.air_gaps: AirGaps = air_gaps
+        # top - bot
+        bobbin_height = 28.7e-3
+        insulation_delta_top_bot = (self.core.window_h - bobbin_height) / 2
+        # left
+        bobbin_inner_diameter = 17.5e-3 / 2
+        core_inner_diameter = self.core.core_inner_diameter / 2
+        insulation_delta_left = bobbin_inner_diameter - core_inner_diameter
 
         if self.core.core_type == CoreType.Single:
-            self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[1]
-            self.max_top_bound = core.window_h / 2 - insulations.core_cond[0]
-            self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
+            # self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[1]
+            # self.max_top_bound = core.window_h / 2 - insulations.core_cond[0]
+            # self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
+            # self.max_right_bound = core.r_inner - insulations.core_cond[3]
+            self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[1] + insulation_delta_top_bot
+            self.max_top_bound = core.window_h / 2 - insulations.core_cond[0] - insulation_delta_top_bot
+            self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2] + insulation_delta_left
             self.max_right_bound = core.r_inner - insulations.core_cond[3]
         elif self.core.core_type == CoreType.Stacked:  # top, bot, left, right
             self.max_bot_bound = -core.window_h_bot / 2 + insulations.core_cond[1]
