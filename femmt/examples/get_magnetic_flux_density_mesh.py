@@ -48,6 +48,8 @@ for index, TriangleNode in enumerate(Triangle_Core):
     xj = xyz[int(TriangleNode[1:4][1]-1), :]
     xk = xyz[int(TriangleNode[1:4][2]-1), :]
 
+    radius = np.mean([xi[0], xj[0], xk[0]])
+
     a = np.sqrt(np.dot(xi - xj, xi - xj))
     b = np.sqrt(np.dot(xi - xk, xi - xk))
     c = np.sqrt(np.dot(xj - xk, xj - xk))
@@ -55,23 +57,24 @@ for index, TriangleNode in enumerate(Triangle_Core):
     s = (a+b+c)/2
     dA = np.sqrt(s*(s-a)*(s-b)*(s-c))
 
+    volume = 2*np.pi*radius*dA
+
     Triangle_Core[index].append(dA)
+    Triangle_Core[index].append(volume)
 
     surface_area += dA
-print("area of core:", surface_area)
+# print("area of core:", surface_area)
 
-flux_area = [[x[-2], x[-1]] for x in Triangle_Core]
+flux_area = [[x[-3], x[-2], x[-1]] for x in Triangle_Core]
 flux_area.append(surface_area)
-
 print("tot", time.time()-start_tot)
 
-flux = [x[-2] for x in Triangle_Core]
-b_field_avg = np.sum([x[-2]*x[-1] for x in Triangle_Core])/surface_area
+flux = [x[-3] for x in Triangle_Core]
+b_field_avg = np.sum([x[-3]*x[-2] for x in Triangle_Core])/surface_area
 print(b_field_avg)
 print(np.mean(flux))
 # print(flux_area)
 
-# TriangleNodeTags = [x[0] for x in data_triangle]
 # path of gmsh-file needed
 gmsh.open(os.path.join(os.path.dirname(caller_filename), "example_results/basic_inductor/mesh/electro_magnetic.msh"))
 

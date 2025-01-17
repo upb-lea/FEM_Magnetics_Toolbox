@@ -332,6 +332,13 @@ class ExcitationMeshingType(IntEnum):
     MeshEachFrequency = 3
 
 
+class WaveformType(str, Enum):
+    """Types of waveforms."""
+
+    Sine = "sine"
+    Triangle = "triangle"
+
+
 # Following Enums must always be consistent with the materialdatabase
 class MaterialDataSource(str, Enum):
     """Sets the source from where data is taken."""
