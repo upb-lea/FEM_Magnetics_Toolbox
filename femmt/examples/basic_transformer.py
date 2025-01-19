@@ -109,9 +109,15 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     # 2. set core parameters
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295,
                                                     core_h=0.04)
-    core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
-                    permeability_datasource=fmt.MaterialDataSource.Custom,
-                    permittivity_datasource=fmt.MaterialDataSource.Custom,
+    core = fmt.Core(core_dimensions=core_dimensions,
+                    material=fmt.Material.N49, frequency=200000, temperature=25,
+                    # permeability_datasource="manufacturer_datasheet",
+                    permeability_datasource=fmt.MaterialDataSource.Measurement,
+                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                    permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
+                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                    permittivity_measurement_setup=fmt.MeasurementSetup.LEA_MTB_small_signal, mdb_verbosity=fmt.Verbosity.Silent,
                     detailed_core_model=True)
     geo.set_core(core)
 
@@ -153,10 +159,14 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
 
     # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=200000, pre_visualize_geometry=show_visual_outputs)
-    geo.single_simulation(freq=200000, current=[2, 2], phi_deg=[0, 180],
-                          show_fem_simulation_results=show_visual_outputs)
 
-    example_thermal_simulation(show_visual_outputs, flag_insulation=True)
+    result = geo.calc_hystersis_losses_based_on_reluctance(peak_magnetizing_current=0.1, Standard_SE=True, MagNet_PB=True, MagNet_Sydney=True)
+
+    geo.single_simulation(freq=200000, current=[2, 1.9], phi_deg=[0, 180],
+                          show_fem_simulation_results=show_visual_outputs)
+    print(result)
+
+    # example_thermal_simulation(show_visual_outputs, flag_insulation=True)
 
 
 if __name__ == "__main__":

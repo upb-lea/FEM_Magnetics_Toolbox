@@ -8,7 +8,7 @@ import os
 import warnings
 from typing import Union, List, Tuple, Dict
 from scipy.integrate import quadrature
-
+import re
 
 # Third parry libraries
 import gmsh
@@ -1760,6 +1760,60 @@ def convert_air_gap_corner_points_to_center_and_distance(corner_points: list) ->
             ]
         )
     return centers, heights
+
+
+def calc_magnetic_flux_density_based_on_simulation_results(path: str):
+    """
+    Calculate the magnetic flux density and volume for every mesh cell
+
+    :param path: path to "Magb.pos" file
+    :type path: str
+    :returns: magnetic flux density of every mesh cell of core / volume of every mesh cell of core
+    :rtype: np.array, np.array
+    """
+    with open(path, 'r') as file:
+        content = file.read()  # type of content: str
+
+    # find both occurrence of "Magnitude B-Field / T", Elements and Nodes in Magb.pos
+    indexes_B_Field = np.array([m.start() for m in re.finditer('"Magnitude B-Field / T"', content)])
+    indexes_Elements = np.array([m.start() for m in re.finditer('Elements', content)])
+    indexes_Coords = np.array([m.start() for m in re.finditer('Nodes', content)])
+    # filter magnetic flux density out of Magb.pos(data is between the both occurrences of "Magnitude B-Field / T") and put data into list
+    data_B_Field = np.array([float(x) for x in content[indexes_B_Field[0]:indexes_B_Field[1]].split()[11:-3]])
+    data_Elements = np.array([int(x) for x in content[indexes_Elements[0]:indexes_Elements[1]].split()[2:-1]])
+    data_Coords = np.array([float(x) for x in content[indexes_Coords[0]:indexes_Coords[1]].split()[2:-1]])
+    # divide long list into lists for every triangle/mesh-cell
+    chunks_B_Field = [data_B_Field[x:x + 5] for x in range(0, data_B_Field.shape[0], 5)]
+    chunks_Elements = np.array([data_Elements[x:x + 8] for x in range(0, data_Elements.shape[0], 8)])
+    chunks_Coords = np.array([data_Coords[x:x + 4] for x in range(0, data_Coords.shape[0], 4)])
+
+    data_triangle = np.concatenate((chunks_Elements, np.array(chunks_B_Field)), axis=1)
+    Triangle_Core = [[x[0], x[5], x[6], x[7], np.mean(x[10:])] for x in data_triangle if x[3] // 10000 == 12]
+
+    xyz = np.array([np.array([x[1], x[2], x[3]]) for x in chunks_Coords])
+
+    for index, TriangleNode in enumerate(Triangle_Core):
+        xi = xyz[int(TriangleNode[1:4][0] - 1), :]
+        xj = xyz[int(TriangleNode[1:4][1] - 1), :]
+        xk = xyz[int(TriangleNode[1:4][2] - 1), :]
+
+        radius = np.mean([xi[0], xj[0], xk[0]])
+
+        a = np.sqrt(np.dot(xi - xj, xi - xj))
+        b = np.sqrt(np.dot(xi - xk, xi - xk))
+        c = np.sqrt(np.dot(xj - xk, xj - xk))
+
+        s = (a + b + c) / 2
+        dA = np.sqrt(s * (s - a) * (s - b) * (s - c))
+
+        volume = 2 * np.pi * radius * dA
+
+        Triangle_Core[index].append(volume)
+
+    flux = np.array([x[-2] for x in Triangle_Core])
+    volume = np.array([x[-1] for x in Triangle_Core])
+
+    return flux, volume
 
 
 def time_current_vector_to_fft_excitation(time_current_vectors: List[List[List[float]]], fft_filter_value_factor: float = 0.01):

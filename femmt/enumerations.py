@@ -336,7 +336,7 @@ class WaveformType(str, Enum):
     """Types of waveforms."""
 
     Sine = "sine"
-    Triangle = "triangle"
+    Custom = "custom"
 
 
 # Following Enums must always be consistent with the materialdatabase

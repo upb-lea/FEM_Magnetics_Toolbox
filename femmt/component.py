@@ -2958,10 +2958,10 @@ class MagneticComponent:
             return dataclasses.asdict(inductances)
 
     def calc_hystersis_losses_based_on_reluctance(self, peak_magnetizing_current: float = 1, measurement_setup: str = "MagNet",
-                                                  b_wave: np.array | WaveformType = None, Standard_SE: bool = True, IGSE: bool = False,
-                                                  MagNet_PB: bool = False, MagNet_Sydney: bool = False):
+                                                  b_wave: WaveformType = WaveformType.Sine, custom_b_wave: np.array = None,
+                                                  Standard_SE: bool = True, IGSE: bool = False,  MagNet_PB: bool = False, MagNet_Sydney: bool = False):
         """
-        Calculate the hysteresis losses based on different Steinmetz equations.
+        Calculate the hysteresis losses based on a reluctance model.
 
         # TODO SORT THE FUNCTION CORRECT INTO component.py (right now under Post-Processing)
 
@@ -2969,8 +2969,10 @@ class MagneticComponent:
         :type peak_magnetizing_current: peak value of the magnetizing current
         :param measurement_setup: name of the measurement setup
         :type measurement_setup: str
-        :param b_wave: normalized signal of the magnetic flux density/magnetizing current (normalized -> amplitude of 1)
-        :type b_wave: np.array or WaveformType
+        :param b_wave: type of the waveform of the magnetic flux density/magnetizing current
+        :type b_wave: WaveformType
+        :param custom_b_wave: normalized signal of the magnetic flux density/magnetizing current (normalized -> amplitude of 1)
+        :type custom_b_wave: np.array
         :param Standard_SE: flag for the standard Steinmetz equation
         :type Standard_SE: bool
         :param IGSE: flag for using the IGSE (Improved Generalized Steinmetz Equation)
@@ -2979,7 +2981,7 @@ class MagneticComponent:
         :type MagNet_PB: bool
         :param MagNet_Sydney: flag for using the MagNet model of the University of Sydney
         :type MagNet_Sydney: bool
-        :return: dict containing the hysteresis losses # TODO or instead of dict create new variables (self.Standard_SE or self.IGSE)
+        :return: dict containing the hysteresis losses # TODO instead of dict create new variables (self.Standard_SE or self.IGSE)
         """
 
         total_reluctance = self.calculate_core_reluctance()[0] + self.air_gaps_reluctance()[0]
@@ -2990,25 +2992,24 @@ class MagneticComponent:
             turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings, winding_number=0)
             inductance = (turns**2)/total_reluctance
             b_field_peak = inductance*peak_magnetizing_current/center_leg_area/turns
-        if self.component_type == ComponentType.Transformer:
+        elif self.component_type == ComponentType.Transformer:
+            turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings, winding_number=0)
+            inductance = (turns**2)/total_reluctance
+            b_field_peak = inductance*peak_magnetizing_current/center_leg_area/turns
             # b_field_peak = 1
-            raise NotImplementedError("Transformer not implemented yet!")
-        if self.component_type == ComponentType.IntegratedTransformer:
+            # raise NotImplementedError("Transformer not implemented yet!")
+        elif self.component_type == ComponentType.IntegratedTransformer:
+            turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings, winding_number=0)
+            inductance = (turns**2)/total_reluctance
+            b_field_peak = inductance*peak_magnetizing_current/center_leg_area/turns
             # b_field_peak = 1
-            raise NotImplementedError("IntegratedTransformer not implemented yet!")
+            # raise NotImplementedError("IntegratedTransformer not implemented yet!")
 
         # multiply the normalized signal of the magnetic flux density with the peak value of the magnetic flux density, if not assume sine wave
-        if issubclass(b_wave, WaveformType):
-            if b_wave is WaveformType.Sine:
-                b_wave = np.sin(np.linspace(0, 2*np.pi, 1024)) * b_field_peak
-            if b_wave is WaveformType.Triangle:
-                # b_wave = np.sin(np.linspace(0, 2*np.pi, 1024)) * b_field_peak
-                raise NotImplementedError("Triangle wave form not implemeneted yet!")
-
-        elif isinstance(b_wave, np.ndarray):
-            b_wave = b_wave * b_field_peak
-        else:
-            raise TypeError("Incorrect datatype np.array or WaveformType(Enum) for b_wave!")
+        if b_wave is WaveformType.Sine:
+            b_wave = np.sin(np.linspace(0, 2*np.pi, 1024)) * b_field_peak
+        elif b_wave is WaveformType.Custom:
+            b_wave = custom_b_wave * b_field_peak
 
         hyst_dict = {}
 
@@ -3030,22 +3031,38 @@ class MagneticComponent:
 
         return hyst_dict
 
-    def calc_hystersis_losses_based_on_mesh_results(self, measurement_setup: str = "MagNet", b_wave: np.array = None,
+    def calc_hystersis_losses_based_on_mesh_results(self, measurement_setup: str = "MagNet",
+                                                    b_wave: WaveformType = WaveformType.Sine, custom_b_wave: np.array = None,
                                                     Standard_SE: bool = True, IGSE: bool = False, MagNet_PB: bool = False, MagNet_Sydney: bool = False):
-        flux, volume = self.calc_magnetic_flux_density_based_on_simulation_results()
+        """
+        Calculate the hysteresis losses based on FEM-simulation results.
+
+        # TODO SORT THE FUNCTION CORRECT INTO component.py (right now under Post-Processing)
+
+        :param measurement_setup: name of the measurement setup
+        :type measurement_setup: str
+        :param b_wave: type of the waveform of the magnetic flux density/magnetizing current
+        :type b_wave: WaveformType
+        :param custom_b_wave: normalized signal of the magnetic flux density/magnetizing current (normalized -> amplitude of 1)
+        :type custom_b_wave: np.array
+        :param Standard_SE: flag for the standard Steinmetz equation
+        :type Standard_SE: bool
+        :param IGSE: flag for using the IGSE (Improved Generalized Steinmetz Equation)
+        :type IGSE: bool
+        :param MagNet_PB: flag for using the MagNet model of the University of Paderborn
+        :type MagNet_PB: bool
+        :param MagNet_Sydney: flag for using the MagNet model of the University of Sydney
+        :type MagNet_Sydney: bool
+        :return: dict containing the hysteresis losses # TODO instead of dict create new variables (self.Standard_SE or self.IGSE)
+        """
+        # flux, volume = self.calc_magnetic_flux_density_based_on_simulation_results()
+        flux, volume = ff.calc_magnetic_flux_density_based_on_simulation_results(path=os.path.join(self.file_data.e_m_fields_folder_path, "Magb.pos"))
 
         # multiply the normalized signal of the magnetic flux density with the peak value of the magnetic flux density, if not assume sine wave
-        if issubclass(b_wave, WaveformType):
-            if b_wave is WaveformType.Sine:
-                b_wave = np.array([np.sin(np.linspace(0, 2*np.pi, 1024)) * b for b in flux])
-            if b_wave is WaveformType.Triangle:
-                # b_wave = np.sin(np.linspace(0, 2*np.pi, 1024)) * b_field_peak
-                raise NotImplementedError("Triangle wave form not implemeneted yet!")
-
-        elif isinstance(b_wave, np.ndarray):
-            b_wave = np.array(b_wave * b for b in flux)
-        else:
-            raise TypeError("Incorrect datatype np.array or WaveformType(Enum) for b_wave!")
+        if b_wave is WaveformType.Sine:
+            b_wave = np.array([np.sin(np.linspace(0, 2*np.pi, 1024)) * b for b in flux])
+        elif b_wave is WaveformType.Custom:
+            b_wave = np.array(custom_b_wave * b for b in flux)
 
         hyst_dict = {}
 
@@ -3517,53 +3534,9 @@ class MagneticComponent:
             sweep_dict["core_eddy_losses"] = self.load_result(res_name="CoreEddyCurrentLosses", last_n=number_frequency_simulations)[single_simulation]
             sweep_dict["core_hyst_losses"] = self.load_result(res_name="p_hyst", last_n=number_frequency_simulations)[single_simulation]
 
-
-            # TODO Delete this stuff at the end(First approach for masteproject WS24/25)!!!
-            # # differentiate between single_simulation and sweep_simulation
-            # if self.component_type == ComponentType.Inductor:
-            #
-            #     steinmetz_dict, MagNet_dict = {}, {}
-            #
-            #     # area of center leg: A = pi * (diameter_center_leg / 2)^2 (A = pi * r^2)
-            #     center_leg_area = np.pi * (float(common_log_dict["simulation_settings"]["core"]["core_inner_diameter"]) / 2) ** 2
-            #     # approx. magnetic flux density of center leg: b = phi / A_center_leg / N (N: no. of winding turns | phi: magnetic flux)
-            #     b_field = abs(complex(winding_dict["flux"][0], winding_dict["flux"][1])) / center_leg_area / winding_dict["number_turns"]
-            #     x = np.linspace(0, 2 * np.pi, 1024)
-            #     b_wave = np.sin(x) * b_field  # in T
-            #     if number_frequency_simulations > 1:
-            #         # sweep_simulation -> get frequencies from passed currents
-            #         steinmetz_dict = mdb.calc_steinmetz_FEM_simulation(
-            #             core_inner_diameter=common_log_dict["simulation_settings"]["core"]["core_inner_diameter"], frequency=frequencies[single_simulation],
-            #             temperature=common_log_dict["simulation_settings"]["core"]["temperature"],
-            #             magnetizing_flux_peak=abs(complex(winding_dict["flux"][0], winding_dict["flux"][1])), b_wave=[],
-            #             core_volume=common_log_dict["misc"]["core_2daxi_volume"], no_of_turns=winding_dict["number_turns"], measurement_setup="MagNet",
-            #             material_name=common_log_dict["simulation_settings"]["core"]["material"], Standard_SE=True, IGSE=False)
-            #
-            #         MagNet_dict = mdb.calc_MagNet_FEM_simulation(
-            #             material_name=common_log_dict["simulation_settings"]["core"]["material"], b_wave=b_wave, frequency=frequencies[single_simulation],
-            #             temperature=common_log_dict["simulation_settings"]["core"]["temperature"], core_volume=common_log_dict["misc"]["core_2daxi_volume"],
-            #             MagNet_PB=True, MagNet_Sydney=False)
-            #     else:
-            #         # single_simulation -> get frequency from instance variable
-            #         steinmetz_dict = mdb.calc_steinmetz_FEM_simulation(
-            #             core_inner_diameter=common_log_dict["simulation_settings"]["core"]["core_inner_diameter"], frequency=self.frequency,
-            #             temperature=common_log_dict["simulation_settings"]["core"]["temperature"],
-            #             magnetizing_flux_peak=abs(complex(winding_dict["flux"][0], winding_dict["flux"][1])), b_wave=[],
-            #             core_volume=common_log_dict["misc"]["core_2daxi_volume"], no_of_turns=winding_dict["number_turns"], measurement_setup="MagNet",
-            #             material_name=common_log_dict["simulation_settings"]["core"]["material"], Standard_SE=True, IGSE=False)
-            #
-            #         MagNet_dict = mdb.calc_MagNet_FEM_simulation(
-            #             material_name=common_log_dict["simulation_settings"]["core"]["material"], b_wave=b_wave, frequency=self.frequency,
-            #             temperature=common_log_dict["simulation_settings"]["core"]["temperature"], core_volume=common_log_dict["misc"]["core_2daxi_volume"],
-            #             MagNet_PB=True, MagNet_Sydney=False)
-            #
-            #     sweep_dict = {**sweep_dict, **steinmetz_dict}
-            #     sweep_dict = {**sweep_dict, **MagNet_dict}
-
             # Core Part losses
             # If there are multiple core parts, calculate losses for each part individually
             # the core losses are calculated by summing the eddy and hyst losses
-
             sweep_dict["core_parts"] = {}
             for core_part in range(0, len(self.mesh.plane_surface_core)):
                 sweep_dict["core_parts"][f"core_part_{core_part + 1}"] = {}
