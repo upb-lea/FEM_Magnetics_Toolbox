@@ -14,6 +14,8 @@ from datetime import datetime
 import time
 import logging
 import dataclasses
+
+import scipy.interpolate
 from matplotlib import pyplot as plt
 import ast
 
@@ -3032,7 +3034,7 @@ class MagneticComponent:
         return hyst_dict
 
     def calc_hystersis_losses_based_on_mesh_results(self, measurement_setup: str = "MagNet",
-                                                    b_wave: WaveformType = WaveformType.Sine, custom_b_wave: np.array = None,
+                                                    b_wave: WaveformType = WaveformType.Sine, custom_b_wave: np.array = None, MDB: bool = True,
                                                     Standard_SE: bool = True, IGSE: bool = False, MagNet_PB: bool = False, MagNet_Sydney: bool = False):
         """
         Calculate the hysteresis losses based on FEM-simulation results.
@@ -3045,6 +3047,8 @@ class MagneticComponent:
         :type b_wave: WaveformType
         :param custom_b_wave: normalized signal of the magnetic flux density/magnetizing current (normalized -> amplitude of 1)
         :type custom_b_wave: np.array
+        :param Standard_SE: flag for the calculation with the data of the MaterialDataBase (also used by FEMMT)
+        :type Standard_SE: bool
         :param Standard_SE: flag for the standard Steinmetz equation
         :type Standard_SE: bool
         :param IGSE: flag for using the IGSE (Improved Generalized Steinmetz Equation)
@@ -3065,6 +3069,26 @@ class MagneticComponent:
             b_wave = np.array(custom_b_wave * b for b in flux)
 
         hyst_dict = {}
+
+        if True:
+            with open(os.path.join(self.file_data.results_folder_path, "log_material.json"), "r") as fd:
+                log_material = json.loads(fd.read())
+
+            mag_flux_density = log_material[list(log_material.keys())[0]]["magnetic_flux_density"]
+
+            mu_complex = np.array([complex(real=a, imag=b) for a, b in zip(log_material[list(log_material.keys())[0]]["permeability_real"],
+                                                                           log_material[list(log_material.keys())[0]]["permeability_imag"])])
+
+            mu_r = np.absolute(mu_complex)
+            mu_phi_deg = np.angle(z=mu_complex, deg=True)
+
+            f_mu_r = scipy.interpolate.interp1d(mag_flux_density, mu_r, kind="linear", fill_value="extrapolate")
+            f_mu_phi_deg = scipy.interpolate.interp1d(mag_flux_density, mu_phi_deg, kind="linear", fill_value="extrapolate")
+
+            hyst_losses = np.array([mdb.p_hyst__from_mu_r_and_mu_phi_deg(frequency=self.core.frequency, b_peak=b, mu_r=f_mu_r(b),
+                                                                         mu_phi_deg=f_mu_phi_deg(b)) for b in flux])
+
+            hyst_dict["MDB"] = np.dot(hyst_losses, volume)
 
         if Standard_SE:
             hyst_losses = mdb.calc_steinmetz_equation(material_name=self.core.material, measurement_setup=measurement_setup,
