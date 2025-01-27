@@ -850,8 +850,8 @@ class AutomatedDesign:
         p_hyst_density_middle = \
             0.5 * (2 * np.pi * self.frequency) * mu_r_imag * fmt.mu_0 * \
             ((data_matrix[:, self.param["total_flux_max"]] / (fmt.mu_0 * data_matrix[:, self.param["mu_r_abs"]])) ** 2) * \
-            (1 / (2 * np.pi * data_matrix[:, self.param["core_h_middle"]])) * np.log((data_matrix[:, self.param["r_inner"]] * 2) / \
-                                                                                     data_matrix[:, self.param["core_inner_diameter"]])
+            (1 / (2 * np.pi * data_matrix[:, self.param["core_h_middle"]])) * np.log((data_matrix[:, self.param["r_inner"]].astype(np.float64) * 2) / \
+                                                                                     data_matrix[:, self.param["core_inner_diameter"]].astype(np.float64))
         p_hyst_density_outer = p_hyst_outer * volume_outer
         total_hyst_loss = p_hyst_density_center + (2 * p_hyst_density_middle) + p_hyst_density_outer
 
@@ -928,7 +928,7 @@ class AutomatedDesign:
         :type factor_min_dc_losses: float
         """
         total_loss_vec = data_matrix[:, self.param["total_loss"]]
-        total_volume_vec = data_matrix[:, self.param["total_volume"]]
+        total_volume_vec = data_matrix[:, self.param["total_volume"]].astype(np.float64)
 
         min_total_loss = np.min(total_loss_vec)
         print(f"{min_total_loss=}")
@@ -1015,6 +1015,9 @@ class AutomatedDesign:
             # 5. create winding window and virtual winding windows (vww)
             winding_window = fmt.WindingWindow(core, insulation)
             vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+
+            if self.data_matrix_fem[count, self.param["litz_fill_factor"]] is None:
+                self.data_matrix_fem[count, self.param["litz_fill_factor"]] = np.NAN
 
             # 6. create conductor and set parameters: use solid wires
             winding = fmt.Conductor(0, fmt.Conductivity.Copper)

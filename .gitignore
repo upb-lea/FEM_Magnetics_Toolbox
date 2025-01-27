@@ -28,6 +28,7 @@ femmt/examples/femm
 femmt/examples/mesh
 femmt/custom_examples
 gui/femmt
+gui/GUI_working_directory
 .idea/
 femmt/__pycache__/
 gpgit/

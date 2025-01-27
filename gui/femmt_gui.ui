@@ -61,7 +61,7 @@
                </size>
               </property>
               <property name="currentIndex">
-               <number>3</number>
+               <number>0</number>
               </property>
               <widget class="QWidget" name="md_QWidget">
                <attribute name="title">
@@ -2852,7 +2852,7 @@
                </size>
               </property>
               <property name="currentIndex">
-               <number>3</number>
+               <number>0</number>
               </property>
               <widget class="QWidget" name="md_QWidget_3">
                <attribute name="title">
