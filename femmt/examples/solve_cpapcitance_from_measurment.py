@@ -77,6 +77,20 @@ We_with_modified_bobbin_left = np.array([
     3.827079696286146e-11,   # Scenario 10
     # 2.350977482015328e-11    # 11
 ])
+# with_modified_ins_cond
+We_with_modified_ins_cond = np.array([
+    2.82304511778657E-11,  # Scenario 1
+    8.25872891113608e-11,   # Scenario 2
+    7.706769180919169e-11,   # Scenario 3
+    4.266150024100241e-11,  # Scenario 4
+    9.169464496063301e-11,  # Scenario 5
+    9.339105676653725e-11,  # Scenario 6
+    6.480989614325092e-11,  # Scenario 7
+    5.295661549437068e-11,  # Scenario 8
+    9.231609431861514e-11,  # Scenario 9
+    9.224172711066144e-11,   # Scenario 10
+    # 2.350977482015328e-11    # 11
+])
 
 # Ensure We is a column vector
 # We = We_no_bobbin.reshape((10, 1))
@@ -178,8 +192,8 @@ else:
 # plt.show()
 
 # new
-energy_data = [We_no_bobbin, We_with_bobbin, We_with_modified_bobbin, We_with_modified_bobbin_left]
-energy_labels = ["No Bobbin", "With Bobbin", "Modified Bobbin Top and Bot", "Modified Bobbin Top, Bot and Left"]
+energy_data = [We_no_bobbin, We_with_bobbin, We_with_modified_bobbin, We_with_modified_bobbin_left, We_with_modified_ins_cond]
+energy_labels = ["No Bobbin", "With Bobbin", "Modified Bobbin Top and Bot", "Modified Bobbin Top, Bot and Left", "Modified_per_of_air"]
 
 # Calculate C for each case
 capacitances = []
@@ -188,7 +202,7 @@ for We in energy_data:
     M_squared = M ** 2
     C = np.linalg.inv(M_squared).dot(2 * We).flatten()
     capacitances.append(C)
-
+print(capacitances)
 # Plot the energy values
 plt.figure(figsize=(12, 6))
 for idx, We in enumerate(energy_data):
@@ -270,7 +284,7 @@ connection_measurement = {
 
 # Plot capacitance values as discrete points
 plt.figure(figsize=(12, 6))
-markers = ['o', 's', '^', 'D']
+markers = ['o', 's', '^', 'D', '*']
 for idx, C in enumerate(capacitances):
     plt.scatter(range(1, 11), C, label=f"{energy_labels[idx]}", marker=markers[idx])
     # Annotate each capacitance value
