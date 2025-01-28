@@ -23,6 +23,14 @@ class StackedCoreDimensions:
     window_h_top: float
     window_h_bot: float
 
+@dataclass
+class BobbinDimensions:
+    """Defines the dimensions of a default core."""
+
+    bobbin_inner_diameter: float
+    bobbin_window_w: float
+    bobbin_window_h: float
+    bobbin_h: float
 
 @dataclass
 class ConductorRow:

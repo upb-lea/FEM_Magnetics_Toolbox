@@ -57,9 +57,14 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
                                                    window_w=core_db["window_w"],
                                                    window_h=core_db["window_h"],
                                                    core_h=core_db["core_h"])
-
+    bobbin_db = fmt.bobbin_database()["PQ 40/40"]
+    bobbin_dimensions = fmt.dtos.BobbinDimensions(bobbin_inner_diameter=bobbin_db["bobbin_inner_diameter"],
+                                                  bobbin_window_w=bobbin_db["bobbin_window_w"],
+                                                  bobbin_window_h=bobbin_db["bobbin_window_h"],
+                                                  bobbin_h=bobbin_db["bobbin_h"])
     core = fmt.Core(core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
+                    bobbin_dimensions=bobbin_dimensions,
                     detailed_core_model=False,
                     material=fmt.Material.N49, temperature=45, frequency=0,
                     # permeability_datasource="manufacturer_datasheet",

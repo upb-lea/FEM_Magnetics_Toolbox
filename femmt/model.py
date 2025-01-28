@@ -222,6 +222,7 @@ class Core:
                  # dimensions
                  core_type: CoreType = CoreType.Single,
                  core_dimensions=None,
+                 bobbin_dimensions = None,
                  detailed_core_model: bool = False,
 
                  # material data
@@ -291,6 +292,17 @@ class Core:
             self.core_h = self.window_h_bot + 2 * self.core_thickness
             self.number_core_windows = 4
 
+        # bobbin dimensions
+        if bobbin_dimensions is not None:
+            self.bobbin_dimensions = True
+        else:
+            self.bobbin_dimensions = False
+        if bobbin_dimensions is not None:
+            self.bobbin_inner_diameter = bobbin_dimensions.bobbin_inner_diameter
+            self.bobbin_window_w = bobbin_dimensions.bobbin_window_w
+            self.bobbin_window_h = bobbin_dimensions.bobbin_window_h
+            self.bobbin_h = bobbin_dimensions.bobbin_h
+
         if detailed_core_model:
             # Definition of the center core height
             self.core_h_center_leg = core_dimensions.core_h  # Directly taken from core database
@@ -310,6 +322,8 @@ class Core:
             # set r_outer, so cross-section of outer leg has same cross-section as inner leg
             # this is the default-case
             self.r_outer = fr.calculate_r_outer(self.core_inner_diameter, self.window_w)
+
+        # bobbin dimensions
 
         # Material Parameters
         # General
@@ -1015,23 +1029,30 @@ class WindingWindow:
         self.core: Core = core
         self.stray_path: StrayPath = stray_path
         self.air_gaps: AirGaps = air_gaps
-        # top - bot
-        bobbin_height = 28.7e-3
-        insulation_delta_top_bot = (self.core.window_h - bobbin_height) / 2
-        # left
-        bobbin_inner_diameter = 17.5e-3 / 2
-        core_inner_diameter = self.core.core_inner_diameter / 2
-        insulation_delta_left = bobbin_inner_diameter - core_inner_diameter
 
         if self.core.core_type == CoreType.Single:
             # self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[1]
             # self.max_top_bound = core.window_h / 2 - insulations.core_cond[0]
             # self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
             # self.max_right_bound = core.r_inner - insulations.core_cond[3]
-            self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[1] + insulation_delta_top_bot
-            self.max_top_bound = core.window_h / 2 - insulations.core_cond[0] - insulation_delta_top_bot
-            self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2] + insulation_delta_left
-            self.max_right_bound = core.r_inner - insulations.core_cond[3]
+            if self.core.bobbin_dimensions:
+                # top - bot
+                bobbin_height = self.core.bobbin_window_h
+                insulation_delta_top_bot = (self.core.window_h - bobbin_height) / 2
+                # left
+                bobbin_inner_diameter = self.core.bobbin_inner_diameter / 2
+                core_inner_diameter = self.core.core_inner_diameter / 2
+                insulation_delta_left = bobbin_inner_diameter - core_inner_diameter
+                # dimensions
+                self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[1] + insulation_delta_top_bot
+                self.max_top_bound = core.window_h / 2 - insulations.core_cond[0] - insulation_delta_top_bot
+                self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2] + insulation_delta_left
+                self.max_right_bound = core.r_inner - insulations.core_cond[3]
+            else:
+                self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[1]
+                self.max_top_bound = core.window_h / 2 - insulations.core_cond[0]
+                self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
+                self.max_right_bound = core.r_inner - insulations.core_cond[3]
         elif self.core.core_type == CoreType.Stacked:  # top, bot, left, right
             self.max_bot_bound = -core.window_h_bot / 2 + insulations.core_cond[1]
             self.max_top_bound = core.window_h_bot / 2 + core.window_h_top + core.core_thickness - insulations.core_cond[0]
