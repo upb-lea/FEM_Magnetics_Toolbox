@@ -2987,7 +2987,6 @@ class MagneticComponent:
         """
 
         total_reluctance = self.calculate_core_reluctance()[0] + self.air_gaps_reluctance()[0]
-
         center_leg_area = np.pi * (self.core.core_inner_diameter / 2) ** 2
 
         if self.component_type == ComponentType.Inductor:
@@ -3047,8 +3046,8 @@ class MagneticComponent:
         :type b_wave: WaveformType
         :param custom_b_wave: normalized signal of the magnetic flux density/magnetizing current (normalized -> amplitude of 1)
         :type custom_b_wave: np.array
-        :param Standard_SE: flag for the calculation with the data of the MaterialDataBase (also used by FEMMT)
-        :type Standard_SE: bool
+        :param MDB: flag for the calculation with the data of the MaterialDataBase (also used by FEMMT)
+        :type MDB: bool
         :param Standard_SE: flag for the standard Steinmetz equation
         :type Standard_SE: bool
         :param IGSE: flag for using the IGSE (Improved Generalized Steinmetz Equation)
@@ -3066,28 +3065,28 @@ class MagneticComponent:
         if b_wave is WaveformType.Sine:
             b_wave = np.array([np.sin(np.linspace(0, 2*np.pi, 1024)) * b for b in flux])
         elif b_wave is WaveformType.Custom:
-            b_wave = np.array(custom_b_wave * b for b in flux)
+            b_wave = np.array([custom_b_wave * b for b in flux])
 
         hyst_dict = {}
 
-        if True:
+        if MDB:
+            # READ IN log_material.json
             with open(os.path.join(self.file_data.results_folder_path, "log_material.json"), "r") as fd:
                 log_material = json.loads(fd.read())
 
+            # READ IN THE DATA FROM MaterialDataBase AND CALCULATION OF MU
             mag_flux_density = log_material[list(log_material.keys())[0]]["magnetic_flux_density"]
-
             mu_complex = np.array([complex(real=a, imag=b) for a, b in zip(log_material[list(log_material.keys())[0]]["permeability_real"],
                                                                            log_material[list(log_material.keys())[0]]["permeability_imag"])])
-
             mu_r = np.absolute(mu_complex)
             mu_phi_deg = np.angle(z=mu_complex, deg=True)
 
+            # FUNCTIONS  f(B) = mu_r(B)  AND  f(B) = mu_phi_deg(B)
             f_mu_r = scipy.interpolate.interp1d(mag_flux_density, mu_r, kind="linear", fill_value="extrapolate")
             f_mu_phi_deg = scipy.interpolate.interp1d(mag_flux_density, mu_phi_deg, kind="linear", fill_value="extrapolate")
 
             hyst_losses = np.array([mdb.p_hyst__from_mu_r_and_mu_phi_deg(frequency=self.core.frequency, b_peak=b, mu_r=f_mu_r(b),
                                                                          mu_phi_deg=f_mu_phi_deg(b)) for b in flux])
-
             hyst_dict["MDB"] = np.dot(hyst_losses, volume)
 
         if Standard_SE:
@@ -3098,7 +3097,6 @@ class MagneticComponent:
         if IGSE:
             hyst_losses = mdb.calc_IGSE_equation(material_name=self.core.material, measurement_setup=measurement_setup, frequency=self.core.frequency,
                                                  b_wave=b_wave, temperature=self.core.temperature)
-            # hyst_dict["IGSE"] = (np.dot(hyst_losses, area) / core_area) * self.calculate_core_volume()
             hyst_dict["IGSE"] = np.dot(hyst_losses, volume)
 
         if MagNet_PB:
