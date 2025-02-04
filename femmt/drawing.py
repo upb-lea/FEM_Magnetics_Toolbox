@@ -65,11 +65,13 @@ class TwoDaxiSymmetric:
             self.p_window_bot = np.zeros((4, 4))  # TODO: just for right side? make it the same as for single core geometry
         self.p_air_gaps = np.zeros((4 * air_gaps.number, 4))
         self.p_conductor = []
+        self.p_iso_conductor = []
         self.p_iso_core = []
         self.p_iso_pri_sec = []
 
         for i in range(number_of_windings):
             self.p_conductor.insert(i, [])
+            self.p_iso_conductor.insert(i, [])
 
         self.r_inner = core.r_inner
         self.r_outer = core.r_outer
@@ -938,43 +940,45 @@ class TwoDaxiSymmetric:
                                     ConductorDistribution.VerticalDownward_HorizontalRightward,
                                     ConductorDistribution.HorizontalRightward_VerticalUpward,
                                     ConductorDistribution.HorizontalRightward_VerticalDownward]
+                                # define a delta insulation
+                                insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
 
                                 # Set the starting position and step size based on initial conditions
                                 if vertical_first:
                                     if upward_movement:
-                                        start_y = bot_bound + winding.conductor_radius  # Start from the bottom
-                                        step_y = winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
+                                        start_y = bot_bound + winding.conductor_radius + self.insulation.cond_cond[num][num] # Start from the bottom
+                                        step_y = winding.conductor_radius * 2 + 2 * self.insulation.cond_cond[num][num] + insulation_delta
                                     else:
-                                        start_y = top_bound - winding.conductor_radius  # Start from the top
-                                        step_y = -(winding.conductor_radius * 2 + self.insulation.cond_cond[num][num])
+                                        start_y = top_bound - winding.conductor_radius - self.insulation.cond_cond[num][num] # Start from the top
+                                        step_y = -(winding.conductor_radius * 2 + 2 * self.insulation.cond_cond[num][num] + insulation_delta)
 
                                     if rightward_movement:
-                                        start_x = left_bound + winding.conductor_radius  # Moving right after completing a column
-                                        step_x = winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
+                                        start_x = left_bound + winding.conductor_radius + self.insulation.cond_cond[num][num]  # Moving right after completing a column
+                                        step_x = winding.conductor_radius * 2 + 2 * self.insulation.cond_cond[num][num] + insulation_delta + self.insulation.kapton
                                     else:
-                                        start_x = right_bound - winding.conductor_radius  # Moving left after completing a column
-                                        step_x = -(winding.conductor_radius * 2 + self.insulation.cond_cond[num][num])
+                                        start_x = right_bound - winding.conductor_radius - self.insulation.cond_cond[num][num]  # Moving left after completing a column
+                                        step_x = -(winding.conductor_radius * 2 +  2 * self.insulation.cond_cond[num][num] + insulation_delta + self.insulation.kapton)
                                 # Determine if the first movement is horizontally (rightward or leftward)
                                 else:
                                     if rightward_movement:
-                                        start_x = left_bound + winding.conductor_radius  # start from the left
-                                        step_x = winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
+                                        start_x = left_bound + winding.conductor_radius + self.insulation.cond_cond[num][num]  # start from the left
+                                        step_x = winding.conductor_radius * 2 + 2 * self.insulation.cond_cond[num][num] + insulation_delta
                                     else:
-                                        start_x = right_bound - winding.conductor_radius  # Start from the right
-                                        step_x = -(winding.conductor_radius * 2 + self.insulation.cond_cond[num][num])
+                                        start_x = right_bound - winding.conductor_radius - self.insulation.cond_cond[num][num]  # Start from the right
+                                        step_x = -(winding.conductor_radius * 2 + 2 * self.insulation.cond_cond[num][num] + insulation_delta)
 
                                     if upward_movement:
-                                        start_y = bot_bound + winding.conductor_radius  # Moving top after completing a raw
-                                        step_y = winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
+                                        start_y = bot_bound + winding.conductor_radius + self.insulation.cond_cond[num][num]  # Moving top after completing a raw
+                                        step_y = winding.conductor_radius * 2 + 2 * self.insulation.cond_cond[num][num] + insulation_delta + self.insulation.kapton
                                     else:
-                                        start_y = top_bound - winding.conductor_radius  # Moving bottom after completing a raw
-                                        step_y = -(winding.conductor_radius * 2 + self.insulation.cond_cond[num][num])
+                                        start_y = top_bound - winding.conductor_radius - self.insulation.cond_cond[num][num]  # Moving bottom after completing a raw
+                                        step_y = -(winding.conductor_radius * 2 + 2 * self.insulation.cond_cond[num][num] + insulation_delta + self.insulation.kapton)
 
                                 # Loop and place conductors accordingly
                                 x = start_x
                                 y = start_y
                                 i = 0
-                                counter = 0
+                                counter_layer = 0
                                 # Vertically movement
                                 if vertical_first:
                                     while i < turns and left_bound + winding.conductor_radius <= x <= right_bound - winding.conductor_radius:
@@ -989,47 +993,28 @@ class TwoDaxiSymmetric:
                                                 [x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
                                             self.p_conductor[num].append(
                                                 [x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                            # # # 109-49 transformer
-                                            # if num == 0:
-                                            #     if counter == 0:
-                                            #         y += step_y
-                                            #     elif counter == 1:
-                                            #         y += step_y - 6.347e-5
-                                            #     elif counter == 2:
-                                            #         y += step_y + 6.347e-5
-                                            #     elif counter == 3:
-                                            #         y += step_y - 9.873e-5
-                                            # if num == 1:
-                                            #     if counter == 0:
-                                            #         y += step_y
-                                            #     elif counter == 1:
-                                            #         y += step_y - 4.11e-5
-                                            # 109-49 transformer ( with the insulation delta for the bobbin)
-                                            if num == 0:
-                                                if counter == 0:
-                                                    y += step_y
-                                                elif counter == 1:
-                                                    y += step_y - 6.26e-5
-                                                elif counter == 2:
-                                                    y += step_y + 6.26e-5
-                                                elif counter == 3:
-                                                    y += step_y - 9.747e-5
-                                            if num == 1:
-                                                if counter == 0:
-                                                    y += step_y
-                                                elif counter == 1:
-                                                    y += step_y - 4.057e-5
-                                            # # 59-56
-                                            # if num == 0:
-                                            #     if counter == 0:
-                                            #         y += step_y
-                                            #     elif counter == 1:
-                                            #         y += step_y - 0.086185e-3
-                                            # if num == 1:
-                                            #     if counter == 0:
-                                            #         y += step_y
-                                            #     elif counter == 1:
-                                            #         y += step_y - 0.063473e-3
+
+                                            # if the number of layer is less than len(insulation.cond_air_cond), then count it as zero
+                                            if counter_layer > len(self.insulation.cond_air_cond[num]) - 1:
+                                                self.insulation.cond_air_cond[num].append(0)
+                                            # Increment y based on the cond-air-cond insulation and the movement type
+                                            if upward_movement:
+                                                if zigzag:
+                                                    if counter_layer % 2 == 0:  # even.. first layer(0)
+                                                        y += step_y + self.insulation.cond_air_cond[num][counter_layer]
+                                                    elif counter_layer % 2 == 1:  # odd.. sec layer(1)
+                                                        y += step_y - self.insulation.cond_air_cond[num][counter_layer]
+                                                else:
+                                                    y += step_y + self.insulation.cond_air_cond[num][counter_layer]
+                                            else:  # Downward movement
+                                                if zigzag:
+                                                    if counter_layer % 2 == 0:  # even.. first layer(0)
+                                                        y += step_y - self.insulation.cond_air_cond[num][counter_layer]
+                                                    elif counter_layer % 2 == 1:  # odd.. sec layer(1)
+                                                        y += step_y + self.insulation.cond_air_cond[num][counter_layer]
+                                                else:
+                                                    y += step_y - self.insulation.cond_air_cond[num][counter_layer]
+
                                             i += 1
                                         if not zigzag:
                                             # Start the next column with the same starting point (consistent direction)
@@ -1038,20 +1023,9 @@ class TwoDaxiSymmetric:
                                             # Alternating between top and bottom for the Zigzag movement
                                             step_y *= -1
                                             y += step_y
-                                        # Moving one step horizontally (right or left)
-                                        # 109-49
-                                        if num == 0:
-                                            # x += step_x - 3.87e-5
-                                            x += step_x - 2.166e-5
-                                        elif num == 1:
-                                            # x += step_x - 1.753e-5
-                                            x += step_x - 1.5653e-4
-                                        # # 59-56
-                                        # if num == 0:
-                                        #     x += step_x + 0.155166875e-3
-                                        # elif num == 1:
-                                        #     x += step_x + 0.15511133e-3
-                                        counter +=1
+                                        # increment x
+                                        x += step_x
+                                        counter_layer +=1
                                 # Horizontally movement
                                 else:
                                     while i < turns and bot_bound + winding.conductor_radius <= y <= top_bound - winding.conductor_radius:
@@ -1066,7 +1040,27 @@ class TwoDaxiSymmetric:
                                                 [x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
                                             self.p_conductor[num].append(
                                                 [x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                            x += step_x
+
+                                            # if the number of layer is less than len(insulation.cond_air_cond), then the air insulation as zero
+                                            if counter_layer > len(self.insulation.cond_air_cond[num]) - 1:
+                                                self.insulation.cond_air_cond[num].append(0)
+                                            # Increment x based on the cond-air-cond insulation and the movement type
+                                            if rightward_movement:
+                                                if zigzag:
+                                                    if counter_layer % 2 == 0:
+                                                        x += step_x + self.insulation.cond_air_cond[num][counter_layer]
+                                                    elif counter_layer % 2 == 1:
+                                                        x += step_x - self.insulation.cond_air_cond[num][counter_layer]
+                                                else:
+                                                    x += step_x + self.insulation.cond_air_cond[num][counter_layer]
+                                            else:
+                                                if zigzag:
+                                                    if counter_layer % 2 == 0:
+                                                        x += step_x - self.insulation.cond_air_cond[num][counter_layer]
+                                                    elif counter_layer % 2 == 1:
+                                                        x += step_x + self.insulation.cond_air_cond[num][counter_layer]
+                                                else:
+                                                    x += step_x - self.insulation.cond_air_cond[num][counter_layer]
                                             i += 1
                                         if not zigzag:
                                             # Start the next raw with the same starting point (consistent direction)
@@ -1077,6 +1071,7 @@ class TwoDaxiSymmetric:
                                             x += step_x
                                         # Moving one step vertically (top or bottom)
                                         y += step_y
+                                        counter_layer += 1
 
                                 # Align to edges
                                 if alignment == Align.ToEdges:
@@ -1770,6 +1765,42 @@ class TwoDaxiSymmetric:
                     print("No insulations for winding type {vww.winding_type.name}")
             """
 
+    def draw_insulation_conductor(self):
+        """
+        Draw circular insulation around each conductor turn.
+        """
+
+        for winding_number, conductors in enumerate(self.p_conductor):
+            # Ensure conductors are treated as a numpy array
+            if not isinstance(conductors, np.ndarray):
+                conductors = np.asarray(conductors)
+
+            insulation_thickness = self.insulation.cond_cond[winding_number][winding_number]  # Get insulation thickness
+
+            # Prepare an empty array for storing insulation points
+            insulation_points = []
+
+            # Iterate through conductor turns, each defined by 5 points
+            for i in range(0, conductors.shape[0], 5):
+                center_x, center_y = conductors[i, :2]  # Get conductor center point
+                conductor_radius = conductors[i + 3, 0] - center_x  # Calculate current conductor radius
+                insulation_radius = conductor_radius + insulation_thickness  # Add insulation thickness
+
+                # Define 5 points for the insulation and add them to the list
+                insulation_points.extend([
+                    [center_x, center_y, 0, self.mesh_data.c_conductor[winding_number]],  # Center
+                    [center_x - insulation_radius, center_y, 0, self.mesh_data.c_conductor[winding_number]],  # Left
+                    [center_x, center_y + insulation_radius, 0, self.mesh_data.c_conductor[winding_number]],  # Top
+                    [center_x + insulation_radius, center_y, 0, self.mesh_data.c_conductor[winding_number]],  # Right
+                    [center_x, center_y - insulation_radius, 0, self.mesh_data.c_conductor[winding_number]]  # Bottom
+                ])
+
+            # Convert collected points to a NumPy array and store it
+            self.p_iso_conductor[winding_number] = np.array(insulation_points)
+
+        self.femmt_print("Insulation around conductors drawn successfully.")
+
+
     def draw_model(self):
         """Draw the full component.
 
@@ -1787,7 +1818,7 @@ class TwoDaxiSymmetric:
 
         if self.insulation.flag_insulation:  # check flag before drawing insulations
             self.draw_insulations()
-
+            self.draw_insulation_conductor()
         # TODO: Region
         # if self.core.core_type == CoreType.Single:
         #     self.draw_region_single()

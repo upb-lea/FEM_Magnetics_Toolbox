@@ -77,8 +77,8 @@ We_with_modified_bobbin_left = np.array([
     3.827079696286146e-11,   # Scenario 10
     # 2.350977482015328e-11    # 11
 ])
-# with_modified_ins_cond
-We_with_modified_ins_cond = np.array([
+# with_modified_permitivity_air
+We_with_modified_permitivity_air = np.array([
     2.82304511778657E-11,  # Scenario 1
     8.25872891113608e-11,   # Scenario 2
     7.706769180919169e-11,   # Scenario 3
@@ -89,6 +89,20 @@ We_with_modified_ins_cond = np.array([
     5.295661549437068e-11,  # Scenario 8
     9.231609431861514e-11,  # Scenario 9
     9.224172711066144e-11,   # Scenario 10
+    # 2.350977482015328e-11    # 11
+])
+# with_modified_new_scheme_cond
+We_with_modified_new_scheme_cond = np.array([
+    1.509699848504535e-11,  # Scenario 1
+    4.81099275325166E-11,   # Scenario 2
+    4.264892437955988e-11,   # Scenario 3
+    2.043270191945802e-11,  # Scenario 4
+    5.421253505271627e-11,  # Scenario 5
+    5.022384218284499e-11,  # Scenario 6
+    3.183455552006216e-11,  # Scenario 7
+    2.718229984170319e-11,  # Scenario 8
+    4.790872894200632e-11,  # Scenario 9
+    5.27967519750478e-11,   # Scenario 10
     # 2.350977482015328e-11    # 11
 ])
 
@@ -192,8 +206,8 @@ else:
 # plt.show()
 
 # new
-energy_data = [We_no_bobbin, We_with_bobbin, We_with_modified_bobbin, We_with_modified_bobbin_left, We_with_modified_ins_cond]
-energy_labels = ["No Bobbin", "With Bobbin", "Modified Bobbin Top and Bot", "Modified Bobbin Top, Bot and Left", "Modified_per_of_air"]
+energy_data = [We_no_bobbin, We_with_bobbin, We_with_modified_bobbin, We_with_modified_bobbin_left, We_with_modified_permitivity_air, We_with_modified_new_scheme_cond]
+energy_labels = ["No Bobbin", "With Bobbin", "Modified Bobbin Top and Bot", "Modified Bobbin Top, Bot and Left", "Modified_per_of_air", "modified_new_scheme_cond"]
 
 # Calculate C for each case
 capacitances = []
@@ -284,7 +298,7 @@ connection_measurement = {
 
 # Plot capacitance values as discrete points
 plt.figure(figsize=(12, 6))
-markers = ['o', 's', '^', 'D', '*']
+markers = ['o', 's', '^', 'D', '*', 'v']
 for idx, C in enumerate(capacitances):
     plt.scatter(range(1, 11), C, label=f"{energy_labels[idx]}", marker=markers[idx])
     # Annotate each capacitance value

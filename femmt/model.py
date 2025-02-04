@@ -683,6 +683,9 @@ class Insulation:
         float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
     core_cond: List[
         float]  # list with size 4x1, with respectively isolation of cond_n -> [top_core, bot_core, left_core, right_core]
+    cond_air_cond: List[List[
+        float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
+    kapton: float
 
     flag_insulation: bool = True
     max_aspect_ratio: float
@@ -721,6 +724,25 @@ class Insulation:
             raise Exception("Inner winding insulations list cannot be empty.")
 
         self.cond_cond = inner_winding_insulation
+
+    def add_air_conductor_insulations(self, inner_air_layer_insulation: List[List[float]]):
+        """Add insulations between turns of every layer in every winding.
+
+        :param inner_air_layer_insulation: List of floats which represent the insulations between turns of the same layer in every winding.
+        :type inner_air_layer_insulation: List[List[float]]
+        """
+
+        self.cond_air_cond = inner_air_layer_insulation
+
+    def add_kapton_insulation(self, add_kapton: bool=True, thickness: float = 0.0):
+        """Add a kapton between layers"""
+        if add_kapton:
+            if thickness <= 0:
+                raise ValueError("Kapton insulation thickness must be greater than zero.")
+            else:
+                self.kapton = thickness
+        else:
+            self.kapton = 0.0
 
     def add_core_insulations(self, top_core: float, bot_core: float, left_core: float, right_core: float):
         """Add insulations between the core and the winding window. Creating those will draw real rectangles in the model.
@@ -1031,10 +1053,6 @@ class WindingWindow:
         self.air_gaps: AirGaps = air_gaps
 
         if self.core.core_type == CoreType.Single:
-            # self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[1]
-            # self.max_top_bound = core.window_h / 2 - insulations.core_cond[0]
-            # self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
-            # self.max_right_bound = core.r_inner - insulations.core_cond[3]
             if self.core.bobbin_dimensions:
                 # top - bot
                 bobbin_height = self.core.bobbin_window_h

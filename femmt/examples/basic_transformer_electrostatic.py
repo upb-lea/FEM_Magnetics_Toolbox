@@ -14,8 +14,6 @@ the winding and the influence of the core and other materials in the geometry.
 import femmt as fmt
 import os
 
-
-
 def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
     """
     Run the example code for the transformer.
@@ -88,13 +86,18 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     # # core_insulation (measured)
     # insulation.add_core_insulations(1.7e-3, 1.7e-3, 1.25e-3, 1.25e-3)
     # core_insulation (from datasheet)
-    insulation.add_core_insulations(1.55e-3, 1.55e-3, 1.25e-3, 1.25e-3)
+    insulation.add_core_insulations(1.55e-3, 1.55e-3, 1.25e-3, 1.5e-4)
     # # # # 109-49 transformer
     # insulation.add_winding_insulations([[1.887e-4, 0.095e-3],
     #                                     [0.095e-3, 3.253e-4]])
     # # # 109-49 transformer ( considering the bobbin insulation delta for top and bottom)
-    insulation.add_winding_insulations([[1.7666e-4, 0.095e-3],
-                                        [0.095e-3, 3.1153e-4]])
+    # insulation.add_winding_insulations([[1.7666e-4, 0.095e-3],
+    #                                     [0.095e-3, 3.1153e-4]])
+    insulation.add_winding_insulations([[0.025e-3, 0.095e-3],
+                                        [0.095e-3, 0.025e-3]])
+    insulation.add_air_conductor_insulations([[1.0096e-4, 1.59655e-4, 1.59655e-4, 1.9214e-4],
+                                              [2.2703e-4, 2.6461e-4]])
+    insulation.add_kapton_insulation(add_kapton=True, thickness=0.05e-3)
     # 59-56 transformer
     # insulation.add_winding_insulations([[1.33125e-4, 0.095e-3],
     #                                     [0.095e-3, 1.88667e-4]])
@@ -105,7 +108,7 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     winding_window = fmt.WindingWindow(core, insulation)
     # bot, top = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit, split_distance=0.001)
     # 109-49
-    cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.472],
+    cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.39],
                                                        vertical_split_factors=None)
     # cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.],
     #                                                    vertical_split_factors=None)
@@ -157,15 +160,15 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     num_turns_w1 = 109
     num_turns_w2 = 49
 
-    # # Simulation 1 (V_A, V_B, V_C, V_D = 1, 0, 0 , 0)
-    # # Create a linear voltage distribution along winding 1 from V_A to V_B
-    # V_A = 1
-    # V_B = 0
-    # voltages_winding_1 = [
-    #     V_A - (V_A - V_B) * i / (num_turns_w1 - 1)
-    #     for i in range(num_turns_w1)
-    # ]
-    # voltages_winding_2 = [0] * num_turns_w2
+    # Simulation 1 (V_A, V_B, V_C, V_D = 1, 0, 0 , 0)
+    # Create a linear voltage distribution along winding 1 from V_A to V_B
+    V_A = 1
+    V_B = 0
+    voltages_winding_1 = [
+        V_A - (V_A - V_B) * i / (num_turns_w1 - 1)
+        for i in range(num_turns_w1)
+    ]
+    voltages_winding_2 = [0] * num_turns_w2
 
     # # Simulation 2 (V_A, V_B, V_C, V_D = 0, 1, 0 , 0)
     # # Create a linear voltage distribution along winding 1 from V_B to V_A
@@ -262,10 +265,10 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     #     for i in range(num_turns_w2)
     # ]
 
-    # Simulation 10 (V_A, V_B, V_C, V_D = 0, 0, 1 , 1)
-    # Create a fixed voltage from C to D
-    voltages_winding_1 = [0] * num_turns_w1
-    voltages_winding_2 = [1] * num_turns_w2
+    # # Simulation 10 (V_A, V_B, V_C, V_D = 0, 0, 1 , 1)
+    # # Create a fixed voltage from C to D
+    # voltages_winding_1 = [0] * num_turns_w1
+    # voltages_winding_2 = [1] * num_turns_w2
 
     # # Simulation 11 (V_A, V_B, V_C, V_D = 0, 1, 1 , 1)
     # # # Create a fixed voltage from C to D

@@ -60,8 +60,13 @@ def basic_example_transformer_electrostatic_ansys(onelab_folder: str = None, sho
     # 4. set insulation
     insulation = fmt.Insulation(flag_insulation=True)
     insulation.add_core_insulations(0.001, 0.001, 0.001, 0.001)
+    # This is actually now the insulation of the winding itself (insulation around the conductor)
     insulation.add_winding_insulations([[0.0002, 0.001],
                                         [0.001, 0.0002]])
+    # An Air-Insulation in every layer for every winding
+    insulation.add_air_conductor_insulations([[0.0002, 0.001, 0.002],
+                                              [0.001, 0.0002, 0.001]])
+    insulation.add_kapton_insulation(add_kapton=True, thickness=0.05e-3)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -87,26 +92,16 @@ def basic_example_transformer_electrostatic_ansys(onelab_folder: str = None, sho
 
     # 7. add conductor to vww and add winding window to MagneticComponent
     # top.set_winding(winding2, 15, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
-    bot.set_winding(winding2, 3, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
+    bot.set_winding(winding2, 7, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalDownward_HorizontalLeftward, zigzag=False)
     # bot.set_winding(winding1, 29, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
-    top.set_winding(winding1, 5, None, fmt.Align.ToEdges, fmt.ConductorDistribution.HorizontalRightward_VerticalUpward, zigzag=False)
+    top.set_winding(winding1, 8, None, fmt.Align.ToEdges, fmt.ConductorDistribution.HorizontalRightward_VerticalUpward, zigzag=False)
     geo.set_winding_windows([winding_window])
 
     # 8. start simulation with given frequency, currents and phases
-    # [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    # [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150]
-    # [30, 35, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]
-    # [20, 40, 60, 80, 100]
     geo.create_model(freq=0, pre_visualize_geometry=show_visual_outputs)
-    # voltages = [[5, 0, 0, 0, 0, 0], [0, 0, 0]]
-    # voltages_winding_1 = [1] * 29
-    # voltages_winding_2 = [0] * 15
-    geo.electrostatic_simulation( voltage=[[1, 2, 3, 4 , 5], [3, 6, 9]], core_voltage=0, ground_outer_boundary=False,
+    geo.electrostatic_simulation( voltage=[[1, 2, 3, 4 , 5, 6, 7, 8], [3, 6, 9, 12, 15, 14, 12]], core_voltage=0, ground_outer_boundary=False,
                                  show_fem_simulation_results=show_visual_outputs, save_to_excel=False)
-    # geo.get_total_charges()
-    # voltage_1 = [0] + [1] * 4
-    # voltage_2 = [0] * 3
-    geo.femm_reference_electrostatic(voltages=[[1, 2, 3, 4 , 5], [3, 6, 9]], ground_core=True, ground_outer_boundary=False, non_visualize=0, save_to_excel=False,
+    geo.femm_reference_electrostatic(voltages=[[1, 2, 3, 4 , 5, 6, 7, 8], [3, 6, 9, 12, 15, 14, 12]], ground_core=True, ground_outer_boundary=False, non_visualize=0, save_to_excel=False,
                                      compare_excel_files_to_femmt=False)
 
 if __name__ == "__main__":

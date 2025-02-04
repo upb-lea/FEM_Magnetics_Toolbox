@@ -22,7 +22,8 @@ BOUND_LEFT             = 111112;
 AIR                     = 110000;
 AIR_EXT                 = 110001;
 AIR_COND                = 1000000;
-Insulation              = 110010;
+Bobbin_Insulation              = 110010;
+Cond_Insulation         = 2000000;
 CORE_PN                 = 120000;
 ExtGmsh                 = ".pos";
 
@@ -47,6 +48,13 @@ Group {
       CorePart~{n} = Region[{(CORE_PN+n-1)}];
       Core += Region[{(CORE_PN+n-1)}];
     EndFor
+    // cond_insulation domain
+    /*ConductorInsulation = Region[{}];
+    For n In {1:n_windings}
+      CondIsoPart~{n} = Region[{(Cond_Insulation+1000*(n-1))}];
+      ConductorInsulation += Region[{CondIsoPart~{n}}];
+    EndFor*/
+
 
     // Winding Domains Setup
     For n In {1:n_windings}  // Define regions for each winding
@@ -67,7 +75,9 @@ Group {
     // Domain Definitions
     // Non-Conducting Domain (Air and Insulation)
     DomainCC = Region[{Air}];
-    DomainCC += Region[{Insulation}];
+    DomainCC += Region[{Bobbin_Insulation}];
+    // DomainCC += Region[{ConductorInsulation}];
+    DomainCC += Region[{Cond_Insulation}];
 
     // Add the Core region to the appropriate domain region
     /*If (Flag_ground_OutBoundary)
@@ -150,7 +160,7 @@ Group {
 Function {
 
   // Define relative permittivity (epsilon) for all regions
-  AreaCell[#{Air, Insulation, Core}] = 1.;
+  AreaCell[#{Air, Bobbin_Insulation, Core}] = 1.;
   For n In {1:n_windings}
       AreaCell[#{Winding~{n}}] = 1.;
   EndFor
@@ -160,9 +170,11 @@ Function {
   er_air = 1;
   er_core = 5000;
   er_bobbin = 5.5;
+  er_cond_insulation = 3;
   epsilon[#{Air}] = e0 * er_air;
   epsilon[#{Core}] = e0 * er_core;
-  epsilon[#{Insulation}] = e0 * er_bobbin;
+  epsilon[#{Bobbin_Insulation}] = e0 * er_bobbin;
+  epsilon[#{Cond_Insulation}] = e0 * er_cond_insulation;
   // The winding permittivity is set to 1, but it does not play any role in the simulation.
   For winding_number In {1:n_windings}
       er_winding~{winding_number} = 1;
