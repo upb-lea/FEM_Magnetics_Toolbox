@@ -725,7 +725,7 @@ class Insulation:
 
         self.cond_cond = inner_winding_insulation
 
-    def add_air_conductor_insulations(self, inner_air_layer_insulation: List[List[float]]):
+    def add_conductor_air_conductor_insulation(self, inner_air_layer_insulation: List[List[float]]):
         """Add insulations between turns of every layer in every winding.
 
         :param inner_air_layer_insulation: List of floats which represent the insulations between turns of the same layer in every winding.
@@ -1058,13 +1058,14 @@ class WindingWindow:
                 bobbin_height = self.core.bobbin_window_h
                 insulation_delta_top_bot = (self.core.window_h - bobbin_height) / 2
                 # left
-                bobbin_inner_diameter = self.core.bobbin_inner_diameter / 2
-                core_inner_diameter = self.core.core_inner_diameter / 2
-                insulation_delta_left = bobbin_inner_diameter - core_inner_diameter
+                bobbin_inner_radius = self.core.bobbin_inner_diameter / 2
+                core_inner_radius = self.core.core_inner_diameter / 2
+                insulation_delta_left = bobbin_inner_radius - core_inner_radius
+                # insulation_delta_left = 3e-4
                 # dimensions
                 self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[1] + insulation_delta_top_bot
                 self.max_top_bound = core.window_h / 2 - insulations.core_cond[0] - insulation_delta_top_bot
-                self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2] + insulation_delta_left
+                self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2] + insulation_delta_left + 1.5e-5
                 self.max_right_bound = core.r_inner - insulations.core_cond[3]
             else:
                 self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[1]

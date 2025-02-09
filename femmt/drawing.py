@@ -947,17 +947,17 @@ class TwoDaxiSymmetric:
                                 if vertical_first:
                                     if upward_movement:
                                         start_y = bot_bound + winding.conductor_radius + self.insulation.cond_cond[num][num] # Start from the bottom
-                                        step_y = winding.conductor_radius * 2 + 2 * self.insulation.cond_cond[num][num] + insulation_delta
+                                        step_y = winding.conductor_radius * 2 + 2 * self.insulation.cond_cond[num][num]
                                     else:
                                         start_y = top_bound - winding.conductor_radius - self.insulation.cond_cond[num][num] # Start from the top
-                                        step_y = -(winding.conductor_radius * 2 + 2 * self.insulation.cond_cond[num][num] + insulation_delta)
+                                        step_y = -(winding.conductor_radius * 2 + 2 * self.insulation.cond_cond[num][num] )
 
                                     if rightward_movement:
                                         start_x = left_bound + winding.conductor_radius + self.insulation.cond_cond[num][num]  # Moving right after completing a column
-                                        step_x = winding.conductor_radius * 2 + 2 * self.insulation.cond_cond[num][num] + insulation_delta + self.insulation.kapton
+                                        step_x = winding.conductor_radius * 2 + 2 * self.insulation.cond_cond[num][num] + self.insulation.kapton
                                     else:
                                         start_x = right_bound - winding.conductor_radius - self.insulation.cond_cond[num][num]  # Moving left after completing a column
-                                        step_x = -(winding.conductor_radius * 2 +  2 * self.insulation.cond_cond[num][num] + insulation_delta + self.insulation.kapton)
+                                        step_x = -(winding.conductor_radius * 2 +  2 * self.insulation.cond_cond[num][num] + self.insulation.kapton)
                                 # Determine if the first movement is horizontally (rightward or leftward)
                                 else:
                                     if rightward_movement:
@@ -1563,9 +1563,10 @@ class TwoDaxiSymmetric:
                     bobbin_h = self.core.bobbin_window_h
                     insulation_delta_top_bot = (window_h - bobbin_h) / 2
                     # left
-                    bobbin_inner_diameter = self.core.bobbin_inner_diameter / 2
-                    core_inner_diameter = self.core.core_inner_diameter / 2
-                    insulation_delta_left = bobbin_inner_diameter - core_inner_diameter
+                    bobbin_inner_radius = self.core.bobbin_inner_diameter / 2
+                    core_inner_radius = self.core.core_inner_diameter / 2
+                    insulation_delta_left = bobbin_inner_radius - core_inner_radius
+                    # insulation_delta_left = 3e-4
 
                 self.p_iso_core = []  # Order: Left, Top, Right, Bot
                 self.p_iso_pri_sec = []
@@ -1582,7 +1583,7 @@ class TwoDaxiSymmetric:
                 # bot_iso_height = iso.core_cond[1] - insulation_delta - insulation_delta
 
                 # Useful lengths
-                left_iso_width = iso.core_cond[2] - insulation_delta - insulation_delta
+                left_iso_width = iso.core_cond[2]
                 top_iso_height = iso.core_cond[0] - insulation_delta - insulation_delta
                 right_iso_width = iso.core_cond[3] - insulation_delta - insulation_delta
                 bot_iso_height = iso.core_cond[1] - insulation_delta - insulation_delta

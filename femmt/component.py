@@ -5925,7 +5925,104 @@ class MagneticComponent:
             raise Exception("Negative air gap number is not allowed")
 
         # Add Insulation
-        if self.insulation.flag_insulation:
+        if self.core.bobbin_dimensions:
+            if self.insulation.max_aspect_ratio == 0:
+                # If no aspect ratio is set insulations will not be drawn
+                return
+            else:
+                insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
+
+                # Handle the insulation delta for electrostatic transformer
+                # top - bot
+                bobbin_h = self.core.bobbin_window_h
+                insulation_delta_top_bot = (self.core.window_h - bobbin_h) / 2
+                # left
+                bobbin_inner_diameter = self.core.bobbin_inner_diameter / 2
+                core_inner_diameter = self.core.core_inner_diameter / 2
+                insulation_delta_left = bobbin_inner_diameter - core_inner_diameter
+            # Useful points for insulation creation
+            left_x = self.core.core_inner_diameter / 2 + insulation_delta_left
+            top_y = self.core.window_h / 2 - insulation_delta_top_bot
+            right_x = self.core.r_inner - insulation_delta
+            bot_y = -self.core.window_h / 2 + insulation_delta_top_bot
+
+            # Useful lengths
+            left_iso_width = self.insulation.core_cond[2] - insulation_delta - insulation_delta
+            top_iso_height = self.insulation.core_cond[0] - insulation_delta - insulation_delta
+            right_iso_width = self.insulation.core_cond[3] - insulation_delta - insulation_delta
+            bot_iso_height = self.insulation.core_cond[1] - insulation_delta - insulation_delta
+
+            # Left insulation
+            femm.ei_drawline(left_x,
+                             top_y - top_iso_height - insulation_delta,
+                             left_x + left_iso_width,
+                             top_y - top_iso_height - insulation_delta)
+            femm.ei_drawline(left_x + left_iso_width,
+                             top_y - top_iso_height - insulation_delta,
+                             left_x + left_iso_width,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(left_x + left_iso_width,
+                             bot_y + bot_iso_height + insulation_delta,
+                             left_x,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(left_x,
+                             bot_y + bot_iso_height + insulation_delta,
+                             left_x,
+                             top_y - top_iso_height - insulation_delta)
+
+            # top insulation
+            femm.ei_drawline(left_x,
+                             top_y,
+                             right_x,
+                             top_y)
+            femm.ei_drawline(right_x,
+                             top_y,
+                             right_x,
+                             top_y - top_iso_height)
+            femm.ei_drawline(right_x,
+                             top_y - top_iso_height,
+                             left_x,
+                             top_y - top_iso_height)
+            femm.ei_drawline(left_x,
+                             top_y - top_iso_height,
+                             left_x,
+                             top_y)
+
+            # right insulation
+            femm.ei_drawline(right_x - right_iso_width,
+                             top_y - top_iso_height - insulation_delta,
+                             right_x,
+                             top_y - top_iso_height - insulation_delta)
+            femm.ei_drawline(right_x,
+                             top_y - top_iso_height - insulation_delta,
+                             right_x,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(right_x,
+                             bot_y + bot_iso_height + insulation_delta,
+                             right_x - right_iso_width,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(right_x - right_iso_width,
+                             bot_y + bot_iso_height + insulation_delta,
+                             right_x - right_iso_width,
+                             top_y - top_iso_height - insulation_delta)
+            # bot insulation
+            femm.ei_drawline(left_x,
+                             bot_y + bot_iso_height,
+                             right_x,
+                             bot_y + bot_iso_height)
+            femm.ei_drawline(right_x,
+                             bot_y + bot_iso_height,
+                             right_x,
+                             bot_y)
+            femm.ei_drawline(right_x,
+                             bot_y,
+                             left_x,
+                             bot_y)
+            femm.ei_drawline(left_x,
+                             bot_y,
+                             left_x,
+                             bot_y + bot_iso_height)
+        else:
             if self.insulation.max_aspect_ratio == 0:
                 # If no aspect ratio is set insulations will not be drawn
                 return

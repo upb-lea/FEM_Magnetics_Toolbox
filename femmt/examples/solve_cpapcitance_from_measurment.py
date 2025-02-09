@@ -18,8 +18,7 @@ M = np.array([
 
 M_squared = M ** 2
 print("Element-wise Squared Matrix M:\n", M_squared)
-# Define the energy vector (replace with your actual measured energies)
-
+# Define the energy vector
 # with error 50%
 # adjusting
 We_no_bobbin = np.array([
@@ -105,12 +104,38 @@ We_with_modified_new_scheme_cond = np.array([
     5.27967519750478e-11,   # Scenario 10
     # 2.350977482015328e-11    # 11
 ])
+We_with_modified_new_scheme_cond_with_ins_delta = np.array([
+    1.601968528078265e-11,  # Scenario 1
+    3.965640394258638e-11,   # Scenario 2
+    4.090717748855067e-11,   # Scenario 3
+    2.393673718687787e-11,  # Scenario 4
+    4.247113724840581e-11,  # Scenario 5
+    5.122712780820113e-11,  # Scenario 6
+    3.72302024153097e-11,  # Scenario 7
+    3.252496641928966e-11,  # Scenario 8
+    4.912307419319937e-11,  # Scenario 9
+    4.086817229316922e-11,   # Scenario 10
+    # 2.350977482015328e-11    # 11
+])
+We_Othman = np.array([
+    2.003333780181938e-11,  # Scenario 1
+    3.1950089708645e-11,   # Scenario 2
+    3.412096497301497e-11,   # Scenario 3
+    2.106331013737882e-11,  # Scenario 4
+    4.120287404294935e-11,  # Scenario 5
+    4.976356311074315e-11,  # Scenario 6
+    3.899419055671076e-11,  # Scenario 7
+    2.932421372288165e-11,  # Scenario 8
+    4.189076325883805e-11,  # Scenario 9
+    3.15589983085852e-11,   # Scenario 10
+    # 2.350977482015328e-11    # 11
+])
 
 # Ensure We is a column vector
 # We = We_no_bobbin.reshape((10, 1))
 # We = We_with_bobbin.reshape((10, 1))
 # We = We_with_modified_bobbin.reshape((10, 1))
-We = We_with_modified_bobbin_left.reshape((10, 1))
+We = We_Othman.reshape((10, 1))
 # Check if M is invertible by computing its determinant
 det_M = np.linalg.det(M_squared)
 print(f"Determinant of M: {det_M}")
@@ -156,58 +181,9 @@ else:
     print(f"C_ADvsBCE (C1 + C2 + C3 + C4 + C7 + C10): {C_ADvsBCE:.5e} F")
     print(f"C_BC_ADE (C1 + C2 + C3 + C4 + C8 + C9): {C_BC_ADE:.5e} F")
 
-# energy_with_bobbin = 7.676930117930947e-11
-# energy_without_bobbin = 1.107533022806718e-11
-#
-# difference = energy_with_bobbin - energy_without_bobbin
-# percentage_difference = (difference / energy_without_bobbin) * 100
-
-# # Print the results
-# print(f"Absolute difference in energy: {difference:e} joules")
-# print(f"Percentage difference: {percentage_difference:.2f}%")
-# Calculate C for each case
-# capacitances = []
-# def calculate_capacitances(We, M_squared):
-#     We = We.reshape((10, 1))
-#     C = np.linalg.inv(M_squared).dot(2 * We).flatten()
-#     capacitances.append(C)
-#     return C
-#
-# # Calculate capacitances for all cases
-# C_no_bobbin = calculate_capacitances(We_no_bobbin, M_squared)
-# C_with_bobbin = calculate_capacitances(We_with_bobbin, M_squared)
-# C_with_modified_bobbin = calculate_capacitances(We_with_modified_bobbin, M_squared)
-# C_with_modified_bobbin_left = calculate_capacitances(We_with_modified_bobbin_left, M_squared)
-#
-# # Plot energy vectors
-# plt.figure(figsize=(12, 6))
-# plt.plot(We_no_bobbin, label="No Bobbin", marker='o')
-# plt.plot(We_with_bobbin, label="With Bobbin", marker='s')
-# plt.plot(We_with_modified_bobbin, label="Modified Bobbin", marker='^')
-# plt.plot(We_with_modified_bobbin_left, label="Modified Bobbin Left", marker='x')
-# plt.title("Energy Values for Different Scenarios")
-# plt.xlabel("Scenario")
-# plt.ylabel("Energy (J)")
-# plt.legend()
-# plt.grid()
-# plt.show()
-#
-# # Plot capacitances
-# plt.figure(figsize=(12, 6))
-# plt.plot(C_no_bobbin, label="No Bobbin", marker='o')
-# plt.plot(C_with_bobbin, label="With Bobbin", marker='s')
-# plt.plot(C_with_modified_bobbin, label="Modified Bobbin", marker='^')
-# plt.plot(C_with_modified_bobbin_left, label="Modified Bobbin Left", marker='x')
-# plt.title("Capacitance Values for Different Scenarios")
-# plt.xlabel("Capacitance Index")
-# plt.ylabel("Capacitance (F)")
-# plt.legend()
-# plt.grid()
-# plt.show()
-
 # new
-energy_data = [We_no_bobbin, We_with_bobbin, We_with_modified_bobbin, We_with_modified_bobbin_left, We_with_modified_permitivity_air, We_with_modified_new_scheme_cond]
-energy_labels = ["No Bobbin", "With Bobbin", "Modified Bobbin Top and Bot", "Modified Bobbin Top, Bot and Left", "Modified_per_of_air", "modified_new_scheme_cond"]
+energy_data = [We_no_bobbin, We_with_bobbin, We_with_modified_bobbin, We_with_modified_bobbin_left, We_with_modified_permitivity_air, We_with_modified_new_scheme_cond, We_with_modified_new_scheme_cond_with_ins_delta, We_Othman]
+energy_labels = ["No Bobbin", "With Bobbin", "Modified Bobbin Top and Bot", "Modified Bobbin Top, Bot and Left", "Modified_per_of_air", "modified_new_scheme_cond", "modified_new_scheme_cond_with_ins_delta", "We_Othman"]
 
 # Calculate C for each case
 capacitances = []
@@ -228,21 +204,7 @@ plt.legend()
 plt.grid(True)
 plt.show()
 
-# # Plot the capacitance values
-# plt.figure(figsize=(12, 6))
-# markers = ['o', 's', '^', 'D']
-# for idx, C in enumerate(capacitances):
-#     plt.plot(range(1, 11), C, label=f"{energy_labels[idx]}", marker=markers[idx])
-#     # Annotate each capacitance value
-#     for i, c_value in enumerate(C):
-#         plt.text(i + 1, c_value, f"C{i+1}", fontsize=8, ha='right')
-#
-# plt.xlabel("Capacitance Index")
-# plt.ylabel("Capacitance (F)")
-# plt.title("Capacitance Values for Different Cases")
-# plt.legend()
-# plt.grid(True)
-# plt.show()
+
 
 # Plot the calculated sums
 connection_sums = {
@@ -272,33 +234,10 @@ connection_measurement = {
     'C_BD_ACE':8.11E-11,
 }
 
-# plt.figure(figsize=(12, 6))
-# for energy, label in zip(energy_data, energy_labels):
-#     We = energy.reshape((10, 1))
-#     C = np.linalg.inv(M ** 2).dot(2 * We).flatten()
-#     sums = [connection_sums[key](C) for key in connection_sums]
-#     plt.plot(list(connection_sums.keys()), sums, marker='o', label=label)
-# plt.xticks(rotation=45)
-# plt.ylabel('Sum of Capacitances (F)')
-# plt.title('Connection Sums for Different Cases')
-# plt.legend()
-# plt.grid(True)
-# plt.show()
-#
-# # Plot energy values as discrete points
-# plt.figure(figsize=(12, 6))
-# for idx, We in enumerate(energy_data):
-#     plt.scatter(range(1, 11), We, label=energy_labels[idx])
-# plt.xlabel("Scenario")
-# plt.ylabel("Energy (J)")
-# plt.title("Energy Values for Different Cases (Discrete Points)")
-# plt.legend()
-# plt.grid(True)
-# plt.show()
 
 # Plot capacitance values as discrete points
 plt.figure(figsize=(12, 6))
-markers = ['o', 's', '^', 'D', '*', 'v']
+markers = ['o', 's', '^', 'D', '*', 'v', 'x','p']
 for idx, C in enumerate(capacitances):
     plt.scatter(range(1, 11), C, label=f"{energy_labels[idx]}", marker=markers[idx])
     # Annotate each capacitance value
@@ -312,25 +251,6 @@ plt.legend()
 plt.grid(True)
 plt.show()
 
-# # Plot the calculated sums as discrete points
-# plt.figure(figsize=(12, 6))
-# for energy, label in zip(energy_data, energy_labels):
-#     We = energy.reshape((10, 1))
-#     C = np.linalg.inv(M ** 2).dot(2 * We).flatten()
-#     sums = [connection_sums[key](C) for key in connection_sums]
-#     plt.scatter(list(range(len(connection_sums))), sums, label=label)
-#     for i, sum_value in enumerate(sums):
-#         plt.text(i, sum_value, f"{list(connection_sums.keys())[i]}", fontsize=8, ha='center')
-#
-# plt.xticks(range(len(connection_sums)), list(connection_sums.keys()), rotation=45)
-# plt.ylabel('Sum of Capacitances (F)')
-# plt.title('Connection Sums for Different Cases (Discrete Points)')
-# plt.legend()
-# plt.grid(True)
-# plt.show()
-#
-# # Plot the calculated sums as discrete points, including measured connections
-# plt.figure(figsize=(12, 6))
 
 # Plot the calculated sums for each energy case
 for energy, label in zip(energy_data, energy_labels):
@@ -354,3 +274,42 @@ plt.title('Connection Sums for Different Cases and Measured Connections')
 plt.legend()
 plt.grid(True)
 plt.show()
+
+def print_and_plot_sums_with_error(C, label):
+    print(f"\n--- Connection Sums for Simulation: {label} ---")
+    errors = []
+
+    for name, func in connection_sums.items():
+        sum_value = func(C)
+        measured_value = connection_measurement[name]
+        error = abs(sum_value - measured_value) / sum_value * 100
+        errors.append(error)
+
+        print(f"{name}: {sum_value:.5e} F (Measured: {measured_value:.5e} F) | Error: {error:.2f}%")
+
+    return errors
+
+#Iterate over all simulations and calculate sums and errors
+plt.figure(figsize=(12, 6))
+for energy, label in zip(energy_data, energy_labels):
+    We = energy.reshape((10, 1))
+    C = np.linalg.inv(M ** 2).dot(2 * We).flatten()
+
+    # Print the connection sums, measured values, and errors
+    errors = print_and_plot_sums_with_error(C, label)
+
+    # Plot the calculated and measured sums
+    calculated_sums = [connection_sums[key](C) for key in connection_sums]
+    measured_sums = list(connection_measurement.values())
+
+    plt.scatter(range(len(calculated_sums)), calculated_sums, label=f"Calculated - {label}", marker='o')
+    plt.scatter(range(len(measured_sums)), measured_sums, label="Measured Connections", color="red", marker='x')
+
+# Set plot details
+plt.xticks(range(len(connection_sums)), list(connection_sums.keys()), rotation=45)
+plt.ylabel('Sum of Capacitances (F)')
+plt.title('Connection Sums and Errors for Different Cases')
+plt.legend()
+plt.grid(True)
+plt.show()
+

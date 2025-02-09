@@ -1399,14 +1399,15 @@ class Mesh:
         set_physical_surface_conductor()
 
         def set_physical_surface_cond_insulation():
-            self.ps_insulation_cond = []
-            #
-            # # Add insulation planes to the physical group
-            tags = []
-            for num in range(len(self.windings)):
-                tags.extend(self.plane_surface_iso_cond[num])
-            # # Create a physical group for all insulation planes
-            self.ps_insulation_cond = gmsh.model.geo.addPhysicalGroup(2, tags, tag=self.PN_Insulation_Cond)
+            if self.simulation_type == SimulationType.ElectroStatic:
+                self.ps_insulation_cond = []
+                #
+                # # Add insulation planes to the physical group
+                tags = []
+                for num in range(len(self.windings)):
+                    tags.extend(self.plane_surface_iso_cond[num])
+                # # Create a physical group for all insulation planes
+                self.ps_insulation_cond = gmsh.model.geo.addPhysicalGroup(2, tags, tag=self.PN_Insulation_Cond)
 
 
         set_physical_surface_cond_insulation()
@@ -1430,7 +1431,11 @@ class Mesh:
                 if self.model.core.core_type == CoreType.Single:
                     # These three areas self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
                     # must be
-                    air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
+                    self.ps_insulation_cond = []
+                    tags = []
+                    for num in range(len(self.windings)):
+                        tags.extend(self.plane_surface_iso_cond[num])
+                    air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core + tags
                     self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_and_air_gaps, tag=self.PN_AIR)
                     # ps_air_ext = gmsh.model.geo.addPhysicalGroup(2, plane_surface_outer_air, tag=1001)
                 elif self.model.core.core_type == CoreType.Stacked:

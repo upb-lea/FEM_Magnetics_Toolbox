@@ -3,6 +3,9 @@ PostOperation Get_global UsingPost EleSta {
   Print[ energy[Domain], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"Energy_Stored_Component.dat"], LastTimeStepOnly, StoreInVariable $energy_Component];
   Print[ energy[Air], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"Energy_Stored_Air.dat"], LastTimeStepOnly, StoreInVariable $energy_Air];
   Print[ energy[Core], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"Energy_Stored_Core.dat"], LastTimeStepOnly, StoreInVariable $energy_Core];
+//  Print[ energy[Insulation_bobbin], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"Energy_Stored_bobbin.dat"], LastTimeStepOnly, StoreInVariable $energy_bobbin];
+//  Print[ energy[Insulation_cond], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"Energy_Stored_Cond_insulation.dat"], LastTimeStepOnly, StoreInVariable $energy_cond_insulation];
+
   // average voltage of the core
   Print[ Avg_Voltage_Core[Core], OnGlobal, Format TimeTable, File > StrCat[DirResCirc,"Avg_Core_voltage.dat"], LastTimeStepOnly, StoreInVariable $Avg_Voltage_Core];
 

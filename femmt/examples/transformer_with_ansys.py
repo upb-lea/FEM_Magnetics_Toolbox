@@ -64,7 +64,7 @@ def basic_example_transformer_electrostatic_ansys(onelab_folder: str = None, sho
     insulation.add_winding_insulations([[0.0002, 0.001],
                                         [0.001, 0.0002]])
     # An Air-Insulation in every layer for every winding
-    insulation.add_air_conductor_insulations([[0.0002, 0.001, 0.002],
+    insulation.add_conductor_air_conductor_insulation([[0.0002, 0.001, 0.002],
                                               [0.001, 0.0002, 0.001]])
     insulation.add_kapton_insulation(add_kapton=True, thickness=0.05e-3)
     geo.set_insulation(insulation)

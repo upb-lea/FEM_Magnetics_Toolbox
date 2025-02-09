@@ -15,7 +15,7 @@ import femmt as fmt
 import os
 
 
-def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
+def basic_example_inductor_measurement(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
     """
     Run the example code for the inductor.
 
@@ -36,14 +36,14 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.ElectroStatic, component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
+    geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.FreqDomain, component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
                                 verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
     if onelab_folder is not None:
         geo.file_data.onelab_folder_path = onelab_folder
 
-    inductor_frequency = 0
+    inductor_frequency = 100000
 
     # 2. set core parameters
     # core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.02, window_w=0.01, window_h=0.03,
@@ -87,11 +87,11 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
 
     # 4. set insulations
     insulation = fmt.Insulation(flag_insulation=True)
-    insulation.add_core_insulations(1.55e-3, 1.55e-3, 0.9e-3, 0.001)
-    insulation.add_winding_insulations([[0.0001]])
-    insulation.add_conductor_air_conductor_insulation([[1.0837e-4, 1.380e-4, 1.9285e-4, 2.2777e-4],
+    insulation.add_core_insulations(1.55e-3, 1.55e-3, 0.9e-3, 1.5e-4)
+    insulation.add_winding_insulations([[0.05e-3]])
+    insulation.add_conductor_air_conductor_insulation([[1.0837e-4, 1.54e-4, 1.9285e-4, 2.2777e-4],
                                                        [3.06e-4, 2.653e-4]])
-    insulation.add_kapton_insulation(add_kapton=True, thickness=0.05e-3)
+    insulation.add_kapton_insulation(add_kapton=True, thickness=0.34e-3)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -101,25 +101,35 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
     # 6. create conductor and set parameters: use solid wires
     winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=45)
     # winding.set_solid_round_conductor(conductor_radius=1.1506e-3, conductor_arrangement=fmt.ConductorArrangement.Square)
-    winding.set_solid_round_conductor(conductor_radius=1.1506e-3, conductor_arrangement=fmt.ConductorArrangement.Square)
+    winding.set_solid_round_conductor(conductor_radius=0.2e-3, conductor_arrangement=fmt.ConductorArrangement.Square)
     winding.parallel = False  # set True to make the windings parallel, currently only for solid conductors
     # winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
     # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
     # 7. add conductor to vww and add winding window to MagneticComponent
-    vww.set_winding(winding, 5, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.VerticalUpward_HorizontalRightward,
+    vww.set_winding(winding, 81, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.VerticalUpward_HorizontalRightward,
                     zigzag=True)
     geo.set_winding_windows([winding_window])
+    num_turns_w1 = 81
+    # Create a linear voltage distribution along winding 1 from V_A to V_B
+    V_A = 1
+    V_B = 0
+    voltages_winding_1 = [
+        V_A - (V_A - V_B) * i / (num_turns_w1 - 1)
+        for i in range(num_turns_w1)
+    ]
     # 8. create the model
     geo.create_model(freq=inductor_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False, skin_mesh_factor=0.5)
     # 8. run electrostatic simulation
-    voltage_list = [1] + [0] * 4
-    geo.electrostatic_simulation(voltage=[voltage_list], ground_outer_boundary=False,
-                                 show_fem_simulation_results=show_visual_outputs, save_to_excel=False)
+    # geo.electrostatic_simulation(voltage=[voltages_winding_1], core_voltage=None, ground_outer_boundary=False,
+    #                              show_fem_simulation_results=show_visual_outputs, save_to_excel=False)
+    geo.single_simulation(freq=inductor_frequency, current=[1],
+                          plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
+    # geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
     # Call the electrostatic FEMM simulation function
     # voltages = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]
-    geo.femm_reference_electrostatic(voltages=[voltage_list], ground_core=True, ground_outer_boundary=False,
-                                     non_visualize=0, save_to_excel=False, compare_excel_files_to_femmt=False, mesh_size_conductor=0.0)
+    # geo.femm_reference_electrostatic(voltages=[voltages_winding_1], ground_core=True, ground_outer_boundary=False,
+    #                                  non_visualize=0, save_to_excel=False, compare_excel_files_to_femmt=False, mesh_size_conductor=0.0)
 
 
 if __name__ == "__main__":
-    basic_example_inductor_electrostatic(show_visual_outputs=True)
+    basic_example_inductor_measurement(show_visual_outputs=True)
