@@ -157,8 +157,9 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     num_turns_w1 = 109
     num_turns_w2 = 49
 
-    # # Simulation 1 (V_A, V_B, V_C, V_D = 1, 0, 0 , 0)
-    # # Create a linear voltage distribution along winding 1 from V_A to V_B
+    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""Case 1"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    # --------------------------------------------------------------------------------------
+    # # Simulation 1 (V_A, V_B, V_C, V_D = 1, 0, 0 , 0) --- (V_1, V_2, V_3, V_4 = 1, 0, 0, 0)
     # V_A = 1
     # V_B = 0
     # voltages_winding_1 = [
@@ -167,8 +168,100 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     # ]
     # voltages_winding_2 = [0] * num_turns_w2
 
-    # # Simulation 2 (V_A, V_B, V_C, V_D = 0, 1, 0 , 0)
-    # # Create a linear voltage distribution along winding 1 from V_B to V_A
+    # --------------------------------------------------------------------------------------
+    # # Simulation 2 (V_A, V_B, V_C, V_D = 0, 0, 1 , 0) --- (V_1, V_2, V_3, V_4 = 0, 1, 0, 0)
+    # voltages_winding_1 = [0] * num_turns_w1
+    # V_C = 1.0
+    # V_D = 0.0
+    # voltages_winding_2 = [
+    #     V_C - (V_C - V_D) * i / (num_turns_w2 - 1)
+    #     for i in range(num_turns_w2)
+    # ]
+
+    # ---------------------------------------------------------------------------------------------
+    # # Simulation 3 (V_A, V_B, V_C, V_D = 0, 0, 1 , 1) --- (V_1, V_2, V_3, V_4 = 0, 0, 1, 0)
+    # voltages_winding_1 = [0] * num_turns_w1
+    # voltages_winding_2 = [1] * num_turns_w2
+
+    # -----------------------------------------------------------------------------------------------
+    # # Simulation 4 (V_1, V_2, V_3, V_4 = 1, 1, 1 , 1) --- (V_1, V_2, V_3, V_4 = 0, 0, 0, 1)
+    # voltages_winding_1 = [1] * num_turns_w1
+    # voltages_winding_2 = [1] * num_turns_w2
+
+    # -----------------------------------------------------------------------------------------------
+    # # Simulation 5 (V_A, V_B, V_C, V_D = 1, 0, 1 , 0) --- (V_1, V_2, V_3, V_4 = 1, 1, 0, 0)
+    # V_A = 1.0
+    # V_B = 0.0
+    # V_C = 1.0
+    # V_D = 0.0
+    # voltages_winding_1 = [
+    #     V_A - (V_A - V_B) * i / (num_turns_w1 - 1)
+    #     for i in range(num_turns_w1)
+    # ]
+    # voltages_winding_2 = [
+    #     V_C - (V_C - V_D) * i / (num_turns_w2 - 1)
+    #     for i in range(num_turns_w2)
+    # ]
+
+    # ------------------------------------------------------------------------------------------------
+    # # Simulation 6 (V_A, V_B, V_C, V_D = 1, 0, 1 , 1) --- (V_1, V_2, V_3, V_4 = 1, 0, 1, 0)
+    # V_A = 1.0
+    # V_B = 0.0
+    # voltages_winding_1 = [
+    #     V_A - (V_A - V_B) * i / (num_turns_w1 - 1)
+    #     for i in range(num_turns_w1)
+    # ]
+    # voltages_winding_2 = [1] * num_turns_w2
+
+    # --------------------------------------------------------------------------------------------------
+    # # Simulation 7 (V_A, V_B, V_C, V_D = 2, 1, 1 , 1) --- (V_1, V_2, V_3, V_4 = 1, 0, 0, 1)
+    # V_A = 2.0
+    # V_B = 1.0
+    # voltages_winding_1 = [
+    #     V_A - (V_A - V_B) * i / (num_turns_w1 - 1)
+    #     for i in range(num_turns_w1)
+    # ]
+    # voltages_winding_2 = [1] * num_turns_w2
+
+    # ------------------------------------------------------------------------------------------------------
+    # # Simulation 8 (V_A, V_B, V_C, V_D = 0, 0, 2 , 1) --- (V_1, V_2, V_3, V_4 = 0, 1, 1, 1)
+    # voltages_winding_1 = [0] * num_turns_w1
+    # V_C = 2.0
+    # V_D = 1.0
+    # voltages_winding_2 = [
+    #     V_C - (V_C - V_D) * i / (num_turns_w2 - 1)
+    #     for i in range(num_turns_w2)
+    # ]
+
+    # ---------------------------------------------------------------
+    # # Simulation 9 (V_A, V_B, V_C, V_D = 1, 1, 2 , 1) --- (V_1, V_2, V_3, V_4 = 0, 1, 0, 1)
+    # voltages_winding_1 = [1] * num_turns_w1
+    # V_C = 2.0
+    # V_D = 1.0
+    # voltages_winding_2 = [
+    #     V_C - (V_C - V_D) * i / (num_turns_w2 - 1)
+    #     for i in range(num_turns_w2)
+    # ]
+
+    # ---------------------------------------------------------------
+    # # Simulation 10 (V_A, V_B, V_C, V_D = 1, 1, 2 , 2) --- (V_1, V_2, V_3, V_4 = 0, 1, 0, 1)
+    # # Create a fixed voltage from C to D
+    # voltages_winding_1 = [1] * num_turns_w1
+    # voltages_winding_2 = [2] * num_turns_w2
+
+    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""Case 2"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    # --------------------------------------------------------------------------------------
+    # # Simulation 1 (V_A, V_B, V_C, V_D = 1, 0, 0 , 0) --- (V_1, V_2, V_3, V_4 = 1, 0, 0, 0)
+    # V_A = 1
+    # V_B = 0
+    # voltages_winding_1 = [
+    #     V_A - (V_A - V_B) * i / (num_turns_w1 - 1)
+    #     for i in range(num_turns_w1)
+    # ]
+    # voltages_winding_2 = [0] * num_turns_w2
+
+    # --------------------------------------------------------------------------------------
+    # # Simulation 2 (V_A, V_B, V_C, V_D = 0, 1, 0 , 0) --- (V_1, V_2, V_3, V_4 = -1, 0, -1, 1)
     # V_A = 0.0
     # V_B = 1.0
     # voltages_winding_1 = [
@@ -177,33 +270,33 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     # ]
     # voltages_winding_2 = [0] * num_turns_w2
 
-    # # Simulation 3  (V_A, V_B, V_C, V_D = 0, 0, 1 , 0)
-    # # Create a linear voltage distribution along winding 2 from V_C to V_D
+    # ---------------------------------------------------------------------------------------------
+    # # Simulation 3 (V_A, V_B, V_C, V_D = 0, 0, 1 , 0) --- (V_1, V_2, V_3, V_4 = 0, 1, 0, 0)
+    # voltages_winding_1 = [0] * num_turns_w1
     # V_C = 1.0
     # V_D = 0.0
-    # voltages_winding_1 = [0] * num_turns_w1
     # voltages_winding_2 = [
     #     V_C - (V_C - V_D) * i / (num_turns_w2 - 1)
     #     for i in range(num_turns_w2)
     # ]
 
-    # # Simulation 4 (V_A, V_B, V_C, V_D = 0, 0, 0 , 1)
-    # # Create a linear voltage distribution along winding 2 from V_D to V_C
-    # V_C = 0.0
-    # V_D = 1.0
-    # voltages_winding_1 = [0] * num_turns_w1
-    # voltages_winding_2 = [
-    #     V_C + (V_D - V_C) * i / (num_turns_w2 - 1)
-    #     for i in range(num_turns_w2)
-    # ]
+    # ---------------------------------------------------------------------------------------------
+    # Simulation 4 (V_A, V_B, V_C, V_D = 0, 0, 0 , 1) --- (V_1, V_2, V_3, V_4 = 0, -1, 1, 0)
+    voltages_winding_1 = [0] * num_turns_w1
+    V_C = 0.0
+    V_D = 1.0
+    voltages_winding_2 = [
+        V_C + (V_D - V_C) * i / (num_turns_w2 - 1)
+        for i in range(num_turns_w2)
+    ]
 
-    # # Simulation 5 (V_A, V_B, V_C, V_D = 1, 1, 0 , 0)
-    # # Create a fixed voltage from A to B and other Zero voltage from C to D
+    # ---------------------------------------------------------------------------------------------
+    # # Simulation 5 (V_A, V_B, V_C, V_D = 1, 1, 0 , 0) --- (V_1, V_2, V_3, V_4 = 0, 0, -1, 1)
     # voltages_winding_1 = [1] * num_turns_w1
     # voltages_winding_2 = [0] * num_turns_w2
 
-    # # Simulation 6 (V_A, V_B, V_C, V_D = 1, 0, 1 , 0)
-    # # Create a linear voltage distribution along winding 1 from V_A to V_B and along winding 2 from V_C to V_D (AC vs BDE)
+    # ---------------------------------------------------------------------------------------------
+    # # Simulation 6 (V_A, V_B, V_C, V_D = 1, 0, 1 , 0) --- (V_1, V_2, V_3, V_4 = 1, 1, 0, 0)
     # V_A = 1.0
     # V_B = 0.0
     # V_C = 1.0
@@ -217,8 +310,8 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     #     for i in range(num_turns_w2)
     # ]
 
-    # # Simulation 7 (V_A, V_B, V_C, V_D = 1, 0, 0 , 1)
-    # # Create a linear voltage distribution along winding 1 from V_A to V_B and along winding 2 from V_D to V_C
+    # ---------------------------------------------------------------------------------------------
+    # # Simulation 7 (V_A, V_B, V_C, V_D = 1, 0, 0 , 1) --- (V_1, V_2, V_3, V_4 = 1, -1, 1, 0)
     # V_A = 1.0
     # V_B = 0.0
     # V_C = 0.0
@@ -232,8 +325,8 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     #     for i in range(num_turns_w2)
     # ]
 
-    # # Simulation 8 (V_A, V_B, V_C, V_D = 0, 1, 1 , 0)
-    # # Create a linear voltage distribution along winding 1 from V_B to V_A and along winding 2 from V_C to V_D
+    # ---------------------------------------------------------------------------------------------
+    # # Simulation 8 (V_A, V_B, V_C, V_D = 0, 1, 1 , 0) --- (V_1, V_2, V_3, V_4 = -1, 1, -1, 1)
     # V_A = 0.0
     # V_B = 1.0
     # V_C = 1.0
@@ -247,8 +340,8 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     #     for i in range(num_turns_w2)
     # ]
 
-    # # Simulation 9 (V_A, V_B, V_C, V_D = 0, 1, 0 , 1)
-    # # # Create a fixed voltage from B to A and from D to C
+    # ---------------------------------------------------------------------------------------------
+    # # Simulation 9 (V_A, V_B, V_C, V_D = 0, 1, 0 , 1) --- (V_1, V_2, V_3, V_4 = -1, -1, 0, 1)
     # V_A = 0.0
     # V_B = 1.0
     # V_C = 0.0
@@ -262,19 +355,9 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     #     for i in range(num_turns_w2)
     # ]
 
-    # Simulation 10 (V_A, V_B, V_C, V_D = 0, 0, 1 , 1)
-    # Create a fixed voltage from C to D
-    voltages_winding_1 = [0] * num_turns_w1
-    voltages_winding_2 = [1] * num_turns_w2
-
-    # # Simulation 11 (V_A, V_B, V_C, V_D = 0, 1, 1 , 1)
-    # # # Create a fixed voltage from C to D
-    # V_A = 0.0
-    # V_B = 1.0
-    # voltages_winding_1 = [
-    #     V_A + (V_B - V_A) * i / (num_turns_w1 - 1)
-    #     for i in range(num_turns_w1)
-    # ]
+    # ---------------------------------------------------------------------------------------------
+    # Simulation 10 (V_A, V_B, V_C, V_D = 0, 0, 1 , 1) --- (V_1, V_2, V_3, V_4 = 0, 0, 1, 0)
+    # voltages_winding_1 = [0] * num_turns_w1
     # voltages_winding_2 = [1] * num_turns_w2
 
     geo.electrostatic_simulation( voltage=[voltages_winding_1, voltages_winding_2], core_voltage=0, ground_outer_boundary=False,

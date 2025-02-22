@@ -69,7 +69,7 @@ def basic_example_inductor_measurement(onelab_folder: str = None, show_visual_ou
                     core_dimensions=core_dimensions,
                     bobbin_dimensions=bobbin_dimensions,
                     detailed_core_model=False,
-                    material=fmt.Material.N49, temperature=45, frequency=inductor_frequency,
+                    material=fmt.Material.N95, temperature=45, frequency=inductor_frequency,
                     # permeability_datasource="manufacturer_datasheet",
                     permeability_datasource=fmt.MaterialDataSource.Measurement,
                     permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
@@ -88,10 +88,10 @@ def basic_example_inductor_measurement(onelab_folder: str = None, show_visual_ou
     # 4. set insulations
     insulation = fmt.Insulation(flag_insulation=True)
     insulation.add_core_insulations(1.55e-3, 1.55e-3, 0.9e-3, 1.5e-4)
-    insulation.add_winding_insulations([[0.05e-3]])
+    insulation.add_winding_insulations([[0.025e-3]])
     insulation.add_conductor_air_conductor_insulation([[1.0837e-4, 1.54e-4, 1.9285e-4, 2.2777e-4],
                                                        [3.06e-4, 2.653e-4]])
-    insulation.add_kapton_insulation(add_kapton=True, thickness=0.34e-3)
+    insulation.add_kapton_insulation(add_kapton=True, thickness=0.07e-3)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -101,7 +101,7 @@ def basic_example_inductor_measurement(onelab_folder: str = None, show_visual_ou
     # 6. create conductor and set parameters: use solid wires
     winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=45)
     # winding.set_solid_round_conductor(conductor_radius=1.1506e-3, conductor_arrangement=fmt.ConductorArrangement.Square)
-    winding.set_solid_round_conductor(conductor_radius=0.2e-3, conductor_arrangement=fmt.ConductorArrangement.Square)
+    winding.set_solid_round_conductor(conductor_radius=0.225e-3, conductor_arrangement=fmt.ConductorArrangement.Square)
     winding.parallel = False  # set True to make the windings parallel, currently only for solid conductors
     # winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
     # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
@@ -117,12 +117,13 @@ def basic_example_inductor_measurement(onelab_folder: str = None, show_visual_ou
         V_A - (V_A - V_B) * i / (num_turns_w1 - 1)
         for i in range(num_turns_w1)
     ]
-
+    # voltages_winding_1 = [0] * 80 + [1] * 1
     # 8. create the model
     geo.create_model(freq=inductor_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False, skin_mesh_factor=0.5)
     # 8. run electrostatic simulation
     geo.electrostatic_simulation(voltage=[voltages_winding_1], core_voltage=None, ground_outer_boundary=False,
                                  show_fem_simulation_results=show_visual_outputs, save_to_excel=False)
+    geo.get_total_charges()
     # Call the electrostatic FEMM simulation function
     # voltages = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]
     geo.femm_reference_electrostatic(voltages=[voltages_winding_1], ground_core=True, ground_outer_boundary=False,

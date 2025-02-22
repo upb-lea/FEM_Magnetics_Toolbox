@@ -21,7 +21,7 @@ PostOperation Get_global UsingPost EleSta {
   EndFor
 
   // print charge and voltage for each turn in separate file (Just another way)
-  /*For winding_number In {1:n_windings}
+  For winding_number In {1:n_windings}
     nbturns~{winding_number} = NbrCond~{winding_number} / SymFactor;
 
     // Print charge for each turn in the winding
@@ -31,10 +31,10 @@ PostOperation Get_global UsingPost EleSta {
         Print[ Q, OnRegion Turn~{winding_number}~{turn_number}, Format TimeTable,
                File > Sprintf[StrCat[DirResCirc, "Q_%g_%g.dat"], winding_number, turn_number], LastTimeStepOnly];
     EndFor
- EndFor*/
+ EndFor
 
   // print voltages for each turn
-  /*For winding_number In {1:n_windings}
+  For winding_number In {1:n_windings}
     nbturns~{winding_number} = NbrCond~{winding_number} / SymFactor;
 
     // Print voltage for each turn in the winding
@@ -43,10 +43,10 @@ PostOperation Get_global UsingPost EleSta {
                        OnRegion Turn~{winding_number}~{turn_number}, Format Table, File > Sprintf[StrCat[DirResValsVoltage~{winding_number},
                         "voltage_%g_%g.dat"], winding_number, turn_number], LastTimeStepOnly, StoreInVariable $U~{winding_number}~{turn_number}];
     EndFor
-  EndFor*/
+  EndFor
 
   // print charges for each turn
-  /*For winding_number In {1:n_windings}
+  For winding_number In {1:n_windings}
     nbturns~{winding_number} = NbrCond~{winding_number} / SymFactor;
 
     // Print charge for each turn in the winding
@@ -55,7 +55,7 @@ PostOperation Get_global UsingPost EleSta {
                        OnRegion Turn~{winding_number}~{turn_number}, Format Table, File > Sprintf[StrCat[DirResValsCharge~{winding_number},
                         "Charge_%g_%g.dat"], winding_number, turn_number], LastTimeStepOnly, StoreInVariable $Q~{winding_number}~{turn_number}];
     EndFor
-  EndFor*/
+  EndFor
 
 
   // Calculate and print capacitance through the stored energy
@@ -99,8 +99,8 @@ PostOperation Get_global UsingPost EleSta {
 
 
 
-  // Capacitances from QV relation on each turn of the same winding
-  /*If (Flag_voltage)
+  /*// Capacitances from QV relation on each turn of the same winding
+  If (Flag_voltage)
       // Capacitance Calculation Between Turns for Each Winding (from charges)
         For winding_number In {1:n_windings}
             nbturns~{winding_number} = NbrCond~{winding_number} / SymFactor;
@@ -136,7 +136,7 @@ PostOperation Get_global UsingPost EleSta {
   EndIf*/
 
   // Print Capacitance Between Turns of Different Windings
-  /*For winding_number1 In {1:n_windings}
+  For winding_number1 In {1:n_windings}
     nbturns1~{winding_number1} = NbrCond~{winding_number1} / SymFactor;
 
     For winding_number2 In {1:n_windings}
@@ -156,7 +156,7 @@ PostOperation Get_global UsingPost EleSta {
             EndFor
         EndIf
     EndFor
-  EndFor*/
+  EndFor
 
 
 

@@ -3167,7 +3167,7 @@ class MagneticComponent:
         # Get all voltage result files from the folder
         charges_total = []
         # charge_files = [f for f in os.listdir(res_path) if f.startswith('Q_') and f.endswith('.dat')]
-        charge_files = ['Q_1.dat', 'Q_2.dat']
+        charge_files = ['Q_1.dat']
         for charge_file in charge_files:
             file_path = os.path.join(res_path, charge_file)
             charge_sum = ff.load_charges_and_sum_them(file_path)
@@ -4929,6 +4929,20 @@ class MagneticComponent:
 
             # Electric Field
             gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "MagE.pos"))
+            gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
+            gmsh.option.setNumber(f"View[{view}].RangeType", 2)
+            gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
+            gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)
+            gmsh.option.setNumber(f"View[{view}].CustomMax", gmsh.option.getNumber(f"View[{view}].Max"))
+            gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
+            gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
+            gmsh.option.setNumber(f"View[{view}].NbIso", 40)
+            gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
+
+            view += 1
+
+            # Stored energy
+            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "We.pos"))
             gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
             gmsh.option.setNumber(f"View[{view}].RangeType", 2)
             gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)

@@ -18,14 +18,17 @@ n_windings              = Number_of_Windings; // Number of windings
 // Physical numbers
 // ----------------------
 OUTBND                  = 111111;
-BOUND_LEFT             = 111112;
+BOUND_LEFT              = 111112;
 AIR                     = 110000;
 AIR_EXT                 = 110001;
 AIR_COND                = 1000000;
-Bobbin_Insulation              = 110010;
+Bobbin_Insulation       = 110010;
+Layer_Insulation        = 110050;
 Cond_Insulation         = 2000000;
 CORE_PN                 = 120000;
 ExtGmsh                 = ".pos";
+po = "Output 2D/";
+
 
 //physical numbers of conductors in n transformer
 For n In {1:n_windings}
@@ -76,6 +79,7 @@ Group {
     // Non-Conducting Domain (Air and Insulation)
     DomainCC = Region[{Air}];
     DomainCC += Region[{Bobbin_Insulation}];
+    DomainCC += Region[{Layer_Insulation}];
     // DomainCC += Region[{ConductorInsulation}];
     DomainCC += Region[{Cond_Insulation}];
 
@@ -168,12 +172,14 @@ Function {
   SurfCore[] = SurfaceArea[]{CORE_PN} ;
   // Materials
   er_air = 1;
-  er_core = 5000;
+  er_core = 100000;
   er_bobbin = 5.5;
   er_cond_insulation = 3;
+  er_layer_insulation = 3.5;
   epsilon[#{Air}] = e0 * er_air;
   epsilon[#{Core}] = e0 * er_core;
   epsilon[#{Bobbin_Insulation}] = e0 * er_bobbin;
+  epsilon[#{Layer_Insulation}] = e0 * er_layer_insulation;
   epsilon[#{Cond_Insulation}] = e0 * er_cond_insulation;
   // The winding permittivity is set to 1, but it does not play any role in the simulation.
   For winding_number In {1:n_windings}
@@ -302,6 +308,11 @@ PostProcessing {
       // Electric field
       { Name e; Value {
           Term { [ -{d u0} ]; In Domain; Jacobian Vol; }
+        }
+      }
+      // Electric field
+      { Name Welocal; Value {
+          Term { [ epsilon[] / 2. * SquNorm[{d u0}] ]; In Domain; Jacobian Vol; }
         }
       }
       // electric field density

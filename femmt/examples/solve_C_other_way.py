@@ -15,7 +15,20 @@ import matplotlib.pyplot as plt
 #     [0, 0, 1, 1, 1, 1, 0, 0, 1, 1],  # Scenario 10
 #     # [1, 0, 0, 1, 0, 1, 0, 1, 1, 1],
 # ])
-
+# M = np.array([
+#     [1, 0, 0, 1, 0, 1, 2, 1, 1, -1],  # Scenario 1
+#     [-1, 0, 1, -2, -1, -2, 1, 2, 3, -3],  # Scenario 2
+#     [0, 1, 0, -1, -1, 0, 1, 2, 3, -3],  # Scenario 3
+#     [0, -1, -1, 2, 2, 1, 1, 1, -1, 0],  # Scenario 4
+#     [0, 0, 1, -1, -1, -1, 2, 2, 3, 3],  # Scenario 5
+#     [1, 1, 0, 0, -1, 1, 2, 1, 2, 1],  # Scenario 6
+#     [1, -1, -1, 3, 2, 2, 2, 1, -1, 0],  # Scenario 7
+#     [-1, 1, 1, -1, -2, 0, 1, 2, 4, -3],  # Scenario 8
+#     [-1, -1, 1, -1, 0, -2, 1, 2, 2, -3],  # Scenario 9
+#     [0, 0, 1, -1, -1, -1, 1, 1, 2, 2],  # Scenario 10
+#     # [1, 0, 0, 1, 0, 1, 0, 1, 1, 1],
+# ])
+# true
 M = np.array([
     [1, 0, 0, 1, 0, 1, 1, 0, 0, 0],  # Scenario 1
     [0, 1, 0, 1, 1, 0, 0, 0, 1, 0],  # Scenario 2
@@ -29,135 +42,83 @@ M = np.array([
     [0, 0, 1, 1, 1, 1, 1, 1, 2, 2],  # Scenario 10
     # [1, 0, 0, 1, 0, 1, 0, 1, 1, 1],
 ])
+n = np.linalg.eig(M)
+print(n)
+# M_T = np.array([
+#     [1, 0, 0, 0, 1, 1, 1, 0, 0, 0],
+#     [0, 1, 0, 0, 1, 0, 0, 1, 1, 0],
+#     [0, 0, 1, 0, 0, 1, 0, 1, 0, 1],
+#     [1, 1, 1, 0, 0, 0, 1, 2, 1, 1],
+#     [0, 1, 1, 0, 1, 1, 0, 2, 1, 1],
+#     [1, 0, 1, 0, 1, 0, 1, 1, 0, 1],
+#     [1, 0, 0, 1, 1, 1, 2, 0, 1, 1],
+#     [0, 0, 0, 1, 0, 0, 1, 0, 1, 1],
+#     [0, 1, 1, 1, 1, 1, 1, 2, 2, 2],
+#     [0, 0, 1, 1, 0, 1, 1, 1, 1, 2]
+# ])
+
+# M = np.array([
+#     [3, 0, 1, 2, 1, 2, 5, 2, 3, 3],  # Scenario 1
+#     [1, 3, 0, 2, 3, 1, 3, 2, 5, 2],  # Scenario 2
+#     [2, 2, 3, 3, 5, 3, 5, 3, 8, 6],  # Scenario 3
+#     [1, 2, 2, 5, 4, 3, 4, 3, 7, 5],  # Scenario 4
+#     [4, 3, 1, 4, 4, 3, 6, 2, 6, 3],  # Scenario 5
+#     [3, 2, 2, 5, 4, 5, 6, 3, 7, 5],  # Scenario 6
+#     [4, 2, 3, 7, 5, 5, 9, 5, 10, 8],  # Scenario 7
+#     [3, 5, 3, 5, 8, 4, 8, 5, 13, 8],  # Scenario 8
+#     [2, 5, 2, 7, 7, 4, 7, 5, 12, 7],  # Scenario 9
+#     [3, 4, 5, 8, 9, 6, 9, 6, 15, 11],  # Scenario 10
+#     # [1, 0, 0, 1, 0, 1, 0, 1, 1, 1],
+# ])
+# M = np.array([
+#     [1, 0, 0, 1, 0, 1, 1, 0, 0, 0],  # Scenario 1
+#     [0, 0, 1, 1, 1, 1, 0, 0, 1, 1],  # Scenario 2
+#     [0, 0, 1, 1, 1, 1, 1, 1, 2, 2],  # Scenario 3 --
+#     [1, 1, 1, 1, 2, 0, 2, 1, 3, 2],  # Scenario 4
+#     [1, 0, 1, 0, 1, 0, 1, 0, 1, 1],  # Scenario 5
+#     [1, 0, 1, 0, 1, 0, 2, 1, 2, 2],  # Scenario 6
+#     [1, 1, 1, 0, 2, 1, 3, 1, 3, 2],  # Scenario 7
+#     [0, 0, 2, 2, 2, 2, 1, 1, 3, 3],  # Scenario 8
+#     [1, 1, 2, 2, 3, 1, 2, 1, 4, 3],  # Scenario 9
+#     [1, 1, 2, 2, 3, 1, 3, 2, 5, 4],  # Scenario 10
+#     # [1, 0, 0, 1, 0, 1, 0, 1, 1, 1],
+# ])
 
 
 M_squared = M ** 2
 print("Element-wise Squared Matrix M:\n", M_squared)
-# Define the energy vector
-We_with_modified_ins_cond_epsilon_r_is_one = np.array([
-    1.896646196533772e-11,  # Scenario 1
-    1.785239296253184e-11,   # Scenario 2
-    1.818042720391898e-11,   # Scenario 3
-    1.703657012251492e-11,  # Scenario 4
-    5.295722229338796e-11,  # Scenario 5
-    3.432119340610629e-12,  # Scenario 6
-    2.079145395412682e-11,  # Scenario 7
-    2.104150832013626e-11,  # Scenario 8
-    3.117737033725389e-12,  # Scenario 9
-    5.070835812665073e-11,   # Scenario 10
-    #3.044751388584012e-11    # 11
-])
-# femm
-We_with_modified_ins_cond_epsilon_r_is_one_femm = np.array([
-    1.904312842747512e-11,  # Scenario 1
-    1.792092892424583e-11,   # Scenario 2
-    1.825802808810904e-11,   # Scenario 3
-    1.710347501700135e-11,  # Scenario 4
-    5.316169679438457e-11,  # Scenario 5
-    3.438355010228581e-12,  # Scenario 6
-    2.087385227086202e-11,  # Scenario 7
-    2.11273133020259e-11,  # Scenario 8
-    3.120147640149721e-12,  # Scenario 9
-    5.091331977408417e-11,   # Scenario 10
-    #3.044751388584012e-11    # 11
-])
-# # with_modified_new_scheme_cond
-# We_with_modified_new_scheme_cond = np.array([
-#     2.773350214336289e-11,  # Scenario 1
-#     2.34209643382356e-11,   # Scenario 2
-#     2.679920014773644e-11,   # Scenario 3
-#     2.271721133209746e-11,  # Scenario 4
-#     7.431795139552544e-11,  # Scenario 5
-#     3.518148742480362e-12,  # Scenario 6
-#     2.805293125056189e-11,  # Scenario 7
-#     2.839120815089925e-11,  # Scenario 8
-#     2.986424441328575e-12,  # Scenario 9
-#     7.19653566182524e-11,   # Scenario 10
-#     #3.044751388584012e-11    # 11
-# ])
-We_with_modified_ins_cond_epsilon_r_is_three= np.array([
-    2.756508863415358e-11,  # Scenario 1
-    2.456509071896705e-11,   # Scenario 2
-    2.671265230458517e-11,   # Scenario 3
-    2.376064534573603e-11,  # Scenario 4
-    7.501676716808256e-11,  # Scenario 5
-    3.527239633582984e-12,  # Scenario 6
-    2.929880303521695e-11,  # Scenario 7
-    2.957319959896681e-11,  # Scenario 8
-    3.185381956923266e-12,  # Scenario 9
-    7.272732069923849e-11,   # Scenario 10
+# # Define the energy vector
+We_NEW = np.array([
+    2.027762180254262e-11,  # Scenario 1
+    1.635892350642773e-11,   # Scenario 2
+    4.616680329343129e-11,   # Scenario 3
+    1.385420100775862e-11,  # Scenario 4
+    5.75419844828347e-12,  # Scenario 5
+    1.964061378028329e-11,  # Scenario 6
+    4.58107929999624e-11,  # Scenario 7
+    1.09284014586561e-10,  # Scenario 8
+    3.316044009838996e-11,  # Scenario 9
+    6.447572522009044e-11,   # Scenario 10
     # 3.044751388584012e-11    # 11
 ])
-We_with_correct_distances = np.array([
-    1.403087465503489e-11,  # Scenario 1
-    1.357402345230772e-11,   # Scenario 2
-    1.10915378827943e-11,   # Scenario 3
-    1.052400658622305e-11,  # Scenario 4
-    3.966934784395457e-11,  # Scenario 5
-    5.529572561534309e-12,  # Scenario 6
-    1.558611820075e-11,  # Scenario 7
-    1.582570545902131e-11,  # Scenario 8
-    5.174954071864558e-12,  # Scenario 9
-    3.083036233763695e-11,   # Scenario 10
-    # 3.044751388584012e-11    # 11
-])
-We_with_correct_distances_with_right_ins = np.array([
-    1.931909816212589e-11,  # Scenario 1
-    1.830944905932953e-11,  # Scenario 2
-    1.634784967968647e-11,  # Scenario 3
-    1.52939928649424e-11,  # Scenario 4
-    5.43011404953074e-11,  # Scenario 5
-    5.511522514843165e-12,  # Scenario 6
-    2.099970806544051e-11,  # Scenario 7
-    2.12423267742129e-11,  # Scenario 8
-    5.163966193659957e-12,  # Scenario 9
-    4.548916618682985e-11,  # Scenario 10
-    # 3.044751388584012e-11    # 11
-])
-# We_with_correct_distances_with_right_ins_with_epsilon_r_of_bobbin_four = np.array([
-#     1.876090034312706e-11,  # Scenario 1
-#     1.781887585976625e-11,   # Scenario 2
-#     1.618423702929472e-11,   # Scenario 3
-#     1.525025261528419e-11,  # Scenario 4
-#     5.291013528769602e-11,  # Scenario 5
-#     4.898009590389586e-12,  # Scenario 6
-#     2.039885523959554e-11,  # Scenario 7
-#     2.058946412878626e-11,  # Scenario 8
-#     4.640690923584991e-12,  # Scenario 9
-#     4.52774739951255e-11,   # Scenario 10
-#     # 3.044751388584012e-11    # 11
-# ])
-We_Till = np.array([
-    2.018229492973006e-11,  # Scenario 1
+We_Othman = np.array([
+    2.002418828706215e-11,  # Scenario 1
     1.611847650440696e-11,   # Scenario 2
     4.54639734788541e-11,   # Scenario 3
-    1.558863170201864e-11,  # Scenario 4
-    5.521783962238933e-11,  # Scenario 5
-    5.679027828644863e-12,  # Scenario 6
-    1.995202333129267e-11,  # Scenario 7
-    2.056192892148821e-11,  # Scenario 8
-    4.911796464153383e-12,  # Scenario 9
-    4.57584432259361e-11,   # Scenario 10
+    1.38508462369603e-11,  # Scenario 4
+    5.750010130762671e-12,  # Scenario 5
+    1.942906256990097e-11,  # Scenario 6
+    4.555462346684122e-11,  # Scenario 7
+    1.076387631951943e-10,  # Scenario 8
+    3.291112743307101e-11,  # Scenario 9
+    6.37630655520892e-11,   # Scenario 10
     # 3.044751388584012e-11    # 11
 ])
-# We_Othman = np.array([
-#     2.002418828706215e-11,  # Scenario 1
-#     1.611847650440696e-11,   # Scenario 2
-#     4.54639734788541e-11,   # Scenario 3
-#     1.38508462369603e-11,  # Scenario 4
-#     5.750010130762671e-12,  # Scenario 5
-#     1.942906256990097e-11,  # Scenario 6
-#     4.555462346684122e-11,  # Scenario 7
-#     1.076387631951943e-10,  # Scenario 8
-#     3.291112743307101e-11,  # Scenario 9
-#     6.37630655520892e-11,   # Scenario 10
-#     # 3.044751388584012e-11    # 11
-# ])
 # # Ensure We is a column vector
 # We = We_no_bobbin.reshape((10, 1))
 # We = We_with_bobbin.reshape((10, 1))
 # We = We_with_modified_bobbin.reshape((10, 1))
-We = We_Till.reshape((10, 1))
+We = We_NEW.reshape((10, 1))
 # Check if M is invertible by computing its determinant
 det_M = np.linalg.det(M_squared)
 print(f"Determinant of M: {det_M}")
@@ -206,8 +167,8 @@ else:
     print(f"C_BC_ADE (C1 + C2 + C3 + C4 + C8 + C9): {C_BC_ADE:.5e} F")
 
 # new
-energy_data = [We_with_modified_ins_cond_epsilon_r_is_one, We_with_modified_ins_cond_epsilon_r_is_one_femm , We_with_modified_ins_cond_epsilon_r_is_three, We_with_correct_distances, We_with_correct_distances_with_right_ins, We_Till]
-energy_labels = ["modified_ins_cond_epsilon_r_is_one", "modified_ins_cond_epsilon_r_is_one_femm", "modified_ins_cond_epsilon_r_is_three", "We_with_correct_ditances", "with_correct_distances_with_right_ins", "Till"]
+energy_data = [We_NEW, We_Othman]
+energy_labels = ["Till", "Othman"]
 
 # Calculate C for each case
 capacitances = []
@@ -339,7 +300,7 @@ def print_and_plot_sums_with_error(C, label):
     for name, func in connection_sums.items():
         sum_value = func(C)
         measured_value = connection_measurement[name]
-        error = ((sum_value - measured_value) / sum_value) * 100
+        error = (sum_value - measured_value) / sum_value * 100
         errors.append(error)
 
         print(f"{name}: {sum_value:.5e} F (Measured: {measured_value:.5e} F) | Error: {error:.2f}%")
