@@ -36,9 +36,9 @@ setup(
         'Environment :: MacOS X'
     ],
     description="FEM Magnetics Toolbox",
-    install_requires=['pandas~=2.2.1',
-                      'numpy~=1.26.0',
-                      'matplotlib~=3.8.0',
+    install_requires=['pandas',
+                      'numpy',
+                      'matplotlib',
                       'gmsh>=4.13.1',
                       'onelab>=1.0',
                       'scipy',
