@@ -7,7 +7,7 @@ import sys
 import os
 import warnings
 from typing import Union, List, Tuple, Dict
-from scipy.integrate import quadrature
+from scipy.integrate import quad
 
 
 # Third parry libraries
@@ -1673,7 +1673,7 @@ def visualize_inductance_matrix(inductance_matrix: np.array, silent: bool) -> No
 
 def calculate_quadrature_integral(time_steps: List[float], data: List[float]) -> float:
     """
-    Calculate the integral of given data over specific time steps using the quadrature method.
+    Calculate the integral of given data over specific time steps using the quad method.
 
     :param time_steps: List of time steps.
     :type time_steps: List[float]
@@ -1683,11 +1683,11 @@ def calculate_quadrature_integral(time_steps: List[float], data: List[float]) ->
     :rtype: float
     """
     func = lambda x: np.interp(x, time_steps, data)
-    return quadrature(func, time_steps[0], time_steps[-1])[0]
+    return quad(func, time_steps[0], time_steps[-1])[0]
 
 def calculate_squared_quadrature_integral(time_steps: List[float], data: List[float]) -> float:
     """
-    Calculate the integral of squared given data over specific time steps using the quadrature method..
+    Calculate the integral of squared given data over specific time steps using the quad method..
 
     :param time_steps: List of time steps.
     :type time_steps: List[float]
@@ -1697,7 +1697,7 @@ def calculate_squared_quadrature_integral(time_steps: List[float], data: List[fl
     :rtype: float
     """
     func = lambda x: np.interp(x, time_steps, data) ** 2
-    return quadrature(func, time_steps[0], time_steps[-1])[0]
+    return quad(func, time_steps[0], time_steps[-1])[0]
 
 def calculate_average(integral: float, time_steps: List[float]) -> float:
     """
