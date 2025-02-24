@@ -41,7 +41,7 @@ setup(
                       'matplotlib~=3.8.0',
                       'gmsh>=4.13.1',
                       'onelab>=1.0',
-                      'scipy~=1.12.0',
+                      'scipy',
                       'pytest',
                       'pycodestyle',
                       'PyQt5>=5.15.6',
