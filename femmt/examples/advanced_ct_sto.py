@@ -1,5 +1,5 @@
 """
-Advanced example to show an optimization workflow for the stacked transformer.
+Advanced example to show an optimization workflow for the center-tapped stacked transformer.
 
 A stacked transformer should be optimized. The target parameters are:
     * l_s12_target=5.8e-6,

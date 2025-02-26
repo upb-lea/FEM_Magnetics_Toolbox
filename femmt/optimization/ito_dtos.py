@@ -17,6 +17,8 @@ class ItoSingleInputConfig:
     Also specifies the working directory where to store the results.
     """
 
+    integrated_transformer_study_name: str
+
     l_s_target: float
     l_h_target: float
     n_target: float
@@ -31,7 +33,7 @@ class ItoSingleInputConfig:
     primary_litz_wire_list: list
     secondary_litz_wire_list: list
     temperature: float
-    working_directory: str
+    integrated_transformer_optimization_directory: str
 
 @dataclass
 class WorkingDirectories:
