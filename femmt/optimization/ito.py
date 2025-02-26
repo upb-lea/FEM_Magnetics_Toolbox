@@ -2,15 +2,16 @@
 # Python libraries
 import os
 import json
-import dataclasses
 from typing import List, Dict, Tuple, Optional
 import datetime
 import pickle
+import logging
 
 # 3rd party library import
 import materialdatabase as mdb
 from scipy import optimize
 import optuna
+import pandas as pd
 
 # femmt import
 import femmt.functions as ff
@@ -571,77 +572,51 @@ class IntegratedTransformerOptimization:
                            f"_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
             fig.show()
 
-        ##############################
-        # load
-        ##############################
-
         @staticmethod
-        def load_study_to_dto(study_name: str, config: ItoSingleInputConfig) -> List[ItoSingleResultFile]:
+        def study_to_df(config: ItoSingleInputConfig) -> pd.DataFrame:
             """
-            Load all trials of a study to a DTO-list.
+            Create a Pandas dataframe from a study.
 
-            :param study_name: Name of the study
-            :type study_name: str
-            :param config: Integrated transformer configuration file
-            :type config: ItoSingleInputConfig
-            :return: List of all trials
-            :rtype: List[ItoSingleResultFile]
-
+            :param config: configuration
+            :type config: InductorOptimizationDTO
+            :return: Study results as Pandas Dataframe
+            :rtype: pd.DataFrame
             """
-            study = optuna.create_study(study_name=study_name,
-                                        storage=f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3",
-                                        load_if_exists=True)
-
-            dto_list = [op.OptunaFemmtParser.parse(frozen_object) for frozen_object in study.trials \
-                        if frozen_object.state == optuna.trial.TrialState.COMPLETE]
-
-            return dto_list
-
-        @staticmethod
-        def load_study_best_trials_to_dto(study_name: str, config: ItoSingleInputConfig) -> List[ItoSingleResultFile]:
-            """
-            Load the best trials (Pareto front) of a study.
-
-            :param study_name: Name of the study
-            :type study_name: str
-            :param config: Integrated transformer configuration file
-            :type config: ItoSingleInputConfig
-            :return: List of the best trials.
-            :rtype: List[ItoSingleResultFile]
-
-            """
-            study = optuna.create_study(study_name=study_name,
-                                        storage=f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3",
-                                        load_if_exists=True)
-
-            print(study.best_trials[0])
-
-            dto_list = [op.OptunaFemmtParser.parse(frozen_object) for frozen_object in study.best_trials]
-
-            return dto_list
+            database_url = f'sqlite:///{config.integrated_transformer_optimization_directory}/{config.integrated_transformer_study_name}.sqlite3'
+            if os.path.isfile(database_url.replace('sqlite:///', '')):
+                print("Existing study found.")
+            else:
+                raise ValueError(f"Can not find database: {database_url}")
+            loaded_study = optuna.load_study(study_name=config.integrated_transformer_study_name, storage=database_url)
+            df = loaded_study.trials_dataframe()
+            df.to_csv(f'{config.integrated_transformer_optimization_directory}/{config.integrated_transformer_study_name}.csv')
+            logging.info(f"Exported study as .csv file: {config.integrated_transformer_optimization_directory}/{config.integrated_transformer_study_name}.csv")
+            return df
 
         #############################
         # filter
         #############################
 
         @staticmethod
-        def filter_loss_list(valid_design_list: List[ItoSingleResultFile], factor_min_dc_losses: float = 1.2) -> List[ItoSingleResultFile]:
+        def filter_loss_list_df(df: pd.DataFrame, factor_min_dc_losses: float = 1.2, factor_max_dc_losses: float = 10) -> pd.DataFrame:
             """
             Remove designs with too high losses compared to the minimum losses.
 
-            :param valid_design_list: list of valid DTOs
-            :type valid_design_list: List[ItoSingleResultFile]
+            :param df: list of valid DTOs
+            :type df: List[ItoSingleResultFile]
             :param factor_min_dc_losses: filter factor for the minimum dc losses
             :type factor_min_dc_losses: float
+            :param factor_max_dc_losses: dc_max_loss = factor_max_dc_losses * min_available_dc_losses_in_pareto_front
+            :type factor_max_dc_losses: float
             :returns: list with removed objects (too small air gaps)
             :rtype: List[ItoSingleResultFile]
             """
             # figure out pareto front
             # pareto_volume_list, pareto_core_hyst_list, pareto_dto_list = self.pareto_front(volume_list, core_hyst_loss_list, valid_design_list)
 
-            x_pareto_vec, y_pareto_vec = fo.pareto_front_from_dtos(valid_design_list)
+            pareto_df: pd.DataFrame = fo.pareto_front_from_df(df)
 
-            vector_to_sort = np.array([x_pareto_vec, y_pareto_vec])
+            vector_to_sort = np.array([pareto_df["values_0"], pareto_df["values_1"]])
 
             # sorting 2d array by 1st row
             # https://stackoverflow.com/questions/49374253/sort-a-numpy-2d-array-by-1st-row-maintaining-columns
@@ -649,21 +624,18 @@ class IntegratedTransformerOptimization:
             x_pareto_vec = sorted_vector[0]
             y_pareto_vec = sorted_vector[1]
 
-            total_losses_list = []
-            filtered_design_dto_list = []
-
-            for dto in valid_design_list:
-                total_losses_list.append(dto.total_loss)
+            total_losses_list = df["values_1"][~np.isnan(df['values_1'])].to_numpy()
 
             min_total_dc_losses = total_losses_list[np.argmin(total_losses_list)]
             loss_offset = factor_min_dc_losses * min_total_dc_losses
 
-            for dto in valid_design_list:
-                ref_loss = np.interp(dto.core_2daxi_total_volume, x_pareto_vec, y_pareto_vec) + loss_offset
-                if dto.total_loss < ref_loss:
-                    filtered_design_dto_list.append(dto)
+            ref_loss_max = np.interp(df["values_0"], x_pareto_vec, y_pareto_vec) + loss_offset
+            # clip losses to a maximum of the minimum losses
+            ref_loss_max = np.clip(ref_loss_max, a_min=-1, a_max=factor_max_dc_losses * min_total_dc_losses)
 
-            return filtered_design_dto_list
+            pareto_df_offset = df[df['values_1'] < ref_loss_max]
+
+            return pareto_df_offset
 
         @staticmethod
         def filter_max_air_gap_length(dto_list_to_filter: List[ItoSingleResultFile], max_air_gap_length: float = 1e-6) -> List[ItoSingleResultFile]:
@@ -731,102 +703,6 @@ class IntegratedTransformerOptimization:
             """
             with open(config_pickle_filepath, 'rb') as pickle_file_data:
                 return pickle.load(pickle_file_data)
-
-        @staticmethod
-        def save_dto_list(result_dto_list: List[ItoSingleResultFile], filepath: str):
-            """
-            Save the ItoSingleResultFile-List to the file structure.
-
-            :param result_dto_list:
-            :type result_dto_list: List[ItoSingleResultFile]
-            :param filepath: filepath
-            :type filepath: str
-            """
-            if not os.path.exists(filepath):
-                os.mkdir(filepath)
-
-            for _, dto in enumerate(result_dto_list):
-                file_name = os.path.join(filepath, f"case_{dto.case}.json")
-
-                result_dict = dataclasses.asdict(dto)
-                with open(file_name, "w+", encoding='utf-8') as outfile:
-                    json.dump(result_dict, outfile, indent=2, ensure_ascii=False, cls=MyJSONEncoder)
-
-        @staticmethod
-        def save_unfiltered_results(config_file: ItoSingleInputConfig, result_file_list: List[ItoSingleResultFile]):
-            """
-            Save the results of the reluctance model into the file structure.
-
-            :param config_file: integrated transformer configuration file
-            :type config_file: ItoSingleInputConfig
-            :param result_file_list: list of ItoSingleResultFiles
-            :type result_file_list: List[ItoSingleResultFile]
-            """
-            # generate folder structure
-            femmt.set_up_folder_structure(config_file.working_directory)
-
-            # save optimization input parameters
-            config_dict = dataclasses.asdict(config_file)
-
-            integrated_transformer_optimization_input_parameters_file = os.path.join(config_file.working_directory, "optimization_input_parameters.json")
-            integrated_transformer_reluctance_model_results_directory = os.path.join(config_file.working_directory, "01_reluctance_model_results")
-
-            with open(integrated_transformer_optimization_input_parameters_file, "w+", encoding='utf-8') as outfile:
-                json.dump(config_dict, outfile, indent=2, ensure_ascii=False, cls=MyJSONEncoder)
-
-            # save reluctance parameters winning candidates
-            femmt.IntegratedTransformerOptimization.ReluctanceModel.save_dto_list(result_file_list, integrated_transformer_reluctance_model_results_directory)
-
-        @staticmethod
-        def load_list(filepath: str) -> List[ItoSingleResultFile]:
-            """
-            Load the list of the reluctance models from the folder structure.
-
-            :param filepath: filepath
-            :type filepath: str
-            :return: List of ItoSingleResultFiles
-            :rtype: List[ItoSingleResultFile]
-            """
-            valid_design_list = []
-            for file in os.listdir(filepath):
-                if file.endswith(".json"):
-                    json_file_path = os.path.join(filepath, file)
-                    with open(json_file_path, "r") as fd:
-                        loaded_data_dict = json.loads(fd.read())
-
-                    valid_design_list.append(result_file_dict_to_dto(loaded_data_dict))
-            if len(valid_design_list) == 0:
-                raise ValueError("Specified file path is empty")
-
-            return valid_design_list
-
-        @staticmethod
-        def load_unfiltered_results(working_directory: str) -> List[ItoSingleResultFile]:
-            """
-            Load the results of the reluctance model and returns the ItoSingleResultFiles as a list.
-
-            :param working_directory: working directory
-            :type working_directory: str
-            :return: List of ItoSingleResultFiles
-            :rtype: List[ItoSingleResultFile]
-            """
-            integrated_transformer_reluctance_model_results_directory = os.path.join(working_directory, "01_reluctance_model_results")
-            print(f"Read results from {integrated_transformer_reluctance_model_results_directory}")
-            return femmt.IntegratedTransformerOptimization.ReluctanceModel.load_list(integrated_transformer_reluctance_model_results_directory)
-
-        @staticmethod
-        def load_filtered_results(working_directory: str) -> List[ItoSingleResultFile]:
-            """
-            Load the results of the reluctance model and returns the ItoSingleResultFiles as a list.
-
-            :param working_directory: working directory
-            :type working_directory: str
-            :return: List of ItoSingleResultFiles
-            :rtype: List[ItoSingleResultFile]
-            """
-            integrated_transformer_reluctance_model_results_directory = os.path.join(working_directory, "01_reluctance_model_results_filtered")
-            print(f"Read results from {integrated_transformer_reluctance_model_results_directory}")
-            return femmt.IntegratedTransformerOptimization.ReluctanceModel.load_list(integrated_transformer_reluctance_model_results_directory)
 
     class FemSimulation:
         """Group functions to perform FEM simulations."""
