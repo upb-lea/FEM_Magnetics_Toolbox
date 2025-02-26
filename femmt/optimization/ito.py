@@ -12,13 +12,14 @@ import materialdatabase as mdb
 from scipy import optimize
 import optuna
 import pandas as pd
+from matplotlib import pyplot as plt
+import matplotlib.patches as mpatches
 
 # femmt import
 import femmt.functions as ff
 import femmt.functions_reluctance as fr
 import femmt.optimization.functions_optimization as fo
 from femmt.optimization.ito_dtos import *
-import femmt.optimization.optuna_femmt_parser as op
 import femmt.optimization.ito_functions as itof
 import femmt
 
@@ -554,25 +555,6 @@ class IntegratedTransformerOptimization:
             IntegratedTransformerOptimization.ReluctanceModel.save_config(config)
 
         @staticmethod
-        def show_study_results(config: ItoSingleInputConfig) -> None:
-            """Show the results of a study.
-
-            A local .html file is generated under config.working_directory to store the interactive plotly plots on disk.
-
-            :param config: Integrated transformer configuration file
-            :type config: ItoSingleInputConfig
-            """
-            study = optuna.load_study(study_name=config.integrated_transformer_study_name,
-                                      storage=f"sqlite:///{config.integrated_transformer_optimization_directory}/"
-                                              f"{config.integrated_transformer_study_name}.sqlite3")
-
-            fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0], t.values[1]), target_names=["volume in m³", "loss in W"])
-            fig.update_layout(title=f"{config.integrated_transformer_study_name} <br><sup>{config.integrated_transformer_optimization_directory}</sup>")
-            fig.write_html(f"{config.integrated_transformer_optimization_directory}/{config.integrated_transformer_study_name}"
-                           f"_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
-            fig.show()
-
-        @staticmethod
         def study_to_df(config: ItoSingleInputConfig) -> pd.DataFrame:
             """
             Create a Pandas dataframe from a study.
@@ -672,6 +654,93 @@ class IntegratedTransformerOptimization:
                 if dto.air_gap_middle > min_air_gap_length and dto.air_gap_top > min_air_gap_length and dto.air_gap_bot > min_air_gap_length:
                     filtered_dtos.append(dto)
             return filtered_dtos
+
+        #############################
+        # show results
+        #############################
+
+        @staticmethod
+        def show_study_results(config: ItoSingleInputConfig) -> None:
+            """Show the results of a study.
+
+            A local .html file is generated under config.working_directory to store the interactive plotly plots on disk.
+
+            :param config: Integrated transformer configuration file
+            :type config: ItoSingleInputConfig
+            """
+            study = optuna.load_study(study_name=config.integrated_transformer_study_name,
+                                      storage=f"sqlite:///{config.integrated_transformer_optimization_directory}/"
+                                              f"{config.integrated_transformer_study_name}.sqlite3")
+
+            fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0], t.values[1]), target_names=["volume in m³", "loss in W"])
+            fig.update_layout(title=f"{config.integrated_transformer_study_name} <br><sup>{config.integrated_transformer_optimization_directory}</sup>")
+            fig.write_html(f"{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}"
+                           f"_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
+            fig.show()
+
+        @staticmethod
+        def df_plot_pareto_front(*dataframes: pd.DataFrame, label_list: list[str], color_list: list[str] = None,
+                                 interactive: bool = True) -> None:
+            """
+            Plot an interactive Pareto diagram (losses vs. volume) to select the transformers to re-simulate.
+
+            :param dataframes: Dataframe, generated from an optuna study (exported by optuna)
+            :type dataframes: pd.Dataframe
+            :param label_list: list of labels for the legend. Same order as df.
+            :type label_list: list[str]
+            :param color_list: list of colors for the points and legend. Same order as df.
+            :type color_list: list[str]
+            :param interactive: True to show trial numbers if one moves the mouse over it
+            :type interactive: bool
+            """
+            if color_list is None:
+                color_list = ['red', 'blue', 'green', 'grey']
+            for count, df in enumerate(dataframes):
+                # color_list was before list(ff.colors_femmt_default.keys())
+                df['color_r'], df['color_g'], df['color_b'] = ff.colors_femmt_default[color_list[count]]
+
+            df_all = pd.concat(dataframes, axis=0)
+            color_array = np.transpose(np.array([df_all['color_r'].to_numpy(), df_all['color_g'].to_numpy(), df_all['color_b'].to_numpy()])) / 255
+
+            names = df_all["number"].to_numpy()
+            fig, ax = plt.subplots()
+            legend_list = []
+            for count, label_text in enumerate(label_list):
+                legend_list.append(mpatches.Patch(color=np.array(ff.colors_femmt_default[color_list[count]]) / 255, label=label_text))
+            plt.legend(handles=legend_list)
+            sc = plt.scatter(df_all["values_0"], df_all["values_1"], s=10, c=color_array)
+
+            if interactive:
+                annot = ax.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
+                                    bbox=dict(boxstyle="round", fc="w"),
+                                    arrowprops=dict(arrowstyle="->"))
+                annot.set_visible(False)
+
+                def update_annot(ind):
+                    pos = sc.get_offsets()[ind["ind"][0]]
+                    annot.xy = pos
+                    text = f"{[names[n] for n in ind['ind']]}"
+                    annot.set_text(text)
+                    annot.get_bbox_patch().set_alpha(0.4)
+
+                def hover(event):
+                    vis = annot.get_visible()
+                    if event.inaxes == ax:
+                        cont, ind = sc.contains(event)
+                        if cont:
+                            update_annot(ind)
+                            annot.set_visible(True)
+                            fig.canvas.draw_idle()
+                        else:
+                            if vis:
+                                annot.set_visible(False)
+                                fig.canvas.draw_idle()
+
+                fig.canvas.mpl_connect("motion_notify_event", hover)
+            plt.xlabel('Volume in m³')
+            plt.ylabel('Losses in W')
+            plt.grid()
+            plt.show()
 
         #############################
         # save and load

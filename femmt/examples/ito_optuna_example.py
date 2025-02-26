@@ -41,8 +41,8 @@ dab_transformer_config = fmt.ItoSingleInputConfig(
 )
 
 
-task = 'start_study'
-# task = 'filter_reluctance_model'
+# task = 'start_study'
+task = 'filter_reluctance_model'
 # task = 'fem_simulation_from_filtered_reluctance_model_results'
 # task = 'plot_study_results'
 
@@ -63,22 +63,18 @@ if __name__ == '__main__':
         pareto_reluctance_dto_list = fmt.IntegratedTransformerOptimization.ReluctanceModel.filter_loss_list_df(
             reluctance_result_df, factor_min_dc_losses=0.5)
 
-        fmt.IntegratedTransformerOptimization.plot(reluctance_result_df)
-        fmt.IntegratedTransformerOptimization.plot(pareto_reluctance_dto_list)
+        fmt.IntegratedTransformerOptimization.ReluctanceModel.df_plot_pareto_front(
+            reluctance_result_df, pareto_reluctance_dto_list, label_list=["all", "filtered"], interactive=False)
 
-        # save results
-        fmt.IntegratedTransformerOptimization.ReluctanceModel.save_dto_list(pareto_reluctance_dto_list, os.path.join(dab_transformer_config.working_directory,
-                                                                                                                     '01_reluctance_model_results_filtered'))
+    elif task == 'fem_simulation_from_filtered_reluctance_model_results':
+        # load filtered reluctance models
+        pareto_reluctance_dto_list = fmt.IntegratedTransformerOptimization.ReluctanceModel.load_filtered_results(dab_transformer_config.working_directory)
+        print(f"{len(pareto_reluctance_dto_list)=}")
 
-    # elif task == 'fem_simulation_from_filtered_reluctance_model_results':
-    #     # load filtered reluctance models
-    #     pareto_reluctance_dto_list = fmt.IntegratedTransformerOptimization.ReluctanceModel.load_filtered_results(dab_transformer_config.working_directory)
-    #     print(f"{len(pareto_reluctance_dto_list)=}")
-    #
-    #     # start FEM simulation
-    #     fmt.IntegratedTransformerOptimization.FemSimulation.simulate(config_dto=dab_transformer_config,
-    #                                                                  simulation_dto_list=pareto_reluctance_dto_list)
-    #
+        # start FEM simulation
+        fmt.IntegratedTransformerOptimization.FemSimulation.simulate(config_dto=dab_transformer_config,
+                                                                     simulation_dto_list=pareto_reluctance_dto_list)
+
     elif task == 'plot_study_results':
         fmt.IntegratedTransformerOptimization.ReluctanceModel.show_study_results(dab_transformer_config)
 
