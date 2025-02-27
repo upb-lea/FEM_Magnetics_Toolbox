@@ -2,7 +2,7 @@
 # Python libraries
 import os
 import json
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Optional
 import datetime
 import pickle
 import logging
@@ -14,6 +14,7 @@ import optuna
 import pandas as pd
 from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
+import magnethub as mh
 
 # femmt import
 import femmt.functions as ff
@@ -133,8 +134,7 @@ class IntegratedTransformerOptimization:
 
     @staticmethod
     def calculate_fix_parameters(config: ItoSingleInputConfig) -> ItoTargetAndFixedParameters:
-        """
-        Calculate fix parameters what can be derived from the input configuration.
+        """Calculate fix parameters what can be derived from the input configuration.
 
         return values are:
 
@@ -164,17 +164,34 @@ class IntegratedTransformerOptimization:
         i_rms_1 = fr.i_rms(config.time_current_1_vec)
         i_rms_2 = fr.i_rms(config.time_current_2_vec)
 
+        i_peak_1, i_peak_2 = fr.max_value_from_value_vec(current_extracted_1_vec, current_extracted_2_vec)
+        phi_deg_1, phi_deg_2 = fr.phases_deg_from_time_current(time_extracted, current_extracted_1_vec,
+                                                               current_extracted_2_vec)
+
+        # phi_deg_2 = phi_deg_2 - 180
+
         # target inductances
-        target_inductance_matrix = fr.calculate_inductance_matrix_from_ls_lh_n(config.l_s_target, config.l_h_target,
+        target_inductance_matrix = fr.calculate_inductance_matrix_from_ls_lh_n(config.l_s12_target,
+                                                                               config.l_h_target,
                                                                                config.n_target)
+
+        (fft_frequencies_1, fft_amplitudes_1, fft_phases_1) = ff.fft(
+            period_vector_t_i=config.time_current_1_vec, sample_factor=1000, plot='no', mode='time', filter_type='factor', filter_value_factor=0.03)
+
+        (fft_frequencies_2, fft_amplitudes_2, fft_phases_2) = ff.fft(
+            period_vector_t_i=config.time_current_2_vec, sample_factor=1000, plot='no', mode='time', filter_type='factor', filter_value_factor=0.03)
 
         # material properties
         material_db = mdb.MaterialDatabase(is_silent=True)
 
         material_data_list = []
+        magnet_model_list = []
         for material_name in config.material_list:
-            material_dto = material_db.material_data_interpolation_to_dto(material_name, fundamental_frequency, config.temperature)
+            material_dto: mdb.MaterialCurve = material_db.material_data_interpolation_to_dto(material_name, fundamental_frequency, config.temperature)
             material_data_list.append(material_dto)
+            # instantiate material-specific model
+            mdl: mh.loss.LossModel = mh.loss.LossModel(material=material_name, team="paderborn")
+            magnet_model_list.append(mdl)
 
         # set up working directories
         working_directories = itof.set_up_folder_structure(config.integrated_transformer_optimization_directory)
@@ -183,13 +200,27 @@ class IntegratedTransformerOptimization:
         target_and_fix_parameters = ItoTargetAndFixedParameters(
             i_rms_1=i_rms_1,
             i_rms_2=i_rms_2,
+            i_peak_1=i_peak_1,
+            i_peak_2=i_peak_2,
+            i_phase_deg_1=phi_deg_1,
+            i_phase_deg_2=phi_deg_2,
             time_extracted_vec=time_extracted,
+            magnet_hub_model_list=magnet_model_list,
             current_extracted_1_vec=current_extracted_1_vec,
             current_extracted_2_vec=current_extracted_2_vec,
             material_dto_curve_list=material_data_list,
             fundamental_frequency=fundamental_frequency,
             target_inductance_matrix=target_inductance_matrix,
-            working_directories=working_directories
+            working_directories=working_directories,
+            # winding 1
+            fft_frequency_list_1=fft_frequencies_1,
+            fft_amplitude_list_1=fft_amplitudes_1,
+            fft_phases_list_1=fft_phases_1,
+
+            # winding 2
+            fft_frequency_list_2=fft_frequencies_2,
+            fft_amplitude_list_2=fft_amplitudes_2,
+            fft_phases_list_2=fft_phases_2
         )
 
         return target_and_fix_parameters
@@ -198,289 +229,431 @@ class IntegratedTransformerOptimization:
         """Create and calculate the reluctance model for the integrated transformer."""
 
         @staticmethod
-        def objective(trial: optuna.Trial, config: ItoSingleInputConfig,
-                      target_and_fixed_parameters: ItoTargetAndFixedParameters) -> Tuple:
+        def single_reluctance_model_simulation(reluctance_input: ItoReluctanceModelInput) -> ItoReluctanceModelOutput:
             """
-            Objective function to optimize.
+            Perform a single reluctance model simulation.
 
-            Using optuna. Some hints:
-
-             * returning failed trails by using return float('nan'), float('nan'),
-               see https://optuna.readthedocs.io/en/stable/faq.html#how-are-nans-returned-by-trials-handled
-             * speed up the search for NSGA-II algorithm with dynamic alter the search space, see https://optuna.readthedocs.io/en/stable/faq.html#id10
-
-
-            :param trial: parameter suggesting by optuna
-            :type trial: optuna.Trial
-            :param config: input configuration file
-            :type config: ItoSingleInputConfig
-            :param target_and_fixed_parameters: target and fix parameters
-            :type target_and_fixed_parameters: ItoTargetAndFixedParameters
+            :param reluctance_input: Reluctance model input data.
+            :type reluctance_input: ReluctanceModelInput
+            :return: Reluctance model output data
+            :rtype: ReluctanceModelOutput
             """
-            # pass multiple arguments to the objective function used by optuna
-            # https://www.kaggle.com/general/261870
+            core_total_height = reluctance_input.window_h_top + reluctance_input.window_h_bot + reluctance_input.core_inner_diameter * 3 / 4
+            r_outer = fr.calculate_r_outer(reluctance_input.core_inner_diameter, reluctance_input.window_w)
+            volume = ff.calculate_cylinder_volume(cylinder_diameter=2 * r_outer, cylinder_height=core_total_height)
 
-            #########################################################
-            # set core geometry optimization parameters
-            #########################################################
-            core_inner_diameter = trial.suggest_float("core_inner_diameter",
-                                                      config.core_inner_diameter_min_max_list[0],
-                                                      config.core_inner_diameter_min_max_list[1])
-            window_w = trial.suggest_float("window_w", config.window_w_min_max_list[0],
-                                           config.window_w_min_max_list[1])
-            window_h_top = trial.suggest_float("window_h_top", config.window_h_top_min_max_list[0],
-                                               config.window_h_top_min_max_list[1])
-            window_h_bot = trial.suggest_float("window_h_bot", config.window_h_bot_min_max_list[0],
-                                               config.window_h_bot_min_max_list[1])
+            # calculate the reluctance and flux matrix
+            winding_matrix = np.array([[reluctance_input.turns_1_top, reluctance_input.turns_2_top],
+                                       [reluctance_input.turns_1_bot, reluctance_input.turns_2_bot]])
 
-            material = trial.suggest_categorical("material", config.material_list)
-            primary_litz_wire = trial.suggest_categorical("primary_litz_wire", config.primary_litz_wire_list)
-            secondary_litz_wire = trial.suggest_categorical("secondary_litz_wire", config.secondary_litz_wire_list)
+            reluctance_matrix = fr.calculate_reluctance_matrix(winding_matrix, reluctance_input.target_inductance_matrix)
 
-            # cross-section comparison is according to a square for round wire.
-            # this approximation is more realistic
-            # insulation
-            insulation_distance = 1e-3
-            insulation_cross_section_top = 2 * insulation_distance * (window_w + window_h_top)
-            insulation_cross_section_bot = 2 * insulation_distance * (window_w + window_h_bot)
+            current_matrix = np.array([reluctance_input.current_extracted_vec_1, reluctance_input.current_extracted_vec_2])
 
-            litz_database = ff.litz_database()
+            flux_matrix = fr.calculate_flux_matrix(reluctance_matrix, winding_matrix, current_matrix)
 
-            primary_litz = litz_database[primary_litz_wire]
-            secondary_litz = litz_database[secondary_litz_wire]
+            flux_top = flux_matrix[0]
+            flux_bot = flux_matrix[1]
+            flux_middle = flux_bot - flux_top
 
-            total_available_window_cross_section_top = window_h_top * window_w - insulation_cross_section_top
-            total_available_window_cross_section_bot = window_h_bot * window_w - insulation_cross_section_bot
+            core_cross_section = (reluctance_input.core_inner_diameter / 2) ** 2 * np.pi
 
-            #########################################################
-            # set dynamic wire count parameters as optimization parameters
-            #########################################################
-            # set the winding search space dynamic
-            # https://optuna.readthedocs.io/en/stable/faq.html#what-happens-when-i-dynamically-alter-a-search-space
+            flux_density_top = flux_top / core_cross_section
+            flux_density_bot = flux_bot / core_cross_section
+            flux_density_middle = flux_middle / core_cross_section
 
-            # n_p_top suggestion
-            n_p_top_max = total_available_window_cross_section_top / (2 * primary_litz["conductor_radii"]) ** 2
-            n_p_top = trial.suggest_int("n_p_top", 0, n_p_top_max)
+            # calculate the core reluctance
+            core_inner_cylinder_top = fr.r_core_round(reluctance_input.core_inner_diameter, reluctance_input.window_h_top,
+                                                      reluctance_input.material_dto.material_mu_r_abs)
+            core_inner_cylinder_bot = fr.r_core_round(reluctance_input.core_inner_diameter, reluctance_input.window_h_bot,
+                                                      reluctance_input.material_dto.material_mu_r_abs)
+            core_top_bot_radiant = fr.r_core_top_bot_radiant(reluctance_input.core_inner_diameter, reluctance_input.window_w,
+                                                             reluctance_input.material_dto.material_mu_r_abs, reluctance_input.core_inner_diameter / 4)
 
-            # n_s_top_suggestion
-            winding_cross_section_n_p_top_max = n_p_top * (2 * primary_litz["conductor_radii"]) ** 2
-            n_s_top_max = int((total_available_window_cross_section_top - winding_cross_section_n_p_top_max) / (
-                2 * secondary_litz["conductor_radii"]) ** 2)
-            n_s_top = trial.suggest_int("n_s_top", 0, n_s_top_max)
+            r_core_top = 2 * core_inner_cylinder_top + core_top_bot_radiant
+            r_core_bot = 2 * core_inner_cylinder_bot + core_top_bot_radiant
+            r_core_middle = core_top_bot_radiant
 
-            # n_p_bot suggestion
-            n_p_bot_max = total_available_window_cross_section_bot / (2 * primary_litz["conductor_radii"]) ** 2
-            n_p_bot = trial.suggest_int("n_p_bot", 0, n_p_bot_max)
+            r_top_target = reluctance_matrix[0][0] + reluctance_matrix[0][1]
+            r_bot_target = reluctance_matrix[1][1] + reluctance_matrix[0][1]
+            r_middle_target = - reluctance_matrix[0][1]
 
-            # n_s_bot suggestion
-            winding_cross_section_n_p_bot_max = n_p_bot * (2 * primary_litz["conductor_radii"]) ** 2
-            n_s_bot_max = int((total_available_window_cross_section_bot - winding_cross_section_n_p_bot_max) / (2 * secondary_litz["conductor_radii"]) ** 2)
-            n_s_bot = trial.suggest_int("n_s_bot", 0, n_s_bot_max)
+            r_air_gap_top_target = r_top_target - r_core_top
+            r_air_gap_bot_target = r_bot_target - r_core_bot
+            r_air_gap_middle_target = r_middle_target - r_core_middle
 
-            winding_cross_section_top = n_p_top * (2 * primary_litz["conductor_radii"]) ** 2 + n_s_top * (2 * secondary_litz["conductor_radii"]) ** 2
-            winding_cross_section_bot = n_p_bot * (2 * primary_litz["conductor_radii"]) ** 2 + n_s_bot * (2 * secondary_litz["conductor_radii"]) ** 2
+            # calculate air gaps to reach the target parameters
+            minimum_air_gap_length = 0.01e-3
+            maximum_air_gap_length = 2e-3
 
-            thousand_simulations = trial.number / 1000
+            l_top_air_gap = optimize.brentq(
+                fr.r_air_gap_round_inf_sct, minimum_air_gap_length, maximum_air_gap_length,
+                args=(reluctance_input.core_inner_diameter, reluctance_input.window_h_top, r_air_gap_top_target), full_output=True)[0]
 
-            if thousand_simulations.is_integer():
-                print(f"simulation count: {trial.number}")
+            l_bot_air_gap = optimize.brentq(
+                fr.r_air_gap_round_round_sct, minimum_air_gap_length, maximum_air_gap_length,
+                args=(reluctance_input.core_inner_diameter, reluctance_input.window_h_bot / 2, reluctance_input.window_h_bot / 2, r_air_gap_bot_target),
+                full_output=True)[0]
 
-            for material_dto in target_and_fixed_parameters.material_dto_curve_list:
-                if material_dto.material_name == material:
-                    material_data = material_dto
+            # Note: ideal calculation (360 degree)
+            # needs to be translated when it comes to the real setup.
+            l_middle_air_gap = optimize.brentq(
+                fr.r_air_gap_tablet_cylinder_sct, minimum_air_gap_length, maximum_air_gap_length,
+                args=(reluctance_input.core_inner_diameter, reluctance_input.core_inner_diameter/4, reluctance_input.window_w, r_air_gap_middle_target),
+                full_output=True)[0]
 
-                material_mu_r_initial = material_data.material_mu_r_abs
-                flux_density_data_vec = material_data.material_flux_density_vec
-                mu_r_imag_data_vec = material_data.material_mu_r_imag_vec
+            # calculate hysteresis losses from mag-net-hub
+            interp_points = np.arange(0, 1024) * reluctance_input.time_extracted_vec[-1] / 1024
+            flux_density_top_interp = np.interp(interp_points, reluctance_input.time_extracted_vec, flux_density_top)
+            flux_density_bot_interp = np.interp(interp_points, reluctance_input.time_extracted_vec, flux_density_bot)
+            flux_density_middle_interp = np.interp(interp_points, reluctance_input.time_extracted_vec, flux_density_middle)
 
-                core_top_bot_height = core_inner_diameter / 4
-                core_cross_section = (core_inner_diameter / 2) ** 2 * np.pi
+            # get power loss in W/m³ and estimated H wave in A/m
+            p_density_top, _ = reluctance_input.magnet_material_model(flux_density_top_interp,
+                                                                      reluctance_input.fundamental_frequency, reluctance_input.temperature)
+            p_density_bot, _ = reluctance_input.magnet_material_model(flux_density_bot_interp,
+                                                                      reluctance_input.fundamental_frequency, reluctance_input.temperature)
+            p_density_middle, _ = reluctance_input.magnet_material_model(flux_density_middle_interp,
+                                                                         reluctance_input.fundamental_frequency, reluctance_input.temperature)
 
-                t2_winding_matrix = [[n_p_top, n_s_top], [n_p_bot, n_s_bot]]
+            volume_core_top = (2 * ff.calculate_cylinder_volume(reluctance_input.core_inner_diameter, reluctance_input.window_h_top) - \
+                               ff.calculate_cylinder_volume(reluctance_input.core_inner_diameter, l_top_air_gap) + \
+                               ff.calculate_cylinder_volume(2 * r_outer, reluctance_input.core_inner_diameter / 4))
+            volume_core_bot = (2 * ff.calculate_cylinder_volume(reluctance_input.core_inner_diameter, reluctance_input.window_h_bot) - \
+                               ff.calculate_cylinder_volume(reluctance_input.core_inner_diameter, l_bot_air_gap) + \
+                               ff.calculate_cylinder_volume(2 * r_outer, reluctance_input.core_inner_diameter / 4))
+            volume_core_middle = ff.calculate_cylinder_volume(2 * r_outer, reluctance_input.core_inner_diameter / 4)
 
-                target_inductance_matrix = fr.calculate_inductance_matrix_from_ls_lh_n(config.l_s_target,
-                                                                                       config.l_h_target,
-                                                                                       config.n_target)
-                t2_reluctance_matrix = fr.calculate_reluctance_matrix(t2_winding_matrix, target_inductance_matrix)
+            p_top = p_density_top * volume_core_top
+            p_bot = p_density_bot * volume_core_bot
+            p_middle = p_density_middle * volume_core_middle
 
-                core_2daxi_total_volume = fr.calculate_core_2daxi_total_volume(core_inner_diameter,
-                                                                               (window_h_bot + window_h_top + core_inner_diameter / 4), window_w)
+            p_hyst = p_top + p_bot + p_middle
 
-                if np.linalg.det(t2_reluctance_matrix) != 0 and np.linalg.det(
-                        np.transpose(t2_winding_matrix)) != 0 and np.linalg.det(target_inductance_matrix) != 0:
-                    # calculate the flux
-                    flux_top_vec, flux_bot_vec, flux_stray_vec = fr.flux_vec_from_current_vec(
-                        target_and_fixed_parameters.current_extracted_1_vec,
-                        target_and_fixed_parameters.current_extracted_2_vec,
-                        t2_winding_matrix,
-                        target_inductance_matrix)
+            # calculate winding losses
+            primary_effective_conductive_cross_section = (
+                reluctance_input.primary_litz_dict["strands_numbers"] * reluctance_input.primary_litz_dict["strand_radii"] ** 2 * np.pi)
+            primary_effective_conductive_radius = np.sqrt(primary_effective_conductive_cross_section / np.pi)
+            primary_resistance_top = fr.resistance_solid_wire(
+                reluctance_input.core_inner_diameter, reluctance_input.window_w, reluctance_input.turns_1_top,
+                primary_effective_conductive_radius, material='Copper')
 
-                    # calculate maximum values
-                    flux_top_max, flux_bot_max, flux_stray_max = fr.max_value_from_value_vec(flux_top_vec, flux_bot_vec,
-                                                                                             flux_stray_vec)
+            number_bot_prim_turns_per_column = (
+                int((reluctance_input.window_h_bot - reluctance_input.insulations.iso_window_bot_core_top - \
+                     reluctance_input.insulations.iso_window_bot_core_bot + reluctance_input.insulations.iso_primary_to_primary) / \
+                    (2 * reluctance_input.primary_litz_dict["conductor_radii"] + reluctance_input.insulations.iso_primary_to_primary)))
+            if number_bot_prim_turns_per_column > reluctance_input.turns_1_bot:
+                # single row window only
+                primary_resistance_bot_inner = fr.resistance_solid_wire(
+                    reluctance_input.core_inner_diameter, reluctance_input.window_w, reluctance_input.turns_1_bot,
+                    primary_effective_conductive_radius, material='Copper')
+                primary_resistance_bot_outer = 0
+            else:
+                # multiple row window
+                primary_resistance_bot_inner = fr.resistance_solid_wire(
+                    reluctance_input.core_inner_diameter, reluctance_input.window_w, number_bot_prim_turns_per_column,
+                    primary_effective_conductive_radius, material='Copper')
 
-                    flux_density_top_max = flux_top_max / core_cross_section
-                    flux_density_bot_max = flux_bot_max / core_cross_section
-                    flux_density_middle_max = flux_stray_max / core_cross_section
+                primary_resistance_bot_outer = fr.resistance_solid_wire(
+                    reluctance_input.core_inner_diameter, reluctance_input.window_w, reluctance_input.turns_1_bot - number_bot_prim_turns_per_column,
+                    primary_effective_conductive_radius, material='Copper')
 
-                    # calculate target values for r_top and r_bot out of reluctance matrix
-                    r_core_middle_cylinder_radial = fr.r_core_top_bot_radiant(core_inner_diameter, window_w,
-                                                                              material_data.material_mu_r_abs,
-                                                                              core_top_bot_height)
+            secondary_effective_conductive_cross_section = (
+                reluctance_input.secondary_litz_dict["strands_numbers"] * reluctance_input.secondary_litz_dict["strand_radii"] ** 2 * np.pi)
+            secondary_effective_conductive_radius = np.sqrt(secondary_effective_conductive_cross_section / np.pi)
+            secondary_resistance = fr.resistance_solid_wire(
+                reluctance_input.core_inner_diameter, reluctance_input.window_w, reluctance_input.turns_2_bot, secondary_effective_conductive_radius,
+                material='Copper')
 
-                    r_middle_target = -t2_reluctance_matrix[0][1]
-                    r_top_target = t2_reluctance_matrix[0][0] - r_middle_target
-                    r_bot_target = t2_reluctance_matrix[1][1] - r_middle_target
+            winding_area_1_top = (
+                2 * reluctance_input.primary_litz_dict["conductor_radii"] * \
+                (reluctance_input.turns_1_top * 2 * reluctance_input.primary_litz_dict["conductor_radii"] + \
+                    (reluctance_input.turns_1_top - 1) * reluctance_input.insulations.iso_primary_to_primary))
 
-                    # calculate the core reluctance of top and bottom and middle part
-                    r_core_top_cylinder_inner = fr.r_core_round(core_inner_diameter, window_h_top,
-                                                                material_data.material_mu_r_abs)
-                    r_core_top = 2 * r_core_top_cylinder_inner + r_core_middle_cylinder_radial
-                    r_air_gap_top_target = r_top_target - r_core_top
+            p_winding_1_top = 0
+            p_winding_1_bot = 0
+            for count, fft_frequency in enumerate(reluctance_input.fft_frequency_list_1):
+                proximity_factor_1_top = fr.calc_proximity_factor_air_gap(
+                    litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=reluctance_input.turns_1_top,
+                    r_1=reluctance_input.insulations.iso_window_top_core_left,
+                    frequency=fft_frequency, winding_area=winding_area_1_top,
+                    litz_wire_material_name='Copper', temperature=reluctance_input.temperature)
 
-                    r_core_bot_cylinder_inner = fr.r_core_round(core_inner_diameter, window_h_bot,
-                                                                material_data.material_mu_r_abs)
-                    r_core_bot = 2 * r_core_bot_cylinder_inner + r_core_middle_cylinder_radial
-                    r_air_gap_bot_target = r_bot_target - r_core_bot
+                p_winding_1_top += proximity_factor_1_top * primary_resistance_top * reluctance_input.fft_amplitude_list_1[count] ** 2
 
-                    r_air_gap_middle_target = r_middle_target - r_core_middle_cylinder_radial
+                if number_bot_prim_turns_per_column > reluctance_input.turns_1_bot:
+                    winding_area_1_bot = 2 * reluctance_input.primary_litz_dict["conductor_radii"] * \
+                        (reluctance_input.turns_1_bot * 2 * reluctance_input.primary_litz_dict["conductor_radii"] + \
+                            (reluctance_input.turns_1_bot - 1) * reluctance_input.insulations.iso_primary_to_primary)
 
-                    if r_air_gap_top_target > 0 and r_air_gap_bot_target > 0 and r_air_gap_middle_target > 0:
+                    proximity_factor_1_bot_inner = fr.calc_proximity_factor_air_gap(
+                        litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=reluctance_input.turns_1_bot,
+                        r_1=reluctance_input.insulations.iso_window_bot_core_left,
+                        frequency=fft_frequency, winding_area=winding_area_1_bot,
+                        litz_wire_material_name='Copper', temperature=reluctance_input.temperature)
 
-                        # Note: a minimum air gap length of zero is not allowed. This will lead to failure calculation
-                        # when trying to solve (using brentq) r_gap_round_round-function. Calculating an air gap
-                        # reluctance with length of zero is not realistic.
-                        minimum_air_gap_length = 1e-15
-                        maximum_air_gap_length = 5e-3
-                        minimum_sort_out_air_gap_length = 0
-                        try:
-                            # solving brentq needs to be in try/except statement,
-                            # as it can be that there is no sign changing in the given interval
-                            # to search for the zero.
-                            # Note: setting full output to true and taking object [0] is only
-                            # to avoid linting error!
-                            l_top_air_gap = optimize.brentq(fr.r_air_gap_round_inf_sct, minimum_air_gap_length, maximum_air_gap_length,
-                                                            args=(core_inner_diameter, window_h_top, r_air_gap_top_target), full_output=True)[0]
-
-                            l_bot_air_gap = optimize.brentq(fr.r_air_gap_round_round_sct, minimum_air_gap_length,
-                                                            maximum_air_gap_length, args=(core_inner_diameter, window_h_bot / 2, window_h_bot / 2,
-                                                                                          r_air_gap_bot_target), full_output=True)[0]
-
-                            l_middle_air_gap = optimize.brentq(fr.r_air_gap_tablet_cylinder_sct, minimum_air_gap_length,
-                                                               maximum_air_gap_length, args=(core_inner_diameter,
-                                                                                             core_inner_diameter / 4, window_w, r_air_gap_middle_target),
-                                                               full_output=True)[0]
-
-                        except ValueError:
-                            # ValueError is raised in case of an air gap with length of zero
-                            return float('nan'), float('nan')
-
-                        if l_top_air_gap > core_inner_diameter or l_bot_air_gap > core_inner_diameter:
-                            return float('nan'), float('nan')
-
-                        if l_top_air_gap >= minimum_sort_out_air_gap_length and l_bot_air_gap >= minimum_sort_out_air_gap_length \
-                                and l_middle_air_gap >= minimum_sort_out_air_gap_length:
-                            p_hyst_top = fr.hyst_losses_core_half_mu_r_imag(core_inner_diameter, window_h_top, window_w,
-                                                                            material_data.material_mu_r_abs,
-                                                                            flux_top_max,
-                                                                            target_and_fixed_parameters.fundamental_frequency,
-                                                                            material_data.material_flux_density_vec,
-                                                                            material_data.material_mu_r_imag_vec)
-
-                            p_hyst_middle = fr.power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(
-                                flux_stray_max,
-                                core_inner_diameter / 4,
-                                core_inner_diameter / 2,
-                                core_inner_diameter / 2 + window_w,
-                                target_and_fixed_parameters.fundamental_frequency,
-                                material_data.material_mu_r_abs,
-                                material_data.material_flux_density_vec,
-                                material_data.material_mu_r_imag_vec)
-
-                            p_hyst_bot = fr.hyst_losses_core_half_mu_r_imag(core_inner_diameter, window_h_bot, window_w,
-                                                                            material_data.material_mu_r_abs,
-                                                                            flux_bot_max,
-                                                                            target_and_fixed_parameters.fundamental_frequency,
-                                                                            material_data.material_flux_density_vec,
-                                                                            material_data.material_mu_r_imag_vec)
-
-                            p_hyst = p_hyst_top + p_hyst_bot + p_hyst_middle
-
-                            primary_effective_conductive_cross_section = primary_litz["strands_numbers"] * primary_litz[
-                                "strand_radii"] ** 2 * np.pi
-                            primary_effective_conductive_radius = np.sqrt(
-                                primary_effective_conductive_cross_section / np.pi)
-                            primary_resistance = fr.resistance_solid_wire(core_inner_diameter, window_w,
-                                                                          n_p_top + n_p_bot,
-                                                                          primary_effective_conductive_radius,
-                                                                          material='Copper')
-                            primary_dc_loss = primary_resistance * target_and_fixed_parameters.i_rms_1 ** 2
-
-                            secondary_effective_conductive_cross_section = secondary_litz["strands_numbers"] * secondary_litz["strand_radii"] ** 2 * np.pi
-                            secondary_effective_conductive_radius = np.sqrt(
-                                secondary_effective_conductive_cross_section / np.pi)
-                            secondary_resistance = fr.resistance_solid_wire(core_inner_diameter, window_w,
-                                                                            n_s_top + n_s_bot,
-                                                                            secondary_effective_conductive_radius,
-                                                                            material='Copper')
-                            secondary_dc_loss = secondary_resistance * target_and_fixed_parameters.i_rms_2 ** 2
-
-                            total_loss = p_hyst + primary_dc_loss + secondary_dc_loss
-
-                            trial.set_user_attr("air_gap_top", l_top_air_gap)
-                            trial.set_user_attr("air_gap_bot", l_bot_air_gap)
-                            trial.set_user_attr("air_gap_middle", l_middle_air_gap)
-
-                            trial.set_user_attr("flux_top_max", flux_top_max)
-                            trial.set_user_attr("flux_bot_max", flux_bot_max)
-                            trial.set_user_attr("flux_stray_max", flux_stray_max)
-                            trial.set_user_attr("flux_density_top_max", flux_density_top_max)
-                            trial.set_user_attr("flux_density_bot_max", flux_density_bot_max)
-                            trial.set_user_attr("flux_density_stray_max", flux_density_middle_max)
-                            trial.set_user_attr("p_hyst", p_hyst)
-                            trial.set_user_attr("primary_litz_wire_loss", primary_dc_loss)
-                            trial.set_user_attr("secondary_litz_wire_loss", secondary_dc_loss)
-
-                            print(f"successfully calculated trial {trial.number}")
-
-                            valid_design_dict = ItoSingleResultFile(
-                                case=trial.number,
-                                air_gap_top=l_top_air_gap,
-                                air_gap_bot=l_bot_air_gap,
-                                air_gap_middle=l_middle_air_gap,
-                                n_p_top=n_p_top,
-                                n_p_bot=n_p_bot,
-                                n_s_top=n_s_top,
-                                n_s_bot=n_s_bot,
-                                window_h_top=window_h_top,
-                                window_h_bot=window_h_bot,
-                                window_w=window_w,
-                                core_material=material_data.material_name,
-                                core_inner_diameter=core_inner_diameter,
-                                primary_litz_wire=primary_litz_wire,
-                                secondary_litz_wire=secondary_litz_wire,
-                                # results
-                                flux_top_max=flux_top_max,
-                                flux_bot_max=flux_bot_max,
-                                flux_stray_max=flux_stray_max,
-                                flux_density_top_max=flux_density_top_max,
-                                flux_density_bot_max=flux_density_bot_max,
-                                flux_density_stray_max=flux_density_middle_max,
-                                p_hyst=p_hyst,
-                                core_2daxi_total_volume=core_2daxi_total_volume,
-                                primary_litz_wire_loss=primary_dc_loss,
-                                secondary_litz_wire_loss=secondary_dc_loss,
-                                total_loss=total_loss
-
-                            )
-
-                            return core_2daxi_total_volume, total_loss
-                        else:
-                            return float('nan'), float('nan')
-                    else:
-                        return float('nan'), float('nan')
+                    proximity_factor_1_bot_outer = 0
                 else:
-                    return float('nan'), float('nan')
+                    winding_area_1_bot = (2 * reluctance_input.primary_litz_dict["conductor_radii"] * (
+                        number_bot_prim_turns_per_column * 2 * reluctance_input.primary_litz_dict["conductor_radii"] + \
+                        (number_bot_prim_turns_per_column - 1) * reluctance_input.insulations.iso_primary_to_primary))
+
+                    proximity_factor_1_bot_inner = fr.calc_proximity_factor_air_gap(
+                        litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=number_bot_prim_turns_per_column,
+                        r_1=reluctance_input.insulations.iso_window_bot_core_left,
+                        frequency=fft_frequency, winding_area=winding_area_1_bot,
+                        litz_wire_material_name='Copper', temperature=reluctance_input.temperature)
+
+                    proximity_factor_1_bot_outer = fr.calc_proximity_factor(
+                        litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=reluctance_input.turns_1_bot - number_bot_prim_turns_per_column,
+                        window_h=reluctance_input.window_h_bot,
+                        iso_core_top=reluctance_input.insulations.iso_window_bot_core_top, iso_core_bot=reluctance_input.insulations.iso_window_bot_core_bot,
+                        frequency=fft_frequency, litz_wire_material_name='Copper', temperature=reluctance_input.temperature)
+
+                p_winding_1_bot_inner = proximity_factor_1_bot_inner * primary_resistance_bot_inner * reluctance_input.fft_amplitude_list_1[count] ** 2
+                p_winding_1_bot_outer = proximity_factor_1_bot_outer * primary_resistance_bot_outer * reluctance_input.fft_amplitude_list_1[count] ** 2
+
+                p_winding_1_bot += p_winding_1_bot_inner + p_winding_1_bot_outer
+
+            p_winding_2 = 0
+            for count, fft_frequency in enumerate(reluctance_input.fft_frequency_list_2):
+                proximity_factor_assumption_2 = fr.calc_proximity_factor(
+                    litz_wire_name=reluctance_input.litz_wire_name_2, number_turns=reluctance_input.turns_2_bot, window_h=reluctance_input.window_h_bot,
+                    iso_core_top=reluctance_input.insulations.iso_window_bot_core_top, iso_core_bot=reluctance_input.insulations.iso_window_bot_core_bot,
+                    frequency=fft_frequency, litz_wire_material_name='Copper', temperature=reluctance_input.temperature)
+
+                p_winding_2 += proximity_factor_assumption_2 * secondary_resistance * reluctance_input.fft_amplitude_list_2[count] ** 2
+
+            p_loss_total = p_hyst + p_winding_1_top + p_winding_1_bot + p_winding_2
+
+            area_to_heat_sink = r_outer ** 2 * np.pi
+
+            reluctance_output = ItoReluctanceModelOutput(
+                # set additional attributes
+                p_hyst=p_hyst,
+                p_hyst_top=p_top,
+                p_hyst_bot=p_bot,
+                p_hyst_middle=p_middle,
+                b_max_top=np.max(flux_density_top_interp),
+                b_max_bot=np.max(flux_density_bot_interp),
+                b_max_middle=np.max(flux_density_middle_interp),
+                winding_1_loss=p_winding_1_top + p_winding_1_bot,
+                winding_2_loss=p_winding_2,
+                l_top_air_gap=l_top_air_gap,
+                l_bot_air_gap=l_bot_air_gap,
+                l_middle_air_gap=l_middle_air_gap,
+                volume=volume,
+                area_to_heat_sink=area_to_heat_sink,
+                p_loss=p_loss_total,
+            )
+
+            return reluctance_output
+
+        @staticmethod
+        def objective(trial: optuna.Trial, config: ItoSingleInputConfig, target_and_fixed_parameters: ItoTargetAndFixedParameters):
+            """
+            Objective funktion to optimize. Uses reluctance model calculation.
+
+            Once core_name_list is not None, the objective function uses fixed core sizes. Cores are picked from the core_database().
+            Otherwise, core_inner_diameter_min_max_list, window_w_min_max_list and window_h_bot_min_max_list are used.
+
+            :param trial: Optuna trial
+            :type trial: optuna.Trial
+            :param config: Stacked transformer optimization configuration file
+            :type config: StoSingleInputConfig
+            :param target_and_fixed_parameters: Target and fixed parameters
+            :type target_and_fixed_parameters: StoTargetAndFixedParameters
+            """
+            # fixed cores
+            if config.core_name_list is not None:
+                # using fixed core sizes from the database with flexible height.
+                core_name = trial.suggest_categorical("core_name", config.core_name_list)
+                core = ff.core_database()[core_name]
+                core_inner_diameter = core["core_inner_diameter"]
+                window_w = core["window_w"]
+                window_h_bot = trial.suggest_float("window_h_bot", 0.3 * core["window_h"], core["window_h"])
+                trial.set_user_attr('core_inner_diameter', core_inner_diameter)
+                trial.set_user_attr('window_w', window_w)
+                trial.set_user_attr('window_h_bot', window_h_bot)
+
+            else:
+                # using arbitrary core sizes
+                core_inner_diameter = trial.suggest_float("core_inner_diameter", config.core_inner_diameter_min_max_list[0],
+                                                          config.core_inner_diameter_min_max_list[1])
+                window_w = trial.suggest_float("window_w", config.window_w_min_max_list[0], config.window_w_min_max_list[1])
+                window_h_bot = trial.suggest_float('window_h_bot', config.window_h_bot_min_max_list[0], config.window_h_bot_min_max_list[1])
+
+            n_p_top = trial.suggest_int('n_p_top', config.n_1_top_min_max_list[0], config.n_1_top_min_max_list[1])
+            n_p_bot = trial.suggest_int('n_p_bot', config.n_1_bot_min_max_list[0], config.n_1_bot_min_max_list[1])
+            n_s_top = trial.suggest_int('n_s_top', config.n_2_top_min_max_list[0], config.n_2_top_min_max_list[1])
+            n_s_bot = trial.suggest_int('n_s_bot', config.n_2_bot_min_max_list[0], config.n_2_bot_min_max_list[1])
+
+            primary_litz_name = trial.suggest_categorical('primary_litz_name', config.primary_litz_wire_list)
+            primary_litz_dict = ff.litz_database()[primary_litz_name]
+            primary_litz_diameter = 2 * primary_litz_dict['conductor_radii']
+
+            secondary_litz_name = trial.suggest_categorical('secondary_litz_name', config.secondary_litz_wire_list)
+            secondary_litz_dict = ff.litz_database()[secondary_litz_name]
+            secondary_litz_diameter = 2 * secondary_litz_dict['conductor_radii']
+
+            material_name = trial.suggest_categorical('material_name', config.material_list)
+            for count, material_dto in enumerate(target_and_fixed_parameters.material_dto_curve_list):
+                if material_dto.material_name == material_name:
+                    material_dto: mdb.MaterialCurve = material_dto
+                    magnet_material_model = target_and_fixed_parameters.magnet_hub_model_list[count]
+
+            # calculate total 2D-axi symmetric volume of the core:
+            # formula: number_turns_per_row = (available_width + primary_to_primary) / (wire_diameter + primary_to_primary)
+            available_width_top = window_w - config.insulations.iso_window_top_core_left - config.insulations.iso_window_top_core_right
+            possible_number_turns_per_column_top_window = int(
+                (available_width_top + config.insulations.iso_primary_to_primary) / (primary_litz_diameter + config.insulations.iso_primary_to_primary))
+            if possible_number_turns_per_column_top_window < 1:
+                return float('nan'), float('nan')
+            number_of_rows_needed = np.ceil(n_p_top / possible_number_turns_per_column_top_window)
+            needed_height_top_wo_insulation = (number_of_rows_needed * primary_litz_diameter + \
+                                               (number_of_rows_needed - 1) * config.insulations.iso_primary_to_primary)
+            window_h_top = needed_height_top_wo_insulation + config.insulations.iso_window_top_core_top + config.insulations.iso_window_top_core_bot
+
+            # detailed calculation for the winding window
+            # check the area for the primary bottom winding
+            available_height_bot = window_h_bot - config.insulations.iso_window_bot_core_top - config.insulations.iso_window_bot_core_bot
+            possible_number_prim_turns_per_column_bot_window = int(
+                (available_height_bot + config.insulations.iso_primary_to_primary) / (primary_litz_diameter + config.insulations.iso_primary_to_primary))
+            if possible_number_prim_turns_per_column_bot_window < 1:
+                return float('nan'), float('nan')
+            number_of_primary_columns_bot_needed = np.ceil(n_p_bot / possible_number_prim_turns_per_column_bot_window)
+            needed_primary_width_bot_wo_insulation = (number_of_primary_columns_bot_needed * primary_litz_diameter + \
+                                                      (number_of_primary_columns_bot_needed - 1) * config.insulations.iso_primary_to_primary)
+            area_primary_bot = needed_primary_width_bot_wo_insulation * window_h_bot
+
+            # check the area for the secondary bottom winding
+            possible_number_sec_turns_per_column_bot_window = int(
+                (available_height_bot + config.insulations.iso_secondary_to_secondary) / \
+                (secondary_litz_diameter + config.insulations.iso_secondary_to_secondary))
+            if possible_number_sec_turns_per_column_bot_window < 1:
+                return float('nan'), float('nan')
+            number_of_secondary_columns_bot_needed = np.ceil(n_s_bot / possible_number_sec_turns_per_column_bot_window)
+            needed_primary_width_bot_wo_insulation = (number_of_secondary_columns_bot_needed * secondary_litz_diameter + \
+                                                      (number_of_secondary_columns_bot_needed - 1) * config.insulations.iso_secondary_to_secondary)
+            area_secondary_bot = needed_primary_width_bot_wo_insulation * window_h_bot
+            area_insulation_prim_sec_bot = 2 * config.insulations.iso_primary_to_secondary * window_h_bot
+
+            total_area_windings_bot = area_primary_bot + area_secondary_bot + area_insulation_prim_sec_bot
+
+            window_bot_available_height = window_h_bot - config.insulations.iso_window_bot_core_top - config.insulations.iso_window_bot_core_bot
+            window_bot_available_width = window_w - config.insulations.iso_window_bot_core_left - config.insulations.iso_window_bot_core_right
+            window_bot_available_area = window_bot_available_height * window_bot_available_width
+
+            # check the area for the primary top winding
+            available_height_top = window_h_top - config.insulations.iso_window_top_core_top - config.insulations.iso_window_top_core_bot
+            possible_number_prim_turns_per_column_top_window = int(
+                (available_height_top + config.insulations.iso_primary_to_primary) / (primary_litz_diameter + config.insulations.iso_primary_to_primary))
+            if possible_number_prim_turns_per_column_top_window < 1:
+                return float('nan'), float('nan')
+            number_of_primary_columns_top_needed = np.ceil(n_p_top / possible_number_prim_turns_per_column_top_window)
+            needed_primary_width_top_wo_insulation = (number_of_primary_columns_top_needed * primary_litz_diameter + \
+                                                      (number_of_primary_columns_top_needed - 1) * config.insulations.iso_primary_to_primary)
+            area_primary_top = needed_primary_width_top_wo_insulation * window_h_top
+
+            # check the area for the secondary top winding
+            possible_number_sec_turns_per_column_top_window = int(
+                (available_height_top + config.insulations.iso_secondary_to_secondary) / \
+                (secondary_litz_diameter + config.insulations.iso_secondary_to_secondary))
+            if possible_number_sec_turns_per_column_top_window < 1:
+                return float('nan'), float('nan')
+            number_of_secondary_columns_top_needed = np.ceil(n_s_top / possible_number_sec_turns_per_column_top_window)
+            needed_primary_width_top_wo_insulation = (number_of_secondary_columns_top_needed * secondary_litz_diameter + \
+                                                      (number_of_secondary_columns_top_needed - 1) * config.insulations.iso_secondary_to_secondary)
+            area_secondary_top = needed_primary_width_top_wo_insulation * window_h_top
+
+            area_insulation_prim_sec_top = 2 * config.insulations.iso_primary_to_secondary * window_h_top
+            total_area_windings_top = area_primary_top + area_secondary_top + area_insulation_prim_sec_top
+
+            window_top_available_height = window_h_top - config.insulations.iso_window_top_core_top - config.insulations.iso_window_top_core_bot
+            window_top_available_width = window_w - config.insulations.iso_window_top_core_left - config.insulations.iso_window_top_core_right
+            window_top_available_area = window_top_available_height * window_top_available_width
+
+            # as the window_h_top is adapted to the number of n_p_top, the top windings always fit into the top window.
+            if total_area_windings_bot > window_bot_available_area:
+                logging.warning("Winding window bottom too small for too many turns.")
+                return float('nan'), float('nan')
+            if total_area_windings_top > window_top_available_area:
+                logging.warning("Winding window top too small for too many turns.")
+                return float('nan'), float('nan')
+
+            reluctance_model_intput = ItoReluctanceModelInput(
+                target_inductance_matrix=target_and_fixed_parameters.target_inductance_matrix,
+                core_inner_diameter=core_inner_diameter,
+                window_w=window_w,
+                window_h_bot=window_h_bot,
+                window_h_top=window_h_top,
+                turns_1_top=n_p_top,
+                turns_1_bot=n_p_bot,
+                turns_2_top=n_s_top,
+                turns_2_bot=n_s_bot,
+                litz_wire_name_1=primary_litz_name,
+                litz_wire_diameter_1=primary_litz_diameter,
+                litz_wire_name_2=secondary_litz_name,
+                litz_wire_diameter_2=secondary_litz_diameter,
+
+                insulations=config.insulations,
+                material_dto=material_dto,
+                magnet_material_model=magnet_material_model,
+
+                temperature=config.temperature,
+                time_extracted_vec=target_and_fixed_parameters.time_extracted_vec,
+                current_extracted_vec_1=target_and_fixed_parameters.current_extracted_1_vec,
+                current_extracted_vec_2=target_and_fixed_parameters.current_extracted_2_vec,
+                fundamental_frequency=target_and_fixed_parameters.fundamental_frequency,
+                i_rms_1=target_and_fixed_parameters.i_rms_1,
+                i_rms_2=target_and_fixed_parameters.i_rms_2,
+                primary_litz_dict=primary_litz_dict,
+                secondary_litz_dict=secondary_litz_dict,
+
+                # winding 1
+                fft_frequency_list_1=target_and_fixed_parameters.fft_frequency_list_1,
+                fft_amplitude_list_1=target_and_fixed_parameters.fft_amplitude_list_1,
+                fft_phases_list_1=target_and_fixed_parameters.fft_phases_list_1,
+                # winding 2
+                fft_frequency_list_2=target_and_fixed_parameters.fft_frequency_list_2,
+                fft_amplitude_list_2=target_and_fixed_parameters.fft_amplitude_list_2,
+                fft_phases_list_2=target_and_fixed_parameters.fft_phases_list_2,
+            )
+            try:
+                reluctance_output = IntegratedTransformerOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_intput)
+            except ValueError:
+                logging.warning("No fitting air gap length")
+                return float('nan'), float('nan')
+
+            # set additional attributes
+            trial.set_user_attr('p_hyst', reluctance_output.p_hyst)
+            trial.set_user_attr('p_hyst_top', reluctance_output.p_hyst_top)
+            trial.set_user_attr('p_hyst_bot', reluctance_output.p_hyst_bot)
+            trial.set_user_attr('p_hyst_middle', reluctance_output.p_hyst_middle)
+            trial.set_user_attr('b_max_top', reluctance_output.b_max_top)
+            trial.set_user_attr('b_max_bot', reluctance_output.b_max_bot)
+            trial.set_user_attr('b_max_middle', reluctance_output.b_max_middle)
+            trial.set_user_attr('window_h_top', window_h_top)
+            trial.set_user_attr('winding_losses', reluctance_output.winding_1_loss + reluctance_output.winding_2_loss)
+            trial.set_user_attr('l_top_air_gap', reluctance_output.l_top_air_gap)
+            trial.set_user_attr('l_bot_air_gap', reluctance_output.l_bot_air_gap)
+
+            return reluctance_output.volume, reluctance_output.p_loss
+
+        #########################################################
+        # set dynamic wire count parameters as optimization parameters
+        #########################################################
+        # set the winding search space dynamic
+        # https://optuna.readthedocs.io/en/stable/faq.html#what-happens-when-i-dynamically-alter-a-search-space
+
+        # if np.linalg.det(t2_reluctance_matrix) != 0 and np.linalg.det(
+        #         np.transpose(t2_winding_matrix)) != 0 and np.linalg.det(target_inductance_matrix) != 0:
+        #     # calculate the flux
+        #     flux_top_vec, flux_bot_vec, flux_stray_vec = fr.flux_vec_from_current_vec(
+        #         target_and_fixed_parameters.current_extracted_1_vec,
+        #         target_and_fixed_parameters.current_extracted_2_vec,
+        #         t2_winding_matrix,
+        #         target_inductance_matrix)
 
         @staticmethod
         def start_proceed_study(config: ItoSingleInputConfig, number_trials: Optional[int] = None,
@@ -674,7 +847,7 @@ class IntegratedTransformerOptimization:
 
             fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0], t.values[1]), target_names=["volume in m³", "loss in W"])
             fig.update_layout(title=f"{config.integrated_transformer_study_name} <br><sup>{config.integrated_transformer_optimization_directory}</sup>")
-            fig.write_html(f"{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}"
+            fig.write_html(f"{config.integrated_transformer_optimization_directory}/{config.integrated_transformer_study_name}"
                            f"_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
             fig.show()
 

@@ -439,7 +439,7 @@ def calculate_flux_matrix(reluctance_matrix: Union[float, np.array], winding_mat
     return np.matmul(np.matmul(reluctance_matrix_invert, winding_matrix), current_matrix)
 
 
-def time_vec_current_vec_from_time_current_vec(time_current_vec: List[List[float]]):
+def time_vec_current_vec_from_time_current_vec(time_current_vec: List[List[float]] | np.array):
     """
     Split a time-current vector into time and current vector.
 

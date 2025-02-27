@@ -424,7 +424,7 @@ class StackedTransformerOptimization:
             p_winding_1_top = 0
             p_winding_1_bot = 0
             for count, fft_frequency in enumerate(reluctance_input.fft_frequency_list_1):
-                proximity_factor_1_top = fmt.calc_proximity_factor_air_gap(
+                proximity_factor_1_top = fr.calc_proximity_factor_air_gap(
                     litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=reluctance_input.turns_1_top,
                     r_1=reluctance_input.insulations.iso_window_top_core_left,
                     frequency=fft_frequency, winding_area=winding_area_1_top,
@@ -437,7 +437,7 @@ class StackedTransformerOptimization:
                         (reluctance_input.turns_1_bot * 2 * reluctance_input.primary_litz_dict["conductor_radii"] + \
                             (reluctance_input.turns_1_bot - 1) * reluctance_input.insulations.iso_primary_to_primary)
 
-                    proximity_factor_1_bot_inner = fmt.calc_proximity_factor_air_gap(
+                    proximity_factor_1_bot_inner = fr.calc_proximity_factor_air_gap(
                         litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=reluctance_input.turns_1_bot,
                         r_1=reluctance_input.insulations.iso_window_bot_core_left,
                         frequency=fft_frequency, winding_area=winding_area_1_bot,
@@ -449,13 +449,13 @@ class StackedTransformerOptimization:
                         number_bot_prim_turns_per_column * 2 * reluctance_input.primary_litz_dict["conductor_radii"] + \
                         (number_bot_prim_turns_per_column - 1) * reluctance_input.insulations.iso_primary_to_primary))
 
-                    proximity_factor_1_bot_inner = fmt.calc_proximity_factor_air_gap(
+                    proximity_factor_1_bot_inner = fr.calc_proximity_factor_air_gap(
                         litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=number_bot_prim_turns_per_column,
                         r_1=reluctance_input.insulations.iso_window_bot_core_left,
                         frequency=fft_frequency, winding_area=winding_area_1_bot,
                         litz_wire_material_name='Copper', temperature=reluctance_input.temperature)
 
-                    proximity_factor_1_bot_outer = fmt.calc_proximity_factor(
+                    proximity_factor_1_bot_outer = fr.calc_proximity_factor(
                         litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=reluctance_input.turns_1_bot - number_bot_prim_turns_per_column,
                         window_h=reluctance_input.window_h_bot,
                         iso_core_top=reluctance_input.insulations.iso_window_bot_core_top, iso_core_bot=reluctance_input.insulations.iso_window_bot_core_bot,
@@ -468,7 +468,7 @@ class StackedTransformerOptimization:
 
             p_winding_2 = 0
             for count, fft_frequency in enumerate(reluctance_input.fft_frequency_list_2):
-                proximity_factor_assumption_2 = fmt.calc_proximity_factor(
+                proximity_factor_assumption_2 = fr.calc_proximity_factor(
                     litz_wire_name=reluctance_input.litz_wire_name_2, number_turns=reluctance_input.turns_2_bot, window_h=reluctance_input.window_h_bot,
                     iso_core_top=reluctance_input.insulations.iso_window_bot_core_top, iso_core_bot=reluctance_input.insulations.iso_window_bot_core_bot,
                     frequency=fft_frequency, litz_wire_material_name='Copper', temperature=reluctance_input.temperature)

@@ -6,7 +6,38 @@ from typing import List
 # 3rd party libraries
 import numpy as np
 from materialdatabase.dtos import MaterialCurve
+from magnethub.loss import LossModel
+from femmt.enumerations import *
 
+@dataclass
+class ItoInsulation:
+    """Insulation definition for the integrated transformer optimization."""
+
+    # insulation for top core window
+    iso_window_top_core_top: float
+    iso_window_top_core_bot: float
+    iso_window_top_core_left: float
+    iso_window_top_core_right: float
+    # insulation for bottom core window
+    iso_window_bot_core_top: float
+    iso_window_bot_core_bot: float
+    iso_window_bot_core_left: float
+    iso_window_bot_core_right: float
+    # winding-to-winding insulation
+    iso_primary_to_primary: float
+    iso_secondary_to_secondary: float
+    iso_primary_to_secondary: float
+
+@dataclass
+class IntegratedTransformerMaterialDataSources:
+    """Data sources for the FEM simulation."""
+
+    permeability_datasource: MaterialDataSource
+    permeability_datatype: MeasurementDataType
+    permeability_measurement_setup: MeasurementSetup
+    permittivity_datasource: MaterialDataSource
+    permittivity_datatype: MeasurementDataType
+    permittivity_measurement_setup: MeasurementSetup
 
 @dataclass
 class ItoSingleInputConfig:
@@ -18,22 +49,38 @@ class ItoSingleInputConfig:
     """
 
     integrated_transformer_study_name: str
+    integrated_transformer_optimization_directory: str
 
-    l_s_target: float
+    # target parameters
+    l_s12_target: float
     l_h_target: float
     n_target: float
+
+    # fix input parameters
     time_current_1_vec: np.ndarray
     time_current_2_vec: np.ndarray
+
+    # parameters to optimize
     material_list: list
-    core_inner_diameter_min_max_list: list
-    window_w_min_max_list: list
-    window_h_top_min_max_list: list
-    window_h_bot_min_max_list: list
+    core_name_list: list | None
+    core_inner_diameter_min_max_list: list | None
+    window_w_min_max_list: list | None
+    window_h_top_min_max_list: list | None
+    window_h_bot_min_max_list: list | None
+    n_1_top_min_max_list: list
+    n_1_bot_min_max_list: list
+    n_2_top_min_max_list: list
+    n_2_bot_min_max_list: list
     factor_max_flux_density: float
-    primary_litz_wire_list: list
-    secondary_litz_wire_list: list
+    primary_litz_wire_list: list[str]
+    secondary_litz_wire_list: list[str]
     temperature: float
-    integrated_transformer_optimization_directory: str
+
+    # fix parameters: insulations
+    insulations: ItoInsulation
+
+    # data sources
+    material_data_sources: IntegratedTransformerMaterialDataSources
 
 @dataclass
 class WorkingDirectories:
@@ -56,7 +103,12 @@ class ItoTargetAndFixedParameters:
 
     i_rms_1: float
     i_rms_2: float
+    i_peak_1: float
+    i_peak_2: float
+    i_phase_deg_1: float
+    i_phase_deg_2: float
     material_dto_curve_list: List[MaterialCurve]
+    magnet_hub_model_list: List[LossModel]
     time_extracted_vec: List
     current_extracted_1_vec: List
     current_extracted_2_vec: List
@@ -64,29 +116,15 @@ class ItoTargetAndFixedParameters:
     target_inductance_matrix: np.ndarray
     working_directories: WorkingDirectories
 
-@dataclass
-class SweepTensor:
-    """
-    Dataclass contains the concrete sweep vectors.
+    # winding 1
+    fft_frequency_list_1: List[float]
+    fft_amplitude_list_1: List[float]
+    fft_phases_list_1: List[float]
 
-    This class is calculated from the integrated-transformer input config file (ItoSingleInputConfig).
-    ItoSingleInputConfig: core_inner_diameter = [10e-3, 30e-3, 5]
-    ->> SweepTensor: t1_core_inner_diameter = [10e-3, 15e-3, 20e-3, 25e-3, 30e-3]
-    """
-
-    t1_window_h_top: np.ndarray
-    t1_window_h_bot: np.ndarray
-    t1_window_w: np.ndarray
-    t1_core_material: list
-    t1_core_inner_diameter: np.ndarray
-    t1_primary_litz_wire_list: list
-    t1_secondary_litz_wire_list: list
-    time_current_1_vec: np.ndarray
-    time_current_2_vec: np.ndarray
-    l_s_target_value: float
-    l_h_target_value: float
-    n_target_value: float
-    factor_max_flux_density: float
+    # winding 2
+    fft_frequency_list_2: List[float]
+    fft_amplitude_list_2: List[float]
+    fft_phases_list_2: List[float]
 
 @dataclass
 class ItoSingleResultFile:
@@ -125,3 +163,68 @@ class ItoSingleResultFile:
     secondary_litz_wire_loss: float
     core_2daxi_total_volume: float
     total_loss: float
+
+@dataclass
+class ItoReluctanceModelInput:
+    """Input DTO for reluctance model simulation within the inductor optimization."""
+
+    target_inductance_matrix: np.array
+    core_inner_diameter: float
+    window_w: float
+    window_h_bot: float
+    window_h_top: float
+    turns_1_top: int
+    turns_2_top: int
+    turns_1_bot: int
+    turns_2_bot: int
+    litz_wire_name_1: str
+    litz_wire_diameter_1: float
+    litz_wire_name_2: str
+    litz_wire_diameter_2: float
+
+    insulations: ItoInsulation
+    material_dto: MaterialCurve
+    magnet_material_model: LossModel
+
+    temperature: float
+    time_extracted_vec: List
+    current_extracted_vec_1: List
+    current_extracted_vec_2: List
+    fundamental_frequency: float
+
+    i_rms_1: float
+    i_rms_2: float
+
+    primary_litz_dict: dict
+    secondary_litz_dict: dict
+
+    # winding 1
+    fft_frequency_list_1: List[float]
+    fft_amplitude_list_1: List[float]
+    fft_phases_list_1: List[float]
+
+    # winding 2
+    fft_frequency_list_2: List[float]
+    fft_amplitude_list_2: List[float]
+    fft_phases_list_2: List[float]
+
+@dataclass
+class ItoReluctanceModelOutput:
+    """output DTO for reluctance model simulation within the inductor optimization."""
+
+    # set additional attributes
+    p_hyst: float
+    p_hyst_top: float
+    p_hyst_bot: float
+    p_hyst_middle: float
+    b_max_top: float
+    b_max_bot: float
+    b_max_middle: float
+    winding_1_loss: float
+    winding_2_loss: float
+    l_top_air_gap: float
+    l_bot_air_gap: float
+    l_middle_air_gap: float
+    volume: float
+    area_to_heat_sink: float
+    p_loss: float
