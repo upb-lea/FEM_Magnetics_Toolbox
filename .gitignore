@@ -39,6 +39,7 @@ femmt.egg-info/
 onelab/
 */working_directory/
 tests/integration/temp/
+docs/_templates/
 
 # FEMMT: generated files
 femmt/electro_magnetic/Parameter.pro
