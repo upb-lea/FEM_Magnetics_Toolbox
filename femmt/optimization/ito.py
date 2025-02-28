@@ -81,10 +81,10 @@ def result_file_dict_to_dto(result_file_dict: Dict) -> ItoSingleResultFile:
         flux_density_stray_max=result_file_dict["flux_density_stray_max"],
         p_hyst=result_file_dict["p_hyst"],
         core_2daxi_total_volume=result_file_dict["core_2daxi_total_volume"],
-        primary_litz_wire=result_file_dict["primary_litz_wire"],
-        secondary_litz_wire=result_file_dict["secondary_litz_wire"],
-        primary_litz_wire_loss=result_file_dict["primary_litz_wire_loss"],
-        secondary_litz_wire_loss=result_file_dict["secondary_litz_wire_loss"],
+        litz_wire_name_1=result_file_dict["primary_litz_wire"],
+        litz_wire_name_2=result_file_dict["secondary_litz_wire"],
+        litz_wire_loss_1=result_file_dict["primary_litz_wire_loss"],
+        litz_wire_loss_2=result_file_dict["secondary_litz_wire_loss"],
         total_loss=result_file_dict["total_loss"]
     )
     return result_file_dto
@@ -332,7 +332,7 @@ class IntegratedTransformerOptimization:
 
             # calculate winding losses
             primary_effective_conductive_cross_section = (
-                reluctance_input.primary_litz_dict["strands_numbers"] * reluctance_input.primary_litz_dict["strand_radii"] ** 2 * np.pi)
+                    reluctance_input.litz_dict_1["strands_numbers"] * reluctance_input.litz_dict_1["strand_radii"] ** 2 * np.pi)
             primary_effective_conductive_radius = np.sqrt(primary_effective_conductive_cross_section / np.pi)
             primary_resistance_top = fr.resistance_solid_wire(
                 reluctance_input.core_inner_diameter, reluctance_input.window_w, reluctance_input.turns_1_top,
@@ -341,7 +341,7 @@ class IntegratedTransformerOptimization:
             number_bot_prim_turns_per_column = (
                 int((reluctance_input.window_h_bot - reluctance_input.insulations.iso_window_bot_core_top - \
                      reluctance_input.insulations.iso_window_bot_core_bot + reluctance_input.insulations.iso_primary_to_primary) / \
-                    (2 * reluctance_input.primary_litz_dict["conductor_radii"] + reluctance_input.insulations.iso_primary_to_primary)))
+                    (2 * reluctance_input.litz_dict_1["conductor_radii"] + reluctance_input.insulations.iso_primary_to_primary)))
             if number_bot_prim_turns_per_column > reluctance_input.turns_1_bot:
                 # single row window only
                 primary_resistance_bot_inner = fr.resistance_solid_wire(
@@ -359,16 +359,16 @@ class IntegratedTransformerOptimization:
                     primary_effective_conductive_radius, material='Copper')
 
             secondary_effective_conductive_cross_section = (
-                reluctance_input.secondary_litz_dict["strands_numbers"] * reluctance_input.secondary_litz_dict["strand_radii"] ** 2 * np.pi)
+                    reluctance_input.litz_dict_2["strands_numbers"] * reluctance_input.litz_dict_2["strand_radii"] ** 2 * np.pi)
             secondary_effective_conductive_radius = np.sqrt(secondary_effective_conductive_cross_section / np.pi)
             secondary_resistance = fr.resistance_solid_wire(
                 reluctance_input.core_inner_diameter, reluctance_input.window_w, reluctance_input.turns_2_bot, secondary_effective_conductive_radius,
                 material='Copper')
 
             winding_area_1_top = (
-                2 * reluctance_input.primary_litz_dict["conductor_radii"] * \
-                (reluctance_input.turns_1_top * 2 * reluctance_input.primary_litz_dict["conductor_radii"] + \
-                    (reluctance_input.turns_1_top - 1) * reluctance_input.insulations.iso_primary_to_primary))
+                    2 * reluctance_input.litz_dict_1["conductor_radii"] * \
+                    (reluctance_input.turns_1_top * 2 * reluctance_input.litz_dict_1["conductor_radii"] + \
+                     (reluctance_input.turns_1_top - 1) * reluctance_input.insulations.iso_primary_to_primary))
 
             p_winding_1_top = 0
             p_winding_1_bot = 0
@@ -382,9 +382,9 @@ class IntegratedTransformerOptimization:
                 p_winding_1_top += proximity_factor_1_top * primary_resistance_top * reluctance_input.fft_amplitude_list_1[count] ** 2
 
                 if number_bot_prim_turns_per_column > reluctance_input.turns_1_bot:
-                    winding_area_1_bot = 2 * reluctance_input.primary_litz_dict["conductor_radii"] * \
-                        (reluctance_input.turns_1_bot * 2 * reluctance_input.primary_litz_dict["conductor_radii"] + \
-                            (reluctance_input.turns_1_bot - 1) * reluctance_input.insulations.iso_primary_to_primary)
+                    winding_area_1_bot = 2 * reluctance_input.litz_dict_1["conductor_radii"] * \
+                                         (reluctance_input.turns_1_bot * 2 * reluctance_input.litz_dict_1["conductor_radii"] + \
+                                          (reluctance_input.turns_1_bot - 1) * reluctance_input.insulations.iso_primary_to_primary)
 
                     proximity_factor_1_bot_inner = fr.calc_proximity_factor_air_gap(
                         litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=reluctance_input.turns_1_bot,
@@ -394,9 +394,9 @@ class IntegratedTransformerOptimization:
 
                     proximity_factor_1_bot_outer = 0
                 else:
-                    winding_area_1_bot = (2 * reluctance_input.primary_litz_dict["conductor_radii"] * (
-                        number_bot_prim_turns_per_column * 2 * reluctance_input.primary_litz_dict["conductor_radii"] + \
-                        (number_bot_prim_turns_per_column - 1) * reluctance_input.insulations.iso_primary_to_primary))
+                    winding_area_1_bot = (2 * reluctance_input.litz_dict_1["conductor_radii"] * (
+                            number_bot_prim_turns_per_column * 2 * reluctance_input.litz_dict_1["conductor_radii"] + \
+                            (number_bot_prim_turns_per_column - 1) * reluctance_input.insulations.iso_primary_to_primary))
 
                     proximity_factor_1_bot_inner = fr.calc_proximity_factor_air_gap(
                         litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=number_bot_prim_turns_per_column,
@@ -471,10 +471,10 @@ class IntegratedTransformerOptimization:
                 core = ff.core_database()[core_name]
                 core_inner_diameter = core["core_inner_diameter"]
                 window_w = core["window_w"]
-                window_h_bot = trial.suggest_float("window_h_bot", 0.3 * core["window_h"], core["window_h"])
+                window_h_half_max = (core["window_h"] - core_inner_diameter) / 2
+
                 trial.set_user_attr('core_inner_diameter', core_inner_diameter)
                 trial.set_user_attr('window_w', window_w)
-                trial.set_user_attr('window_h_bot', window_h_bot)
 
             else:
                 # using arbitrary core sizes
@@ -483,102 +483,58 @@ class IntegratedTransformerOptimization:
                 window_w = trial.suggest_float("window_w", config.window_w_min_max_list[0], config.window_w_min_max_list[1])
                 window_h_bot = trial.suggest_float('window_h_bot', config.window_h_bot_min_max_list[0], config.window_h_bot_min_max_list[1])
 
-            n_p_top = trial.suggest_int('n_p_top', config.n_1_top_min_max_list[0], config.n_1_top_min_max_list[1])
-            n_p_bot = trial.suggest_int('n_p_bot', config.n_1_bot_min_max_list[0], config.n_1_bot_min_max_list[1])
-            n_s_top = trial.suggest_int('n_s_top', config.n_2_top_min_max_list[0], config.n_2_top_min_max_list[1])
-            n_s_bot = trial.suggest_int('n_s_bot', config.n_2_bot_min_max_list[0], config.n_2_bot_min_max_list[1])
+            # suggest turn counts
+            n_1_top = trial.suggest_int('n_p_top', config.n_1_top_min_max_list[0], config.n_1_top_min_max_list[1])
+            n_1_bot = trial.suggest_int('n_p_bot', config.n_1_bot_min_max_list[0], config.n_1_bot_min_max_list[1])
+            n_2_top = trial.suggest_int('n_s_top', config.n_2_top_min_max_list[0], config.n_2_top_min_max_list[1])
+            n_2_bot = trial.suggest_int('n_s_bot', config.n_2_bot_min_max_list[0], config.n_2_bot_min_max_list[1])
 
-            primary_litz_name = trial.suggest_categorical('primary_litz_name', config.primary_litz_wire_list)
-            primary_litz_dict = ff.litz_database()[primary_litz_name]
-            primary_litz_diameter = 2 * primary_litz_dict['conductor_radii']
+            # suggest litz wire 1
+            litz_name_1 = trial.suggest_categorical('litz_name_1', config.litz_wire_list_1)
+            litz_dict_1 = ff.litz_database()[litz_name_1]
+            litz_diameter_1 = 2 * litz_dict_1['conductor_radii']
 
-            secondary_litz_name = trial.suggest_categorical('secondary_litz_name', config.secondary_litz_wire_list)
-            secondary_litz_dict = ff.litz_database()[secondary_litz_name]
-            secondary_litz_diameter = 2 * secondary_litz_dict['conductor_radii']
+            # suggest litz wire 2
+            litz_name_2 = trial.suggest_categorical('litz_name_2', config.litz_wire_list_2)
+            litz_dict_2 = ff.litz_database()[litz_name_2]
+            litz_diameter_2 = 2 * litz_dict_2['conductor_radii']
 
+            # suggest core material
             material_name = trial.suggest_categorical('material_name', config.material_list)
             for count, material_dto in enumerate(target_and_fixed_parameters.material_dto_curve_list):
                 if material_dto.material_name == material_name:
                     material_dto: mdb.MaterialCurve = material_dto
                     magnet_material_model = target_and_fixed_parameters.magnet_hub_model_list[count]
 
-            # calculate total 2D-axi symmetric volume of the core:
-            # formula: number_turns_per_row = (available_width + primary_to_primary) / (wire_diameter + primary_to_primary)
+            # calculation of window_h_top: assumption: winding ist stacked
             available_width_top = window_w - config.insulations.iso_window_top_core_left - config.insulations.iso_window_top_core_right
-            possible_number_turns_per_column_top_window = int(
-                (available_width_top + config.insulations.iso_primary_to_primary) / (primary_litz_diameter + config.insulations.iso_primary_to_primary))
-            if possible_number_turns_per_column_top_window < 1:
+            available_width_bot = window_w - config.insulations.iso_window_bot_core_left - config.insulations.iso_window_bot_core_right
+
+            def calc_winding_height(available_width: float, iso_winding_to_winding: float, litz_diameter: float,
+                                    number_turns: float):
+
+
+                number_turns_per_row = int((available_width + iso_winding_to_winding) / (litz_diameter + iso_winding_to_winding))
+                if number_turns_per_row < 1:
+                    return float('nan'), float('nan')
+                number_of_rows = np.ceil(number_turns / number_turns_per_row)
+                winding_height = number_of_rows * litz_diameter + (number_of_rows -1) * iso_winding_to_winding
+                return winding_height
+
+            # height of top core needed
+            window_h_1_top = calc_winding_height(available_width_top, config.insulations.iso_primary_to_primary, litz_diameter_1, n_1_top)
+            window_h_2_top = calc_winding_height(available_width_top, config.insulations.iso_secondary_to_secondary, litz_diameter_2, n_2_top)
+            window_h_top = (window_h_1_top + window_h_2_top + config.insulations.iso_primary_to_secondary +
+                            config.insulations.iso_window_top_core_top + config.insulations.iso_window_top_core_bot)
+            if window_h_top > window_h_half_max:
                 return float('nan'), float('nan')
-            number_of_rows_needed = np.ceil(n_p_top / possible_number_turns_per_column_top_window)
-            needed_height_top_wo_insulation = (number_of_rows_needed * primary_litz_diameter + \
-                                               (number_of_rows_needed - 1) * config.insulations.iso_primary_to_primary)
-            window_h_top = needed_height_top_wo_insulation + config.insulations.iso_window_top_core_top + config.insulations.iso_window_top_core_bot
 
-            # detailed calculation for the winding window
-            # check the area for the primary bottom winding
-            available_height_bot = window_h_bot - config.insulations.iso_window_bot_core_top - config.insulations.iso_window_bot_core_bot
-            possible_number_prim_turns_per_column_bot_window = int(
-                (available_height_bot + config.insulations.iso_primary_to_primary) / (primary_litz_diameter + config.insulations.iso_primary_to_primary))
-            if possible_number_prim_turns_per_column_bot_window < 1:
-                return float('nan'), float('nan')
-            number_of_primary_columns_bot_needed = np.ceil(n_p_bot / possible_number_prim_turns_per_column_bot_window)
-            needed_primary_width_bot_wo_insulation = (number_of_primary_columns_bot_needed * primary_litz_diameter + \
-                                                      (number_of_primary_columns_bot_needed - 1) * config.insulations.iso_primary_to_primary)
-            area_primary_bot = needed_primary_width_bot_wo_insulation * window_h_bot
-
-            # check the area for the secondary bottom winding
-            possible_number_sec_turns_per_column_bot_window = int(
-                (available_height_bot + config.insulations.iso_secondary_to_secondary) / \
-                (secondary_litz_diameter + config.insulations.iso_secondary_to_secondary))
-            if possible_number_sec_turns_per_column_bot_window < 1:
-                return float('nan'), float('nan')
-            number_of_secondary_columns_bot_needed = np.ceil(n_s_bot / possible_number_sec_turns_per_column_bot_window)
-            needed_primary_width_bot_wo_insulation = (number_of_secondary_columns_bot_needed * secondary_litz_diameter + \
-                                                      (number_of_secondary_columns_bot_needed - 1) * config.insulations.iso_secondary_to_secondary)
-            area_secondary_bot = needed_primary_width_bot_wo_insulation * window_h_bot
-            area_insulation_prim_sec_bot = 2 * config.insulations.iso_primary_to_secondary * window_h_bot
-
-            total_area_windings_bot = area_primary_bot + area_secondary_bot + area_insulation_prim_sec_bot
-
-            window_bot_available_height = window_h_bot - config.insulations.iso_window_bot_core_top - config.insulations.iso_window_bot_core_bot
-            window_bot_available_width = window_w - config.insulations.iso_window_bot_core_left - config.insulations.iso_window_bot_core_right
-            window_bot_available_area = window_bot_available_height * window_bot_available_width
-
-            # check the area for the primary top winding
-            available_height_top = window_h_top - config.insulations.iso_window_top_core_top - config.insulations.iso_window_top_core_bot
-            possible_number_prim_turns_per_column_top_window = int(
-                (available_height_top + config.insulations.iso_primary_to_primary) / (primary_litz_diameter + config.insulations.iso_primary_to_primary))
-            if possible_number_prim_turns_per_column_top_window < 1:
-                return float('nan'), float('nan')
-            number_of_primary_columns_top_needed = np.ceil(n_p_top / possible_number_prim_turns_per_column_top_window)
-            needed_primary_width_top_wo_insulation = (number_of_primary_columns_top_needed * primary_litz_diameter + \
-                                                      (number_of_primary_columns_top_needed - 1) * config.insulations.iso_primary_to_primary)
-            area_primary_top = needed_primary_width_top_wo_insulation * window_h_top
-
-            # check the area for the secondary top winding
-            possible_number_sec_turns_per_column_top_window = int(
-                (available_height_top + config.insulations.iso_secondary_to_secondary) / \
-                (secondary_litz_diameter + config.insulations.iso_secondary_to_secondary))
-            if possible_number_sec_turns_per_column_top_window < 1:
-                return float('nan'), float('nan')
-            number_of_secondary_columns_top_needed = np.ceil(n_s_top / possible_number_sec_turns_per_column_top_window)
-            needed_primary_width_top_wo_insulation = (number_of_secondary_columns_top_needed * secondary_litz_diameter + \
-                                                      (number_of_secondary_columns_top_needed - 1) * config.insulations.iso_secondary_to_secondary)
-            area_secondary_top = needed_primary_width_top_wo_insulation * window_h_top
-
-            area_insulation_prim_sec_top = 2 * config.insulations.iso_primary_to_secondary * window_h_top
-            total_area_windings_top = area_primary_top + area_secondary_top + area_insulation_prim_sec_top
-
-            window_top_available_height = window_h_top - config.insulations.iso_window_top_core_top - config.insulations.iso_window_top_core_bot
-            window_top_available_width = window_w - config.insulations.iso_window_top_core_left - config.insulations.iso_window_top_core_right
-            window_top_available_area = window_top_available_height * window_top_available_width
-
-            # as the window_h_top is adapted to the number of n_p_top, the top windings always fit into the top window.
-            if total_area_windings_bot > window_bot_available_area:
-                logging.warning("Winding window bottom too small for too many turns.")
-                return float('nan'), float('nan')
-            if total_area_windings_top > window_top_available_area:
-                logging.warning("Winding window top too small for too many turns.")
+            # height of bot core needed
+            window_h_1_bot = calc_winding_height(available_width_bot, config.insulations.iso_primary_to_primary, litz_diameter_1, n_1_bot)
+            window_h_2_bot = calc_winding_height(available_width_bot, config.insulations.iso_secondary_to_secondary, litz_diameter_2, n_2_bot)
+            window_h_bot = (window_h_1_bot + window_h_2_bot + config.insulations.iso_primary_to_secondary +
+                            config.insulations.iso_window_bot_core_top + config.insulations.iso_window_bot_core_bot)
+            if window_h_bot > window_h_half_max:
                 return float('nan'), float('nan')
 
             reluctance_model_intput = ItoReluctanceModelInput(
@@ -587,14 +543,14 @@ class IntegratedTransformerOptimization:
                 window_w=window_w,
                 window_h_bot=window_h_bot,
                 window_h_top=window_h_top,
-                turns_1_top=n_p_top,
-                turns_1_bot=n_p_bot,
-                turns_2_top=n_s_top,
-                turns_2_bot=n_s_bot,
-                litz_wire_name_1=primary_litz_name,
-                litz_wire_diameter_1=primary_litz_diameter,
-                litz_wire_name_2=secondary_litz_name,
-                litz_wire_diameter_2=secondary_litz_diameter,
+                turns_1_top=n_1_top,
+                turns_1_bot=n_1_bot,
+                turns_2_top=n_2_top,
+                turns_2_bot=n_2_bot,
+                litz_wire_name_1=litz_name_1,
+                litz_wire_diameter_1=litz_diameter_1,
+                litz_wire_name_2=litz_name_2,
+                litz_wire_diameter_2=litz_diameter_2,
 
                 insulations=config.insulations,
                 material_dto=material_dto,
@@ -607,8 +563,8 @@ class IntegratedTransformerOptimization:
                 fundamental_frequency=target_and_fixed_parameters.fundamental_frequency,
                 i_rms_1=target_and_fixed_parameters.i_rms_1,
                 i_rms_2=target_and_fixed_parameters.i_rms_2,
-                primary_litz_dict=primary_litz_dict,
-                secondary_litz_dict=secondary_litz_dict,
+                litz_dict_1=litz_dict_1,
+                litz_dict_2=litz_dict_2,
 
                 # winding 1
                 fft_frequency_list_1=target_and_fixed_parameters.fft_frequency_list_1,

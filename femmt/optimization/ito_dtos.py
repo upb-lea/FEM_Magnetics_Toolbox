@@ -72,8 +72,8 @@ class ItoSingleInputConfig:
     n_2_top_min_max_list: list
     n_2_bot_min_max_list: list
     factor_max_flux_density: float
-    primary_litz_wire_list: list[str]
-    secondary_litz_wire_list: list[str]
+    litz_wire_list_1: list[str]
+    litz_wire_list_2: list[str]
     temperature: float
 
     # fix parameters: insulations
@@ -148,8 +148,8 @@ class ItoSingleResultFile:
     window_w: float
     core_material: str
     core_inner_diameter: float
-    primary_litz_wire: str
-    secondary_litz_wire: str
+    litz_wire_name_1: str
+    litz_wire_name_2: str
 
     # reluctance model results
     flux_top_max: float
@@ -159,8 +159,8 @@ class ItoSingleResultFile:
     flux_density_bot_max: float
     flux_density_stray_max: float
     p_hyst: float
-    primary_litz_wire_loss: float
-    secondary_litz_wire_loss: float
+    litz_wire_loss_1: float
+    litz_wire_loss_2: float
     core_2daxi_total_volume: float
     total_loss: float
 
@@ -195,8 +195,8 @@ class ItoReluctanceModelInput:
     i_rms_1: float
     i_rms_2: float
 
-    primary_litz_dict: dict
-    secondary_litz_dict: dict
+    litz_dict_1: dict
+    litz_dict_2: dict
 
     # winding 1
     fft_frequency_list_1: List[float]

@@ -219,8 +219,8 @@ def integrated_transformer_fem_simulation_from_result_dto(config_dto: ItoSingleI
     top, bot = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit)
 
     # 6. set conductor parameters
-    primary_litz = ff.litz_database()[dto.primary_litz_wire]
-    secondary_litz = ff.litz_database()[dto.secondary_litz_wire]
+    primary_litz = ff.litz_database()[dto.litz_wire_name_1]
+    secondary_litz = ff.litz_database()[dto.litz_wire_name_2]
 
     winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
     winding1.set_litz_round_conductor(primary_litz["conductor_radii"], primary_litz["strands_numbers"],

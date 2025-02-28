@@ -48,7 +48,7 @@ material_data_sources = fmt.IntegratedTransformerMaterialDataSources(
 )
 
 dab_transformer_config = fmt.ItoSingleInputConfig(
-    integrated_transformer_study_name="2025-02-26",
+    integrated_transformer_study_name="2025-02-28",
     integrated_transformer_optimization_directory=os.path.join(os.path.dirname(__file__), "example_results", "optuna_integrated_transformer_optimization"),
 
     # target parameters
@@ -63,7 +63,7 @@ dab_transformer_config = fmt.ItoSingleInputConfig(
 
     # optimization parameters
     material_list=["3C95"],
-    core_name_list=["PQ 40/40"],
+    core_name_list=["PQ 50/50", "PQ 40/40"],
     core_inner_diameter_min_max_list=None,
     window_w_min_max_list=None,
     window_h_top_min_max_list=None,
@@ -74,8 +74,8 @@ dab_transformer_config = fmt.ItoSingleInputConfig(
     n_2_top_min_max_list=[1, 30],
     n_2_bot_min_max_list=[1, 30],
     factor_max_flux_density=1,
-    primary_litz_wire_list=["1.4x200x0.071"],
-    secondary_litz_wire_list=["1.4x200x0.071"],
+    litz_wire_list_1=["1.1x60x0.1"],
+    litz_wire_list_2=["1.1x60x0.1"],
     temperature=100,
 
     material_data_sources=material_data_sources,
@@ -83,7 +83,7 @@ dab_transformer_config = fmt.ItoSingleInputConfig(
 )
 
 
-# task = 'start_study'
+##task = 'start_proceed_study'
 # task = 'filter_reluctance_model'
 # task = 'fem_simulation_from_filtered_reluctance_model_results'
 task = 'plot_study_results'
@@ -91,7 +91,7 @@ task = 'plot_study_results'
 if __name__ == '__main__':
     time_start = datetime.datetime.now()
 
-    if task == 'start_study':
+    if task == 'start_proceed_study':
         fmt.IntegratedTransformerOptimization.ReluctanceModel.start_proceed_study(dab_transformer_config, 10000, storage='sqlite')
 
     elif task == 'filter_reluctance_model':
