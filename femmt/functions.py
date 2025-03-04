@@ -1578,7 +1578,7 @@ def visualize_mean_coupling_factors(mean_coupling_factors: List, silent: bool):
 
 def visualize_mean_mutual_inductances(inductance_matrix: np.array, silent: bool):
     """
-    Print the mean mutal inductances to the terminal (or file-) output.
+    Print the mean mutual inductances to the terminal (or file-) output.
 
     :param inductance_matrix: inductance matrix
     :type inductance_matrix: np.array
@@ -1602,7 +1602,7 @@ def visualize_mean_mutual_inductances(inductance_matrix: np.array, silent: bool)
 
 def visualize_mutual_inductances(self_inductances: List, coupling_factors: List, silent: bool):
     """
-    Print the mutal inductances to the terminal (or file-) output.
+    Print the mutual inductances to the terminal (or file-) output.
 
     :param self_inductances: Matrix with self inductances
     :type self_inductances: List
@@ -1687,7 +1687,7 @@ def calculate_quadrature_integral(time_steps: List[float], data: List[float]) ->
 
 def calculate_squared_quadrature_integral(time_steps: List[float], data: List[float]) -> float:
     """
-    Calculate the integral of squared given data over specific time steps using the quad method..
+    Calculate the integral of squared given data over specific time steps using the quad method.
 
     :param time_steps: List of time steps.
     :type time_steps: List[float]
