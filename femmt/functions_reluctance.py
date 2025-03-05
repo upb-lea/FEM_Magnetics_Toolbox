@@ -1116,7 +1116,27 @@ def resistance_litz_wire(core_inner_diameter: float, window_w: float, window_h: 
         # get the total turn length
         total_turn_length = np.sum(np.multiply(windings_per_column, turn_length_per_column))
     if scheme == "horizontal_first":
-        raise NotImplementedError("'horizontal_first'-scheme not implemented yet.")
+        number_of_columns = (window_w - iso_core_left - iso_core_right + iso_primary_to_primary) / (litz_wire_diameter + iso_primary_to_primary)
+        length_row_per_turn = np.zeros(int(number_of_columns))
+
+        # figure out the turn length per row
+        r_inner = np.array([core_inner_diameter / 2 + iso_core_left])
+        middle_radius_per_column = np.array([])
+        for count, _ in enumerate(length_row_per_turn):
+            middle_radius_per_column = np.append(middle_radius_per_column, r_inner + count * iso_primary_to_primary + (count + 0.5) * litz_wire_diameter)
+        turn_length_per_column = 2 * middle_radius_per_column * np.pi  # diameter * pi
+
+        # figure out the windings per row
+        number_of_rows = np.ceil(turns_count / possible_number_turns_per_row)
+        windings_per_row = possible_number_turns_per_row * np.ones(int(number_of_rows))
+        last_row_turns = np.mod(turns_count, possible_number_turns_per_row)
+        windings_per_row[-1] = last_row_turns
+
+        # get the total turn length
+        total_turn_length = 0
+        for windings_in_row in windings_per_row:
+            print(f"{windings_in_row=}")
+            total_turn_length += np.sum(turn_length_per_column[:int(windings_in_row)])
 
     sigma_copper = ff.conductivity_temperature(material, temperature)
     # return R = rho * l / A
