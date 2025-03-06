@@ -283,8 +283,9 @@ class IntegratedTransformerOptimization:
             r_air_gap_middle_target = r_middle_target - r_core_middle
 
             # calculate air gaps to reach the target parameters
-            minimum_air_gap_length = 0.01e-3
+            minimum_air_gap_length = 0.001e-3
             maximum_air_gap_length = 2e-3
+            maximum_air_gap_length_middle = 4e-3
 
             l_top_air_gap = optimize.brentq(
                 fr.r_air_gap_round_inf_sct, minimum_air_gap_length, maximum_air_gap_length,
@@ -298,7 +299,7 @@ class IntegratedTransformerOptimization:
             # Note: ideal calculation (360 degree)
             # needs to be translated when it comes to the real setup.
             l_middle_air_gap = optimize.brentq(
-                fr.r_air_gap_tablet_cylinder_sct, minimum_air_gap_length, maximum_air_gap_length,
+                fr.r_air_gap_tablet_cylinder_sct, minimum_air_gap_length, maximum_air_gap_length_middle,
                 args=(reluctance_input.core_inner_diameter, reluctance_input.core_inner_diameter/4, reluctance_input.window_w, r_air_gap_middle_target),
                 full_output=True)[0]
 
@@ -538,6 +539,7 @@ class IntegratedTransformerOptimization:
             window_h_top = (window_h_1_top + window_h_2_top + config.insulations.iso_primary_to_secondary + \
                             config.insulations.iso_window_top_core_top + config.insulations.iso_window_top_core_bot)
             if window_h_top > window_h_half_max:
+                logging.warning("window_h_top > window_h_half_max")
                 return float('nan'), float('nan')
 
             # height of bot core needed
@@ -546,6 +548,7 @@ class IntegratedTransformerOptimization:
             window_h_bot = (window_h_1_bot + window_h_2_bot + config.insulations.iso_primary_to_secondary + \
                             config.insulations.iso_window_bot_core_top + config.insulations.iso_window_bot_core_bot)
             if window_h_bot > window_h_half_max:
+                logging.warning("window_h_bot > window_h_half_max")
                 return float('nan'), float('nan')
 
             reluctance_model_intput = ItoReluctanceModelInput(
@@ -588,8 +591,8 @@ class IntegratedTransformerOptimization:
             )
             try:
                 reluctance_output = IntegratedTransformerOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_intput)
-            except ValueError:
-                logging.warning("No fitting air gap length")
+            except ValueError as e:
+                print(e)
                 return float('nan'), float('nan')
 
             # set additional attributes

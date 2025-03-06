@@ -1137,6 +1137,8 @@ def resistance_litz_wire(core_inner_diameter: float, window_w: float, window_h: 
         for windings_in_row in windings_per_row:
             print(f"{windings_in_row=}")
             total_turn_length += np.sum(turn_length_per_column[:int(windings_in_row)])
+    else:
+        raise ValueError(f"{scheme} not defined. Must be 'horizontal_first' or 'vertical_first'.")
 
     sigma_copper = ff.conductivity_temperature(material, temperature)
     # return R = rho * l / A
