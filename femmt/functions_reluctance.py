@@ -1115,7 +1115,7 @@ def resistance_litz_wire(core_inner_diameter: float, window_w: float, window_h: 
 
         # get the total turn length
         total_turn_length = np.sum(np.multiply(windings_per_column, turn_length_per_column))
-    if scheme == "horizontal_first":
+    elif scheme == "horizontal_first":
         number_of_columns = (window_w - iso_core_left - iso_core_right + iso_primary_to_primary) / (litz_wire_diameter + iso_primary_to_primary)
         length_row_per_turn = np.zeros(int(number_of_columns))
 
