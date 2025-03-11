@@ -153,7 +153,7 @@ def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, s
 
     geo.get_inductances(I0=1, op_frequency=200000)
     # 7. prepare and start thermal simulation
-    example_thermal_simulation(show_visual_outputs, flag_insulation=False)
+    example_thermal_simulation(show_visual_outputs, flag_insulation=True)
 
 
 if __name__ == "__main__":

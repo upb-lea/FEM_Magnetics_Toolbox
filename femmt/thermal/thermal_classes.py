@@ -189,7 +189,7 @@ class FunctionPro:
 class PostOperationPro:
     """For creating a post_operation.pro."""
 
-    statements: List[str]    
+    statements: List[str]
 
     def __init__(self):
         self.statements = []
