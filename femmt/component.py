@@ -4970,6 +4970,47 @@ class MagneticComponent:
             # gmsh.option.setNumber(f"View[{view}].GlyphLocation", 2)
             view += 1
 
+            # # Charge
+            # gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Q.pos"))
+            # gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
+            # gmsh.option.setNumber(f"View[{view}].RangeType", 2)
+            # gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
+            # gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)
+            # gmsh.option.setNumber(f"View[{view}].CustomMax", gmsh.option.getNumber(f"View[{view}].Max"))
+            # gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
+            # gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
+            # gmsh.option.setNumber(f"View[{view}].NbIso", 40)
+            # gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
+            # # gmsh.option.setNumber(f"View[{view}].VectorType", 5)
+            # # gmsh.option.setNumber(f"View[{view}].GlyphLocation", 2)
+            # view += 1
+            # # Load and enhance Charge visualization
+            # gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Q.pos"))
+            #
+            # # Suggested improved visualization parameters for charges
+            # gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
+            # gmsh.option.setNumber(f"View[{view}].RangeType", 2)
+            # gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
+            #
+            # # Adjust the min/max manually if the charge distribution is subtle
+            # custom_min = gmsh.option.getNumber(f"View[{view}].Min") + epsilon
+            # custom_max = gmsh.option.getNumber(f"View[{view}].Max")
+            #
+            # # If the charge distribution is too small, consider a logarithmic scale
+            # gmsh.option.setNumber(f"View[{view}].CustomMin", custom_min)
+            # gmsh.option.setNumber(f"View[{view}].CustomMax", custom_max)
+            #
+            # gmsh.option.setNumber(f"View[{view}].ColormapNumber", 5)  # Try different color maps for clarity
+            # gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
+            # gmsh.option.setNumber(f"View[{view}].NbIso", 40)
+            # gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
+            #
+            # # Optional: emphasize charges on surfaces with glyphs
+            # gmsh.option.setNumber(f"View[{view}].VectorType", 5)  # Glyph arrows if applicable
+            # gmsh.option.setNumber(f"View[{view}].GlyphLocation", 2)
+            #
+            # view += 1
+
         if self.simulation_type == SimulationType.TimeDomain:
             # merge view files
             gmsh.merge(os.path.join(self.file_data.e_m_fields_folder_path, 'j2F_density.pos'))

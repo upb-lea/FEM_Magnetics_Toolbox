@@ -1065,7 +1065,8 @@ class WindingWindow:
                 # dimensions
                 self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[1] + insulation_delta_top_bot
                 self.max_top_bound = core.window_h / 2 - insulations.core_cond[0] - insulation_delta_top_bot
-                self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2] + insulation_delta_left + 1.5e-5
+                self.max_left_bound = (core.core_inner_diameter / 2 + insulations.core_cond[2] + insulation_delta_left + 1.5e-5)
+                                       #+ 1.5e-3)
                 self.max_right_bound = core.r_inner - insulations.core_cond[3]
             else:
                 self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[1]

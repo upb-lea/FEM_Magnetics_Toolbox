@@ -249,10 +249,11 @@ Constraint {
                         { Region Turn~{winding_number}~{turn_number} ; Type Assign ; Value Cha_Potential_Turn~{winding_number}~{turn_number}; }
                     EndFor
                 EndFor
+                If(Flag_excite_core)
+                    { Region Core ; Type Assign ; Value v_core; }
+                EndIf
             EndIf
-            If(Flag_excite_core)
-                { Region Core ; Type Assign ; Value v_core; }
-            EndIf
+
         }
     }
     { Name Dirichlet_Ele; Type Assign;

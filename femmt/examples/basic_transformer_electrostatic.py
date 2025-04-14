@@ -88,13 +88,13 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     # core_insulation (from datasheet)
     insulation.add_core_insulations(1.55e-3, 1.55e-3, 0.9e-3, 1.5e-4)
     # # # # 109-49 transformer
-    insulation.add_winding_insulations([[0.025e-3, 0.095e-3],
-                                        [0.095e-3, 0.025e-3]])
+    insulation.add_winding_insulations([[0.0002, 0.095e-3],
+                                        [0.095e-3, 0.0002]])
     # insulation.add_winding_insulations([[0.025e-3, 0.095e-3],
     #                                     [0.095e-3, 0.025e-3]])
-    insulation.add_conductor_air_conductor_insulation([[1.3e-4, 1.9285e-4, 1.9285e-4, 2.2777e-4],
-                                                       [3.06e-4, 2.653e-4]])
-    insulation.add_kapton_insulation(add_kapton=True, thickness=0.05e-3)
+    insulation.add_conductor_air_conductor_insulation([[1e-3, 1.9285e-4, 1.9285e-4, 2.2777e-4],
+                                                       [1e-3, 2.653e-4]])
+    insulation.add_kapton_insulation(add_kapton=True, thickness=0.3e-3)
     # 59-56 transformer
     # insulation.add_winding_insulations([[1.33125e-4, 0.095e-3],
     #                                     [0.095e-3, 1.88667e-4]])
@@ -105,15 +105,15 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     winding_window = fmt.WindingWindow(core, insulation)
     # bot, top = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit, split_distance=0.001)
     # 109-49
-    cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.34],
+    cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.5],
                                                        vertical_split_factors=None)
     # cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.],
     #                                                    vertical_split_factors=None)
 
     # 6. create conductors and set parameters
     winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
-    # winding1.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
-    winding1.set_solid_round_conductor(0.35e-3, fmt.ConductorArrangement.Square)
+    winding1.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
+    # winding1.set_solid_round_conductor(0.35e-3, fmt.ConductorArrangement.Square)
 
     # winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
     # winding1.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
@@ -122,16 +122,16 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     # winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
     winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
-    # winding2.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
-    winding2.set_solid_round_conductor(0.35e-3, fmt.ConductorArrangement.Square)
+    winding2.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
+    #winding2.set_solid_round_conductor(0.35e-3, fmt.ConductorArrangement.Square)
     winding2.parallel = False
     # winding2.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
     # top.set_winding(winding2, 15, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
-    cells[1].set_winding(winding2, 49, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
+    cells[1].set_winding(winding2, 4, None, fmt.Align.CenterOnVerticalAxis, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
     # bot.set_winding(winding2, 29, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
-    cells[0].set_winding(winding1, 109, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
+    cells[0].set_winding(winding1, 4, None, fmt.Align.CenterOnVerticalAxis, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
     # top.set_winding(winding1, 109, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
     geo.set_winding_windows([winding_window])
 

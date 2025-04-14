@@ -22,12 +22,14 @@ PostOperation Map_local UsingPost EleSta {
   Print[ e, OnElementsOf Region[{Domain}], Name "Electric Field", File StrCat[DirResFields, "Efield", ExtGmsh], LastTimeStepOnly ] ;
   Print[ Welocal, OnElementsOf Region[{Domain}], Name "Stored Energy", File StrCat[DirResFields, "We", ExtGmsh], LastTimeStepOnly ] ;
   Print[ MagE, OnElementsOf Region[{Domain}], Name "Magnitude Electric Field / V/m", File StrCat[DirResFields, "MagE", ExtGmsh], LastTimeStepOnly ] ;
+
   // Displacement Field vector in the entire domain
 
   //Print[ d, OnElementsOf Domain, File StrCat[DirResFields, "Displacement_Field_Map.pos"], LastTimeStepOnly, Format Gmsh];
   //Print[ d,  OnElementsOf Domain, File StrCat[DirResFields,"Dfield",ExtGmsh], LastTimeStepOnly ] ;
   Print[ d, OnElementsOf Region[{Domain}], Name "Electric Field Density", File StrCat[DirResFields, "Dfield", ExtGmsh], LastTimeStepOnly ] ;
   Print[ MagD, OnElementsOf Region[{Domain}], Name "Magnitude Electric Field Density / C/m^2", File StrCat[DirResFields, "MagD", ExtGmsh], LastTimeStepOnly ] ;
+  Print[ Q, OnElementsOf Region[{DomainC}], Name "Charge/ C", File StrCat[DirResFields, "Q", ExtGmsh], LastTimeStepOnly ] ;
 
 
   // Settings for visualization output (optional)

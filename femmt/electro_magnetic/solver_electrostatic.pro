@@ -77,9 +77,11 @@ Formulation {
         In Domain; Jacobian Vol; Integration II; }
       //Integral { [ epsilon[] * Norm[{d u0}] , {u0} ]; In Sur_Neu_Ele; Jacobian Sur; Integration II; }
       //Integral { [ 0 , {u0} ]; In Sur_Neu_Ele; Jacobian Sur; Integration II; }
-	  For n In {1:n_windings}
-	    GlobalTerm { [ -Dof{Q} , {U} ]; In Winding~{n}; }
-	  EndFor
+//	  For n In {1:n_windings}
+//	    GlobalTerm { [ -Dof{Q} , {U} ]; In Winding~{n}; }
+//	  EndFor
+	  // to find charge on Domain C ( core + turns)
+	  GlobalTerm { [ -Dof{Q} , {U} ]; In DomainC; }
 
     }
   }

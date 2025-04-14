@@ -19,6 +19,7 @@ PostOperation Get_global UsingPost EleSta {
   For n In {1:n_windings}
          Print[ Q, OnRegion Winding~{n}, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"Q_%g.dat"], n] , LastTimeStepOnly];
   EndFor
+  Print[ Q, OnRegion Core, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"Q_Core.dat"]] , LastTimeStepOnly];
 
   // print charge and voltage for each turn in separate file (Just another way)
   For winding_number In {1:n_windings}
@@ -99,7 +100,7 @@ PostOperation Get_global UsingPost EleSta {
 
 
 
-  /*// Capacitances from QV relation on each turn of the same winding
+  // Capacitances from QV relation on each turn of the same winding
   If (Flag_voltage)
       // Capacitance Calculation Between Turns for Each Winding (from charges)
         For winding_number In {1:n_windings}
@@ -133,7 +134,7 @@ PostOperation Get_global UsingPost EleSta {
                 EndFor
             EndFor
         EndFor
-  EndIf*/
+  EndIf
 
   // Print Capacitance Between Turns of Different Windings
   For winding_number1 In {1:n_windings}

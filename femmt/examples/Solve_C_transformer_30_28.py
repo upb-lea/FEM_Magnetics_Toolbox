@@ -47,19 +47,35 @@ M_squared2 = M_case_2 ** 2
 print("Element-wise Squared Matrix case1:\n", M_squared1)
 print("Element-wise Squared Matrix case2:\n", M_squared2)
 
+# We_case_1 = np.array([
+#     2.002418828706215e-11,  # Scenario 1
+#     1.611847650440696e-11,   # Scenario 2
+#     4.54639734788541e-11,   # Scenario 3
+#     1.38508462369603e-11,  # Scenario 4
+#     5.750010130762671e-12,  # Scenario 5
+#     1.942906256990097e-11,  # Scenario 6
+#     4.555462346684122e-11,  # Scenario 7
+#     1.076387631951943e-10,  # Scenario 8
+#     3.291112743307101e-11,  # Scenario 9
+#     6.37630655520892e-11,   # Scenario 10
+#     # 3.044751388584012e-11    # 11
+# ])
 We_case_1 = np.array([
     2.002418828706215e-11,  # Scenario 1
     1.611847650440696e-11,   # Scenario 2
-    4.54639734788541e-11,   # Scenario 3
-    1.38508462369603e-11,  # Scenario 4
-    5.750010130762671e-12,  # Scenario 5
-    1.942906256990097e-11,  # Scenario 6
-    4.555462346684122e-11,  # Scenario 7
+    1.38508462369603e-11,   # Scenario 3
+    4.54639734788541e-11,  # Scenario 4
+    # 5.750010130762671e-12,  # Scenario 5
+    1.988388052308085e-11,  # new
+    4.555462346684122e-11,  # Scenario 6
+    1.942906256990097e-11,  # Scenario 7
     1.076387631951943e-10,  # Scenario 8
-    3.291112743307101e-11,  # Scenario 9
+    # 3.291112743307101e-11,  # Scenario 9
+    3.088342415285953e-11,  # new
     6.37630655520892e-11,   # Scenario 10
     # 3.044751388584012e-11    # 11
 ])
+
 
 We_case_2 = np.array([
     2.002418828706215e-11,  # Scenario 1
@@ -99,17 +115,29 @@ else:
     for idx, capacitance in enumerate(C_case2, start=1):
         print(f"C{idx} ({capacitance_pairs[idx-1]}): {capacitance:.5e} F")
 
+    # # Calculate the sums for connections in measurment
+    # C_ABvsCDE = C_case1[2] + C_case1[3] + C_case1[4] + C_case1[5] + C_case1[6] + C_case1[7]
+    # C_ABEvsCd = C_case1[2] + C_case1[3] + C_case1[4] + C_case1[5] + C_case1[8] + C_case1[9]
+    # C_ABCDvsE = C_case1[6] + C_case1[7] + C_case1[8] + C_case1[9]
+    # C_AvsBCDE = C_case1[0] + C_case1[3] + C_case1[5] + C_case1[6]
+    # C_BvsACDE = C_case1[0] + C_case1[2] + C_case1[4] + C_case1[7]
+    # C_CvsABDE = C_case1[1] + C_case1[3] + C_case1[4] + C_case1[8]
+    # C_DvsABCE = C_case1[1] + C_case1[2] + C_case1[5] + C_case1[9]
+    # C_ACvsBDE = C_case1[0] + C_case1[1] + C_case1[4] + C_case1[5] + C_case1[6] + C_case1[8]
+    # C_ADvsBCE = C_case1[0] + C_case1[1] + C_case1[2] + C_case1[3] + C_case1[6] + C_case1[9]
+    # C_BC_ADE = C_case1[0] + C_case1[1] + C_case1[2] + C_case1[3] + C_case1[7] + C_case1[8]
+
     # Calculate the sums for connections in measurment
     C_ABvsCDE = C_case1[2] + C_case1[3] + C_case1[4] + C_case1[5] + C_case1[6] + C_case1[7]
     C_ABEvsCd = C_case1[2] + C_case1[3] + C_case1[4] + C_case1[5] + C_case1[8] + C_case1[9]
     C_ABCDvsE = C_case1[6] + C_case1[7] + C_case1[8] + C_case1[9]
     C_AvsBCDE = C_case1[0] + C_case1[3] + C_case1[5] + C_case1[6]
     C_BvsACDE = C_case1[0] + C_case1[2] + C_case1[4] + C_case1[7]
-    C_CvsABDE = C_case1[1] + C_case1[3] + C_case1[4] + C_case1[8]
-    C_DvsABCE = C_case1[1] + C_case1[2] + C_case1[5] + C_case1[9]
-    C_ACvsBDE = C_case1[0] + C_case1[1] + C_case1[4] + C_case1[5] + C_case1[6] + C_case1[8]
-    C_ADvsBCE = C_case1[0] + C_case1[1] + C_case1[2] + C_case1[3] + C_case1[6] + C_case1[9]
-    C_BC_ADE = C_case1[0] + C_case1[1] + C_case1[2] + C_case1[3] + C_case1[7] + C_case1[8]
+    C_CvsABDE = C_case1[1] + C_case1[2] + C_case1[5] + C_case1[9]
+    C_DvsABCE = C_case1[1] + C_case1[3] + C_case1[4] + C_case1[8]
+    C_ACvsBDE = C_case1[0] + C_case1[1] + C_case1[2] + C_case1[3] + C_case1[6] + C_case1[9]
+    C_ADvsBCE = C_case1[0] + C_case1[1] + C_case1[4] + C_case1[5] + C_case1[6] + C_case1[8]
+    C_BC_ADE = C_case1[0] + C_case1[1] + C_case1[4] + C_case1[5] + C_case1[7] + C_case1[9]
 
     # Calculate the sums for connections in measurment
     C_ABvsCDE_2 = C_case2[2] + C_case2[3] + C_case2[4] + C_case2[5] + C_case2[6] + C_case2[7]

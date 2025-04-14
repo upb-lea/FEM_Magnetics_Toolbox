@@ -89,9 +89,12 @@ def basic_example_inductor_measurement(onelab_folder: str = None, show_visual_ou
     insulation = fmt.Insulation(flag_insulation=True)
     insulation.add_core_insulations(1.55e-3, 1.55e-3, 0.9e-3, 1.5e-4)
     insulation.add_winding_insulations([[0.025e-3]])
-    insulation.add_conductor_air_conductor_insulation([[1.0837e-4, 1.54e-4, 1.9285e-4, 2.2777e-4],
+    insulation.add_conductor_air_conductor_insulation([[1.0837e-4, 1.0837e-4, 1.0837e-4, 1.0837e-4, 1.0837e-4],
                                                        [3.06e-4, 2.653e-4]])
+    # insulation.add_conductor_air_conductor_insulation([[1.0837e-4, 1.0837e-4, 1.0837e-4, 2.2777e-4],
+    #                                                    [3.06e-4, 2.653e-4]])
     insulation.add_kapton_insulation(add_kapton=True, thickness=0.07e-3)
+    # insulation.add_kapton_insulation(add_kapton=True, thickness=1.0837e-4)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -106,28 +109,37 @@ def basic_example_inductor_measurement(onelab_folder: str = None, show_visual_ou
     # winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
     # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
     # 7. add conductor to vww and add winding window to MagneticComponent
-    vww.set_winding(winding, 81, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.VerticalUpward_HorizontalRightward,
+    vww.set_winding(winding, 200, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.VerticalUpward_HorizontalRightward,
                     zigzag=True)
     geo.set_winding_windows([winding_window])
-    num_turns_w1 = 81
-    # Create a linear voltage distribution along winding 1 from V_A to V_B
-    V_A = 1
-    V_B = 0
-    voltages_winding_1 = [
-        V_A - (V_A - V_B) * i / (num_turns_w1 - 1)
+    num_turns_w1 = 200
+    num_turns_w12 = 41
+    # ##Create a linear voltage distribution along winding 1 from V_A to V_B
+    V_A1 = 1
+    V_B1 = 0
+    # V_A2 = 1
+    # V_B2 = 0
+
+    voltages_winding_11 = [
+        V_A1 - (V_A1 - V_B1) * i / (num_turns_w1 - 1)
         for i in range(num_turns_w1)
     ]
-    # voltages_winding_1 = [0] * 80 + [1] * 1
+    # voltages_winding_12 = [
+    #     V_A2 - (V_A2 - V_B2) * i / (num_turns_w12 - 1)
+    #     for i in range(num_turns_w12)
+    # ]
+    # voltages_winding_11 = voltages_winding_11
+    # voltages_winding_11 = [1] * 1 + [0] * 41
     # 8. create the model
     geo.create_model(freq=inductor_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False, skin_mesh_factor=0.5)
     # 8. run electrostatic simulation
-    geo.electrostatic_simulation(voltage=[voltages_winding_1], core_voltage=None, ground_outer_boundary=False,
+    geo.electrostatic_simulation(voltage=[voltages_winding_11], core_voltage=None, ground_outer_boundary=False,
                                  show_fem_simulation_results=show_visual_outputs, save_to_excel=False)
     geo.get_total_charges()
     # Call the electrostatic FEMM simulation function
     # voltages = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]
-    geo.femm_reference_electrostatic(voltages=[voltages_winding_1], ground_core=True, ground_outer_boundary=False,
-                                     non_visualize=0, save_to_excel=False, compare_excel_files_to_femmt=False, mesh_size_conductor=0.0)
+    # geo.femm_reference_electrostatic(voltages=[voltages_winding_1], ground_core=True, ground_outer_boundary=False,
+    #                                  non_visualize=0, save_to_excel=False, compare_excel_files_to_femmt=False, mesh_size_conductor=0.0)
 
 
 if __name__ == "__main__":
