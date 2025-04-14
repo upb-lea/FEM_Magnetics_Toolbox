@@ -1053,7 +1053,8 @@ class TwoDaxiSymmetric:
                                                 [x_l - insulation_delta, bot_bound, 0, mesh_to_conductor]
                                             ]
                                         # Add the points to the Kapton insulation data structure
-                                        self.p_iso_layer.append(kapton_points)
+                                        if self.insulation.kapton > 0 :
+                                            self.p_iso_layer.append(kapton_points)
                                         if not zigzag:
                                             # Start the next column with the same starting point (consistent direction)
                                             y = start_y

@@ -3162,6 +3162,76 @@ class MagneticComponent:
 
         return voltages
 
+    def get_inductor_capacitance(self, plot_interpolation: bool = False, show_fem_simulation_results: bool = True, benchmark: bool = False,
+                                 save_to_excel: bool = False):
+        """Function for finding parasitic capacitance of an inductor"""
+        # Define 3 simulation potential cases
+        # Format: [V_A, V_B, V_core]
+        potentials = [
+            [1, 0, 0],  # Scenario 1
+            [1, 1, 0],  # Scenario 2
+            [1, 0, 1]  # Scenario 3
+        ]
+        w_e = []  # Electrostatic energies for each case
+        # Set the simulation type to ElectroStatic before running the open-circuit simulations
+        self.simulation_type = SimulationType.ElectroStatic
+        for winding_index in range(len(self.windings)):
+            num_turns = ff.get_number_of_turns_of_winding(self.winding_windows, self.windings, winding_index)
+
+        for i, (v_a, v_b, v_core) in enumerate(potentials):
+            # Linearly interpolate voltage from V_A to V_B across all turns
+            # winding_voltages = [v_a - (v_a - v_b) * j / (num_turns - 1) for j in range(num_turns)]
+            if v_a == v_b:
+                winding_voltages = [v_a] * num_turns
+            else:
+                winding_voltages = [v_a - (v_a - v_b) * j / (num_turns - 1) for j in range(num_turns)]
+
+            # Build voltage array for simulation
+            voltages = [winding_voltages]
+
+            # Run electrostatic FEM simulation
+            self.electrostatic_simulation(
+                voltage=voltages,
+                core_voltage=v_core,
+                ground_outer_boundary=False,
+                plot_interpolation=plot_interpolation,
+                show_fem_simulation_results=show_fem_simulation_results,
+                benchmark=benchmark,
+                save_to_excel=save_to_excel
+            )
+
+            # Get stored electrostatic energy
+            log_path = self.file_data.electrostatic_results_log_path
+            with open(log_path, "r", encoding='utf-8') as f:
+                log = json.load(f)
+            energy = log["energy"]["stored_component"]
+
+            print(f"  → Stored Electrostatic Energy: {energy:.4e} J")
+            w_e.append(energy)
+
+        # Capacitance system solving
+        m =  np.array([
+                [1, 1, 0],  # Scenario 1
+                [0, 1, 1],  # Scenario 2
+                [1, 0, 1]  # Scenario 3
+            ])
+        m_squared = m ** 2
+        we_vec = np.array(w_e).reshape((3, 1))
+
+        det = np.linalg.det(m_squared)
+        if np.isclose(det, 0):
+            raise ValueError("Simulation matrix is singular. Cannot compute capacitance.")
+
+        # Compute capacitance vector
+        c_vec = 2 * np.linalg.inv(m_squared) @ we_vec
+        c_vec = c_vec.flatten()
+
+        print("\n--- Capacitance Results ---")
+        for i, label in enumerate(["C(A-B)", "C(A-0)", "C(B-0))"]):
+            print(f"{label}: {c_vec[i]:.4e} F")
+
+        return c_vec
+
     def get_total_charges(self):
         res_path = self.file_data.e_m_circuit_folder_path
         # Get all voltage result files from the folder

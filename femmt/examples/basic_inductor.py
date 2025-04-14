@@ -146,7 +146,10 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # 4. set insulations
     insulation = fmt.Insulation(flag_insulation=True)
     insulation.add_core_insulations(0.001, 0.001, 0.003, 0.001)
-    insulation.add_winding_insulations([[0.0010]])
+    insulation.add_winding_insulations([[0.0002]])
+    insulation.add_conductor_air_conductor_insulation([[0.0010, 0.0010, 1e-3, 1e-3, 1e-3, 1e-3],
+                                                       [1e-3, 1e-3]])
+    insulation.add_kapton_insulation(add_kapton=False, thickness=0.5e-3)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -183,7 +186,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # 9. start simulation
 
     # 7. prepare and start thermal simulation
-    example_thermal_simulation(show_visual_outputs, flag_insulation=True)
+    # example_thermal_simulation(show_visual_outputs, flag_insulation=True)
 
 
 if __name__ == "__main__":

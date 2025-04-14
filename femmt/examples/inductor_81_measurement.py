@@ -43,7 +43,7 @@ def basic_example_inductor_measurement(onelab_folder: str = None, show_visual_ou
     if onelab_folder is not None:
         geo.file_data.onelab_folder_path = onelab_folder
 
-    inductor_frequency = 100000
+    inductor_frequency = 270000
 
     # 2. set core parameters
     # core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.02, window_w=0.01, window_h=0.03,
@@ -109,11 +109,11 @@ def basic_example_inductor_measurement(onelab_folder: str = None, show_visual_ou
     # winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
     # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
     # 7. add conductor to vww and add winding window to MagneticComponent
-    vww.set_winding(winding, 200, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.VerticalUpward_HorizontalRightward,
+    vww.set_winding(winding, 42, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.VerticalUpward_HorizontalRightward,
                     zigzag=True)
     geo.set_winding_windows([winding_window])
-    num_turns_w1 = 200
-    num_turns_w12 = 41
+    num_turns_w1 = 42
+    #num_turns_w12 = 41
     # ##Create a linear voltage distribution along winding 1 from V_A to V_B
     V_A1 = 1
     V_B1 = 0
@@ -133,7 +133,7 @@ def basic_example_inductor_measurement(onelab_folder: str = None, show_visual_ou
     # 8. create the model
     geo.create_model(freq=inductor_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False, skin_mesh_factor=0.5)
     # 8. run electrostatic simulation
-    geo.electrostatic_simulation(voltage=[voltages_winding_11], core_voltage=None, ground_outer_boundary=False,
+    geo.electrostatic_simulation(voltage=[voltages_winding_11], core_voltage=0, ground_outer_boundary=False,
                                  show_fem_simulation_results=show_visual_outputs, save_to_excel=False)
     geo.get_total_charges()
     # Call the electrostatic FEMM simulation function
