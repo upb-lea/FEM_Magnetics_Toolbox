@@ -1631,7 +1631,7 @@ class MagneticComponent:
             start_time = time.time()
             self.calculate_and_write_electrostatic_log()
             #self.write_capacitance_log()
-            self.calculate_capacitance_matrix()
+            # self.calculate_capacitance_matrix()
             # Convert the log JSON file to Excel
             if save_to_excel:
                 json_file_path = self.file_data.electrostatic_results_log_path
@@ -1652,7 +1652,7 @@ class MagneticComponent:
             self.simulate()
             self.calculate_and_write_electrostatic_log()
             #self.write_capacitance_log()
-            self.calculate_capacitance_matrix()
+            # self.calculate_capacitance_matrix()
             # Convert the log JSON file to Excel
             if save_to_excel:
                 json_file_path = self.file_data.electrostatic_results_log_path
@@ -3013,6 +3013,11 @@ class MagneticComponent:
             return inductance_matrix
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+    # inductor optimization
+    def inductor_patero(self):
+        pass
+
+    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing
     def get_capacitance(self, ground_core: bool = False,
                         ground_outer_boundary: bool = False, show_turn_capacitances: bool = False, show_winding_capacitances: bool = False,
@@ -3162,7 +3167,7 @@ class MagneticComponent:
 
         return voltages
 
-    def get_inductor_capacitance(self, plot_interpolation: bool = False, show_fem_simulation_results: bool = True, benchmark: bool = False,
+    def get_inductor_capacitance(self, show_visual_outputs: bool = False, plot_interpolation: bool = False, show_fem_simulation_results: bool = False, benchmark: bool = False,
                                  save_to_excel: bool = False):
         """Function for finding parasitic capacitance of an inductor"""
         # Define 3 simulation potential cases
@@ -3189,6 +3194,7 @@ class MagneticComponent:
             # Build voltage array for simulation
             voltages = [winding_voltages]
 
+            self.create_model(freq=270000, pre_visualize_geometry=show_visual_outputs, save_png=False, skin_mesh_factor=0.5)
             # Run electrostatic FEM simulation
             self.electrostatic_simulation(
                 voltage=voltages,
@@ -3229,8 +3235,210 @@ class MagneticComponent:
         print("\n--- Capacitance Results ---")
         for i, label in enumerate(["C(A-B)", "C(A-0)", "C(B-0))"]):
             print(f"{label}: {c_vec[i]:.4e} F")
+            # Calculate effective C_AB total
+            c_ab = c_vec[0]
+            c_a0 = c_vec[1]
+            c_b0 = c_vec[2]
+
+            # Combine parasitics using parallel-series formula
+            c_ab_total = c_ab + ((c_a0 * c_b0) / (c_a0 + c_b0))
+
+            print(f"\n→ Total C_AB (including parasitics): {c_ab_total:.4e} F")
+            #return c_ab_total
 
         return c_vec
+
+    def get_inductor_stray_capacitance(self, show_visual_outputs: bool = False, plot_interpolation: bool = False,
+                                       show_fem_simulation_results: bool = True,
+                                       benchmark: bool = False,
+                                       save_to_excel: bool = False):
+        """
+        Compute the stray (parasitic) capacitance of an inductor via a single electrostatic simulation.
+        Assumes a 1V potential applied across the windings.
+        """
+
+        # Define terminal voltages for the simulation
+        v_a = 1
+        v_b = 0
+
+        # Set the simulation type to ElectroStatic
+        self.simulation_type = SimulationType.ElectroStatic
+
+        # Number of turns (assumes one winding)
+        winding_index = 0
+        num_turns = ff.get_number_of_turns_of_winding(self.winding_windows, self.windings, winding_index)
+
+        # Linear voltage distribution from V_A to V_B across the turns
+        winding_voltages = [v_a - (v_a - v_b) * j / (num_turns - 1) for j in range(num_turns)]
+
+        # Format the voltages for FEMMT
+        voltages = [winding_voltages]
+        self.create_model(freq=270000, pre_visualize_geometry=show_visual_outputs, save_png=False, skin_mesh_factor=0.5)
+        # Run the electrostatic FEM simulation
+        self.electrostatic_simulation(
+            voltage=voltages,
+            core_voltage=None,
+            ground_outer_boundary=False,
+            plot_interpolation=plot_interpolation,
+            show_fem_simulation_results=show_fem_simulation_results,
+            benchmark=benchmark,
+            save_to_excel=save_to_excel
+        )
+
+        # Retrieve stored electrostatic energy from the log
+        log_path = self.file_data.electrostatic_results_log_path
+        with open(log_path, "r", encoding='utf-8') as f:
+            log = json.load(f)
+        energy = log["energy"]["stored_component"]
+
+        print(f"  → Stored Electrostatic Energy: {energy:.4e} J")
+
+        # Compute stray capacitance using: C = 2W / (V^2), with V = 1V ⇒ C = 2W
+        c_ab_stray = 2 * energy
+
+        print("\n--- Capacitance Results ---")
+        print(f"→ Total C_AB: {c_ab_stray:.4e} F")
+
+        return c_ab_stray
+
+    def get_transformer_capacitance(self, flag_cd: bool = False, show_visual_outputs: bool = False, plot_interpolation: bool = False, show_fem_simulation_results: bool = False, benchmark: bool = False,
+                                 save_to_excel: bool = False):
+        """Function for finding parasitic capacitance of a transformer"""
+        # Define 10 simulations potential cases
+        # Format: [V_A, V_B, V_C, V_D]
+        if not flag_cd:
+            potentials = [
+                [1, 0, 0, 0],  # Simulation 1
+                [0, 0, 1, 0],  # Simulation 2
+                [0, 0, 1, 1],  # Simulation 3
+                [1, 1, 1, 1],  # Simulation 4
+                [1, 0, 1, 0],  # Simulation 5
+                [1, 0, 1, 1],  # Simulation 6
+                [2, 1, 1, 1],  # Simulation 7
+                [0, 0, 2, 1],  # Simulation 8
+                [1, 1, 2, 1],  # Simulation 9
+                [1, 1, 2, 2],  # Simulation 10
+            ]
+        else:
+            potentials = [
+                [1, 0, 0, 0],  # Simulation 1
+                [0, 0, 0, 1],  # Simulation 2
+                [0, 0, 1, 1],  # Simulation 3
+                [1, 1, 1, 1],  # Simulation 4
+                [1, 0, 0, 1],  # Simulation 5
+                [1, 0, 1, 1],  # Simulation 6
+                [2, 1, 1, 1],  # Simulation 7
+                [0, 0, 1, 2],  # Simulation 8
+                [1, 1, 1, 2],  # Simulation 9
+                [1, 1, 2, 2],  # Simulation 10
+            ]
+        w_e = []  # Electrostatic energies for each case
+        # Set the simulation type to ElectroStatic before running the open-circuit simulations
+        self.simulation_type = SimulationType.ElectroStatic
+        # Get number of turns for both windings
+        num_turns_w1 = ff.get_number_of_turns_of_winding(self.winding_windows, self.windings, 0)
+        num_turns_w2 = ff.get_number_of_turns_of_winding(self.winding_windows, self.windings, 1)
+        # Run electrostatic simulation
+        for i, (v_a, v_b, v_c, v_d) in enumerate(potentials):
+            # Interpolate voltages across both windings
+            voltages_winding_1 = (
+                [v_a] * num_turns_w1 if v_a == v_b else
+                [v_a - (v_a - v_b) * j / (num_turns_w1 - 1) for j in range(num_turns_w1)]
+            )
+
+            voltages_winding_2 = (
+                [v_c] * num_turns_w2 if v_c == v_d else
+                [v_c - (v_c - v_d) * j / (num_turns_w2 - 1) for j in range(num_turns_w2)]
+            )
+
+            # Run electrostatic simulation
+            self.create_model(freq=200000, pre_visualize_geometry=show_visual_outputs, save_png=False, skin_mesh_factor=0.5)
+            self.electrostatic_simulation(
+                voltage=[voltages_winding_1, voltages_winding_2],
+                core_voltage=0,
+                ground_outer_boundary=False,
+                plot_interpolation=plot_interpolation,
+                show_fem_simulation_results=show_fem_simulation_results,
+                benchmark=benchmark,
+                save_to_excel=save_to_excel
+            )
+
+            # Read energy log
+            log_path = self.file_data.electrostatic_results_log_path
+            with open(log_path, "r", encoding="utf-8") as f:
+                log = json.load(f)
+                energy = log["energy"]["stored_component"]
+
+            print(f"  → Stored Electrostatic Energy (Scenario {i + 1}): {energy:.4e} J")
+            w_e.append(energy)
+
+        m = np.array([
+            [1, 0, 0, 1, 0, 1, 1, 0, 0, 0],  # Scenario 1
+            [0, 1, 0, -1, 1, 0, 0, 0, 1, 0],  # Scenario 2
+            [0, 0, 1, -1, 1, -1, 0, 0, 1, 1],  # Scenario 3
+            [0, 0, 0, 0, 0, 0, 1, 1, 1, 1],  # Scenario 4
+            [1, 1, 0, 0, 1, 1, 1, 0, 1, 0],  # Scenario 5
+            [1, 0, 1, 0, 1, 0, 1, 0, 1, 1],  # Scenario 6
+            [1, 0, 0, 1, 0, 1, 2, 1, 1, 1],  # Scenario 7
+            [0, 1, 1, -2, 2, -1, 0, 0, 2, 1],  # Scenario 8
+            [0, 1, 0, -1, 1, 0, 1, 1, 2, 1],  # Scenario 9
+            [0, 0, 1, -1, -1, 1, 1, 1, 2, 2],  # Scenario 10
+        ])
+        # Solve capacitance system
+        m_squared = m ** 2
+        we_vec = np.array(w_e).reshape((10, 1))
+        det = np.linalg.det(m_squared)
+        if np.isclose(det, 0):
+            raise ValueError("Simulation matrix is singular. Cannot compute capacitance matrix.")
+
+        # Solve for capacitance vector
+        c_vec = 2 * np.linalg.inv(m_squared) @ we_vec
+        c_vec = c_vec.flatten()
+
+        print("\n--- Capacitance Coefficients (Transformer) ---")
+        for idx, c_val in enumerate(c_vec):
+            print(f"C[{idx + 1}]: {c_val:.4e} F")
+
+        # Unpack C_vec to symbolic names C1...C10
+        C1, C2, C3, C4, C5, C6, C7, C8, C9, C10 = c_vec
+        n_sym = num_turns_w1 / num_turns_w2 # Symbolic multiplier or turns ratio factor if needed
+
+        den = C3 * C7 + C3 * C8 + C4 * C7 + C3 * C9 + C4 * C8 + C5 * C7 + C3 * C10 + C4 * C9 + \
+              C5 * C8 + C6 * C7 + C4 * C10 + C5 * C9 + C6 * C8 + C5 * C10 + C6 * C9 + C6 * C10 + \
+              C7 * C9 + C7 * C10 + C8 * C9 + C8 * C10
+
+        num1 = (C2 * C3 * C7 + C2 * C3 * C8 + C2 * C4 * C7 + C2 * C3 * C9 + C2 * C4 * C8 + C2 * C5 * C7 +
+                C3 * C4 * C7 + C2 * C3 * C10 + C2 * C4 * C9 + C2 * C5 * C8 + C2 * C6 * C7 + C3 * C4 * C8 +
+                C3 * C5 * C7 + C2 * C4 * C10 + C2 * C5 * C9 + C2 * C6 * C8 + C3 * C4 * C9 + C3 * C5 * C8 +
+                C2 * C5 * C10 + C2 * C6 * C9 + C3 * C4 * C10 + C3 * C5 * C9 + C4 * C6 * C7 + C2 * C6 * C10 +
+                C2 * C7 * C9 + C3 * C5 * C10 + C4 * C6 * C8 + C5 * C6 * C7 + C2 * C7 * C10 + C2 * C8 * C9 +
+                C3 * C7 * C9 + C4 * C6 * C9 + C5 * C6 * C8 + C2 * C8 * C10 + C3 * C8 * C9 + C4 * C6 * C10 +
+                C5 * C6 * C9 + C4 * C7 * C10 + C5 * C6 * C10 + C3 * C9 * C10 + C4 * C8 * C10 + C5 * C7 * C10 +
+                C6 * C7 * C9 + C4 * C9 * C10 + C5 * C8 * C10 + C6 * C8 * C9 + C5 * C9 * C10 + C6 * C9 * C10 +
+                C7 * C9 * C10 + C8 * C9 * C10) * n_sym ** 2
+
+        num2 = (-2 * C3 * C4 * C7 - 2 * C3 * C4 * C8 - 2 * C3 * C4 * C9 - 2 * C3 * C4 * C10 + 2 * C5 * C6 * C7 +
+                2 * C3 * C7 * C9 - 2 * C5 * C6 * C8 - 2 * C5 * C6 * C9 - 2 * C5 * C6 * C10 + 2 * C4 * C8 * C10 -
+                2 * C5 * C7 * C10 - 2 * C6 * C8 * C9) * n_sym
+
+        num3 = (C1 * C3 * C7 + C1 * C3 * C8 + C1 * C4 * C7 + C1 * C3 * C9 + C1 * C4 * C8 + C1 * C5 * C7 +
+                C1 * C3 * C10 + C1 * C4 * C9 + C1 * C5 * C8 + C1 * C6 * C7 + C3 * C4 * C7 + C1 * C4 * C10 +
+                C1 * C5 * C9 + C1 * C6 * C8 + C3 * C4 * C8 + C1 * C5 * C10 + C1 * C6 * C9 + C3 * C4 * C9 +
+                C3 * C6 * C7 + C4 * C5 * C7 + C1 * C6 * C10 + C1 * C7 * C9 + C3 * C4 * C10 + C3 * C6 * C8 +
+                C4 * C5 * C8 + C1 * C7 * C10 + C1 * C8 * C9 + C3 * C6 * C9 + C3 * C7 * C8 + C4 * C5 * C9 +
+                C5 * C6 * C7 + C1 * C8 * C10 + C3 * C6 * C10 + C3 * C7 * C9 + C4 * C5 * C10 + C4 * C7 * C8 +
+                C5 * C6 * C8 + C3 * C7 * C10 + C5 * C6 * C9 + C5 * C7 * C8 + C4 * C8 * C9 + C5 * C6 * C10 +
+                C5 * C7 * C9 + C6 * C7 * C8 + C4 * C8 * C10 + C5 * C7 * C10 + C6 * C8 * C9 + C6 * C8 * C10 +
+                C7 * C8 * C9 + C7 * C8 * C10)
+
+        c_meas_open = (num1 - num2 + num3) / den
+
+        # C_Meas_open = (numerator / denominator) - (correction / denominator) + (term3 / denominator)
+
+        print(f"\n→ Calculated Open Capacitance (C_Meas_open): {c_meas_open:.4e} F")
+
+        return c_vec
+
 
     def get_total_charges(self):
         res_path = self.file_data.e_m_circuit_folder_path
@@ -4896,7 +5104,7 @@ class MagneticComponent:
                 view += 1
 
             # Magnetic flux density
-            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Magb.pos"))
+            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "MagB.pos"))
             gmsh.option.setNumber(f"View[{view}].ScaleType", 1)
             gmsh.option.setNumber(f"View[{view}].RangeType", 1)
             gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)

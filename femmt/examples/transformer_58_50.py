@@ -245,9 +245,18 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
 
     # ---------------------------------------------------------------
     # Simulation 10 (V_A, V_B, V_C, V_D = 1, 1, 2 , 2) --- (V_1, V_2, V_3, V_4 = 0, 1, 0, 1)
-    # Create a fixed voltage from C to D
-    voltages_winding_1 = [1] * num_turns_w1
-    voltages_winding_2 = [2] * num_turns_w2
+    # # Create a fixed voltage from C to D
+    # voltages_winding_1 = [1] * num_turns_w1
+    # voltages_winding_2 = [2] * num_turns_w2
+
+    # # Simulation 11 (V_A, V_B, V_C, V_D = 2, 1, 1 , 1) --- (V_1, V_2, V_3, V_4 = 1, 0, 0, 1)
+    V_A = 0.5
+    V_B = -0.5
+    voltages_winding_1 = [
+        V_A - (V_A - V_B) * i / (num_turns_w1 - 1)
+        for i in range(num_turns_w1)
+    ]
+    voltages_winding_2 = [0] * num_turns_w2
 
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""Case 2"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     # --------------------------------------------------------------------------------------

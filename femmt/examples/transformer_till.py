@@ -161,13 +161,13 @@ def basic_example_transformer_till(onelab_folder: str = None, show_visual_output
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""Case 1"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     # --------------------------------------------------------------------------------------
     # # Simulation 1 (V_A, V_B, V_C, V_D = 1, 0, 0 , 0) --- (V_1, V_2, V_3, V_4 = 1, 0, 0, 0)
-    # V_A = 1
-    # V_B = 0
-    # voltages_winding_1 = [
-    #     V_A - (V_A - V_B) * i / (num_turns_w1 - 1)
-    #     for i in range(num_turns_w1)
-    # ]
-    # voltages_winding_2 = [0] * num_turns_w2
+    V_A = 1
+    V_B = 0
+    voltages_winding_1 = [
+        V_A - (V_A - V_B) * i / (num_turns_w1 - 1)
+        for i in range(num_turns_w1)
+    ]
+    voltages_winding_2 = [0] * num_turns_w2
 
     # --------------------------------------------------------------------------------------
     # # Simulation 2 (V_A, V_B, V_C, V_D = 0, 0, 1 , 0) --- (V_1, V_2, V_3, V_4 = 0, 1, 0, 0)
@@ -247,8 +247,8 @@ def basic_example_transformer_till(onelab_folder: str = None, show_visual_output
     # ---------------------------------------------------------------
     # Simulation 10 (V_A, V_B, V_C, V_D = 1, 1, 2 , 2) --- (V_1, V_2, V_3, V_4 = 0, 1, 0, 1)
     # Create a fixed voltage from C to D
-    voltages_winding_1 = [1] * num_turns_w1
-    voltages_winding_2 = [2] * num_turns_w2
+    # voltages_winding_1 = [1] * num_turns_w1
+    # voltages_winding_2 = [2] * num_turns_w2
 
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""Case 2"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     # --------------------------------------------------------------------------------------

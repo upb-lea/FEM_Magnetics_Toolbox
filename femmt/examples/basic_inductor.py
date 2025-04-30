@@ -146,10 +146,10 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # 4. set insulations
     insulation = fmt.Insulation(flag_insulation=True)
     insulation.add_core_insulations(0.001, 0.001, 0.003, 0.001)
-    insulation.add_winding_insulations([[0.0002]])
-    insulation.add_conductor_air_conductor_insulation([[0.0010, 0.0010, 1e-3, 1e-3, 1e-3, 1e-3],
+    insulation.add_winding_insulations([[0.025e-3]])
+    insulation.add_conductor_air_conductor_insulation([[1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4],
                                                        [1e-3, 1e-3]])
-    insulation.add_kapton_insulation(add_kapton=False, thickness=0.5e-3)
+    insulation.add_kapton_insulation(add_kapton=True, thickness=0.15e-3)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -158,12 +158,12 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
 
     # 6. create conductor and set parameters: use solid wires
     winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=45)
-    winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
+    winding.set_solid_round_conductor(conductor_radius=0.35e-3, conductor_arrangement=fmt.ConductorArrangement.Square)
     winding.parallel = False  # set True to make the windings parallel, currently only for solid conductors
     # winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
     # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
     # 7. add conductor to vww and add winding window to MagneticComponent
-    vww.set_winding(winding, 3, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.VerticalDownward_HorizontalRightward,
+    vww.set_winding(winding, 96, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.VerticalUpward_HorizontalRightward,
                     zigzag=True)
     geo.set_winding_windows([winding_window])
 
@@ -173,7 +173,10 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # 6.a. start simulation
     geo.single_simulation(freq=inductor_frequency, current=[1],
                           plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
-    # geo.get_capacitance(ground_core=True, ground_outer_boundary=False, show_fem_simulation_results=False, show_turn_capacitances=True)
+    # # geo.get_capacitance(ground_core=True, ground_outer_boundary=False, show_fem_simulation_results=False, show_turn_capacitances=True)
+    #geo.get_inductances(I0=2, op_frequency=20000, skin_mesh_factor=0.5)
+    geo.get_inductor_capacitance(show_fem_simulation_results=True)
+    #geo.get_inductor_stray_capacitance(show_visual_outputs=True)
 
     # geo.femm_reference(freq=inductor_frequency, current=[4.5], sign=[1], non_visualize=0)
 

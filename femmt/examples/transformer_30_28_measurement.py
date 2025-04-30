@@ -145,8 +145,8 @@ def transformer_30_28_measurement(onelab_folder: str = None, show_visual_outputs
     # --------------------------------------------------------------------------------------
     # # Simulation 2 (V_A, V_B, V_C, V_D = 0, 0, 1 , 0) --- (V_1, V_2, V_3, V_4 = 0, 1, 0, 0)
     # voltages_winding_1 = [0] * num_turns_w1
-    # V_C = 1.0
-    # V_D = 0.0
+    # V_C = 0.0
+    # V_D = 1.0
     # voltages_winding_2 = [
     #     V_C - (V_C - V_D) * i / (num_turns_w2 - 1)
     #     for i in range(num_turns_w2)
@@ -198,24 +198,24 @@ def transformer_30_28_measurement(onelab_folder: str = None, show_visual_outputs
     # voltages_winding_2 = [1] * num_turns_w2
 
     # ------------------------------------------------------------------------------------------------------
-    # # Simulation 8 (V_A, V_B, V_C, V_D = 0, 0, 2 , 1) --- (V_1, V_2, V_3, V_4 = 0, 1, 1, 1)
-    # voltages_winding_1 = [0] * num_turns_w1
-    # V_C = 2.0
-    # V_D = 1.0
-    # voltages_winding_2 = [
-    #     V_C - (V_C - V_D) * i / (num_turns_w2 - 1)
-    #     for i in range(num_turns_w2)
-    # ]
-
-    # ---------------------------------------------------------------
-    # Simulation 9 (V_A, V_B, V_C, V_D = 1, 1, 2 , 1) --- (V_1, V_2, V_3, V_4 = 0, 1, 0, 1)
-    voltages_winding_1 = [1] * num_turns_w1
+    # Simulation 8 (V_A, V_B, V_C, V_D = 0, 0, 2 , 1) --- (V_1, V_2, V_3, V_4 = 0, 1, 1, 1)
+    voltages_winding_1 = [0] * num_turns_w1
     V_C = 1.0
     V_D = 2.0
     voltages_winding_2 = [
         V_C - (V_C - V_D) * i / (num_turns_w2 - 1)
         for i in range(num_turns_w2)
     ]
+
+    # ---------------------------------------------------------------
+    # Simulation 9 (V_A, V_B, V_C, V_D = 1, 1, 2 , 1) --- (V_1, V_2, V_3, V_4 = 0, 1, 0, 1)
+    # voltages_winding_1 = [1] * num_turns_w1
+    # V_C = 1.0
+    # V_D = 2.0
+    # voltages_winding_2 = [
+    #     V_C - (V_C - V_D) * i / (num_turns_w2 - 1)
+    #     for i in range(num_turns_w2)
+    # ]
 
     # ---------------------------------------------------------------
     # # Simulation 10 (V_A, V_B, V_C, V_D = 1, 1, 2 , 2) --- (V_1, V_2, V_3, V_4 = 0, 1, 0, 1)

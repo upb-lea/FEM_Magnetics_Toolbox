@@ -998,6 +998,7 @@ class TwoDaxiSymmetric:
                                 if vertical_first:
                                     while i < turns and left_bound + winding.conductor_radius <= x <= right_bound - winding.conductor_radius:
                                         while i < turns and bot_bound + winding.conductor_radius <= y <= top_bound - winding.conductor_radius:
+                                            y_last = y
                                             # drawing conductor
                                             self.p_conductor[num].append(
                                                 [x, y, 0, self.mesh_data.c_center_conductor[num]])
@@ -1060,8 +1061,10 @@ class TwoDaxiSymmetric:
                                             y = start_y
                                         else:
                                             # Alternating between top and bottom for the Zigzag movement
+                                            # step_y *= -1
+                                            # y += step_y
+                                            y = y_last  # **no extra step**
                                             step_y *= -1
-                                            y += step_y
                                         # increment x
                                         x += step_x
                                         x_l += step_x_layer
@@ -1070,6 +1073,7 @@ class TwoDaxiSymmetric:
                                 else:
                                     while i < turns and bot_bound + winding.conductor_radius <= y <= top_bound - winding.conductor_radius:
                                         while i < turns and left_bound + winding.conductor_radius <= x <= right_bound - winding.conductor_radius:
+                                            x_last = x
                                             self.p_conductor[num].append(
                                                 [x, y, 0, self.mesh_data.c_center_conductor[num]])
                                             self.p_conductor[num].append(
@@ -1125,8 +1129,10 @@ class TwoDaxiSymmetric:
                                             x = start_x
                                         else:
                                             # Alternating between right and left for the Zigzag movement
+                                            # step_x *= -1
+                                            # x += step_x
+                                            x = x_last  # **no extra step**
                                             step_x *= -1
-                                            x += step_x
                                         # Moving one step vertically (top or bottom)
                                         y += step_y
                                         y_l += step_y_layer
@@ -1172,52 +1178,166 @@ class TwoDaxiSymmetric:
                                         self.p_conductor[num][i][0] += adjustment_x
 
                             elif conductor_arrangement == ConductorArrangement.Hexagonal:
-                                y = bot_bound + winding.conductor_radius
-                                x = left_bound + winding.conductor_radius
-                                i = 0
-                                base_line = True
-                                # Case n_conductors higher that "allowed" is missing
-                                while x < right_bound - winding.conductor_radius \
-                                        and i < turns:
-                                    while y < top_bound - winding.conductor_radius and \
-                                            i < turns:
-                                        self.p_conductor[num].append([
-                                            x,
-                                            y,
-                                            0,
-                                            self.mesh_data.c_center_conductor[num]])
-                                        self.p_conductor[num].append([
-                                            x - winding.conductor_radius,
-                                            y,
-                                            0,
-                                            self.mesh_data.c_conductor[num]])
-                                        self.p_conductor[num].append([
-                                            x,
-                                            y + winding.conductor_radius,
-                                            0,
-                                            self.mesh_data.c_conductor[num]])
-                                        self.p_conductor[num].append([
-                                            x + winding.conductor_radius,
-                                            y,
-                                            0,
-                                            self.mesh_data.c_conductor[num]])
-                                        self.p_conductor[num].append([
-                                            x,
-                                            y - winding.conductor_radius,
-                                            0,
-                                            self.mesh_data.c_conductor[num]])
-                                        i += 1
-                                        y += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]  # from bottom to top
-                                    x += 2 * np.cos(np.pi / 6) * (winding.conductor_radius + self.insulation.cond_cond[num][num] / 2)
-                                    # * np.sqrt(2 / 3 * np.pi / np.sqrt(3))  # one step from left to right
-                                    # depending on what line, hexa scheme starts shifted
-                                    # reset y to "new" bottom
-                                    base_line = (not base_line)
-                                    if base_line:
-                                        y = bot_bound + winding.conductor_radius
-                                    else:
-                                        y = bot_bound + 2 * winding.conductor_radius + self.insulation.cond_cond[num][num] / 2
+                                if placing_strategy == ConductorDistribution.VerticalUpward_HorizontalRightward:
 
+                                    y = bot_bound + winding.conductor_radius + self.insulation.cond_cond[num][num]
+                                    x = left_bound + winding.conductor_radius + self.insulation.cond_cond[num][num]
+                                    start_x_layer = left_bound + 2 * winding.conductor_radius + 2 * self.insulation.cond_cond[num][num]
+                                    # step_x_layer = winding.conductor_radius * 2 + 2 * self.insulation.cond_cond[num][num] + self.insulation.kapton
+                                    step_x_layer = 2 * np.cos(np.pi / 6) * (winding.conductor_radius + self.insulation.cond_cond[num][num] / 2 + self.insulation.kapton)
+                                    mesh_to_conductor = min(self.mesh_data.c_conductor)
+                                    insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
+                                    i = 0
+                                    counter_layer = 0
+                                    base_line = True
+                                    # Case n_conductors higher that "allowed" is missing
+                                    while x < right_bound - winding.conductor_radius \
+                                            and i < turns:
+                                        while i < turns and bot_bound + winding.conductor_radius <= y <= top_bound - winding.conductor_radius:
+                                            self.p_conductor[num].append([
+                                                x,
+                                                y,
+                                                0,
+                                                self.mesh_data.c_center_conductor[num]])
+                                            self.p_conductor[num].append([
+                                                x - winding.conductor_radius,
+                                                y,
+                                                0,
+                                                self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append([
+                                                x,
+                                                y + winding.conductor_radius,
+                                                0,
+                                                self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append([
+                                                x + winding.conductor_radius,
+                                                y,
+                                                0,
+                                                self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append([
+                                                x,
+                                                y - winding.conductor_radius,
+                                                0,
+                                                self.mesh_data.c_conductor[num]])
+                                            if counter_layer > len(self.insulation.cond_air_cond[num]) - 1:
+                                                self.insulation.cond_air_cond[num].append(0)
+                                            i += 1
+                                            if zigzag:
+                                                if counter_layer % 2 == 0:
+                                                    y += winding.conductor_radius * 2 + 2 * self.insulation.cond_cond[num][num] + self.insulation.cond_air_cond[num][counter_layer]
+                                                elif counter_layer % 2 == 1:
+                                                    y += -(winding.conductor_radius * 2 + 2 * self.insulation.cond_cond[num][num] + self.insulation.cond_air_cond[num][counter_layer])
+                                            else:
+                                                y += winding.conductor_radius * 2 + 2 * self.insulation.cond_cond[num][num] + \
+                                                     self.insulation.cond_air_cond[num][counter_layer]
+                                            # from bottom to top
+                                        kapton_points = [
+                                            [start_x_layer + insulation_delta, top_bound, 0, mesh_to_conductor],
+                                            [start_x_layer + self.insulation.kapton - insulation_delta, top_bound, 0, mesh_to_conductor],
+                                            [start_x_layer + self.insulation.kapton - insulation_delta, bot_bound, 0, mesh_to_conductor],
+                                            [start_x_layer + insulation_delta, bot_bound, 0, mesh_to_conductor]
+                                        ]
+                                        if self.insulation.kapton > 0:
+                                            self.p_iso_layer.append(kapton_points)
+                                        x += 2 * np.cos(np.pi / 6) * (winding.conductor_radius + self.insulation.cond_cond[num][num] / 2 + self.insulation.kapton)
+                                        # x += np.cos(np.pi / 6) * (2 * winding.conductor_radius + 2 * self.insulation.cond_cond[num][num]) + self.insulation.kapton
+                                        start_x_layer += step_x_layer
+                                        counter_layer += 1
+                                        # * np.sqrt(2 / 3 * np.pi / np.sqrt(3))  # one step from left to right
+                                        # depending on what line, hexa scheme starts shifted
+                                        # reset y to "new" bottom
+                                        base_line = not base_line
+
+                                        if not zigzag:
+                                            if base_line:
+                                                y = bot_bound + winding.conductor_radius  + self.insulation.cond_cond[num][num]
+                                            else:
+                                                y = bot_bound + 2 * winding.conductor_radius + self.insulation.cond_cond[num][num] / 2
+                                        elif zigzag:
+                                            if base_line:
+                                                y = bot_bound + 4 * winding.conductor_radius  + self.insulation.cond_cond[num][num]
+                                            else:
+                                                y = top_bound - 3 * winding.conductor_radius - self.insulation.cond_cond[num][num] / 2
+
+                                elif placing_strategy == ConductorDistribution.HorizontalRightward_VerticalUpward:
+
+                                    y = bot_bound + winding.conductor_radius + self.insulation.cond_cond[num][num]
+                                    x = left_bound + winding.conductor_radius + self.insulation.cond_cond[num][num]
+                                    start_y_layer = bot_bound + 2 * winding.conductor_radius + 2 * self.insulation.cond_cond[num][num]
+                                    step_y_layer = 2 * np.cos(np.pi / 6) * (winding.conductor_radius + self.insulation.cond_cond[num][num] / 2 + self.insulation.kapton)
+                                    mesh_to_conductor = min(self.mesh_data.c_conductor)
+                                    insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
+                                    i = 0
+                                    counter_layer = 0
+                                    base_line = True
+
+                                    while y < top_bound - winding.conductor_radius and i < turns:
+
+                                        while i < turns and left_bound + winding.conductor_radius <= x <= right_bound - winding.conductor_radius:
+                                            self.p_conductor[num].append([
+                                                x,
+                                                y,
+                                                0,
+                                                self.mesh_data.c_center_conductor[num]])
+                                            self.p_conductor[num].append([
+                                                x - winding.conductor_radius,
+                                                y,
+                                                0,
+                                                self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append([
+                                                x,
+                                                y + winding.conductor_radius,
+                                                0,
+                                                self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append([
+                                                x + winding.conductor_radius,
+                                                y,
+                                                0,
+                                                self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append([
+                                                x,
+                                                y - winding.conductor_radius,
+                                                0,
+                                                self.mesh_data.c_conductor[num]])
+                                            if counter_layer > len(self.insulation.cond_air_cond[num]) - 1:
+                                                self.insulation.cond_air_cond[num].append(0)
+
+                                            i += 1
+                                            if zigzag:
+                                                if counter_layer % 2 == 0:
+                                                    x += winding.conductor_radius * 2 + 2 * self.insulation.cond_cond[num][num] + self.insulation.cond_air_cond[num][counter_layer]
+                                                elif counter_layer % 2 == 1:
+                                                    x += -(winding.conductor_radius * 2 + 2 * self.insulation.cond_cond[num][num] + \
+                                                         self.insulation.cond_air_cond[num][counter_layer])
+                                            else:
+                                                x += winding.conductor_radius * 2 + 2 * self.insulation.cond_cond[num][num] + \
+                                                     self.insulation.cond_air_cond[num][counter_layer]
+
+                                        # Insert Kapton insulation after each layer
+                                        kapton_points = [
+                                            [left_bound, start_y_layer + insulation_delta, 0, mesh_to_conductor],
+                                            [left_bound, start_y_layer + self.insulation.kapton - insulation_delta, 0, mesh_to_conductor],
+                                            [right_bound, start_y_layer + self.insulation.kapton - insulation_delta, 0, mesh_to_conductor],
+                                            [right_bound, start_y_layer + insulation_delta, 0, mesh_to_conductor]
+                                        ]
+                                        if self.insulation.kapton > 0:
+                                            self.p_iso_layer.append(kapton_points)
+
+                                        y += 2 * np.cos(np.pi / 6) * (winding.conductor_radius + self.insulation.cond_cond[num][num] / 2 + self.insulation.kapton)
+                                        start_y_layer += step_y_layer
+                                        counter_layer += 1
+                                        # Determine x starting point: shifted or not
+                                        base_line = not base_line
+                                        if not zigzag:
+                                            if base_line:
+                                                x = left_bound + winding.conductor_radius  + self.insulation.cond_cond[num][num]
+                                            else:
+                                                x = left_bound + 2 * winding.conductor_radius + self.insulation.cond_cond[num][num] / 2
+                                        elif zigzag:
+                                            if base_line:
+                                                x = left_bound + winding.conductor_radius  + self.insulation.cond_cond[num][num]
+                                            else:
+                                                x = right_bound - 3 * winding.conductor_radius - self.insulation.cond_cond[num][num] / 2
                             elif conductor_arrangement == ConductorArrangement.SquareFullWidth:
                                 y = bot_bound + winding.conductor_radius
                                 x = left_bound + winding.conductor_radius

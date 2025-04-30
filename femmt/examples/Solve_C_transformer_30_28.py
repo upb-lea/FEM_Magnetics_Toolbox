@@ -61,15 +61,15 @@ print("Element-wise Squared Matrix case2:\n", M_squared2)
 #     # 3.044751388584012e-11    # 11
 # ])
 We_case_1 = np.array([
-    2.002418828706215e-11,  # Scenario 1
-    1.611847650440696e-11,   # Scenario 2
+    2.002418828706214e-11,  # Scenario 1
+    1.552613677132804e-11,   # Scenario 2
     1.38508462369603e-11,   # Scenario 3
     4.54639734788541e-11,  # Scenario 4
     # 5.750010130762671e-12,  # Scenario 5
     1.988388052308085e-11,  # new
     4.555462346684122e-11,  # Scenario 6
     1.942906256990097e-11,  # Scenario 7
-    1.076387631951943e-10,  # Scenario 8
+    1.058617439959572e-10,  # Scenario 8
     # 3.291112743307101e-11,  # Scenario 9
     3.088342415285953e-11,  # new
     6.37630655520892e-11,   # Scenario 10

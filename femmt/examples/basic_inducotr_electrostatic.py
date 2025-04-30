@@ -109,7 +109,7 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
     # winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
     # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
     # 7. add conductor to vww and add winding window to MagneticComponent
-    vww.set_winding(winding, 14, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.VerticalUpward_HorizontalRightward,
+    vww.set_winding(winding, 7, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.VerticalUpward_HorizontalRightward,
                     zigzag=False)
     geo.set_winding_windows([winding_window])
     # 8. create the model

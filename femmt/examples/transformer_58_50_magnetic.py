@@ -157,14 +157,14 @@ def basic_example_transformer_85_50_magnetic(onelab_folder: str = None, show_vis
     num_turns_w1 = 58
     num_turns_w2 = 50
 
-    # geo.single_simulation(freq=200000, current=[2, 2], phi_deg=[0, 180],
-    #                       plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
+    geo.single_simulation(freq=200000, current=[2, 2], phi_deg=[0, 180],
+                          plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
     # geo.electrostatic_simulation( voltage=[voltages_winding_1, voltages_winding_2], core_voltage=0, ground_outer_boundary=False,
     #                              show_fem_simulation_results=show_visual_outputs, save_to_excel=False)
     # geo.get_total_charges()
     # geo.femm_reference_electrostatic(voltages=[voltages_winding_1, voltages_winding_2], ground_core=True, ground_outer_boundary=True, non_visualize=0, save_to_excel=False,
     #                                  compare_excel_files_to_femmt=False)
-    geo.get_inductances(I0=1, op_frequency=200000, skin_mesh_factor=0.5)
+    # geo.get_inductances(I0=1, op_frequency=200000, skin_mesh_factor=0.5)
 
 if __name__ == "__main__":
     basic_example_transformer_85_50_magnetic(show_visual_outputs=True)

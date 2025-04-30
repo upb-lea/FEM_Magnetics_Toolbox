@@ -95,9 +95,9 @@ def basic_example_transformer_till(onelab_folder: str = None, show_visual_output
     insulation.add_conductor_air_conductor_insulation([[1.019e-4, 1.606e-4, 2.281e-4, 3.064e-4],
                                                        [2.281e-4, 3.064e-4]])
     # othman
-    # insulation.add_kapton_insulation(add_kapton=True, thickness=2e-3)
+    insulation.add_kapton_insulation(add_kapton=True, thickness=2.5e-3)
     # till
-    insulation.add_kapton_insulation(add_kapton=True, thickness=0.05e-3)
+    #insulation.add_kapton_insulation(add_kapton=True, thickness=0.9e-3)
     # 59-56 transformer
     # insulation.add_winding_insulations([[1.33125e-4, 0.095e-3],
     #                                     [0.095e-3, 1.88667e-4]])
@@ -109,11 +109,11 @@ def basic_example_transformer_till(onelab_folder: str = None, show_visual_output
     # bot, top = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit, split_distance=0.001)
     # 109-49
     #othman
-    # cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.4],
-    #                                                    vertical_split_factors=None)
-    # till
-    cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.3],
+    cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.45],
                                                        vertical_split_factors=None)
+    # till
+    # cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.29],
+    #                                                    vertical_split_factors=None)
     # cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.],
     #                                                    vertical_split_factors=None)
 
@@ -150,12 +150,15 @@ def basic_example_transformer_till(onelab_folder: str = None, show_visual_output
     # [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150]
     # [30, 35, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]
     # [20, 40, 60, 80, 100]
-    geo.create_model(freq=0, pre_visualize_geometry=show_visual_outputs)
+    geo.create_model(freq=0, pre_visualize_geometry=False)
 
     # geo.get_total_charges()
     # geo.femm_reference_electrostatic(voltages=[voltages_winding_1, voltages_winding_2], ground_core=True, ground_outer_boundary=True, non_visualize=0, save_to_excel=False,
     #                                  compare_excel_files_to_femmt=False)
-    geo.get_inductances(I0=2, op_frequency=20000, skin_mesh_factor=0.5)
+    # geo.get_inductances(I0=2, op_frequency=20000, skin_mesh_factor=0.5)
+    geo.single_simulation(freq=200000, current=[10, 14], phi_deg=[0, 180],
+                          plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
+    # geo.get_transformer_capacitance(flag_cd=True)
 
 if __name__ == "__main__":
     basic_example_transformer_till(show_visual_outputs=True)
