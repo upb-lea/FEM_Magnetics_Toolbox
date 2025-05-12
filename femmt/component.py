@@ -3301,8 +3301,9 @@ class MagneticComponent:
 
         return c_ab_stray
 
-    def get_transformer_capacitance(self, flag_cd: bool = False, show_visual_outputs: bool = False, plot_interpolation: bool = False, show_fem_simulation_results: bool = False, benchmark: bool = False,
-                                 save_to_excel: bool = False):
+    def get_transformer_capacitance(self, c_meas_open: float | None,
+                                 c_meas_short: float | None, flag_cd: bool = False, show_visual_outputs: bool = False, plot_interpolation: bool = False, show_fem_simulation_results: bool = False, benchmark: bool = False,
+                                 save_to_excel: bool = False, measured_values: tuple | list | None = None, show_plot_comparison: bool = True):
         """Function for finding parasitic capacitance of a transformer"""
         # Define 10 simulations potential cases
         # Format: [V_A, V_B, V_C, V_D]
@@ -3431,11 +3432,137 @@ class MagneticComponent:
                 C5 * C7 * C9 + C6 * C7 * C8 + C4 * C8 * C10 + C5 * C7 * C10 + C6 * C8 * C9 + C6 * C8 * C10 +
                 C7 * C8 * C9 + C7 * C8 * C10)
 
-        c_meas_open = (num1 - num2 + num3) / den
+        c_sim_open = (num1 - num2 + num3) / den
+        print(f"\n→ Calculated Open Capacitance (C_Meas_open): {c_sim_open:.4e} F")
 
-        # C_Meas_open = (numerator / denominator) - (correction / denominator) + (term3 / denominator)
+        c_sim_short = (
+                C1 + (
+                    C3 * C4 * C7 + C3 * C4 * C8 + C3 * C4 * C9 + C3 * C6 * C7 + C4 * C5 * C7 + C3 * C4 * C10 + C3 * C6 * C8 + C4 * C5 * C8 + C3 * C6 * C9 + C3 * C7 * C8 + C4 * C5 * C9 + C5 * C6 * C7 + C3 * C6 * C10 + C3 * C7 * C9
+                    + C4 * C5 * C10 + C4 * C7 * C8 + C5 * C6 * C8 + C3 * C7 * C10 + C5 * C6 * C9 + C5 * C7 * C8 + C4 * C8 * C9 + C5 * C6 * C10 + C5 * C7 * C9 + C6 * C7 * C8 + C4 * C8 * C10 + C5 * C7 * C10 + C6 * C8 * C9
+                    + C6 * C8 * C10 + C7 * C8 * C9 + C7 * C8 * C10) / (
+                            C3 * C7 + C3 * C8 + C4 * C7 + C3 * C9 + C4 * C8 + C5 * C7 + C3 * C10 + C4 * C9 + C5 * C8 + C6 * C7 + C4 * C10 + C5 * C9 + C6 * C8 + C5 * C10
+                            + C6 * C9 + C6 * C10 + C7 * C9 + C7 * C10 + C8 * C9 + C8 * C10)
+        )
+        print(f"\n→ Calculated Open Capacitance (C_Meas_open): {c_sim_short:.4e} F")
+        # ------------------------------------------------------------------
+        # 0) internal mapping of the 10 connection sums
+        # ------------------------------------------------------------------
+        connection_keys = [
+            'C_ABvsCDE', 'C_ABCDvsE', 'C_ABEvsCD', 'C_AvsBCDE', 'C_BvsACDE',
+            'C_CvsABDE', 'C_DvsABCE', 'C_ACvsBDE', 'C_ADvsBCE', 'C_BC_ADE'
+        ]
 
-        print(f"\n→ Calculated Open Capacitance (C_Meas_open): {c_meas_open:.4e} F")
+        connection_sums = {
+            'C_ABvsCDE': lambda C: C[2] + C[3] + C[4] + C[5] + C[6] + C[7],
+            'C_ABCDvsE': lambda C: C[6] + C[7] + C[8] + C[9],
+            'C_ABEvsCD': lambda C: C[2] + C[3] + C[4] + C[5] + C[8] + C[9],
+            'C_AvsBCDE': lambda C: C[0] + C[3] + C[5] + C[6],
+            'C_BvsACDE': lambda C: C[0] + C[2] + C[4] + C[7],
+            'C_CvsABDE': lambda C: C[1] + C[3] + C[4] + C[8],
+            'C_DvsABCE': lambda C: C[1] + C[2] + C[5] + C[9],
+            'C_ACvsBDE': lambda C: C[0] + C[1] + C[4] + C[5] + C[6] + C[8],
+            'C_ADvsBCE': lambda C: C[0] + C[1] + C[2] + C[3] + C[6] + C[9],
+            'C_BC_ADE': lambda C: C[0] + C[1] + C[2] + C[3] + C[7] + C[8],
+        }
+
+        if measured_values is not None:
+            if len(measured_values) != 10:
+                raise ValueError("measured_values must be a sequence of 10 numbers (float or None).")
+
+            # build simulated connection sums
+            sim_sums = [connection_sums[k](c_vec) for k in connection_keys]
+
+            print("\n---  Simulated vs Measured Capacitance  (pF) -------------")
+            print(f"{'Connection':<12}{'Measured':>12}{'Simulated':>12}{'Error %':>10}")
+            print("-" * 46)
+
+            # prepare data for optional plot
+            idx_used, meas_pf_used, calc_pf_used, ratio_used = [], [], [], []
+
+            for i, (k, meas, sim) in enumerate(zip(connection_keys,
+                                                   measured_values,
+                                                   sim_sums)):
+                sim_pf = sim * 1e12
+                if meas is None or (isinstance(meas, float) and np.isnan(meas)):
+                    print(f"{k:<12}{'---':>12}{sim_pf:12.2f}{'---':>10}")
+                    # still plot simulated value
+                    idx_used.append(i)
+                    meas_pf_used.append(None)
+                    calc_pf_used.append(sim_pf)
+                    ratio_used.append(None)
+                else:
+                    meas_pf = meas * 1e12
+                    err_pct = 100 * (sim - meas) / meas
+                    print(f"{k:<12}{meas_pf:12.2f}{sim_pf:12.2f}{err_pct:10.2f}")
+
+                    idx_used.append(i)
+                    meas_pf_used.append(meas_pf)
+                    calc_pf_used.append(sim_pf)
+                    ratio_used.append(sim_pf / meas_pf)
+
+            # ----- scatter plot --------------------------------
+            if show_plot_comparison:
+
+                idx = np.arange(10)
+                plt.figure(figsize=(14, 6))
+
+                # plot all simulated points
+                plt.scatter(idx, [s for s in calc_pf_used],
+                            label="Simulated", color="C0", marker="o")
+
+                # plot only measured values that exist
+                idx_meas = [i for i, m in zip(idx_used, meas_pf_used) if m is not None]
+                meas_pf_ok = [m for m in meas_pf_used if m is not None]
+                plt.scatter(idx_meas, meas_pf_ok,
+                            label="Measured", color="C3", marker="x")
+
+                # annotate ratio where both values exist
+                for i, sim_pf, ratio in zip(idx_used, calc_pf_used, ratio_used):
+                    if ratio is not None:
+                        plt.text(i, sim_pf, f"{ratio:.2f}×",
+                                 ha="center", va="bottom", fontsize=8)
+
+                label_txt = [k.replace('vs', ' vs ') for k in connection_keys]
+                plt.xticks(idx, label_txt, rotation=45, ha="right")
+                plt.ylabel("Capacitance [pF]")
+                plt.title("Simulated vs Measured Capacitance")
+                plt.grid(True, linestyle=":")
+                plt.legend()
+                plt.tight_layout()
+                plt.show()
+
+        # ------------- 2) open / short bar plot -------------------------
+        if show_plot_comparison and (c_meas_open is not None or c_meas_short is not None):
+            labels, sim_bar, meas_bar = [], [], []
+
+            if c_meas_open is not None:
+                labels.append("A‑B  (CD open)")
+                sim_bar.append(c_sim_open * 1e12)
+                meas_bar.append(c_meas_open * 1e12 if c_meas_open is None else c_meas_open * 1e12)
+
+            if c_meas_short is not None:
+                labels.append("A‑B  (CD short)")
+                sim_bar.append(c_sim_short * 1e12)
+                meas_bar.append(c_meas_short * 1e12 if c_meas_short is None else c_meas_short * 1e12)
+
+            if labels:
+                y = np.arange(len(labels))
+                h = 0.3
+                plt.figure(figsize=(10, 3.5))
+                plt.barh(y - h / 2, sim_bar, height=h, color='tab:blue', label="Simulated")
+                plt.barh(y + h / 2, meas_bar, height=h, color='tab:red', label="Measured")
+
+                for i, (s, m) in enumerate(zip(sim_bar, meas_bar)):
+                    if m != 0:
+                        plt.text(s * 1.01, i - h / 2, f"{s / m:.2f}×", va='center', fontsize=9, color='blue')
+
+                plt.yticks(y, labels)
+                plt.xlabel("Capacitance (pF)")
+                plt.grid(axis='x', linestyle='--', alpha=0.6)
+                plt.title("Simulated vs measured open / short capacitance")
+                plt.legend()
+                plt.tight_layout()
+                plt.show()
 
         return c_vec
 

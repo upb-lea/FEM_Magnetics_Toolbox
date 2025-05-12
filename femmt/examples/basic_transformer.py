@@ -112,7 +112,7 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
                     permeability_datasource=fmt.MaterialDataSource.Custom,
                     permittivity_datasource=fmt.MaterialDataSource.Custom,
-                    detailed_core_model=True)
+                    detailed_core_model=False)
     geo.set_core(core)
 
     # 3. set air gap parameters
@@ -125,6 +125,9 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
     insulation.add_winding_insulations([[0.0002, 0.001],
                                         [0.001, 0.0002]])
+    insulation.add_conductor_air_conductor_insulation([[1e-3, 1e-3, 1e-3, 1e-3, 1e-3, 1e-3],
+                                                       [1e-3, 1e-3, 1e-3]])
+    insulation.add_kapton_insulation(add_kapton=True, thickness=1e-3)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -147,8 +150,8 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     # winding2.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
-    bot.set_winding(winding2, 3, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
-    top.set_winding(winding1, 3, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
+    bot.set_winding(winding2, 6, None, fmt.Align.ToEdges, fmt.ConductorDistribution.HorizontalRightward_VerticalUpward, zigzag=False)
+    top.set_winding(winding1, 6, None, fmt.Align.ToEdges, fmt.ConductorDistribution.HorizontalRightward_VerticalUpward, zigzag=False)
     geo.set_winding_windows([winding_window])
 
     # 8. start simulation with given frequency, currents and phases

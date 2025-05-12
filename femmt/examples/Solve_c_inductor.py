@@ -12,17 +12,17 @@ M_case_1 = np.array([
 
 M_squared1 = M_case_1 ** 2
 # inductor 42
-# We_case_1 = np.array([
-#     5.23950306321443e-12,  # Scenario 1
-#     1.420017752187458e-11, # Scenario 2
-#     5.05540791441735e-12,# Scenario 3
-# ])
-# inductor 84
 We_case_1 = np.array([
-    2.516035519332448e-11,  # Scenario 1
-    1.480500554818899e-11, # Scenario 2
-    1.99302692819917e-11,# Scenario 3
+    5.23950306321443e-12,  # Scenario 1
+    1.420017752187458e-11, # Scenario 2
+    5.05540791441735e-12,# Scenario 3
 ])
+# inductor 84
+# We_case_1 = np.array([
+#     2.516035519332448e-11,  # Scenario 1
+#     1.480500554818899e-11, # Scenario 2
+#     1.99302692819917e-11,# Scenario 3
+# ])
 # inductor 81
 # We_case_1 = np.array([
 #     2.432750994823512e-11,  # Scenario 1
@@ -79,10 +79,10 @@ connection_measurement = {
     # c_AB = 2.213628432187502e-12 * 1.336
     # print(f"C_AB(42) = {C_ab:.5e} F")
     #
-    # C_AB_42 = -3.91159e-12 + (1.43906e-11 * 1.40098e-11 / (1.43906e-11 + 1.40098e-11))
-    # print("C_42:", C_AB_42)
-C_AB_84 = 3.02856e-11 + (2.00351e-11 * 9.57492e-12 / (2.00351e-11 + 9.57492e-12))
-print("C_84:", C_AB_84)
+C_AB_42 = -3.91159e-12 + (1.43906e-11 * 1.40098e-11 / (1.43906e-11 + 1.40098e-11))
+print("C_42:", C_AB_42)
+# C_AB_84 = 3.02856e-11 + (2.00351e-11 * 9.57492e-12 / (2.00351e-11 + 9.57492e-12))
+# print("C_84:", C_AB_84)
     # C_AB_81= 2.37208e-11 + (2.49342e-11 * 1.13127e-11 / (2.49342e-11 + 1.13127e-11))
     # print("C_81:", C_AB_81)
     #
@@ -145,6 +145,162 @@ pdf_path = r"C:\Users\uthmn\OneDrive - Universität Paderborn\Drive D\Paderborn 
 plt.savefig(pdf_path)
 
 plt.show()
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Data
+parameters = ['C1', 'C2', 'C3', 'C_AB(64)']
+vertical_I = [32.35, 22.49, 13.65, 40.85]
+vertical_II = [22.45, 23.32, 12.82, 30.72]
+vertical_III = [29.74, 23.02, 11.63, 37.47]
+
+# Plot settings
+bar_width = 0.2
+x = np.arange(len(parameters))
+
+plt.figure(figsize=(10, 5))
+plt.bar(x - bar_width, vertical_I, width=bar_width, label='Vertical I')
+plt.bar(x, vertical_II, width=bar_width, label='Vertical II')
+plt.bar(x + bar_width, vertical_III, width=bar_width, label='Vertical III')
+
+plt.xticks(x, parameters)
+plt.ylabel('Capacitance (pF)')
+plt.title('Comparison of capacitance values for different vertical arrangements')
+plt.legend()
+plt.grid(True, axis='y', linestyle='--', alpha=0.7)
+plt.tight_layout()
+
+# Save as PDF BEFORE showing the plot
+pdf_path = r"C:\Users\uthmn\OneDrive - Universität Paderborn\Drive D\Paderborn Uni\Paderborn Uni\Master Thesis\Final presentation\vertical_comparison.pdf"
+plt.savefig(pdf_path)
+
+plt.show()
+
+
+# Data
+parameters = ['C1', 'C2', 'C3', 'C_AB(64)']
+Horizontal_I = [2.28, 31.25, 14.38, 12.13]
+Horizontal_II = [0.90, 30.85, 14.08, 10.57]
+Horizontal_III = [1.26, 30.96, 12.82, 10.33]
+
+# Plot settings
+bar_width = 0.2
+x = np.arange(len(parameters))
+
+plt.figure(figsize=(10, 5))
+plt.bar(x - bar_width, Horizontal_I, width=bar_width, label='Horizontal I')
+plt.bar(x, Horizontal_II, width=bar_width, label='Horizontal II')
+plt.bar(x + bar_width, Horizontal_III, width=bar_width, label='Horizontal III')
+
+plt.xticks(x, parameters)
+plt.ylabel('Capacitance (pF)')
+plt.title('Comparison of capacitance values for different horizontal arrangements')
+plt.legend()
+plt.grid(True, axis='y', linestyle='--', alpha=0.7)
+plt.tight_layout()
+
+# Save as PDF BEFORE showing the plot
+pdf_path = r"C:\Users\uthmn\OneDrive - Universität Paderborn\Drive D\Paderborn Uni\Paderborn Uni\Master Thesis\Final presentation\Horizontal_comparison.pdf"
+plt.savefig(pdf_path)
+
+plt.show()
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Capacitance labels
+cap_labels = [f'C{i}' for i in range(1, 11)]
+
+# Capacitance values from the image
+transformer_A = [-6.65, -4.27, 4.27, 3.97, 9.48, 9.82, 12.14, 11.11, 7.12, 6.03]
+transformer_B = [-5.60, -6.07, 6.89, 7.05, 3.61, 3.04, 12.63, 11.57, 17.79, 16.56]
+
+# Plot settings
+x = np.arange(len(cap_labels))
+bar_width = 0.35
+
+plt.figure(figsize=(12, 5))
+plt.bar(x - bar_width/2, transformer_A, width=bar_width, label='Transformer A')
+plt.bar(x + bar_width/2, transformer_B, width=bar_width, label='Transformer B')
+
+# Labeling
+plt.xticks(x, cap_labels)
+plt.ylabel('Capacitance (pF)')
+plt.title('Comparison of capacitances for transformer A and B')
+plt.legend()
+plt.grid(axis='y', linestyle='--', alpha=0.6)
+plt.tight_layout()
+
+# Save as PDF BEFORE showing the plot
+pdf_path = r"C:\Users\uthmn\OneDrive - Universität Paderborn\Drive D\Paderborn Uni\Paderborn Uni\Master Thesis\Final presentation\transformer_a_b.pdf"
+plt.savefig(pdf_path)
+
+plt.show()
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Parameters
+labels = ['C1 (pF)', 'C2 (pF)', 'C3 (pF)', 'C_AB (pF)']
+single_layer = [-3.84, 16.94, 15.24, 4.18]
+two_layers = [32.35, 22.49, 13.65, 40.85]
+three_layers = [28.83, 26.16, 14.82, 38.07]
+
+# Bar plot positions
+x = np.arange(len(labels))
+bar_width = 0.25
+
+# Create plot
+plt.figure(figsize=(10, 5))
+plt.bar(x - bar_width, single_layer, width=bar_width, label='Single-layer')
+plt.bar(x, two_layers, width=bar_width, label='Two-layers')
+plt.bar(x + bar_width, three_layers, width=bar_width, label='Three-layers')
+
+# Labeling
+plt.xticks(x, labels)
+plt.ylabel('Capacitance (pF)')
+plt.title('Comparison of capacitance for single, two, and three-layer inductors')
+plt.legend()
+plt.grid(axis='y', linestyle='--', alpha=0.6)
+plt.tight_layout()
+
+plt.show()
+
+# Labels and data
+labels = ['C1 (pF)', 'C2 (pF)', 'C3 (pF)', 'C_AB (pF)', 'Inductance (mH)', 'Losses (W)']
+single_layer = [-3.84, 16.94, 15.24, 4.18, 0.503, 6.74]
+two_layers = [32.35, 22.49, 13.65, 40.85, 2.012, 28.756]
+three_layers = [28.83, 26.16, 14.82, 38.07, 4.27, 67.33]
+four_layers = [24.71, 28.39, 16.83, 35.28, 8.05, 123.56]
+five_layers = [20.61, 31.01, 19.64, 32.26, 12.58, 198.29]
+
+# X positions
+x = np.arange(len(labels))
+bar_width = 0.15  # smaller bar width for more groups
+
+# Plot
+plt.figure(figsize=(14, 6))
+plt.bar(x - 2*bar_width, single_layer, width=bar_width, label='Single-layer')
+plt.bar(x - bar_width, two_layers, width=bar_width, label='Two-layers')
+plt.bar(x, three_layers, width=bar_width, label='Three-layers')
+plt.bar(x + bar_width, four_layers, width=bar_width, label='Four-layers')
+plt.bar(x + 2*bar_width, five_layers, width=bar_width, label='Five-layers')
+
+# Labels and formatting
+plt.xticks(x, labels, rotation=45)
+plt.ylabel('Values')
+plt.title('Comparison of capacitance, inductance, and losses across layer configurations')
+plt.legend()
+plt.grid(axis='y', linestyle='--', alpha=0.6)
+plt.tight_layout()
+
+# Save to PDF
+pdf_path = r"C:\Users\uthmn\OneDrive - Universität Paderborn\Drive D\Paderborn Uni\Paderborn Uni\Master Thesis\Final presentation\inductor_five_layers.pdf"
+plt.savefig(pdf_path)
+
+plt.show()
+
+
 
 
 

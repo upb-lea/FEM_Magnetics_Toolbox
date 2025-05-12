@@ -147,6 +147,10 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     insulation = fmt.Insulation(flag_insulation=True)
     insulation.add_core_insulations(0.001, 0.001, 0.003, 0.001)
     insulation.add_winding_insulations([[0.025e-3]])
+    # optimization
+    # insulation.add_conductor_air_conductor_insulation([[1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4],
+    #                                                    [1e-3, 1e-3]])
+    #old
     insulation.add_conductor_air_conductor_insulation([[1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4],
                                                        [1e-3, 1e-3]])
     insulation.add_kapton_insulation(add_kapton=True, thickness=0.15e-3)
@@ -163,7 +167,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
     # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
     # 7. add conductor to vww and add winding window to MagneticComponent
-    vww.set_winding(winding, 96, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.VerticalUpward_HorizontalRightward,
+    vww.set_winding(winding, 160, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.VerticalUpward_HorizontalRightward,
                     zigzag=True)
     geo.set_winding_windows([winding_window])
 
@@ -171,11 +175,11 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     geo.create_model(freq=inductor_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
 
     # 6.a. start simulation
-    geo.single_simulation(freq=inductor_frequency, current=[1],
-                          plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
-    # # geo.get_capacitance(ground_core=True, ground_outer_boundary=False, show_fem_simulation_results=False, show_turn_capacitances=True)
+    # geo.single_simulation(freq=inductor_frequency, current=[1],
+    #                       plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
+    # geo.get_capacitance(ground_core=True, ground_outer_boundary=False, show_fem_simulation_results=False, show_turn_capacitances=True)
     #geo.get_inductances(I0=2, op_frequency=20000, skin_mesh_factor=0.5)
-    geo.get_inductor_capacitance(show_fem_simulation_results=True)
+    geo.get_inductor_capacitance(show_fem_simulation_results=False)
     #geo.get_inductor_stray_capacitance(show_visual_outputs=True)
 
     # geo.femm_reference(freq=inductor_frequency, current=[4.5], sign=[1], non_visualize=0)

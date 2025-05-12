@@ -88,8 +88,10 @@ def basic_example_transformer_till(onelab_folder: str = None, show_visual_output
     # core_insulation (from datasheet)
     insulation.add_core_insulations(1.55e-3, 1.55e-3, 0.9e-3, 1.5e-4)
     # # # # 109-49 transformer
-    insulation.add_winding_insulations([[0.025e-3, 0.095e-3],
-                                        [0.095e-3, 0.025e-3]])
+    # insulation.add_winding_insulations([[0.025e-3, 0.095e-3],
+    #                                     [0.095e-3, 0.025e-3]])
+    insulation.add_winding_insulations([[0.159e-3, 0.095e-3],
+                                        [0.095e-3, 0.231e-3]])
     # insulation.add_winding_insulations([[0.025e-3, 0.095e-3],
     #                                     [0.095e-3, 0.025e-3]])
     insulation.add_conductor_air_conductor_insulation([[1.019e-4, 1.606e-4, 2.281e-4, 3.064e-4],
@@ -113,7 +115,8 @@ def basic_example_transformer_till(onelab_folder: str = None, show_visual_output
     # 6. create conductors and set parameters
     winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
     # winding1.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
-    winding1.set_solid_round_conductor(0.0008728074876212745, fmt.ConductorArrangement.Square)
+    #winding1.set_solid_round_conductor(0.0008728074876212745, fmt.ConductorArrangement.Square)
+    winding1.set_solid_round_conductor(0.714e-3, fmt.ConductorArrangement.Square)
     # winding1.set_litz_round_conductor(None, 405, 35.5e-6, 0.67, fmt.ConductorArrangement.Square)
 
     # winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
@@ -124,7 +127,8 @@ def basic_example_transformer_till(onelab_folder: str = None, show_visual_output
 
     winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
     # winding2.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
-    winding2.set_solid_round_conductor(0.0012696221085454768, fmt.ConductorArrangement.Square)
+    #winding2.set_solid_round_conductor(0.0012696221085454768, fmt.ConductorArrangement.Square)
+    winding2.set_solid_round_conductor(1.039e-3, fmt.ConductorArrangement.Square)
     winding2.parallel = False
     # winding2.set_litz_round_conductor(None, 1200, 30e-6, 0.67, fmt.ConductorArrangement.Square)
 

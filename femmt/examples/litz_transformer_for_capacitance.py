@@ -14,7 +14,7 @@ the winding and the influence of the core and other materials in the geometry.
 import femmt as fmt
 import os
 
-def basic_example_transformer_till(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
+def basic_example_transformer_litz(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
     """
     Run the example code for the transformer.
 
@@ -64,7 +64,7 @@ def basic_example_transformer_till(onelab_folder: str = None, show_visual_output
                     core_dimensions=core_dimensions,
                     bobbin_dimensions=bobbin_dimensions,
                     detailed_core_model=False,
-                    material=fmt.Material.N49, temperature=45, frequency=0,
+                    material=fmt.Material.N95, temperature=45, frequency=0,
                     # permeability_datasource="manufacturer_datasheet",
                     permeability_datasource=fmt.MaterialDataSource.Measurement,
                     permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
@@ -77,7 +77,7 @@ def basic_example_transformer_till(onelab_folder: str = None, show_visual_output
 
     # 3. set air gap parameters
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 1.8e-3, 50)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 1e-3, 50)
     geo.set_air_gaps(air_gaps)
 
     # 4. set insulation
@@ -90,16 +90,18 @@ def basic_example_transformer_till(onelab_folder: str = None, show_visual_output
     # # # # 109-49 transformer
     # insulation.add_winding_insulations([[0.025e-3, 0.095e-3],
     #                                     [0.095e-3, 0.025e-3]])
-    insulation.add_winding_insulations([[0.025e-3, 0.095e-3],
-                                        [0.095e-3, 0.025e-3]])
-    # insulation.add_winding_insulations([[0.159e-3, 0.095e-3],
-    #                                     [0.095e-3, 0.231e-3]])
-    insulation.add_conductor_air_conductor_insulation([[1.019e-4, 1.606e-4, 2.281e-4, 3.064e-4],
-                                                       [2.281e-4, 3.064e-4]])
+    # insulation.add_winding_insulations([[0.025e-3, 0.095e-3],
+    #                                     [0.095e-3, 0.025e-3]])
+    # insulation.add_winding_insulations([[1.4946e-4, 0.095e-3],
+    #                                     [0.095e-3, 1.4946e-4]])
+    insulation.add_winding_insulations([[0.29e-3, 0.095e-3],
+                                        [0.095e-3, 0.29e-3]])
+    insulation.add_conductor_air_conductor_insulation([[2.5e-4, 3e-4, 2.281e-4, 3.064e-4],
+                                                       [2.5e-4, 3e-4]])
     # othman
-    #insulation.add_kapton_insulation(add_kapton=True, thickness=2.5e-3)
+    insulation.add_kapton_insulation(add_kapton=True, thickness=0.025e-3)
     # till
-    insulation.add_kapton_insulation(add_kapton=True, thickness=0.9e-3)
+    #insulation.add_kapton_insulation(add_kapton=True, thickness=0.9e-3)
     # 59-56 transformer
     # insulation.add_winding_insulations([[1.33125e-4, 0.095e-3],
     #                                     [0.095e-3, 1.88667e-4]])
@@ -111,20 +113,20 @@ def basic_example_transformer_till(onelab_folder: str = None, show_visual_output
     # bot, top = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit, split_distance=0.001)
     # 109-49
     #othman
-    # cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.45],
-    #                                                    vertical_split_factors=None)
-    # till
-    cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.29],
+    cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.43],
                                                        vertical_split_factors=None)
+    # till
+    # cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.29],
+    #                                                    vertical_split_factors=None)
     # cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.],
     #                                                    vertical_split_factors=None)
 
     # 6. create conductors and set parameters
     winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
     # winding1.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
-    winding1.set_solid_round_conductor(0.0008728074876212745, fmt.ConductorArrangement.Square)
+    # winding1.set_solid_round_conductor(0.0008728074876212745, fmt.ConductorArrangement.Square)
     #winding1.set_litz_round_conductor(None, 405, 35.5e-6, 0.67, fmt.ConductorArrangement.Square)
-    #winding1.set_solid_round_conductor(0.714e-3, fmt.ConductorArrangement.Square)
+    winding1.set_solid_round_conductor(0.71e-3, fmt.ConductorArrangement.Square)
 
     # winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
     # winding1.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
@@ -134,16 +136,16 @@ def basic_example_transformer_till(onelab_folder: str = None, show_visual_output
 
     winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
     # winding2.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
-    winding2.set_solid_round_conductor(0.0012696221085454768, fmt.ConductorArrangement.Square)
-   # winding2.set_solid_round_conductor(1.039e-3, fmt.ConductorArrangement.Square)
+    # winding2.set_solid_round_conductor(0.0012696221085454768, fmt.ConductorArrangement.Square)
+    winding2.set_solid_round_conductor(0.71e-3, fmt.ConductorArrangement.Square)
     winding2.parallel = False
     #winding2.set_litz_round_conductor(None, 1200, 30e-6, 0.67, fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
     # top.set_winding(winding2, 15, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
-    cells[1].set_winding(winding2, 9, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
+    cells[1].set_winding(winding2, 21, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
     # bot.set_winding(winding2, 29, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
-    cells[0].set_winding(winding1, 13, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
+    cells[0].set_winding(winding1, 21, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
     # top.set_winding(winding1, 109, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
     geo.set_winding_windows([winding_window])
 
@@ -163,7 +165,15 @@ def basic_example_transformer_till(onelab_folder: str = None, show_visual_output
     # geo.single_simulation(freq=200000, current=[10, 14], phi_deg=[0, 180],
     #                       plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
     # geo.get_transformer_capacitance(flag_cd=True)
-    geo.get_transformer_capacitance(c_meas_open=2, c_meas_short=3, flag_cd=True)
+    meas = (
+        6.05915e-11, 3.581451055984E-11, 6.35685E-11,
+        2.66E-11, 4.79E-11, 5.97E-11,
+        4.33E-11, None, None,
+        None
+    )
+
+    geo.get_transformer_capacitance(c_meas_short= None, c_meas_open=4.268050496E-11
+, measured_values = meas, show_plot_comparison=True)
 
 if __name__ == "__main__":
-    basic_example_transformer_till(show_visual_outputs=True)
+    basic_example_transformer_litz(show_visual_outputs=True)
