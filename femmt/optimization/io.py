@@ -63,7 +63,7 @@ class InductorOptimization:
         x_pareto_vec = sorted_vector[0]
         y_pareto_vec = sorted_vector[1]
 
-        total_losses_list = df[y][~np.isnan(df[y])].to_numpy()
+        total_losses_list = df[y][~pd.isnull(df[y])].to_numpy()
 
         min_total_dc_losses = total_losses_list[np.argmin(total_losses_list)]
         loss_offset = factor_min_dc_losses * min_total_dc_losses
@@ -221,8 +221,8 @@ class InductorOptimization:
             )
             try:
                 reluctance_output: ReluctanceModelOutput = InductorOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_input)
-            except ValueError:
-                logging.warning("bot air gap: No fitting air gap length")
+            except ValueError as e:
+                logging.info("bot air gap: No fitting air gap length")
                 return float('nan'), float('nan')
 
             trial.set_user_attr('p_winding', reluctance_output.p_winding)
