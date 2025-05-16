@@ -83,7 +83,7 @@ dab_transformer_config = fmt.ItoSingleInputConfig(
 )
 
 
-##task = 'start_proceed_study'
+# task = 'start_proceed_study'
 # task = 'filter_reluctance_model'
 # task = 'fem_simulation_from_filtered_reluctance_model_results'
 task = 'plot_study_results'
