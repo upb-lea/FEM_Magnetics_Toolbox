@@ -1223,7 +1223,7 @@ if __name__ == '__main__':
             ad.fem_simulation()
     elif task == 'load':
 
-        working_directory = '/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/femmt/examples/example_results/2023-02-28_inductor_optimization_N95_360u_5A'
+        working_directory = ''
 
         # Load design and plot various plots for analysis
         inductance, total_loss, total_volume, total_cost, annotation_list, automated_design_settings = load_fem_simulation_results(
@@ -1239,20 +1239,3 @@ if __name__ == '__main__':
         plot_2d(x_value=plot_data[:, 1], y_value=plot_data[:, 3], z_value=plot_data[:, 2],
                 x_label='Volume / m\u00b3', y_label='Cost / \u20ac', z_label='Loss / W', title='Volume vs Cost',
                 annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
-
-    # plot_2d(x_value=data_array[:, 1], y_value=data_array[:, 3], z_value=data_array[:, 2], x_label='Volume / m\u00b3',
-    #     y_label='Cost / \u20ac', z_label='Loss / W',
-    #         title='Volume vs Cost', plot_color='red')
-
-    # plot_2d(x_value=total_volume, y_value=total_loss, x_label='Volume / m\u00b3', y_label='Loss / W',
-    #         title='Volume vs Loss', annotations=annotation_list, plot_color='red')
-    # plot_2d(x_value=total_volume, y_value=total_cost, x_label='Volume / m\u00b3', y_label='Cost / \u20ac',
-    #         title='Volume vs Cost', annotations=annotation_list, plot_color='red')
-    # plot_2d(x_value=total_volume, y_value=inductance, x_label='Volume / m\u00b3', y_label='Inductance / H',
-    #         title='Volume vs Inductance', annotations=annotation_list, plot_color='red')
-    # plot_3d(x_value=total_volume, y_value=total_loss, z_value=total_cost, x_label='Volume / m\u00b3',
-    #         y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss vs Cost',
-    #         annotations=annotation_list, plot_color='red')
-
-    # load_from_single_file(working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/2022-11-27_fem_simulation_data',
-    #                file_name='case4.json')

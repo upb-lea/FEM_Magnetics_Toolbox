@@ -1023,7 +1023,7 @@ def resistance_solid_wire(core_inner_diameter: float, window_w: float, turns_cou
     :type turns_count: int
     :param conductor_radius: conductor radius
     :type conductor_radius: float
-    :param material: Material, e.g. "Copper" or "Aluminium"
+    :param material: Material, e.g. "Copper" or "Aluminum"
     :type material: str
     :param temperature: temperature in °C
     :type temperature: float
@@ -1061,7 +1061,7 @@ def resistance_litz_wire(core_inner_diameter: float, window_w: float, window_h: 
     :type window_w: float
     :param turns_count: number of turns
     :type turns_count: int
-    :param material: Material, e.g. "Copper" or "Aluminium"
+    :param material: Material, e.g. "Copper" or "Aluminum"
     :type material: str
     :param temperature: temperature in °C
     :type temperature: float
@@ -1182,7 +1182,7 @@ def calc_skin_depth(frequency: float, material_name: str = "Copper", temperature
 
     :param frequency: Frequency in Hz
     :type frequency: float
-    :param material_name: material name, e.g. 'Copper' or 'Aluminium'
+    :param material_name: material name, e.g. 'Copper' or 'Aluminum'
     :type material_name: str
     :param temperature: Temperature in °C
     :type temperature: float
@@ -1211,7 +1211,7 @@ def calc_proximity_factor(litz_wire_name: str, number_turns: int, window_h: floa
     :type iso_core_bot: float
     :param frequency: Frequency in Hz
     :type frequency: float
-    :param litz_wire_material_name: material name, e.g. 'Copper' or 'Aluminium'
+    :param litz_wire_material_name: material name, e.g. 'Copper' or 'Aluminum'
     :type litz_wire_material_name: str
     :param temperature: Temperature in °C
     :type temperature: float
@@ -1240,7 +1240,7 @@ def calc_proximity_factor_air_gap(litz_wire_name: str, number_turns: int, r_1: f
     :type winding_area: float
     :param frequency: Frequency in Hz
     :type frequency: float
-    :param litz_wire_material_name: material name, e.g. 'Copper' or 'Aluminium'
+    :param litz_wire_material_name: material name, e.g. 'Copper' or 'Aluminum'
     :type litz_wire_material_name: str
     :param temperature: Temperature in °C
     :type temperature: float

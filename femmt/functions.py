@@ -28,7 +28,7 @@ colors_femmt_default = {"blue": (28, 113, 216),
                         "orange": (230, 97, 0),
                         "purple": (129, 61, 156),
                         "brown": (134, 94, 60),
-                        "grey": (119, 118, 123),
+                        "gray": (119, 118, 123),
                         "yellow": (245, 194, 17),
                         "black": (0, 0, 0),
                         "white": (255, 255, 255)
@@ -37,11 +37,11 @@ colors_femmt_default = {"blue": (28, 113, 216),
 colors_geometry_femmt_default = {
     "core": "black",
     "air_gap": "yellow",
-    "winding": ["orange", "brown", "yellow", "green", "red", "black", "grey", "blue", "orange", "purple", "grey",
+    "winding": ["orange", "brown", "yellow", "green", "red", "black", "gray", "blue", "orange", "purple", "gray",
                 "blue", "orange", "purple"],
     "insulation": "blue",
-    "potting_inner": "grey",
-    "potting_outer": "grey",
+    "potting_inner": "gray",
+    "potting_outer": "gray",
 }
 
 colors_ba_jonas = {"blue": (28, 113, 216),
@@ -50,30 +50,30 @@ colors_ba_jonas = {"blue": (28, 113, 216),
                    "orange": (230, 97, 0),
                    "purple": (129, 61, 156),
                    "brown": (134, 94, 60),
-                   "grey": (193, 193, 193),
+                   "gray": (193, 193, 193),
                    "yellow": (255, 171, 6),
                    "black": (58, 58, 58),
                    "white": (255, 255, 255),
-                   "grey_dark": (109, 109, 109),
-                   "grey_dark_dark": (50, 50, 50)
+                   "gray_dark": (109, 109, 109),
+                   "gray_dark_dark": (50, 50, 50)
                    }
 
 colors_geometry_ba_jonas = {
     "core": "black",
     "air_gap": "yellow",
     "winding": ["green", "red", "yellow"],
-    "insulation": "grey_dark",
-    "potting_inner": "grey",
-    "potting_outer": "grey_dark_dark",
+    "insulation": "gray_dark",
+    "potting_inner": "gray",
+    "potting_outer": "gray_dark_dark",
 }
 
 colors_geometry_draw_only_lines = {
-    "core": "grey_dark",
-    "air_gap": "grey_dark",
+    "core": "gray_dark",
+    "air_gap": "gray_dark",
     "winding": ["green", "green", "green"],
-    "insulation": "grey_dark",
-    "potting_inner": "grey_dark",
-    "potting_outer": "grey_dark",
+    "insulation": "gray_dark",
+    "potting_inner": "gray_dark",
+    "potting_outer": "gray_dark",
 }
 
 
@@ -390,7 +390,7 @@ def litz_database() -> Dict:
 
 def wire_material_database() -> Dict[str, WireMaterial]:
     """
-    Return wire materials e.g. copper, aluminium in a dictionary.
+    Return wire materials e.g. copper, aluminum in a dictionary.
 
     :return: Dict with materials and conductivity
     :rtype: Dict
@@ -406,8 +406,8 @@ def wire_material_database() -> Dict[str, WireMaterial]:
         volumetric_mass_density=8920,
     )
 
-    wire_material["Aluminium"] = WireMaterial(
-        name="aluminium",
+    wire_material["Aluminum"] = WireMaterial(
+        name="aluminum",
         sigma=3.7e7,
         temperature=25,
         temperature_coefficient=3.9e-3,
@@ -786,7 +786,7 @@ def compare_fft_list(input_data_list: list, sample_factor: int = 1000, mode: str
     :type mode: str
     :param f0: fundamental frequency. Needs to be set in 'rad'- or 'deg'-mode
     :type f0: float
-    :param sample_factor: samle factor, defaults to 1000
+    :param sample_factor: sample factor, defaults to 1000
     :type sample_factor: int
     """
     out = []
@@ -985,7 +985,7 @@ def calculate_cylinder_volume(cylinder_diameter: float, cylinder_height: float):
 
 def create_physical_group(dim: int, entities: int, name: str):
     """
-    Greate a physical group, what is used inside ONELAB.
+    Create a physical group, what is used inside ONELAB.
 
     :param dim: dim inside onelab
     :type dim: int
@@ -1243,11 +1243,11 @@ def find_result_log_file(result_log_folder: str, keyword_list: list, value_min_m
     """
     Find a result log-file in a folder with many result-log files.
 
-    Check a dictornary keyword list for matching a certain value (equel, greater equal, smaller equal).
+    Check a dictionary keyword list for matching a certain value (equal, greater equal, smaller equal).
 
     :param result_log_folder: filepath to result-log folder
     :type result_log_folder: str
-    :param keyword_list: list with hirarchical keywords for dictionary structure, e.g. ["simulation_settings", "core", "core_inner_diameter"]
+    :param keyword_list: list with hierarchical keywords for dictionary structure, e.g. ["simulation_settings", "core", "core_inner_diameter"]
     :type keyword_list: list
     :param value_min_max: value to check for
     :type value_min_max: list

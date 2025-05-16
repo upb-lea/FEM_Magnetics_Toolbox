@@ -260,7 +260,7 @@ class MagneticComponent:
         :type thermal_conductivity_dict: Dict
         :param boundary_temperatures_dict: Contains the temperatures at each boundary line
         :type boundary_temperatures_dict: Dict
-        :param boundary_flags_dict: Sets the boundary type (dirichlet or von neumann) for each boundary line
+        :param boundary_flags_dict: Sets the boundary type (Dirichlet or von Neumann) for each boundary line
         :type boundary_flags_dict: Dict
         :param case_gap_top: Size of the top case
         :type case_gap_top: float
@@ -390,7 +390,7 @@ class MagneticComponent:
 
         while onelab_path_wrong:
             onelab_path = os.path.normpath(input(
-                "Enter the path of onelab's parent folder (path to folder which contains getdp, onelab executables): "))
+                "Enter the path of onelab's parent folder (path to folder which contains getdp, onelab executable files): "))
 
             if os.path.exists(onelab_path):
                 onelab_path_wrong = False
@@ -552,14 +552,14 @@ class MagneticComponent:
         :type freq: float
         :param skin_mesh_factor: [default to 0.5]
         :type skin_mesh_factor: float
-        :param pre_visualize_geometry: True for a pre-visualisation (e.g. check your geometry) and after this a
+        :param pre_visualize_geometry: True for a pre-visualization (e.g. check your geometry) and after this a
             simulation runs, False for a direct simulation
         :type pre_visualize_geometry: bool
         :param save_png: True to save a png-figure, false for no figure
         :type save_png: bool
         :param color_scheme: color file (definition for red, green, blue, ...)
         :type color_scheme: Dict
-        :param colors_geometry: definition for e.g. core is grey, winding is orange, ...
+        :param colors_geometry: definition for e.g. core is gray, winding is orange, ...
         :type colors_geometry: Dict
         :param benchmark: Benchmark simulation (stop time). Defaults to False.
         :type benchmark: bool
@@ -1514,11 +1514,11 @@ class MagneticComponent:
         :type phi_deg_list_list: List
         :param show_last_fem_simulation: shows last simulation in gmsh if set to True
         :type show_last_fem_simulation: bool
-        :param visualize_before: show genarated mesh before the simulation is run
+        :param visualize_before: show generated mesh before the simulation is run
         :type visualize_before: bool
         :param color_scheme: colorfile (definition for red, green, blue, ...)
         :type color_scheme: Dict
-        :param colors_geometry: definition for e.g. core is grey, winding is orange, ...
+        :param colors_geometry: definition for e.g. core is gray, winding is orange, ...
         :type colors_geometry: Dict
         :param save_png: True to save a .png
         :type save_png: bool
@@ -3308,7 +3308,7 @@ class MagneticComponent:
         text_file.write(
             f"DirStrandCoeff = \"{self.file_data.e_m_strands_coefficients_folder_path.replace(backslash, '/')}/\";\n")
 
-        # Visualisation
+        # visualization
         if self.plot_fields == "standard":
             text_file.write("Flag_show_standard_fields = 1;\n")
         else:
@@ -5269,7 +5269,7 @@ class MagneticComponent:
     @staticmethod
     def decode_settings_from_log(log_file_path: str, working_directory: str = None, verbosity: Verbosity = Verbosity.Silent):
         """
-        Read the given log and returns the magnetic component from th elog.
+        Read the given log and returns the magnetic component from the log.
 
         :param log_file_path: Path to the log file
         :type log_file_path: str

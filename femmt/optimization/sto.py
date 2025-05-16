@@ -131,7 +131,7 @@ class StackedTransformerOptimization:
         @staticmethod
         def objective(trial: optuna.Trial, config: StoSingleInputConfig, target_and_fixed_parameters: StoTargetAndFixedParameters):
             """
-            Objective funktion to optimize. Uses reluctance model calculation.
+            Objective function to optimize. Uses reluctance model calculation.
 
             Once core_name_list is not None, the objective function uses fixed core sizes. Cores are picked from the core_database().
             Otherwise, core_inner_diameter_min_max_list, window_w_min_max_list and window_h_bot_min_max_list are used.
@@ -643,7 +643,7 @@ class StackedTransformerOptimization:
             :type interactive: bool
             """
             if color_list is None:
-                color_list = ['red', 'blue', 'green', 'grey']
+                color_list = ['red', 'blue', 'green', 'gray']
             for count, df in enumerate(dataframes):
                 # color_list was before list(ff.colors_femmt_default.keys())
                 df['color_r'], df['color_g'], df['color_b'] = ff.colors_femmt_default[color_list[count]]
@@ -783,13 +783,13 @@ class StackedTransformerOptimization:
             """
             Perform FEM simulations from a given Pandas dataframe. The dataframe is from the reluctance model results.
 
-            :param reluctance_df: Pandas dataframe containing relults from the relutance model
+            :param reluctance_df: Pandas dataframe containing results from the reluctance model
             :type reluctance_df: pandas.DataFrame
             :param config: Configuration for the optimization of the transformer
             :type config: StoSingleInputConfig
-            :param show_visual_outputs: Ture to show visual outputs like the geometry
+            :param show_visual_outputs: True to show visual outputs like the geometry
             :type show_visual_outputs: bool
-            :param process_number: Process number for parallel simulations on multiple cpu cores
+            :param process_number: Process number for parallel simulations on multiple CPU cores
             :type process_number: int
             """
             target_and_fix_parameters = StackedTransformerOptimization.ReluctanceModel.calculate_fix_parameters(config)
@@ -1055,9 +1055,9 @@ class StackedTransformerOptimization:
             :type stacked_transformer_config_filepath: str
             :param process_number: process number to run the simulation on
             :type process_number: int
-            :param show_visual_outputs: True to show visual outpus (geometries)
+            :param show_visual_outputs: True to show visual outputs (geometries)
             :type show_visual_outputs: bool
-            :param print_derivations: True to print derivation from FEM simulaton to reluctance model
+            :param print_derivations: True to print derivation from FEM simulation to reluctance model
             :type print_derivations: bool
             """
             for index, _ in df_geometry.iterrows():

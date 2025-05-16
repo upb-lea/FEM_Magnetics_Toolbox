@@ -162,10 +162,10 @@ def test_conductivity_temperature():
     temperature = 100
 
     copper_sigma_100_degree_calculated = femmt.conductivity_temperature("Copper", temperature)
-    aluminium_sigma_100_degree_calculated = femmt.conductivity_temperature("Aluminium", temperature)
+    aluminum_sigma_100_degree_calculated = femmt.conductivity_temperature("Aluminum", temperature)
 
     assert copper_sigma_100_degree_calculated == pytest.approx(4.4874e7, rel=1e-3)
-    assert aluminium_sigma_100_degree_calculated == pytest.approx(2.8627e7, rel=1e-3)
+    assert aluminum_sigma_100_degree_calculated == pytest.approx(2.8627e7, rel=1e-3)
 
 def test_skin_depth():
     """Unittest for calculating the skin depth."""

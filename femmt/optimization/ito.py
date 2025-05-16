@@ -453,7 +453,7 @@ class IntegratedTransformerOptimization:
         @staticmethod
         def objective(trial: optuna.Trial, config: ItoSingleInputConfig, target_and_fixed_parameters: ItoTargetAndFixedParameters):
             """
-            Objective funktion to optimize. Uses reluctance model calculation.
+            Objective function to optimize. Uses reluctance model calculation.
 
             Once core_name_list is not None, the objective function uses fixed core sizes. Cores are picked from the core_database().
             Otherwise, core_inner_diameter_min_max_list, window_w_min_max_list and window_h_bot_min_max_list are used.
@@ -837,7 +837,7 @@ class IntegratedTransformerOptimization:
             :type interactive: bool
             """
             if color_list is None:
-                color_list = ['red', 'blue', 'green', 'grey']
+                color_list = ['red', 'blue', 'green', 'gray']
             for count, df in enumerate(dataframes):
                 # color_list was before list(ff.colors_femmt_default.keys())
                 df['color_r'], df['color_g'], df['color_b'] = ff.colors_femmt_default[color_list[count]]

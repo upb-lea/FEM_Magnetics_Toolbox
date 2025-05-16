@@ -77,3 +77,6 @@ femmt/thermal/solver/PostOperation.pro
 femmt/examples/paper_thermal_validation.py
 !femmt/examples/example_log.json
 femmt/examples/example_results
+
+# pyspelling
+dictionary.dic

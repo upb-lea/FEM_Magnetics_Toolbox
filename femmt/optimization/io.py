@@ -509,7 +509,7 @@ class InductorOptimization:
             :type interactive: bool
             """
             if color_list is None:
-                color_list = ['red', 'blue', 'green', 'grey']
+                color_list = ['red', 'blue', 'green', 'gray']
             for count, df in enumerate(dataframes):
                 # color_list was before list(ff.colors_femmt_default.keys())
                 df['color_r'], df['color_g'], df['color_b'] = ff.colors_femmt_default[color_list[count]]
@@ -604,7 +604,7 @@ class InductorOptimization:
             :type reluctance_df: pandas.DataFrame
             :param config: Configuration for the optimization of the transformer
             :type config: InductorOptimizationDTO
-            :param show_visual_outputs: Ture to show visual outputs like the geometry
+            :param show_visual_outputs: True to show visual outputs like the geometry
             :type show_visual_outputs: bool
             :param process_number: Process number for parallel simulations on multiple cpu cores
             :type process_number: int
@@ -726,7 +726,7 @@ class InductorOptimization:
             fig, ax = plt.subplots()
             legend_list = []
             plt.legend(handles=legend_list)
-            plt.scatter(df["values_0"], df["values_1"], s=10, label='Relucatance Model')  # c=color_array
+            plt.scatter(df["values_0"], df["values_1"], s=10, label='Reluctance Model')  # c=color_array
             df["fem_total_loss"] = df["fem_core"] + df["fem_p_loss_winding"]
             plt.scatter(df["values_0"], df["fem_total_loss"], s=10, label='FEM simulation')  # c=color_array
             plt.scatter(df["values_0"], df["combined_losses"], s=10, label="combined_losses")
@@ -862,7 +862,7 @@ class InductorOptimization:
             :type inductor_config_filepath: str
             :param process_number: process number to run the simulation on
             :type process_number: int
-            :param print_derivations: True to print derivation from FEM simulaton to reluctance model
+            :param print_derivations: True to print derivation from FEM simulation to reluctance model
             :type print_derivations: bool
             :return: volume, loss
             :rtype: tuple
