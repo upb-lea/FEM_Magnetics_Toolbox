@@ -1826,11 +1826,11 @@ Defaults to ‘False’ in command-line-mode.</p></li>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>freq</strong> (<em>float</em>) – Frequency [Hz]</p></li>
 <li><p><strong>skin_mesh_factor</strong> (<em>float</em>) – [default to 0.5]</p></li>
-<li><p><strong>pre_visualize_geometry</strong> (<em>bool</em>) – True for a pre-visualisation (e.g. check your geometry) and after this a
+<li><p><strong>pre_visualize_geometry</strong> (<em>bool</em>) – True for a pre-visualization (e.g. check your geometry) and after this a
 simulation runs, False for a direct simulation</p></li>
 <li><p><strong>save_png</strong> (<em>bool</em>) – True to save a png-figure, false for no figure</p></li>
 <li><p><strong>color_scheme</strong> (<em>Dict</em>) – color file (definition for red, green, blue, …)</p></li>
-<li><p><strong>colors_geometry</strong> (<em>Dict</em>) – definition for e.g. core is grey, winding is orange, …</p></li>
+<li><p><strong>colors_geometry</strong> (<em>Dict</em>) – definition for e.g. core is gray, winding is orange, …</p></li>
 <li><p><strong>benchmark</strong> (<em>bool</em>) – Benchmark simulation (stop time). Defaults to False.</p></li>
 </ul>
 </dd>
@@ -1873,9 +1873,9 @@ simulation runs, False for a direct simulation</p></li>
 <li><p><strong>current_list_list</strong> (<em>List</em>) – current amplitude, must be a list in a list, see example!</p></li>
 <li><p><strong>phi_deg_list_list</strong> (<em>List</em>) – phase in degree, must be a list in a list, see example!</p></li>
 <li><p><strong>show_last_fem_simulation</strong> (<em>bool</em>) – shows last simulation in gmsh if set to True</p></li>
-<li><p><strong>visualize_before</strong> (<em>bool</em>) – show genarated mesh before the simulation is run</p></li>
+<li><p><strong>visualize_before</strong> (<em>bool</em>) – show generated mesh before the simulation is run</p></li>
 <li><p><strong>color_scheme</strong> (<em>Dict</em>) – colorfile (definition for red, green, blue, …)</p></li>
-<li><p><strong>colors_geometry</strong> (<em>Dict</em>) – definition for e.g. core is grey, winding is orange, …</p></li>
+<li><p><strong>colors_geometry</strong> (<em>Dict</em>) – definition for e.g. core is gray, winding is orange, …</p></li>
 <li><p><strong>save_png</strong> (<em>bool</em>) – True to save a .png</p></li>
 <li><p><strong>inductance_dict</strong> (<em>Dict</em>) – result dictionary from get_inductances()-function</p></li>
 <li><p><strong>core_hyst_loss</strong> (<em>List</em>) – List with hysteresis list. If given, the hysteresis losses in this function be
@@ -2030,7 +2030,7 @@ by the winding_number (ascending). Sets empty lists for excitation parameters.</
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>thermal_conductivity_dict</strong> (<em>Dict</em>) – Contains the thermal conductivities for every region</p></li>
 <li><p><strong>boundary_temperatures_dict</strong> (<em>Dict</em>) – Contains the temperatures at each boundary line</p></li>
-<li><p><strong>boundary_flags_dict</strong> (<em>Dict</em>) – Sets the boundary type (dirichlet or von neumann) for each boundary line</p></li>
+<li><p><strong>boundary_flags_dict</strong> (<em>Dict</em>) – Sets the boundary type (Dirichlet or von Neumann) for each boundary line</p></li>
 <li><p><strong>case_gap_top</strong> (<em>float</em>) – Size of the top case</p></li>
 <li><p><strong>case_gap_right</strong> (<em>float</em>) – Size of the right case</p></li>
 <li><p><strong>case_gap_bot</strong> (<em>float</em>) – Size of the bot case</p></li>
@@ -2053,7 +2053,7 @@ by the winding_number (ascending). Sets empty lists for excitation parameters.</
 <dt class="sig sig-object py" id="femmt.Core">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">femmt.</span></span><span class="sig-name descname"><span class="pre">Core</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">core_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">CoreType</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">CoreType.Single</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">core_dimensions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">detailed_core_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">material</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'custom'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_approach</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LossApproach</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">LossApproach.LossAngle</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_r_abs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">permeability_datasource</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">MaterialDataSource</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">permeability_datatype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">MeasurementDataType</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">permeability_measurement_setup</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi_mu_deg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">non_linear</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">permittivity_datasource</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">permittivity_datatype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">permittivity_measurement_setup</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">complex</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">steinmetz_parameter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generalized_steinmetz_parameter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdb_verbosity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Verbosity</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Verbosity.Silent</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.Core" title="Link to this definition"></a></dt>
 <dd><p>Creates the core base for the model.</p>
-<p># TODO More documentation and get rid of double initializations
+<p># TODO More documentation and get rid of double initialization
 frequency = 0: mu_r_abs only used if non_linear == False
 frequency &gt; 0: mu_r_abs is used</p>
 <dl class="py method">
@@ -2676,7 +2676,7 @@ is irrelevant.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="femmt.functions.calculate_squared_quadrature_integral">
 <span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">calculate_squared_quadrature_integral</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#femmt.functions.calculate_squared_quadrature_integral" title="Link to this definition"></a></dt>
-<dd><p>Calculate the integral of squared given data over specific time steps using the quad method..</p>
+<dd><p>Calculate the integral of squared given data over specific time steps using the quad method.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -2735,7 +2735,7 @@ results. It is recommended to reduce the frequency or use a full-wave solver (no
 like [[time-vector[,[current-vector]]. One period only</p></li>
 <li><p><strong>mode</strong> (<em>str</em>) – ‘rad’[default]: full period is 2*pi, ‘deg’: full period is 360°, ‘time’: time domain.</p></li>
 <li><p><strong>f0</strong> (<em>float</em>) – fundamental frequency. Needs to be set in ‘rad’- or ‘deg’-mode</p></li>
-<li><p><strong>sample_factor</strong> (<em>int</em>) – samle factor, defaults to 1000</p></li>
+<li><p><strong>sample_factor</strong> (<em>int</em>) – sample factor, defaults to 1000</p></li>
 </ul>
 </dd>
 </dl>
@@ -2909,7 +2909,7 @@ Switched-Mode Power Converter’ 2013.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="femmt.functions.create_physical_group">
 <span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">create_physical_group</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entities</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.functions.create_physical_group" title="Link to this definition"></a></dt>
-<dd><p>Greate a physical group, what is used inside ONELAB.</p>
+<dd><p>Create a physical group, what is used inside ONELAB.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -3008,12 +3008,12 @@ Note: count 1 is DC component, count 2 is the fundamental frequency</p></li>
 <dt class="sig sig-object py" id="femmt.functions.find_result_log_file">
 <span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">find_result_log_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result_log_folder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keyword_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_min_max</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.functions.find_result_log_file" title="Link to this definition"></a></dt>
 <dd><p>Find a result log-file in a folder with many result-log files.</p>
-<p>Check a dictornary keyword list for matching a certain value (equel, greater equal, smaller equal).</p>
+<p>Check a dictionary keyword list for matching a certain value (equal, greater equal, smaller equal).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>result_log_folder</strong> (<em>str</em>) – filepath to result-log folder</p></li>
-<li><p><strong>keyword_list</strong> (<em>list</em>) – list with hirarchical keywords for dictionary structure, e.g. [“simulation_settings”, “core”, “core_inner_diameter”]</p></li>
+<li><p><strong>keyword_list</strong> (<em>list</em>) – list with hierarchical keywords for dictionary structure, e.g. [“simulation_settings”, “core”, “core_inner_diameter”]</p></li>
 <li><p><strong>value_min_max</strong> (<em>list</em>) – value to check for</p></li>
 </ul>
 </dd>
@@ -3428,7 +3428,7 @@ removes all amplitudes below 1 % of the maximum amplitude from the result-freque
 <dl class="py function">
 <dt class="sig sig-object py" id="femmt.functions.visualize_mean_mutual_inductances">
 <span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">visualize_mean_mutual_inductances</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inductance_matrix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">silent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.functions.visualize_mean_mutual_inductances" title="Link to this definition"></a></dt>
-<dd><p>Print the mean mutal inductances to the terminal (or file-) output.</p>
+<dd><p>Print the mean mutual inductances to the terminal (or file-) output.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -3443,7 +3443,7 @@ removes all amplitudes below 1 % of the maximum amplitude from the result-freque
 <dl class="py function">
 <dt class="sig sig-object py" id="femmt.functions.visualize_mutual_inductances">
 <span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">visualize_mutual_inductances</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self_inductances</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coupling_factors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">silent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.functions.visualize_mutual_inductances" title="Link to this definition"></a></dt>
-<dd><p>Print the mutal inductances to the terminal (or file-) output.</p>
+<dd><p>Print the mutual inductances to the terminal (or file-) output.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -3521,7 +3521,7 @@ removes all amplitudes below 1 % of the maximum amplitude from the result-freque
 <dl class="py function">
 <dt class="sig sig-object py" id="femmt.functions.wire_material_database">
 <span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">wire_material_database</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">WireMaterial</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#femmt.functions.wire_material_database" title="Link to this definition"></a></dt>
-<dd><p>Return wire materials e.g. copper, aluminium in a dictionary.</p>
+<dd><p>Return wire materials e.g. copper, aluminum in a dictionary.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Dict with materials and conductivity</p>
@@ -3545,7 +3545,7 @@ removes all amplitudes below 1 % of the maximum amplitude from the result-freque
 :type primary_to_primary: float
 :param secondary_to_secondary: Secondary winding to secondary winding insulation in m
 :type secondary_to_secondary: float
-:param primary_to_secondary: Primary winding to secondary winding insulaiton in m
+:param primary_to_secondary: Primary winding to secondary winding insulation in m
 :type primary_to_secondary: float
 :return:</p>
 </dd></dl>
@@ -3667,8 +3667,8 @@ at page no. 26</p>
 <li><p><strong>air_gap_position</strong> (<em>list</em>) – Position of the air-gap in the percentage with respect to window_h</p></li>
 <li><p><strong>mu_rel</strong> (<em>list</em>) – Relative permeability of the core [in F/m]</p></li>
 <li><p><strong>mult_air_gap_type</strong> (<em>list</em>) – Two types of equally distributed air-gaps (used only for air-gaps more than 1)
-Type 1: Equally distributed air-gaps including corner air-gaps (eg: air-gaps-position = [0, 50, 100] for 3 air-gaps)
-Type 2: Equally distributed air-gaps excluding corner air-gaps (eg: air-gaps-position = [25, 50, 75] for 3 air-gaps)</p></li>
+Type 1: Equally distributed air-gaps including corner air-gaps (e.g.: air-gaps-position = [0, 50, 100] for 3 air-gaps)
+Type 2: Equally distributed air-gaps excluding corner air-gaps (e.g.: air-gaps-position = [25, 50, 75] for 3 air-gaps)</p></li>
 </ul>
 </dd>
 </dl>
@@ -3730,7 +3730,7 @@ Type 2: Equally distributed air-gaps excluding corner air-gaps (eg: air-gaps-pos
 <dd><p>Plot the 2D Reluctance of the basic geometry described in Muelethaler thesis.</p>
 <p>(using Schwarz-Christoffel transformation) at page no. 35.
 It plots the Reluctance formula with respect to its variables (h/l and w/l).
-It is an independent function and has been used to analyse the expression and its limitation.</p>
+It is an independent function and has been used to analyze the expression and its limitation.</p>
 </dd></dl>
 
 </section>
