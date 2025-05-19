@@ -11,6 +11,10 @@ folder .../femmt/examples/example_results/simulation_file_name/results/log_elect
 import femmt as fmt
 import os
 from typing import Optional
+import logging
+
+# configure logging to show femmt terminal output
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 def basic_example_transformer_three_winding(onelab_folder: Optional[str] = None, show_visual_outputs: bool = True,
                                             is_test: bool = False):
@@ -100,7 +104,7 @@ def basic_example_transformer_three_winding(onelab_folder: Optional[str] = None,
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
-                                verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
+                                is_gui=is_test)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
     if onelab_folder is not None:

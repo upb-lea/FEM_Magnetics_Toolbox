@@ -1,15 +1,15 @@
 """Contains information about the file structure."""
 # Python standard libraries
 import os
-
+import logging
 import numpy as np
-from typing import List
+from typing import List, Optional
 
 # Local libraries
 from femmt.enumerations import ConductorType
 from femmt.model import Conductor
-from typing import Optional
 
+logger = logging.getLogger(__name__)
 
 class FileData:
     """Contains paths to every folder and file needed in femmt."""
@@ -57,10 +57,9 @@ class FileData:
                 for file in files:
                     file_path = os.path.join(root, file)
                     os.remove(file_path)
-                    # print(f"remove {file_path}")
-            # print("All simulation results from previous simulations have been deleted successfully.")
+            # logger.info("All simulation results from previous simulations have been deleted successfully.")
         except OSError:
-            print("Error occurred while deleting files and subdirectories.")
+            logger.warning("Error occurred while deleting files and subdirectories.")
 
     def update_paths(self, working_directory: str, electro_magnetic_folder_path: str = None, strands_coefficients_folder_path: str = None) -> None:
         """Set the local path based on the given working directory.

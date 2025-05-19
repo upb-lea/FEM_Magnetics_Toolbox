@@ -469,8 +469,8 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
     :type center_foil_additional_bobbin: float
     """
     if not check_secondary_and_tertiary_are_the_same(secondary_row, tertiary_row):
-        print("Secondary and tertiary winding are not defined similar. "
-              "That is not a nice center-tapped transformer :(")
+        logger.warning("Secondary and tertiary winding are not defined similar. "
+                       "That is not a nice center-tapped transformer :(")
 
     elif interleaving_type == CenterTappedInterleavingType.TypeA:
         # Usually for center-tapped it is the secondary/=tertiary winding number
@@ -631,7 +631,7 @@ def mix_x_and_i(input_x: List, input_i: List):
     len_x = len(input_x)
     len_i = len(input_i)
     if len_x > len_i:
-        print("x must be smaller or equal I")
+        logger.warning("x must be smaller or equal I")
     else:
         if len_x == 0:
             return input_i
@@ -656,6 +656,5 @@ def mix_x_and_i(input_x: List, input_i: List):
                 temp_mixed = mix_x_and_i(x[0:-1], current)
                 temp_mixed.insert(center(temp_mixed), temp_x)
                 current = temp_mixed
-            # print(f"{I = }")
             input_list = [input_x[0], input_i[0]]
             return [input_list[i] for i in current]

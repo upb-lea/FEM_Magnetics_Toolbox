@@ -39,7 +39,7 @@ def basic_example_sweep(onelab_folder: Optional[str] = None, show_visual_outputs
 
         working_directories.append(directory)
 
-        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=directory, verbosity=fmt.Verbosity.Silent, is_gui=is_test)
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=directory, is_gui=is_test)
 
         # This line is for automated pytest running on GitHub only. Please ignore this line!
         if onelab_folder is not None:

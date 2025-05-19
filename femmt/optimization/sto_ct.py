@@ -196,7 +196,7 @@ class StackedTransformerCenterTappedOptimization:
 
             geo = femmt.MagneticComponent(component_type=femmt.ComponentType.IntegratedTransformer,
                                           working_directory=working_directory_single_process,
-                                          verbosity=verbosity, simulation_name=f"Case_{trial.number}")
+                                          onelab_verbosity=verbosity, simulation_name=f"Case_{trial.number}")
 
             geo.update_mesh_accuracies(config.mesh_accuracy, config.mesh_accuracy, config.mesh_accuracy,
                                        config.mesh_accuracy)
@@ -676,7 +676,7 @@ class StackedTransformerCenterTappedOptimization:
 
         geo = femmt.MagneticComponent(component_type=femmt.ComponentType.IntegratedTransformer,
                                       working_directory=target_and_fixed_parameters.working_directories.fem_working_directory,
-                                      verbosity=femmt.Verbosity.Silent,
+                                      onelab_verbosity=femmt.Verbosity.Silent,
                                       simulation_name=f"Single_Case_{loaded_trial._trial_id - 1}")
         # Note: The _trial_id starts counting from 1, while the normal cases count from zero. So a correction needs to be made
 
@@ -832,7 +832,7 @@ class StackedTransformerCenterTappedOptimization:
 
         geo = femmt.MagneticComponent(component_type=femmt.ComponentType.IntegratedTransformer,
                                       working_directory=target_and_fixed_parameters.working_directories.fem_working_directory,
-                                      verbosity=femmt.Verbosity.Silent,
+                                      onelab_verbosity=femmt.Verbosity.Silent,
                                       simulation_name=f"Single_Case_{loaded_trial_params['number']}")
 
         geo.update_mesh_accuracies(mesh_accuracy_air_gaps=mesh_accuracy, mesh_accuracy_core=mesh_accuracy,
@@ -981,7 +981,7 @@ class StackedTransformerCenterTappedOptimization:
 
         geo = femmt.MagneticComponent(component_type=femmt.ComponentType.IntegratedTransformer,
                                       working_directory=target_and_fixed_parameters.working_directories.fem_working_directory,
-                                      verbosity=femmt.Verbosity.Silent,
+                                      onelab_verbosity=femmt.Verbosity.Silent,
                                       simulation_name=f"Single_Case_{loaded_trial_params['number']}")
 
         core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,

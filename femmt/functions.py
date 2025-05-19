@@ -8,7 +8,7 @@ import os
 import warnings
 from typing import Union, List, Tuple, Dict
 from scipy.integrate import quad
-
+import logging
 
 # Third parry libraries
 import gmsh
@@ -21,6 +21,8 @@ from femmt.constants import *
 from femmt.enumerations import ConductorType
 from femmt.dtos import *
 import femmt.functions_reluctance as fr
+
+logger = logging.getLogger(__name__)
 
 colors_femmt_default = {"blue": (28, 113, 216),
                         'red': (192, 28, 40),
@@ -523,11 +525,11 @@ def install_pyfemm_if_missing() -> None:
     missing = required - installed
 
     if missing:
-        print("Missing 'pyfemm' installation.")
-        print("Installing 'pyfemm' ...")
+        logger.info("Missing 'pyfemm' installation.")
+        logger.info("Installing 'pyfemm' ...")
         python = sys.executable
         subprocess.check_call([python, '-m', 'pip', 'install', *missing], stdout=subprocess.DEVNULL)
-        print("'pyfemm' is now installed!")
+        logger.info("'pyfemm' is now installed!")
 
 def litz_calculate_number_strands(n_layers: int) -> int:
     """
@@ -610,7 +612,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
     # check for input is list. Convert to numpy-array
     if isinstance(period_vector_t_i, list):
         if plot != 'no' and plot is not False:
-            print("Input is list, convert to np.array()")
+            logger.warning("Input is list, convert to np.array()")
         period_vector_t_i = np.array(period_vector_t_i)
 
     # first value of time vector must be zero
@@ -670,14 +672,14 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
             f"filter_type '{filter_value_harmonic}' not available: Must be 'factor','harmonic' or 'disabled ")
 
     if plot != 'no' and plot is not False:
-        print(f"{title=}")
-        print(f"{t[-1]=}")
-        print(f"{f0=}")
-        print(f"{Fs=}")
-        print(f"{sample_factor=}")
-        print(f"f_out = {np.around(f_out, decimals=0)}")
-        print(f"x_out = {np.around(x_out, decimals=3)}")
-        print(f"phi_rad_out = {np.around(phi_rad_out, decimals=3)}")
+        logger.info(f"{title=}")
+        logger.info(f"{t[-1]=}")
+        logger.info(f"{f0=}")
+        logger.info(f"{Fs=}")
+        logger.info(f"{sample_factor=}")
+        logger.info(f"f_out = {np.around(f_out, decimals=0)}")
+        logger.info(f"x_out = {np.around(x_out, decimals=3)}")
+        logger.info(f"phi_rad_out = {np.around(phi_rad_out, decimals=3)}")
 
         reconstructed_signal = 0
         for i_range in range(len(f_out)):
@@ -908,9 +910,9 @@ def find_common_frequencies(frequency_list_1: List, amplitude_list_1: List, phas
     common_phases_list_2 = []
 
     common_frequency_list = list(set(frequency_list_1).intersection(frequency_list_2))
-    print(f"{common_frequency_list=}")
+    logger.info(f"{common_frequency_list=}")
     common_frequency_list.sort()
-    print(f"{common_frequency_list=}")
+    logger.info(f"{common_frequency_list=}")
 
     # Delete the corresponding phases and amplitudes
     if isinstance(amplitude_list_1, List):
@@ -1280,7 +1282,7 @@ def find_result_log_file(result_log_folder: str, keyword_list: list, value_min_m
                 keyword_list[4]]
 
         if value_min <= data_to_compare <= value_max:
-            print(f"{value_min} <= {data_to_compare} <= {value_max} for file named {file}")
+            logger.info(f"{value_min} <= {data_to_compare} <= {value_max} for file named {file}")
 
 
 def wave_vector(f: float, complex_permeability: complex, complex_permittivity: complex, conductivity: float):
@@ -1320,7 +1322,7 @@ def axial_wavelength(f: float, complex_permeability: float, complex_permittivity
 
 
 def check_mqs_condition(radius: float, frequency: float, complex_permeability: float, complex_permittivity: float,
-                        conductivity: float, relative_margin_to_first_resonance: float = 0.5, silent: bool = False):
+                        conductivity: float, relative_margin_to_first_resonance: float = 0.5):
     """
     Check if the condition for a magnetoquasistatic simulation is fulfilled.
 
@@ -1340,8 +1342,6 @@ def check_mqs_condition(radius: float, frequency: float, complex_permeability: f
     :type conductivity: float
     :param relative_margin_to_first_resonance: relative margin to the first resonance. Defaults to 0.5.
     :type relative_margin_to_first_resonance: float
-    :param silent: True for no terminal output
-    :type silent: bool
     """
     if frequency == 0:
         raise ValueError("check_mqs_condition() only works for frequencies != 0")
@@ -1352,8 +1352,7 @@ def check_mqs_condition(radius: float, frequency: float, complex_permeability: f
     if diameter_to_wavelength_ratio > diameter_to_wavelength_ratio_of_first_resonance * relative_margin_to_first_resonance:
         # raise Warning(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance} - "
         #               f"1 means 1st resonance - should be kept well below 1 to ensure MQS approach to be correct! ")
-        if not silent:
-            print(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance}")
+        logger.info(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance}")
 
 
 def create_open_circuit_excitation_sweep(I0: float, n: float, frequency: float) -> List[List[float]]:
@@ -1475,25 +1474,23 @@ def get_inductance_matrix(self_inductances: np.array, mean_coupling_factors: np.
     return inductance_matrix
 
 
-def visualize_flux_linkages(flux_linkages: List, silent: bool) -> None:
+def visualize_flux_linkages(flux_linkages: List) -> None:
     """
     Print the flux linkages to the terminal (or file-) output.
 
     :param flux_linkages: flux-linkages in a list
     :type flux_linkages: List
-    :param silent: True for no output
-    :type silent: bool
     """
     string_to_print = ""
     for x in range(0, len(flux_linkages)):
         for y in range(0, len(flux_linkages)):
             string_to_print += f"Phi_{x+1}{y+1} = {flux_linkages[x][y]}     Induced by I_{y+1} in Winding{x+1}\n"
-    if not silent:
-        print("\nFluxes: ")
-        print(string_to_print)
+
+    logger.info("\nFluxes: ")
+    logger.info(string_to_print)
 
 
-def visualize_self_inductances(self_inductances: Union[List, np.array], flux_linkages: Union[List, np.array], silent: bool) -> None:
+def visualize_self_inductances(self_inductances: Union[List, np.array], flux_linkages: Union[List, np.array]) -> None:
     """
     Print the self-inductances to the terminal (or file-) output.
 
@@ -1501,19 +1498,16 @@ def visualize_self_inductances(self_inductances: Union[List, np.array], flux_lin
     :type self_inductances: Union[List, np.array]
     :param flux_linkages: flux linkages
     :type flux_linkages: Union[List, np.array]
-    :param silent: True for no output
-    :type silent: bool
     """
     string_to_print = ""
     for x in range(0, len(flux_linkages)):
         string_to_print += f"L_{x+1}_{x+1} = {self_inductances[x]}\n"
-    if not silent:
-        print("\n"
-              "Self Inductances: ")
-        print(string_to_print)
+    logger.info("\n"
+                "Self Inductances: ")
+    logger.info(string_to_print)
 
 
-def visualize_self_resistances(self_inductances: List, flux_linkages: List, frequency: float, silent: bool) -> None:
+def visualize_self_resistances(self_inductances: List, flux_linkages: List, frequency: float) -> None:
     """
     Calculate and print the self resistances to the terminal (or file-) output.
 
@@ -1523,19 +1517,16 @@ def visualize_self_resistances(self_inductances: List, flux_linkages: List, freq
     :type flux_linkages: List
     :param frequency: Frequency in Hz
     :type frequency: float
-    :param silent: True for no output
-    :type silent: bool
     """
     string_to_print = ""
     for x in range(0, len(flux_linkages)):
         string_to_print += f"Z_{x+1}_{x+1} = {self_inductances[x].imag*2*np.pi*frequency}\n"
-    if not silent:
-        print("\n"
-              "Self Resistances: ")
-        print(string_to_print)
+    logger.info("\n"
+                "Self Resistances: ")
+    logger.info(string_to_print)
 
 
-def visualize_coupling_factors(coupling_matrix: np.array, flux_linkages: List, silent: bool):
+def visualize_coupling_factors(coupling_matrix: np.array, flux_linkages: List):
     """
     Print the coupling factors to the terminal (or file-) output.
 
@@ -1543,47 +1534,39 @@ def visualize_coupling_factors(coupling_matrix: np.array, flux_linkages: List, s
     :type coupling_matrix: np.array
     :param flux_linkages: flux-linkages in a list
     :type flux_linkages: List
-    :param silent: True for no output
-    :type silent: bool
     """
     string_to_print = ""
     for x in range(0, len(flux_linkages)):
         for y in range(0, len(coupling_matrix)):
             string_to_print += f"K_{x + 1}{y + 1} = Phi_{x + 1}{y + 1} / Phi_{y + 1}{y + 1} = {coupling_matrix[x][y]}\n"
-    if not silent:
-        print("\n"
-              "Coupling Factors: ")
-        print(string_to_print)
+    logger.info("\n"
+                "Coupling Factors: ")
+
+    logger.info(string_to_print)
 
 
-def visualize_mean_coupling_factors(mean_coupling_factors: List, silent: bool):
+def visualize_mean_coupling_factors(mean_coupling_factors: List):
     """
     Print the mean coupling factors to the terminal (or file-) output.
 
     :param mean_coupling_factors: mean_coupling_factors in a list
     :type mean_coupling_factors: List
-    :param silent: True for no output
-    :type silent: bool
     """
     string_to_print = ""
     for x in range(0, len(mean_coupling_factors)):
         for y in range(0, len(mean_coupling_factors)):
             string_to_print += f"k_{x + 1}{y + 1} = Sqrt(K_{x + 1}{y + 1} * K_{y + 1}{x + 1}) = M_{x + 1}{y + 1} " \
                                f"/ Sqrt(L_{x + 1}_{x + 1} * L_{y + 1}_{y + 1}) = {mean_coupling_factors[x][y]}\n"
-        if not silent:
-            print("\n"
-                  "Mean Coupling Factors: ")
-            print(string_to_print)
+    logger.info("\nMean Coupling Factors: ")
+    logger.info(string_to_print)
 
 
-def visualize_mean_mutual_inductances(inductance_matrix: np.array, silent: bool):
+def visualize_mean_mutual_inductances(inductance_matrix: np.array):
     """
     Print the mean mutual inductances to the terminal (or file-) output.
 
     :param inductance_matrix: inductance matrix
     :type inductance_matrix: np.array
-    :param silent: True for no output
-    :type silent: bool
 
     e.g.  M_12 = M_21 = k_12 * (L_11 * L_22) ** 0.5
     """
@@ -1594,13 +1577,11 @@ def visualize_mean_mutual_inductances(inductance_matrix: np.array, silent: bool)
                 pass
             else:
                 string_to_print += f"M_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
-    if not silent:
-        print("\n"
-              "Mean Mutual Inductances: ")
-        print(string_to_print)
+    logger.info("\nMean Mutual Inductances: ")
+    logger.info(string_to_print)
 
 
-def visualize_mutual_inductances(self_inductances: List, coupling_factors: List, silent: bool):
+def visualize_mutual_inductances(self_inductances: List, coupling_factors: List):
     """
     Print the mutual inductances to the terminal (or file-) output.
 
@@ -1608,8 +1589,6 @@ def visualize_mutual_inductances(self_inductances: List, coupling_factors: List,
     :type self_inductances: List
     :param coupling_factors: Matrix with coupling factors
     :type coupling_factors: List
-    :param silent: True for no output
-    :type silent: bool
 
     e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
     """
@@ -1620,21 +1599,17 @@ def visualize_mutual_inductances(self_inductances: List, coupling_factors: List,
                 pass
             else:
                 string_to_print += f"M_{x + 1}{y + 1} = {self_inductances[y].real * coupling_factors[x][y]}\n"
-    if not silent:
-        print("\n"
-              "Mutual Inductances: ")
-        print(string_to_print)
+    logger.info("\nMutual Inductances: ")
+    logger.info(string_to_print)
 
 
-def visualize_inductance_matrix_coefficients(inductance_matrix: np.array, silent: bool):
+def visualize_inductance_matrix_coefficients(inductance_matrix: np.array):
     """Visualize the inductance matrix coefficients in the terminal.
 
     e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
 
     :param inductance_matrix: inductance matrix of transformer
     :type inductance_matrix: np.array
-    :param silent: False to show the terminal output
-    :type silent: bool
     """
     string_to_print = ""
     for x in range(0, len(inductance_matrix)):
@@ -1643,20 +1618,16 @@ def visualize_inductance_matrix_coefficients(inductance_matrix: np.array, silent
                 string_to_print += f"L_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
             else:
                 string_to_print += f"M_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
-    if not silent:
-        print("\n"
-              "Inductance Matrix Coefficients: ")
-        print(string_to_print)
+    logger.info("Inductance Matrix Coefficients: ")
+    logger.info(string_to_print)
 
 
-def visualize_inductance_matrix(inductance_matrix: np.array, silent: bool) -> None:
+def visualize_inductance_matrix(inductance_matrix: np.array) -> None:
     """
     Visualize the inductance matrix in the terminal.
 
     :param inductance_matrix: inductance matrix in H
     :type inductance_matrix: np.array
-    :param silent: True for no output
-    :type silent: bool
 
     e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
     """
@@ -1666,10 +1637,8 @@ def visualize_inductance_matrix(inductance_matrix: np.array, silent: bool) -> No
             string_to_print += f"{np.round(inductance_matrix[x][y].real, 12)} "
         string_to_print += "\n"
 
-    if not silent:
-        print("\n"
-              "Inductance Matrix: ")
-        print(string_to_print)
+    logger.info("\nInductance Matrix: ")
+    logger.info(string_to_print)
 
 def calculate_quadrature_integral(time_steps: List[float], data: List[float]) -> float:
     """

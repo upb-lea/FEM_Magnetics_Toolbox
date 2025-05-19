@@ -1,6 +1,7 @@
 """Functions to calculate reluctance models."""
 # python libraries
 from typing import Union, List
+import logging
 
 # femmt libraries
 from femmt.constants import *
@@ -11,6 +12,7 @@ import numpy as np
 import scipy
 from matplotlib import pyplot as plt
 
+logger = logging.getLogger(__name__)
 
 def calculate_ls_lh_n_from_inductance_matrix(inductance_matrix: Union[float, np.array]):
     """
@@ -1135,7 +1137,7 @@ def resistance_litz_wire(core_inner_diameter: float, window_w: float, window_h: 
         # get the total turn length
         total_turn_length = 0
         for windings_in_row in windings_per_row:
-            print(f"{windings_in_row=}")
+            logger.info(f"{windings_in_row=}")
             total_turn_length += np.sum(turn_length_per_column[:int(windings_in_row)])
     else:
         raise ValueError(f"{scheme} not defined. Must be 'horizontal_first' or 'vertical_first'.")

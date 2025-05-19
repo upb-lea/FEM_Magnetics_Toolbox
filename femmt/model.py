@@ -463,7 +463,7 @@ class Core:
         :type plot_interpolation: bool
         """
         if self.mdb_verbosity == Verbosity.ToConsole:
-            print(f"{self.permeability['datasource']=}")
+            logger.info(f"{self.permeability['datasource']=}")
         self.material_database.permeability_data_to_pro_file(temperature=self.temperature, frequency=frequency,
                                                              material_name=self.material,
                                                              datasource=self.permeability["datasource"],

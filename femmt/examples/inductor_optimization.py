@@ -21,7 +21,6 @@ import materialdatabase as mdb
 # femmt libraries
 import femmt as fmt
 
-
 material_db = mdb.MaterialDatabase()
 
 
@@ -963,7 +962,7 @@ class AutomatedDesign:
         for count in cases:
             # MagneticComponent class object
             geo = fmt.MagneticComponent(component_type=self.component_type_dict[self.magnetic_component],
-                                        working_directory=self.femmt_working_directory, verbosity=fmt.Verbosity.Silent)
+                                        working_directory=self.femmt_working_directory, onelab_verbosity=fmt.Verbosity.Silent)
 
             core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=self.data_matrix_fem[count, self.param["core_inner_diameter"]],
                                                             window_w=self.data_matrix_fem[count, self.param["window_w"]],

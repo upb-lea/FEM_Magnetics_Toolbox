@@ -893,7 +893,7 @@ class StackedTransformerOptimization:
 
             # 1. chose simulation type
             geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
-                                        working_directory=fem_input.working_directory, verbosity=fmt.Verbosity.Silent)
+                                        working_directory=fem_input.working_directory, onelab_verbosity=fmt.Verbosity.Silent)
 
             # 2. set core parameters
             core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=fem_input.core_inner_diameter,

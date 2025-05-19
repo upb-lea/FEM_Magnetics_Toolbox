@@ -1,7 +1,7 @@
 """Draw structures inside Onelab."""
 # Python standard libraries
 import numpy as np
-from logging import Logger
+import logging
 from typing import List
 
 # Local libraries
@@ -9,6 +9,7 @@ from femmt.enumerations import *
 from femmt.data import MeshData
 from femmt.model import Core, WindingWindow, AirGaps, StrayPath, Insulation
 
+logger = logging.getLogger(__name__)
 
 class TwoDaxiSymmetric:
     """
@@ -26,7 +27,6 @@ class TwoDaxiSymmetric:
     mesh_data: MeshData
     number_of_windings: int
     verbosity: Verbosity
-    logger: Logger
 
     # List of points which represent the model
     # Every List is a List of 4 Points: x, y, z, mesh_factor
@@ -39,7 +39,7 @@ class TwoDaxiSymmetric:
     p_iso_pri_sec: List[List[float]]
 
     def __init__(self, core: Core, mesh_data: MeshData, air_gaps: AirGaps, winding_windows: List[WindingWindow],
-                 stray_path: StrayPath, insulation: Insulation, component_type: ComponentType, number_of_windings: int, verbosity: Verbosity, logger: Logger):
+                 stray_path: StrayPath, insulation: Insulation, component_type: ComponentType, number_of_windings: int, verbosity: Verbosity):
         self.core = core
         self.mesh_data = mesh_data
         self.winding_windows = winding_windows
@@ -49,7 +49,6 @@ class TwoDaxiSymmetric:
         self.insulation = insulation
         self.number_of_windings = number_of_windings
         self.verbosity = verbosity
-        self.logger = logger
 
         # -- Arrays for geometry data -- 
         # TODO Is the zero initialization necessary?
@@ -71,16 +70,6 @@ class TwoDaxiSymmetric:
         self.r_inner = core.r_inner
         self.r_outer = core.r_outer
 
-    def femmt_print(self, text: str):
-        """
-        Print text to terminal or to log-file, dependent on the current verbosity.
-
-        :param text: text to print
-        :type text: str
-        """
-        if not self.verbosity == Verbosity.Silent:
-            self.logger.info(text)
-
     def draw_outer(self):
         """Draws the outer points of the main core (single core)."""
         # Outer Core
@@ -96,7 +85,6 @@ class TwoDaxiSymmetric:
     def draw_single_window(self):
         """Draw a single window."""
         # At this point both windows (in a cut) are modeled
-        # print(f"win: c_window: {self.component.mesh.c_window}")
         self.p_window[0] = [-self.r_inner,
                             -self.core.window_h / 2,
                             0,
@@ -277,9 +265,6 @@ class TwoDaxiSymmetric:
                 right_bound = virtual_winding_window.right_bound
 
                 # Check, if virtual winding window fits in physical window
-                # print(f"{bot_bound = }\n", f"{top_bound = }\n", f"{left_bound = }\n", f"{right_bound = }\n")
-                # print(f"{winding_window.max_bot_bound = }\n", f"{winding_window.max_top_bound = }\n", f"{winding_window.max_left_bound = }\n",
-                # f"{winding_window.max_right_bound = }\n")
                 if bot_bound < winding_window.max_bot_bound or top_bound > winding_window.max_top_bound or \
                         left_bound < winding_window.max_left_bound or right_bound > winding_window.max_right_bound:
                     # Set valid to False, so that geometry is to be neglected in geometry sweep
@@ -309,9 +294,9 @@ class TwoDaxiSymmetric:
             
                             """
                             if winding0.conductor_radius != winding1.conductor_radius:
-                                print("For bifilar winding scheme both conductors must be of the same radius!")
+                                logger.warning("For bifilar winding scheme both conductors must be of the same radius!")
                             else:
-                                print("Bifilar winding scheme is applied")
+                                logger.info("Bifilar winding scheme is applied")
 
                             raise Exception("Bifilar winding scheme is not implemented yet.")
 
@@ -1304,8 +1289,8 @@ class TwoDaxiSymmetric:
                 drawn_number_of_turns += int(self.p_conductor[winding.winding_number].shape[0] / 5)  # rectangular conductors
 
         if drawn_number_of_turns != needed_number_of_turns:
-            self.femmt_print(f"{drawn_number_of_turns=}")
-            self.femmt_print(f"{needed_number_of_turns=}")
+            logger.info(f"{drawn_number_of_turns=}")
+            logger.info(f"{needed_number_of_turns=}")
             raise Exception("Winding mismatch. Probably too many turns that do not fit in the winding window")
 
     def draw_region_single(self):
@@ -1347,7 +1332,7 @@ class TwoDaxiSymmetric:
         if self.component_type == ComponentType.IntegratedTransformer:
             # TODO: insulations implement for integrated_transformers
             # TODO Change back to warnings?
-            self.femmt_print("Insulations are not set because they are not implemented for integrated transformers.")
+            logger.info("Insulations are not set because they are not implemented for integrated transformers.")
         else:
             window_h = self.core.window_h
             iso = self.insulation

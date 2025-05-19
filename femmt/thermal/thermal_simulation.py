@@ -5,6 +5,7 @@ import json
 import numpy as np
 import os
 from typing import Dict, List
+import logging
 
 # Third parry libraries
 import gmsh
@@ -14,6 +15,8 @@ from onelab import onelab
 import femmt.thermal.thermal_functions as thermal_f
 from femmt.thermal.thermal_classes import ConstraintPro, FunctionPro, GroupPro, ParametersPro, PostOperationPro
 from femmt.data import FileData
+
+logger = logging.getLogger(__name__)
 
 def create_case(boundary_regions: Dict, boundary_physical_groups: Dict, boundary_temperatures: Dict,
                 boundary_flags: Dict, k_case: float,
@@ -198,7 +201,7 @@ def create_windings(winding_tags: List, k_windings: float, winding_losses, condu
                                                                        conductor_radii[winding_index],
                                                                        wire_distances[winding_index][index])
 
-                print(q_vol[name])
+                logger.info(q_vol[name])
                 k[name] = k_windings
                 if tag not in tag_counters:  # The counter is needed here to create a single region for every turn in case of parallel windings
                     tag_counters[tag] = 0
@@ -447,7 +450,7 @@ def post_operation(case_volume: float, output_file: str, sensor_points_file: str
         "max": core_part_max,
         "mean": mean_sum / len(core_values.keys())
     }
-    print(len(core_values.keys()))
+    logger.info(len(core_values.keys()))
     # windings
     winding_values = parse_gmsh_parsed(winding_file)
     windings = {}

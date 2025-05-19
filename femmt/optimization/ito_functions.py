@@ -164,7 +164,7 @@ def integrated_transformer_fem_simulation_from_result_dto(config_dto: ItoSingleI
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
                                 working_directory=fem_working_directory,
-                                verbosity=femmt.Verbosity.Silent)
+                                onelab_verbosity=femmt.Verbosity.Silent)
 
     window_h = dto.window_h_bot + dto.window_h_top + dto.core_inner_diameter / 4
 

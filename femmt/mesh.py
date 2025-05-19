@@ -11,7 +11,7 @@ GMSH default procedure
 import os
 import numpy as np
 import warnings
-from logging import Logger
+import logging
 from typing import Dict, List
 
 # Third parry libraries
@@ -24,6 +24,7 @@ from femmt.data import FileData
 from femmt.model import Conductor, Core, StrayPath, AirGaps, Insulation, WindingWindow
 from femmt.drawing import TwoDaxiSymmetric
 
+logger = logging.getLogger(__name__)
 
 class Mesh:
     """Create a mesh from the given model."""
@@ -47,14 +48,13 @@ class Mesh:
     thermal_mesh_file: str
 
     verbosity: Verbosity
-    logger: Logger
     wwr_enabled: bool
 
     # Additionally there are all the needed lists for points, lines, curve_loops and plane_surfaces
     # See set_empty_lists()
 
     def __init__(self, model: TwoDaxiSymmetric, windings: List[Conductor], winding_windows: List[WindingWindow], correct_outer_leg: bool,
-                 file_paths: FileData, verbosity: Verbosity, logger: Logger, region: bool = None, wwr_enabled: bool = True):
+                 file_paths: FileData, verbosity: Verbosity, region: bool = None, wwr_enabled: bool = True):
 
         self.verbosity = verbosity
         self.logger = logger
@@ -96,16 +96,6 @@ class Mesh:
         self.e_m_mesh_file = file_paths.e_m_mesh_file
         self.thermal_mesh_file = file_paths.thermal_mesh_file
         self.gmsh_log = file_paths.gmsh_log
-
-    def femmt_print(self, text: str):
-        """
-        Print text to terminal or to log-file, dependent on the current verbosity.
-
-        :param text: text to print
-        :type text: str
-        """
-        if not self.verbosity == Verbosity.Silent:
-            self.logger.info(text)
 
     def set_empty_point_lists(self):
         """Initialize point lists. For internal overview as a mirrored gmsh information set."""
@@ -1165,7 +1155,7 @@ class Mesh:
         :param alternative_error:
         :type alternative_error:
         """
-        self.femmt_print("Hybrid Mesh Generation in Gmsh")
+        logger.info("Hybrid Mesh Generation in Gmsh")
         # Clear gmsh
         gmsh.clear()
         # Initialization
@@ -1238,7 +1228,7 @@ class Mesh:
         :param refine:
         :type refine: int
         """
-        self.femmt_print("Electro Magnetic Mesh Generation in Gmsh (write physical entities)")
+        logger.info("Electro Magnetic Mesh Generation in Gmsh (write physical entities)")
 
         self.PN_BOUND = 111111
         self.PN_AIR = 110000
@@ -1335,16 +1325,16 @@ class Mesh:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # TODO: Adaptive Meshing
         if refine == 1:
-            self.femmt_print("\n ------- \nRefined Mesh Creation ")
+            logger.info("\n ------- \nRefined Mesh Creation ")
             # mesh the new gmsh.model using the size field
             bg_field = gmsh.model.mesh.field.add("PostView")
             # TODO: gmsh.model.mesh.field.setNumber(bg_field, "ViewTag", sf_view)
             gmsh.model.mesh.field.setAsBackgroundMesh(bg_field)
-            self.femmt_print("\nMeshing...\n")
+            logger.info("\nMeshing...\n")
             gmsh.model.mesh.generate(2)
         else:
             # Mesh the model
-            self.femmt_print("\nMeshing...\n")
+            logger.info("\nMeshing...\n")
             gmsh.model.mesh.generate(2)
 
         if not os.path.exists(self.mesh_folder_path):
@@ -1378,7 +1368,7 @@ class Mesh:
         :param visualize_before: True to visualize geometry before performing the simulation
         :type visualize_before: bool
         """
-        self.femmt_print("Thermal Mesh Generation in Gmsh (write physical entities)")
+        logger.info("Thermal Mesh Generation in Gmsh (write physical entities)")
 
         gmsh.open(self.model_geo_file)
 
@@ -1724,7 +1714,7 @@ class Mesh:
 
         # TODO: Inter conductor meshing!
         if all(winding.conductor_type == ConductorType.RoundSolid for winding in self.windings):
-            self.femmt_print("Making use of skin based meshing\n")
+            logger.info("Making use of skin based meshing\n")
             for num in range(len(self.windings)):
                 for i in range(0, int(len(p_cond[num]) / 5)):
                     gmsh.model.mesh.embed(0, [p_cond[num][5 * i + 0]], 2, self.plane_surface_cond[num][i])
@@ -1841,7 +1831,7 @@ class Mesh:
                             valid = False
                             break
                     else:
-                        print(f"Winding window rasterization skipped because ConductorType {winding.conductor_type.name} is not supported.")
+                        logger.info(f"Winding window rasterization skipped because ConductorType {winding.conductor_type.name} is not supported.")
                         return
 
                 if not valid:
@@ -1914,8 +1904,8 @@ class Mesh:
             if self.wwr_enabled:
                 # Winding Windows list has exactly two winding windows: top and bot: 
                 if len(self.winding_windows) != 2:
-                    print(f"Winding Window Rasterization is only implemented for stacked core with exactly 2 winding windows. "
-                          f"{len(self.winding_windows)} winding windows were given.")
+                    logger.info(f"Winding Window Rasterization is only implemented for stacked core with exactly 2 winding windows. "
+                                f"{len(self.winding_windows)} winding windows were given.")
                     gmsh.model.geo.synchronize()
                     return
 

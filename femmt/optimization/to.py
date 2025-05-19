@@ -168,7 +168,7 @@ class TransformerOptimization:
 
             geo = femmt.MagneticComponent(component_type=femmt.ComponentType.Transformer,
                                           working_directory=working_directory_single_process,
-                                          verbosity=verbosity, simulation_name=f"Case_{trial.number}")
+                                          onelab_verbosity=verbosity, simulation_name=f"Case_{trial.number}")
 
             geo.update_mesh_accuracies(config.mesh_accuracy, config.mesh_accuracy, config.mesh_accuracy,
                                        config.mesh_accuracy)
@@ -465,7 +465,7 @@ class TransformerOptimization:
                                       working_directory=os.path.join(
                                           target_and_fixed_parameters.working_directories.fem_working_directory,
                                           'process_1'),
-                                      verbosity=femmt.Verbosity.Silent,
+                                      onelab_verbosity=femmt.Verbosity.Silent,
                                       simulation_name=f"Single_Case_{loaded_trial_params['number']}")
 
         geo.update_mesh_accuracies(mesh_accuracy_air_gaps=mesh_accuracy, mesh_accuracy_core=mesh_accuracy,

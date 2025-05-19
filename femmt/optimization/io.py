@@ -28,6 +28,8 @@ import femmt.optimization.functions_optimization as fo
 import femmt as fmt
 import materialdatabase as mdb
 
+logger = logging.getLogger(__name__)
+
 class InductorOptimization:
     """Reluctance model and FEM simulation for the inductor optimization."""
 
@@ -188,7 +190,7 @@ class InductorOptimization:
                 (available_height + config.insulations.primary_to_primary) / (litz_wire_diameter + config.insulations.primary_to_primary))
             max_turns = possible_number_turns_per_row * possible_number_turns_per_column
             if max_turns < 1:
-                logging.warning("Max. number of turns per window < 1")
+                logger.warning("Max. number of turns per window < 1")
                 return float('nan'), float('nan')
 
             turns = trial.suggest_int('turns', 1, max_turns)
@@ -222,7 +224,7 @@ class InductorOptimization:
             try:
                 reluctance_output: ReluctanceModelOutput = InductorOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_input)
             except ValueError as e:
-                logging.info("bot air gap: No fitting air gap length")
+                logger.info("bot air gap: No fitting air gap length")
                 return float('nan'), float('nan')
 
             trial.set_user_attr('p_winding', reluctance_output.p_winding)
@@ -473,7 +475,7 @@ class InductorOptimization:
             loaded_study = optuna.load_study(study_name=config.inductor_study_name, storage=database_url)
             df = loaded_study.trials_dataframe()
             df.to_csv(f'{config.inductor_optimization_directory}/{config.inductor_study_name}.csv')
-            logging.info(f"Exported study as .csv file: {config.inductor_optimization_directory}/{config.inductor_study_name}.csv")
+            logger.info(f"Exported study as .csv file: {config.inductor_optimization_directory}/{config.inductor_study_name}.csv")
             return df
 
         @staticmethod
@@ -775,7 +777,7 @@ class InductorOptimization:
             """
             # 1. chose simulation type
             geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.FreqDomain, component_type=fmt.ComponentType.Inductor,
-                                        working_directory=fem_input.working_directory, verbosity=fmt.Verbosity.Silent,
+                                        working_directory=fem_input.working_directory, onelab_verbosity=fmt.Verbosity.Silent,
                                         simulation_name=fem_input.simulation_name)
 
             # 2. set core parameters

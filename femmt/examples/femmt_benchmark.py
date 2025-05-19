@@ -162,7 +162,7 @@ def create_model(working_directory: str, mesh_accuracies=Optional[MeshAccuracies
     inductor_frequency = 270000
     
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                verbosity=fmt.Verbosity.Silent, wwr_enabled=wwr_enabled)
+                                onelab_verbosity=fmt.Verbosity.Silent, wwr_enabled=wwr_enabled)
 
     core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
@@ -230,7 +230,7 @@ def create_rectangular_conductor_model(working_directory: str, mesh_accuracies: 
     inductor_frequency = 270000
     
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                verbosity=fmt.Verbosity.Silent, wwr_enabled=wwr_enabled)
+                                onelab_verbosity=fmt.Verbosity.Silent, wwr_enabled=wwr_enabled)
 
     core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],

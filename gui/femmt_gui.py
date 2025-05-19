@@ -3062,7 +3062,7 @@ class MainWindow(QMainWindow):
             geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor,
                                         working_directory=self.md_working_directory_lineEdit.text(),
                                         is_gui=True,
-                                        verbosity=fmt.Verbosity.ToConsole)
+                                        onelab_verbosity=fmt.Verbosity.ToConsole)
             self.check_onelab_config(geo)
 
             core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=comma_str_to_point_float(self.md_core_width_lineEdit.text()),
@@ -3246,7 +3246,7 @@ class MainWindow(QMainWindow):
             geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer,
                                         working_directory=self.md_working_directory_lineEdit.text(),
                                         is_gui=True,
-                                        verbosity=fmt.Verbosity.ToConsole)
+                                        onelab_verbosity=fmt.Verbosity.ToConsole)
             self.check_onelab_config(geo)
 
             # -----------------------------------------------

@@ -4,10 +4,12 @@ from multiprocessing import Pool
 from typing import List, Dict, Callable
 import os
 import shutil
+import logging
 
 # Third parry libraries
 from femmt import MagneticComponent
 
+logger = logging.getLogger(__name__)
 
 def _copy_electro_magnetic_necessary_files(src_folder: str, dest_folder: str):
     """
@@ -44,10 +46,10 @@ def hpc_single_simulation(parameters: Dict):
     model = parameters["model"]
 
     if "freq" not in parameters["simulation_parameters"]:
-        print("'freq' argument is missing. Simulation will be skipped.")
+        logger.info("'freq' argument is missing. Simulation will be skipped.")
         return
     if "current" not in parameters["simulation_parameters"]:
-        print("'current' argument is missing. Simulation will be skipped.")
+        logger.info("'current' argument is missing. Simulation will be skipped.")
         return
 
     freq = parameters["simulation_parameters"]["freq"]
