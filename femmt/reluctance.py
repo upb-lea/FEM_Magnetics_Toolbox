@@ -68,7 +68,7 @@ def plot_r_basic():
 
     (using Schwarz-Christoffel transformation) at page no. 35.
     It plots the Reluctance formula with respect to its variables (h/l and w/l).
-    It is an independent function and has been used to analyse the expression and its limitation.
+    It is an independent function and has been used to analyze the expression and its limitation.
     """
     # # Uncomment this section of code if Reluctance change with respect to h/l is desired
     # width = 100
@@ -217,8 +217,8 @@ def create_data_matrix(core_inner_diameter: list, window_h: list, window_w: list
     :param mu_rel: Relative permeability of the core [in F/m]
     :type mu_rel: list
     :param mult_air_gap_type: Two types of equally distributed air-gaps (used only for air-gaps more than 1)
-        Type 1: Equally distributed air-gaps including corner air-gaps (eg: air-gaps-position = [0, 50, 100] for 3 air-gaps)
-        Type 2: Equally distributed air-gaps excluding corner air-gaps (eg: air-gaps-position = [25, 50, 75] for 3 air-gaps)
+        Type 1: Equally distributed air-gaps including corner air-gaps (e.g.: air-gaps-position = [0, 50, 100] for 3 air-gaps)
+        Type 2: Equally distributed air-gaps excluding corner air-gaps (e.g.: air-gaps-position = [25, 50, 75] for 3 air-gaps)
     :type mult_air_gap_type: list
     """
     # Structure: data_matrix = [core_inner_diameter, window_h, window_w, mu_rel, no_of_turns, n_air_gaps, air_gap_h,
@@ -284,7 +284,7 @@ class MagneticCircuit:
                  air_gap_h: list, air_gap_position: list, mu_r_abs: list, mult_air_gap_type: list = None,
                  air_gap_method: str = 'Percent', component_type: str = 'inductor', sim_type: str = 'single'):
         """
-        Init the MagneticCircuit class.
+        Initialize the MagneticCircuit class.
 
         :param core_inner_diameter: Diameter of center leg of the core in meter
         :type core_inner_diameter: list
@@ -303,8 +303,8 @@ class MagneticCircuit:
         :param mu_r_abs: Relative permeability of the core [in F/m]
         :type mu_r_abs: list
         :param mult_air_gap_type: Two types of equally distributed air-gaps (used only for air-gaps more than 1)
-            Type 1: Equally distributed air-gaps including corner air-gaps (eg: air-gaps-position = [0, 50, 100] for 3 air-gaps)
-            Type 2: Equally distributed air-gaps excluding corner air-gaps (eg: air-gaps-position = [25, 50, 75] for 3 air-gaps)
+            Type 1: Equally distributed air-gaps including corner air-gaps (e.g.: air-gaps-position = [0, 50, 100] for 3 air-gaps)
+            Type 2: Equally distributed air-gaps excluding corner air-gaps (e.g.: air-gaps-position = [25, 50, 75] for 3 air-gaps)
         :type mult_air_gap_type: list
                 :param air_gap_h: Air-gap height [in meter]
         :param air_gap_method: Input method of air gap position ( either in 'Percent', 'Center' or 'Manually')

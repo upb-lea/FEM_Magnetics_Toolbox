@@ -36,6 +36,12 @@ jobs:
           
             pip install pylint
             pylint $(git ls-files '*.py')
+      - name: Install packages for spell check and perform spell check
+        run: |
+          sudo apt install aspell-en
+          pip install pyspelling
+          pyspelling
+          echo finished spell checking
 
       - name: install femmt package
         run: |

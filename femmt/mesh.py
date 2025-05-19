@@ -1142,7 +1142,7 @@ class Mesh:
                              visualize_before: bool = False,
                              save_png: bool = True, refine=0, alternative_error=0) -> None:
         """
-        Generate the hybird mesh.
+        Generate the hybrid mesh.
 
         - interaction with gmsh
         - mesh generation
@@ -1841,7 +1841,7 @@ class Mesh:
                             valid = False
                             break
                     else:
-                        print(f"Winding window rasterization skipped becuase ConductorType {winding.conductor_type.name} is not supported.")
+                        print(f"Winding window rasterization skipped because ConductorType {winding.conductor_type.name} is not supported.")
                         return
 
                 if not valid:

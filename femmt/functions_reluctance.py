@@ -439,7 +439,7 @@ def calculate_flux_matrix(reluctance_matrix: Union[float, np.array], winding_mat
     return np.matmul(np.matmul(reluctance_matrix_invert, winding_matrix), current_matrix)
 
 
-def time_vec_current_vec_from_time_current_vec(time_current_vec: List[List[float]]):
+def time_vec_current_vec_from_time_current_vec(time_current_vec: List[List[float]] | np.array):
     """
     Split a time-current vector into time and current vector.
 
@@ -1023,7 +1023,7 @@ def resistance_solid_wire(core_inner_diameter: float, window_w: float, turns_cou
     :type turns_count: int
     :param conductor_radius: conductor radius
     :type conductor_radius: float
-    :param material: Material, e.g. "Copper" or "Aluminium"
+    :param material: Material, e.g. "Copper" or "Aluminum"
     :type material: str
     :param temperature: temperature in °C
     :type temperature: float
@@ -1061,7 +1061,7 @@ def resistance_litz_wire(core_inner_diameter: float, window_w: float, window_h: 
     :type window_w: float
     :param turns_count: number of turns
     :type turns_count: int
-    :param material: Material, e.g. "Copper" or "Aluminium"
+    :param material: Material, e.g. "Copper" or "Aluminum"
     :type material: str
     :param temperature: temperature in °C
     :type temperature: float
@@ -1115,8 +1115,30 @@ def resistance_litz_wire(core_inner_diameter: float, window_w: float, window_h: 
 
         # get the total turn length
         total_turn_length = np.sum(np.multiply(windings_per_column, turn_length_per_column))
-    if scheme == "horizontal_first":
-        raise NotImplementedError("'horizontal_first'-scheme not implemented yet.")
+    elif scheme == "horizontal_first":
+        number_of_columns = (window_w - iso_core_left - iso_core_right + iso_primary_to_primary) / (litz_wire_diameter + iso_primary_to_primary)
+        length_row_per_turn = np.zeros(int(number_of_columns))
+
+        # figure out the turn length per row
+        r_inner = np.array([core_inner_diameter / 2 + iso_core_left])
+        middle_radius_per_column = np.array([])
+        for count, _ in enumerate(length_row_per_turn):
+            middle_radius_per_column = np.append(middle_radius_per_column, r_inner + count * iso_primary_to_primary + (count + 0.5) * litz_wire_diameter)
+        turn_length_per_column = 2 * middle_radius_per_column * np.pi  # diameter * pi
+
+        # figure out the windings per row
+        number_of_rows = np.ceil(turns_count / possible_number_turns_per_row)
+        windings_per_row = possible_number_turns_per_row * np.ones(int(number_of_rows))
+        last_row_turns = np.mod(turns_count, possible_number_turns_per_row)
+        windings_per_row[-1] = last_row_turns
+
+        # get the total turn length
+        total_turn_length = 0
+        for windings_in_row in windings_per_row:
+            print(f"{windings_in_row=}")
+            total_turn_length += np.sum(turn_length_per_column[:int(windings_in_row)])
+    else:
+        raise ValueError(f"{scheme} not defined. Must be 'horizontal_first' or 'vertical_first'.")
 
     sigma_copper = ff.conductivity_temperature(material, temperature)
     # return R = rho * l / A
@@ -1160,7 +1182,7 @@ def calc_skin_depth(frequency: float, material_name: str = "Copper", temperature
 
     :param frequency: Frequency in Hz
     :type frequency: float
-    :param material_name: material name, e.g. 'Copper' or 'Aluminium'
+    :param material_name: material name, e.g. 'Copper' or 'Aluminum'
     :type material_name: str
     :param temperature: Temperature in °C
     :type temperature: float
@@ -1189,7 +1211,7 @@ def calc_proximity_factor(litz_wire_name: str, number_turns: int, window_h: floa
     :type iso_core_bot: float
     :param frequency: Frequency in Hz
     :type frequency: float
-    :param litz_wire_material_name: material name, e.g. 'Copper' or 'Aluminium'
+    :param litz_wire_material_name: material name, e.g. 'Copper' or 'Aluminum'
     :type litz_wire_material_name: str
     :param temperature: Temperature in °C
     :type temperature: float
@@ -1218,7 +1240,7 @@ def calc_proximity_factor_air_gap(litz_wire_name: str, number_turns: int, r_1: f
     :type winding_area: float
     :param frequency: Frequency in Hz
     :type frequency: float
-    :param litz_wire_material_name: material name, e.g. 'Copper' or 'Aluminium'
+    :param litz_wire_material_name: material name, e.g. 'Copper' or 'Aluminum'
     :type litz_wire_material_name: str
     :param temperature: Temperature in °C
     :type temperature: float

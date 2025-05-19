@@ -141,17 +141,17 @@ class FunctionPro:
         self.q_vol = {}
 
     @staticmethod
-    def dict_as_function_str(name: str, dct: Dict):
+    def dict_as_function_str(name: str, dictionary: Dict):
         """
         Write dictionary as a string.
 
         :param name: name
         :type name: str
-        :param dct: Dictionary
-        :type dct: Dict
+        :param dictionary: Dictionary
+        :type dictionary: Dict
         """
         dict_as_str = ""
-        for key, value in dct.items():
+        for key, value in dictionary.items():
             dict_as_str += f"\t{name}[{key}] = {value};\n"
 
         return dict_as_str

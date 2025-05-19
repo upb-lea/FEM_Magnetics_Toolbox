@@ -1,0 +1,37 @@
+matrix:
+- name: Python Source
+  aspell:
+    lang: en
+    d: en_US
+  sources:
+  - femmt/*.py
+  - femmt/*/*.py
+  dictionary:
+    wordlists:
+      - docs/wordlist
+  pipeline:
+  - pyspelling.filters.python:
+      strings: true
+      comments: false
+  ignore_regexp:
+        - '.*\b(TODO|FIXME|NOTE)\b.*'
+- name: markdown
+  sources:
+  - README.rst
+  #- CHANGELOG.md
+  aspell:
+    lang: en
+    d: en_US
+  dictionary:
+    wordlists:
+    - docs/wordlist
+  pipeline:
+  - pyspelling.filters.markdown:
+  - pyspelling.filters.html:
+      comments: false
+      attributes:
+      - title
+      - alt
+      ignores:
+      - code
+      - pre

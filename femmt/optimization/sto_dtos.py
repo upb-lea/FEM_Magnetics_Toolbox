@@ -110,7 +110,7 @@ class StoSingleInputConfig:
     core_name_list: Optional[List[str]]
     core_inner_diameter_min_max_list: Optional[List[float]]
     window_w_min_max_list: Optional[List[float]]
-    window_h_bot_min_max_list: list
+    window_h_bot_min_max_list: Optional[List[float]]
     primary_litz_wire_list: list
     secondary_litz_wire_list: list
 

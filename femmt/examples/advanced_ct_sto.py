@@ -1,5 +1,5 @@
 """
-Advanced example to show an optimization workflow for the stacked transformer.
+Advanced example to show an optimization workflow for the center-tapped stacked transformer.
 
 A stacked transformer should be optimized. The target parameters are:
     * l_s12_target=5.8e-6,
@@ -21,7 +21,7 @@ sweep parameters: geometry and material
     interleaving_type_list=[fmt.CenterTappedInterleavingType.TypeC],
     interleaving_scheme_list=[fmt.InterleavingSchemesFoilLitz.ter_3_4_sec_ter_4_3_sec],
 
-For the optimization, a genetic algorythm (e.g. NSGAII or NSGAIII) is used. The external "optuna"
+For the optimization, a genetic algorithm (e.g. NSGAII or NSGAIII) is used. The external "optuna"
 toolbox is used to perform the optimization. The optimizer makes several "trials" to suggest geometry
 and material parameters out of the given lists. In case of invalid designs are suggested, the trials
 will fail "Trial 1 failed with value (nan, nan, nan, nan)". Others will work fine.

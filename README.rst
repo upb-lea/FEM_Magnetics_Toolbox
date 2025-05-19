@@ -39,7 +39,7 @@ Stable features
          * Litz wire database
          * Core geometry database
          * Conductor materials: temperature curves
-         * Ferrit materials: permeability / permittivity `material database <https://github.com/upb-lea/materialdatabase>`__ (datasheets and own measurements)
+         * Ferrite materials: permeability / permittivity `material database <https://github.com/upb-lea/materialdatabase>`__ (datasheets and own measurements)
 
 * Solver features:
     * Implemented using `ONELAB <https://onelab.info/>`__
@@ -63,7 +63,7 @@ Stable features
     * Transformer equivalent diagrams for 2- and 3-winding transformer
 
 * Optimization:
-    * Parallel computing to speed up simulations (no cpu core limitation)
+    * Parallel computing to speed up simulations (no CPU core limitation)
     * Examples for Pareto optimization to adapt to your own optimization problem
 
 
@@ -124,7 +124,7 @@ Further steps for macOS(ARM)
 -  Go to https://onelab.info/
 -  Download the Desktop Version for Windows
 -  Copy the "conveks.py" and "Onelab.py" files and paste them into the "onelab" folder
--  Go to http://getdp.info/
+-  Go to https://getdp.info/
 -  Download the macOS(ARM) Version
 -  Open the downloaded folder, navigate to "bin" and copy the "getdp" application file
 -  Paste the copied file into your "onelab" folder

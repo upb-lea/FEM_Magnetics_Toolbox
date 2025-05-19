@@ -131,7 +131,7 @@ class StackedTransformerOptimization:
         @staticmethod
         def objective(trial: optuna.Trial, config: StoSingleInputConfig, target_and_fixed_parameters: StoTargetAndFixedParameters):
             """
-            Objective funktion to optimize. Uses reluctance model calculation.
+            Objective function to optimize. Uses reluctance model calculation.
 
             Once core_name_list is not None, the objective function uses fixed core sizes. Cores are picked from the core_database().
             Otherwise, core_inner_diameter_min_max_list, window_w_min_max_list and window_h_bot_min_max_list are used.
@@ -424,7 +424,7 @@ class StackedTransformerOptimization:
             p_winding_1_top = 0
             p_winding_1_bot = 0
             for count, fft_frequency in enumerate(reluctance_input.fft_frequency_list_1):
-                proximity_factor_1_top = fmt.calc_proximity_factor_air_gap(
+                proximity_factor_1_top = fr.calc_proximity_factor_air_gap(
                     litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=reluctance_input.turns_1_top,
                     r_1=reluctance_input.insulations.iso_window_top_core_left,
                     frequency=fft_frequency, winding_area=winding_area_1_top,
@@ -437,7 +437,7 @@ class StackedTransformerOptimization:
                         (reluctance_input.turns_1_bot * 2 * reluctance_input.primary_litz_dict["conductor_radii"] + \
                             (reluctance_input.turns_1_bot - 1) * reluctance_input.insulations.iso_primary_to_primary)
 
-                    proximity_factor_1_bot_inner = fmt.calc_proximity_factor_air_gap(
+                    proximity_factor_1_bot_inner = fr.calc_proximity_factor_air_gap(
                         litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=reluctance_input.turns_1_bot,
                         r_1=reluctance_input.insulations.iso_window_bot_core_left,
                         frequency=fft_frequency, winding_area=winding_area_1_bot,
@@ -449,13 +449,13 @@ class StackedTransformerOptimization:
                         number_bot_prim_turns_per_column * 2 * reluctance_input.primary_litz_dict["conductor_radii"] + \
                         (number_bot_prim_turns_per_column - 1) * reluctance_input.insulations.iso_primary_to_primary))
 
-                    proximity_factor_1_bot_inner = fmt.calc_proximity_factor_air_gap(
+                    proximity_factor_1_bot_inner = fr.calc_proximity_factor_air_gap(
                         litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=number_bot_prim_turns_per_column,
                         r_1=reluctance_input.insulations.iso_window_bot_core_left,
                         frequency=fft_frequency, winding_area=winding_area_1_bot,
                         litz_wire_material_name='Copper', temperature=reluctance_input.temperature)
 
-                    proximity_factor_1_bot_outer = fmt.calc_proximity_factor(
+                    proximity_factor_1_bot_outer = fr.calc_proximity_factor(
                         litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=reluctance_input.turns_1_bot - number_bot_prim_turns_per_column,
                         window_h=reluctance_input.window_h_bot,
                         iso_core_top=reluctance_input.insulations.iso_window_bot_core_top, iso_core_bot=reluctance_input.insulations.iso_window_bot_core_bot,
@@ -468,7 +468,7 @@ class StackedTransformerOptimization:
 
             p_winding_2 = 0
             for count, fft_frequency in enumerate(reluctance_input.fft_frequency_list_2):
-                proximity_factor_assumption_2 = fmt.calc_proximity_factor(
+                proximity_factor_assumption_2 = fr.calc_proximity_factor(
                     litz_wire_name=reluctance_input.litz_wire_name_2, number_turns=reluctance_input.turns_2_bot, window_h=reluctance_input.window_h_bot,
                     iso_core_top=reluctance_input.insulations.iso_window_bot_core_top, iso_core_bot=reluctance_input.insulations.iso_window_bot_core_bot,
                     frequency=fft_frequency, litz_wire_material_name='Copper', temperature=reluctance_input.temperature)
@@ -643,7 +643,7 @@ class StackedTransformerOptimization:
             :type interactive: bool
             """
             if color_list is None:
-                color_list = ['red', 'blue', 'green', 'grey']
+                color_list = ['red', 'blue', 'green', 'gray']
             for count, df in enumerate(dataframes):
                 # color_list was before list(ff.colors_femmt_default.keys())
                 df['color_r'], df['color_g'], df['color_b'] = ff.colors_femmt_default[color_list[count]]
@@ -783,13 +783,13 @@ class StackedTransformerOptimization:
             """
             Perform FEM simulations from a given Pandas dataframe. The dataframe is from the reluctance model results.
 
-            :param reluctance_df: Pandas dataframe containing relults from the relutance model
+            :param reluctance_df: Pandas dataframe containing results from the reluctance model
             :type reluctance_df: pandas.DataFrame
             :param config: Configuration for the optimization of the transformer
             :type config: StoSingleInputConfig
-            :param show_visual_outputs: Ture to show visual outputs like the geometry
+            :param show_visual_outputs: True to show visual outputs like the geometry
             :type show_visual_outputs: bool
-            :param process_number: Process number for parallel simulations on multiple cpu cores
+            :param process_number: Process number for parallel simulations on multiple CPU cores
             :type process_number: int
             """
             target_and_fix_parameters = StackedTransformerOptimization.ReluctanceModel.calculate_fix_parameters(config)
@@ -1055,9 +1055,9 @@ class StackedTransformerOptimization:
             :type stacked_transformer_config_filepath: str
             :param process_number: process number to run the simulation on
             :type process_number: int
-            :param show_visual_outputs: True to show visual outpus (geometries)
+            :param show_visual_outputs: True to show visual outputs (geometries)
             :type show_visual_outputs: bool
-            :param print_derivations: True to print derivation from FEM simulaton to reluctance model
+            :param print_derivations: True to print derivation from FEM simulation to reluctance model
             :type print_derivations: bool
             """
             for index, _ in df_geometry.iterrows():

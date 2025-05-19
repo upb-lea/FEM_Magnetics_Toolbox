@@ -11,7 +11,7 @@ def define_center_tapped_insulation(primary_to_primary: float, secondary_to_seco
     :type primary_to_primary: float
     :param secondary_to_secondary: Secondary winding to secondary winding insulation in m
     :type secondary_to_secondary: float
-    :param primary_to_secondary: Primary winding to secondary winding insulaiton in m
+    :param primary_to_secondary: Primary winding to secondary winding insulation in m
     :type primary_to_secondary: float
     :return:
     """

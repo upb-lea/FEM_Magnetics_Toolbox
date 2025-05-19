@@ -1,6 +1,6 @@
 """Speed up of FEMMT by using parallel processing. File to generate benchmarks of different speed-up techniques.
 
-It contains multiple benchmarking functions in order to analyse the runtime and the accuracy of the simulation results.
+It contains multiple benchmark functions in order to analyze the runtime and the accuracy of the simulation results.
 """
 
 # Python standard libraries
@@ -382,7 +382,7 @@ def benchmark_rectangular_conductor_offset(working_directory):
         axis[1].plot(left_bound_deltas, current_winding_losses, "o")
         axis[2].plot(left_bound_deltas, current_execution_times, "o", label=f"Mesh accuracy: {mesh_accuracy}")
 
-    axis[0].set_ylabel("|Self indutance|")
+    axis[0].set_ylabel("|Self inductance|")
     axis[0].set_xticks(left_bound_deltas)
     axis[0].grid()
     
@@ -401,7 +401,7 @@ def benchmark_rectangular_conductor_offset(working_directory):
 
 def benchmark_rectangular_conductor(working_directory: str):
     """
-    Benchmark mesh accuracies inside a rectangular condutor.
+    Benchmark mesh accuracies inside a rectangular conductor.
 
     :param working_directory: working directory
     :type working_directory: str

@@ -185,7 +185,7 @@ class Core:
     """
     Creates the core base for the model.
 
-    # TODO More documentation and get rid of double initializations
+    # TODO More documentation and get rid of double initialization
     frequency = 0: mu_r_abs only used if non_linear == False
     frequency > 0: mu_r_abs is used
     """
@@ -1347,7 +1347,7 @@ class WindingWindow:
 
     def split_with_stack(self, stack: ConductorStack):
         """
-        Split the winding window according to a ConductorStack dataclass.
+        Split the winding window according to a ConductorStack data class.
 
         :param stack:
         :return:

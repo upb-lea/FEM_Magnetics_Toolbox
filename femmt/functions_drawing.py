@@ -195,7 +195,7 @@ def group_center_tapped(primary_number_of_rows: int, secondary_number_of_rows: i
 
 def get_height_of_group(group: CenterTappedGroup) -> float:
     """
-    Return the total height of thr conductors and insulation.
+    Return the total height of the conductors and insulation.
 
     :param group: center tapped group
     :type group: CenterTappedGroup
