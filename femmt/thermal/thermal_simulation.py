@@ -4,7 +4,6 @@ import re
 import json
 import numpy as np
 import os
-from typing import Dict, List
 import logging
 
 # Third parry libraries
@@ -18,19 +17,19 @@ from femmt.data import FileData
 
 logger = logging.getLogger(__name__)
 
-def create_case(boundary_regions: Dict, boundary_physical_groups: Dict, boundary_temperatures: Dict,
-                boundary_flags: Dict, k_case: float,
+def create_case(boundary_regions: dict, boundary_physical_groups: dict, boundary_temperatures: dict,
+                boundary_flags: dict, k_case: float,
                 function_pro: FunctionPro, parameters_pro: ParametersPro, group_pro: GroupPro,
                 constraint_pro: ConstraintPro):
     """
     Set boundary conditions and material parameters for the case around the core.
 
     :param boundary_regions:
-    :type boundary_regions: Dict
+    :type boundary_regions: dict
     :param boundary_physical_groups:
-    :type boundary_physical_groups: Dict
+    :type boundary_physical_groups: dict
     :param boundary_flags: Dict with flags to turn-on or turn-off the boundary conditions of the case
-    :type boundary_flags: Dict
+    :type boundary_flags: dict
     :param k_case: Thermal conductivity of the case
     :type k_case: float
     :param function_pro: function.pro file
@@ -42,7 +41,7 @@ def create_case(boundary_regions: Dict, boundary_physical_groups: Dict, boundary
     :param constraint_pro: constraint.pro file
     :type constraint_pro: ConstraintPro
     :param boundary_temperatures: Boundary temperatures as a dictionary
-    :type boundary_temperatures: Dict
+    :type boundary_temperatures: dict
     """
     group_pro.add_regions(boundary_regions)
     parameters_pro.add_to_parameters(boundary_temperatures)
@@ -161,20 +160,20 @@ def create_core_and_air_gaps(core_tags: list, k_core: float, core_area: list, co
     group_pro.add_regions(regions)
     function_pro.add_dicts(k, q_vol)
 
-def create_windings(winding_tags: List, k_windings: float, winding_losses, conductor_radii: List[float], wire_distances: List[List[float]],
+def create_windings(winding_tags: list, k_windings: float, winding_losses, conductor_radii: list[float], wire_distances: list[list[float]],
                     function_pro: FunctionPro, group_pro: GroupPro):
     """Create windings for the thermal simulation.
 
     :param winding_tags:
-    :type winding_tags: List
+    :type winding_tags: list
     :param k_windings: Thermal conductivity of windings
     :type k_windings: float
     :param winding_losses: List of winding losses
-    :type winding_losses: List
+    :type winding_losses: list
     :param conductor_radii: List of conductor radius
-    :type conductor_radii: List
+    :type conductor_radii: list
     :param wire_distances: List of wire distances per winding
-    :type wire_distances: List[List[float]]
+    :type wire_distances: list[list[float]]
     :param function_pro: function.pro file
     :type function_pro: FunctionPro
     :param group_pro: group.pro file
@@ -514,8 +513,8 @@ def post_operation(case_volume: float, output_file: str, sensor_points_file: str
     with open(output_file, "w") as fd:
         json.dump(data, fd, indent=2)
 
-def run_thermal(file_data: FileData, tags_dict: Dict, thermal_conductivity_dict: Dict, boundary_temperatures: Dict,
-                boundary_flags: Dict, boundary_physical_groups: Dict, core_area: List, conductor_radii: float,
+def run_thermal(file_data: FileData, tags_dict: dict, thermal_conductivity_dict: dict, boundary_temperatures: dict,
+                boundary_flags: dict, boundary_physical_groups: dict, core_area: list, conductor_radii: float,
                 wire_distances: float, case_volume: float,
                 show_thermal_fem_results: bool, print_sensor_values: bool, silent: bool, flag_insulation: bool = True):
     """

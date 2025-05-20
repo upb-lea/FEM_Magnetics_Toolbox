@@ -1,7 +1,6 @@
 """Functions to provide parallel computing on multiple processes. Each process has its own thread."""
 # Python standard libraries
 from multiprocessing import Pool
-from typing import List, Dict, Callable
 import os
 import shutil
 import logging
@@ -29,7 +28,7 @@ def _copy_electro_magnetic_necessary_files(src_folder: str, dest_folder: str):
         shutil.copy(from_path, to_path)
 
 
-def hpc_single_simulation(parameters: Dict):
+def hpc_single_simulation(parameters: dict):
     """
     Perform single simulations in parallel.
 
@@ -41,7 +40,7 @@ def hpc_single_simulation(parameters: Dict):
     :param parameters: Dictionary containing the needed parameters. One parameter is always 'model' which is the
         MagneticComponent. The other one is always 'simulation_parameters' which is also a dict and then contains
         the parameters given to the run() function (for this specific model).
-    :type parameters: Dict
+    :type parameters: dict
     """
     model = parameters["model"]
 
@@ -59,8 +58,8 @@ def hpc_single_simulation(parameters: Dict):
     model.single_simulation(freq=freq, current=current, plot_interpolation=False, show_fem_simulation_results=False)
 
 
-def run_hpc(n_processes: int, models: List[MagneticComponent], simulation_parameters: List[Dict],
-            working_directory: str, custom_hpc: Callable = None):
+def run_hpc(n_processes: int, models: list[MagneticComponent], simulation_parameters: list[dict],
+            working_directory: str, custom_hpc: callable = None):
     """Execute the given models on the given number of parallel processes.
 
     Typically, this number shouldn't be higher than the number of cores of the processor.
@@ -68,21 +67,21 @@ def run_hpc(n_processes: int, models: List[MagneticComponent], simulation_parame
     :param n_processes: Number of parallel processes. If None, the number returned by os.cpu_count() is used.
     :type n_processes: int
     :param models: List of MagneticComponents which shall be simulated in parallel.
-    :type models: List[MagneticComponent]
+    :type models: list[MagneticComponent]
     :param simulation_parameters: List of dictionaries containing the parameters for the parallel simulation.
         The Nth item corresponds to the Nth MagneticComponent in models.
         For the default hpc_function this dictionary needs the frequency and the current
         (which is needed for the single_simulation function).
         Since the dictionary is given to the hpc_function directly, if a custom_hpc function is used the
         needed parameters can be added through this dict.
-    :type simulation_parameters: List[Dict]
+    :type simulation_parameters: list[dict]
     :param working_directory: The directory stores the model data and results data for every parallel simulation.
     :type working_directory: str
     :param custom_hpc: If set to None the default hpc will be used (create_model() and single_simulation()
         are executed). If a custom_hpc is set this function
         will be called for the parallel execution and the function parameters is the simulation_parameter dict taken
         from the simulation_parameters list., defaults to None
-    :type custom_hpc: Callable, optional
+    :type custom_hpc: callable, optional
     """
     electro_magnetic_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "electro_magnetic")
     strands_coefficients_folder = os.path.join(electro_magnetic_folder, "Strands_Coefficients")

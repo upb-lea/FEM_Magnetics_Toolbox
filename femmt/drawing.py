@@ -2,7 +2,6 @@
 # Python standard libraries
 import numpy as np
 import logging
-from typing import List
 
 # Local libraries
 from femmt.enumerations import *
@@ -19,7 +18,7 @@ class TwoDaxiSymmetric:
     """
 
     core: Core
-    winding_windows: List[WindingWindow]
+    winding_windows: list[WindingWindow]
     air_gaps: AirGaps
     stray_path: StrayPath
     insulation: Insulation
@@ -34,11 +33,11 @@ class TwoDaxiSymmetric:
     p_region_bound: np.ndarray
     p_window: np.ndarray
     p_air_gaps: np.ndarray
-    # p_conductor: List[List[float]]
-    p_iso_core: List[List[float]]
-    p_iso_pri_sec: List[List[float]]
+    # p_conductor: list[list[float]]
+    p_iso_core: list[list[float]]
+    p_iso_pri_sec: list[list[float]]
 
-    def __init__(self, core: Core, mesh_data: MeshData, air_gaps: AirGaps, winding_windows: List[WindingWindow],
+    def __init__(self, core: Core, mesh_data: MeshData, air_gaps: AirGaps, winding_windows: list[WindingWindow],
                  stray_path: StrayPath, insulation: Insulation, component_type: ComponentType, number_of_windings: int, verbosity: Verbosity):
         self.core = core
         self.mesh_data = mesh_data
@@ -1572,18 +1571,18 @@ class TwoDaxiSymmetric:
         #     self.draw_region_stacked()
 
     @staticmethod
-    def get_center_of_rect(p1: List[float], p2: List[float], p3: List[float], p4: List[float]):
+    def get_center_of_rect(p1: list[float], p2: list[float], p3: list[float], p4: list[float]):
         """
         Get center point of a rectangular conductor.
 
         :param p1: Point 1 as a x,y-List
-        :type p1: List[float]
+        :type p1: list[float]
         :param p2: Point 1 as a x,y-List
-        :type p2: List[float]
+        :type p2: list[float]
         :param p3: Point 1 as a x,y-List
-        :type p3: List[float]
+        :type p3: list[float]
         :param p4: Point 1 as a x,y-List
-        :type p4: List[float]
+        :type p4: list[float]
         """
         x_list = [p1[0], p2[0], p3[0], p4[0]]
         y_list = [p1[1], p2[1], p3[1], p4[1]]

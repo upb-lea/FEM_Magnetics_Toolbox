@@ -3,7 +3,6 @@
 import os
 import logging
 import numpy as np
-from typing import List, Optional
 
 # Local libraries
 from femmt.enumerations import ConductorType
@@ -17,7 +16,7 @@ class FileData:
     def __init__(self, working_directory: str, electro_magnetic_folder_path: str = None, strands_coefficients_folder_path: str = None):
         if working_directory is not None:
             self.update_paths(working_directory, electro_magnetic_folder_path, strands_coefficients_folder_path)
-        self.onelab_folder_path: Optional[str] = None
+        self.onelab_folder_path: str | None = None
 
     @staticmethod
     def create_folders(*args: str) -> None:
@@ -122,8 +121,8 @@ class MeshData:
     skin_mesh_factor: float
     c_core: float
     c_window: float
-    c_conductor = List[float]
-    c_center_conductor = List[float]
+    c_conductor = list[float]
+    c_center_conductor = list[float]
     c_air_gaps: float
     
     center_factor: float
@@ -131,7 +130,7 @@ class MeshData:
     mu0: float
     core_w: float
     window_w: float
-    windings: List["Conductor"]  # This is written as string because it is a forward import
+    windings: list["Conductor"]  # This is written as string because it is a forward import
 
     frequency: float
 
@@ -152,7 +151,7 @@ class MeshData:
         # The value 4 has good impact on the runtime and does not affect the simulation results too much.
         self.center_factor = 4
 
-    def update_spatial_data(self, core_w: float, window_w: float, windings: List["Conductor"]):
+    def update_spatial_data(self, core_w: float, window_w: float, windings: list["Conductor"]):
         """
         Update geometry data of the core of the magnetic component.
 
@@ -161,7 +160,7 @@ class MeshData:
         :param window_w: window width
         :type window_w: float
         :param windings: list of windings
-        :type windings: List["Conductor"]
+        :type windings: list["Conductor"]
         """
         self.core_w = core_w
         self.window_w = window_w

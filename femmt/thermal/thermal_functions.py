@@ -2,7 +2,6 @@
 # Python standard libraries
 import json
 import os
-from typing import Dict
 
 # 3rd party libraries
 import numpy as np
@@ -25,7 +24,7 @@ def calculate_heat_flux_round_wire(power, wire_radius, wire_distance):
     return power/volume
 
 
-def read_results_log(results_log_file_path: str) -> Dict:
+def read_results_log(results_log_file_path: str) -> dict:
     """
     Read loss results from logfile to get the losses to perform a thermal simulation.
 

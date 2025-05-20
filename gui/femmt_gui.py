@@ -11,7 +11,6 @@ from PyQt5.QtGui import QPixmap, QDoubleValidator, QIntValidator
 import femmt as fmt
 import json
 import os
-from typing import List
 import PIL
 import webbrowser
 import shutil
@@ -2941,7 +2940,7 @@ class MainWindow(QMainWindow):
     # Simulation tab
     # ----------------------------------------------------------
 
-    def md_get_frequency_lists(self) -> List:
+    def md_get_frequency_lists(self) -> list:
         """
         Read frequency, amplitude and phase depending on the checked frequencies and return it as a list.
 

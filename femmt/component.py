@@ -9,7 +9,6 @@ import warnings
 import inspect
 import re
 import pandas as pd
-from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 import time
 import logging
@@ -53,7 +52,7 @@ class MagneticComponent:
     def __init__(self, simulation_type: SimulationType = SimulationType.FreqDomain,
                  component_type: ComponentType = ComponentType.Inductor, working_directory: str = None,
                  clean_previous_results: bool = True, onelab_verbosity: Verbosity = 1, is_gui: bool = False,
-                 simulation_name: Optional[str] = None, wwr_enabled=True):
+                 simulation_name: str | None = None, wwr_enabled=True):
         # TODO Add a enum? for the verbosity to combine silent and print_output_to_file variables
         """
         Initialize the magnetic component.
@@ -114,7 +113,7 @@ class MagneticComponent:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Components
         self.core: Core = None  # Contains all information about the cores
-        self.air_gaps: Optional[AirGaps] = None  # Contains every air gap
+        self.air_gaps: AirGaps | None = None  # Contains every air gap
         self.windings = None
         # self.windings: List of the different winding objects which the following structure:
         # windings[0]: primary, windings[1]: secondary, windings[2]: tertiary ....
@@ -154,13 +153,13 @@ class MagneticComponent:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Steinmetz loss material coefficients and current waveform
-        self.Ipeak: Optional[float] = None
-        self.ki: Optional[float] = None
-        self.alpha: Optional[float] = None
-        self.beta: Optional[float] = None
-        self.t_rise: Optional[float] = None
-        self.t_fall: Optional[float] = None
-        self.f_switch: Optional[float] = None
+        self.Ipeak: float | None = None
+        self.ki: float | None = None
+        self.alpha: float | None = None
+        self.beta: float | None = None
+        self.t_rise: float | None = None
+        self.t_fall: float | None = None
+        self.f_switch: float | None = None
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # MeshData to store the mesh size for different points
@@ -231,20 +230,20 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Thermal simulation
-    def thermal_simulation(self, thermal_conductivity_dict: Dict, boundary_temperatures_dict: Dict,
-                           boundary_flags_dict: Dict, case_gap_top: float,
+    def thermal_simulation(self, thermal_conductivity_dict: dict, boundary_temperatures_dict: dict,
+                           boundary_flags_dict: dict, case_gap_top: float,
                            case_gap_right: float, case_gap_bot: float, show_thermal_simulation_results: bool = True,
-                           pre_visualize_geometry: bool = False, color_scheme: Dict = ff.colors_femmt_default,
-                           colors_geometry: Dict = ff.colors_geometry_femmt_default, flag_insulation: bool = True):
+                           pre_visualize_geometry: bool = False, color_scheme: dict = ff.colors_femmt_default,
+                           colors_geometry: dict = ff.colors_geometry_femmt_default, flag_insulation: bool = True):
         """
         Start the thermal simulation using thermal_simulation.py.
 
         :param thermal_conductivity_dict: Contains the thermal conductivities for every region
-        :type thermal_conductivity_dict: Dict
+        :type thermal_conductivity_dict: dict
         :param boundary_temperatures_dict: Contains the temperatures at each boundary line
-        :type boundary_temperatures_dict: Dict
+        :type boundary_temperatures_dict: dict
         :param boundary_flags_dict: Sets the boundary type (Dirichlet or von Neumann) for each boundary line
-        :type boundary_flags_dict: Dict
+        :type boundary_flags_dict: dict
         :param case_gap_top: Size of the top case
         :type case_gap_top: float
         :param case_gap_right: Size of the right case
@@ -256,9 +255,9 @@ class MagneticComponent:
         :param pre_visualize_geometry: Shows the thermal model before simulation, defaults to False
         :type pre_visualize_geometry: bool, optional
         :param color_scheme: Color scheme for visualization, defaults to ff.colors_femmt_default
-        :type color_scheme: Dict, optional
+        :type color_scheme: dict, optional
         :param colors_geometry: Color geometry for visualization, defaults to ff.colors_geometry_femmt_default
-        :type colors_geometry: Dict, optional
+        :type colors_geometry: dict, optional
         :param flag_insulation: True to simulate the insulation
         :type flag_insulation: bool
         """
@@ -461,15 +460,15 @@ class MagneticComponent:
 
         self.air_gaps = air_gaps
 
-    def set_winding_windows(self, winding_windows: List[WindingWindow]):
+    def set_winding_windows(self, winding_windows: list[WindingWindow]):
         """
         Add the winding windows to the model.
 
         Creates the windings list, which contains the conductors from the virtual winding windows but sorted
         by the winding_number (ascending). Sets empty lists for excitation parameters.
 
-        :param winding_windows: List of WindingWindow objects
-        :type winding_windows: List[WindingWindow]
+        :param winding_windows: list of WindingWindow objects
+        :type winding_windows: list[WindingWindow]
         """
         self.winding_windows = winding_windows
         windings = []
@@ -523,8 +522,8 @@ class MagneticComponent:
     # Pre-Processing
 
     def create_model(self, freq: float, skin_mesh_factor: float = 0.5, pre_visualize_geometry: bool = False,
-                     save_png: bool = False, color_scheme: Dict = ff.colors_femmt_default,
-                     colors_geometry: Dict = ff.colors_geometry_femmt_default, benchmark: bool = False):
+                     save_png: bool = False, color_scheme: dict = ff.colors_femmt_default,
+                     colors_geometry: dict = ff.colors_geometry_femmt_default, benchmark: bool = False):
         """
         Create a model from the abstract geometry description inside onelab including optional mesh generation.
 
@@ -538,9 +537,9 @@ class MagneticComponent:
         :param save_png: True to save a png-figure, false for no figure
         :type save_png: bool
         :param color_scheme: color file (definition for red, green, blue, ...)
-        :type color_scheme: Dict
+        :type color_scheme: dict
         :param colors_geometry: definition for e.g. core is gray, winding is orange, ...
-        :type colors_geometry: Dict
+        :type colors_geometry: dict
         :param benchmark: Benchmark simulation (stop time). Defaults to False.
         :type benchmark: bool
         """
@@ -918,11 +917,11 @@ class MagneticComponent:
                 material_name=self.core.material, attribute="volumetric_mass_density")
         return self.calculate_core_volume() * volumetric_mass_density
 
-    def get_wire_distances(self) -> List[List[float]]:
+    def get_wire_distances(self) -> list[list[float]]:
         """Return the distance (radius) of each conductor to the y-axis.
 
         :return: Wire distances
-        :rtype: List[List[float]]
+        :rtype: list[list[float]]
         """
         # wire_distance = []
         # for winding in self.two_d_axi.p_conductor:
@@ -949,7 +948,7 @@ class MagneticComponent:
 
         return wire_distance
 
-    def calculate_wire_lengths(self) -> List[float]:
+    def calculate_wire_lengths(self) -> list[float]:
         """Calculate the wire length of all conductors inside the magnetic component."""
         distances = self.get_wire_distances()
         lengths = []
@@ -958,7 +957,7 @@ class MagneticComponent:
 
         return lengths
 
-    def calculate_wire_volumes(self) -> List[float]:
+    def calculate_wire_volumes(self) -> list[float]:
         """Calculate the wire volume of the magnetic component."""
         wire_volumes = []
         wire_lengths = self.calculate_wire_lengths()
@@ -1007,7 +1006,7 @@ class MagneticComponent:
 
         return wire_volumes
 
-    def calculate_wire_weight(self) -> List[float]:
+    def calculate_wire_weight(self) -> list[float]:
         """Calculate the weight of all wires used inside the magnetic component."""
         wire_material = ff.wire_material_database()
 
@@ -1021,7 +1020,7 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # GetDP Interaction / Simulation / Excitation
-    def excitation(self, frequency: float, amplitude_list: List, phase_deg_list: List = None, ex_type: str = 'current',
+    def excitation(self, frequency: float, amplitude_list: list, phase_deg_list: list = None, ex_type: str = 'current',
                    plot_interpolation: bool = False):
         """
         Run the electromagnetic simulation.
@@ -1034,9 +1033,9 @@ class MagneticComponent:
         :param frequency: Frequency
         :type frequency: float
         :param amplitude_list: Current amplitudes according to windings
-        :type amplitude_list: List
+        :type amplitude_list: list
         :param phase_deg_list: Current phases in degree according to the current amplitudes (according to windings)
-        :type phase_deg_list: List
+        :type phase_deg_list: list
         :param ex_type: Excitation type. 'Current' implemented only. Future use may: 'voltage' and 'current_density'
         :type ex_type: str
         """
@@ -1124,16 +1123,16 @@ class MagneticComponent:
         if self.core.material != "custom":
             self.reluctance_model_pre_check()
 
-    def excitation_time_domain(self, current_list: List[List[float]], time_list: List[float],
+    def excitation_time_domain(self, current_list: list[list[float]], time_list: list[float],
                                number_of_periods: int, ex_type: str = 'current',
                                plot_interpolation: bool = False, imposed_red_f=0):
         """
         Excites the electromagnetic problem in the time domain with specified current and time settings.
 
         :param current_list: A nested list containing current values for each time step and winding.
-        :type current_list: List[List[float]]
+        :type current_list: list[list[float]]
         :param time_list: A nested list containing the corresponding time values for each current value.
-        :type time_list: List[float]
+        :type time_list: list[float]
         :param number_of_periods: The total number of periods within the provided time period of simulation.
         :type number_of_periods: int
         :param ex_type: Excitation type. 'current' implemented only. Future use may include 'voltage' and 'current_density'.
@@ -1315,7 +1314,7 @@ class MagneticComponent:
             with open(os.path.join(os.path.join(self.file_data.e_m_mesh_file)), "w") as mesh_file:
                 mesh_file.write(mesh_data)
 
-    def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None,
+    def single_simulation(self, freq: float, current: list[float], phi_deg: list[float] = None,
                           plot_interpolation: bool = False, show_fem_simulation_results: bool = True,
                           benchmark: bool = False):
         """
@@ -1326,7 +1325,7 @@ class MagneticComponent:
         :type freq: float
         :param current: current to simulate
         :param phi_deg: phase angle in degree
-        :type phi_deg: List[float]
+        :type phi_deg: list[float]
         :param show_fem_simulation_results: Set to True to show the simulation results after the simulation has finished
         :type show_fem_simulation_results: bool
         :param benchmark: Benchmark simulation (stop time). Defaults to False.
@@ -1385,7 +1384,7 @@ class MagneticComponent:
                 self.visualize()
         logger.info(f"The electromagnetic results are stored here: {self.file_data.e_m_results_log_path}")
 
-    def time_domain_simulation(self, current_period_vec: List[List[float]], time_period_vec: List[float],
+    def time_domain_simulation(self, current_period_vec: list[list[float]], time_period_vec: list[float],
                                number_of_periods: int,
                                plot_interpolation: bool = False, show_fem_simulation_results: bool = True,
                                show_rolling_average: bool = True, rolling_avg_window_size: int = 5, benchmark: bool = False):
@@ -1395,9 +1394,9 @@ class MagneticComponent:
         :param plot_interpolation: Plot interpolation for the used material between the given data from the material database
         :type plot_interpolation: bool
         :param current_period_vec: current to simulate in a vector for all windings.
-        :type current_period_vec: List[List[float]]
+        :type current_period_vec: list[list[float]]
         :param time_period_vec: time list
-        :type time_period_vec: List[float]
+        :type time_period_vec: list[float]
         :param number_of_periods: periods (1, 2, 3,...)
         :type number_of_periods: int
         :param show_fem_simulation_results: Set to True to show the simulation results after the simulation has finished
@@ -1456,13 +1455,13 @@ class MagneticComponent:
             if show_rolling_average:
                 self.get_rolling_average(window_size=rolling_avg_window_size)
 
-    def excitation_sweep(self, frequency_list: List, current_list_list: List, phi_deg_list_list: List,
+    def excitation_sweep(self, frequency_list: list, current_list_list: list, phi_deg_list_list: list,
                          show_last_fem_simulation: bool = False,
                          excitation_meshing_type: ExcitationMeshingType = None, skin_mesh_factor: float = 0.5,
                          visualize_before: bool = False, save_png: bool = False,
-                         color_scheme: Dict = ff.colors_femmt_default,
-                         colors_geometry: Dict = ff.colors_geometry_femmt_default,
-                         inductance_dict: Dict = None, core_hyst_loss: List[float] | np.ndarray = None) -> None:
+                         color_scheme: dict = ff.colors_femmt_default,
+                         colors_geometry: dict = ff.colors_geometry_femmt_default,
+                         inductance_dict: dict = None, core_hyst_loss: list[float] | np.ndarray = None) -> None:
         """
         Perform a sweep simulation for frequency-current pairs.
 
@@ -1487,26 +1486,26 @@ class MagneticComponent:
         >>>     phi_deg_list_list=phase_list_list)
 
         :param frequency_list: Frequency in a list
-        :type frequency_list: List
+        :type frequency_list: list
         :param current_list_list: current amplitude, must be a list in a list, see example!
-        :type current_list_list: List
+        :type current_list_list: list
         :param phi_deg_list_list: phase in degree, must be a list in a list, see example!
-        :type phi_deg_list_list: List
+        :type phi_deg_list_list: list
         :param show_last_fem_simulation: shows last simulation in gmsh if set to True
         :type show_last_fem_simulation: bool
         :param visualize_before: show generated mesh before the simulation is run
         :type visualize_before: bool
         :param color_scheme: colorfile (definition for red, green, blue, ...)
-        :type color_scheme: Dict
+        :type color_scheme: dict
         :param colors_geometry: definition for e.g. core is gray, winding is orange, ...
-        :type colors_geometry: Dict
+        :type colors_geometry: dict
         :param save_png: True to save a .png
         :type save_png: bool
         :param inductance_dict: result dictionary from get_inductances()-function
-        :type inductance_dict: Dict
-        :param core_hyst_loss: List with hysteresis list. If given, the hysteresis losses in this function be
+        :type inductance_dict: dict
+        :param core_hyst_loss: list with hysteresis list. If given, the hysteresis losses in this function be
             overwritten in the result log.
-        :type core_hyst_loss: List
+        :type core_hyst_loss: list
         :param excitation_meshing_type: MeshOnlyLowestFrequency / MeshOnlyHighestFrequency / MeshEachFrequency
         :type excitation_meshing_type: ExcitationMeshingType
         :param skin_mesh_factor: Define the fineness of the mesh
@@ -1589,12 +1588,12 @@ class MagneticComponent:
             self.visualize()
         logger.info(f"The electromagnetic results are stored here: {self.file_data.e_m_results_log_path}")
 
-    def component_study(self, time_current_vectors: List[List[List[float]]], fft_filter_value_factor: float = 0.01):
+    def component_study(self, time_current_vectors: list[list[list[float]]], fft_filter_value_factor: float = 0.01):
         """
         Full study for the component: inductance values and losses.
 
         :param time_current_vectors: ....
-        :type time_current_vectors: List[List[List[float]]]
+        :type time_current_vectors: list[list[list[float]]]
         :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all
             amplitudes below 1 % of the maximum amplitude from the result-frequency list
         :type fft_filter_value_factor: float
@@ -1668,7 +1667,7 @@ class MagneticComponent:
         self.excitation_sweep(frequency_list, current_list_list, phi_deg_list_list, inductance_dict=inductance_dict,
                               core_hyst_loss=p_hyst_core_parts)
 
-    def stacked_core_study_excitation(self, time_current_vectors: List[List[List[float]]], transfer_ratio_n: float,
+    def stacked_core_study_excitation(self, time_current_vectors: list[list[list[float]]], transfer_ratio_n: float,
                                       plot_waveforms: bool = False, fft_filter_value_factor: float = 0.01):
         """
         Generate the current waveforms needed for the stacked_core_study().
@@ -1677,7 +1676,7 @@ class MagneticComponent:
         The transfer_ratio_n is used to neglect the transformer loss part when the hysteresis loss part of the inductor is calculated.
 
         :param time_current_vectors: time-current vectors for primary and secondary, e.g. [[time, current_prim], [time, current_sec]]
-        :type time_current_vectors: List[List[List[float]]]
+        :type time_current_vectors: list[list[list[float]]]
         :param plot_waveforms: True to watch the pre-calculated waveforms
         :type plot_waveforms: bool
         :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all
@@ -1771,7 +1770,7 @@ class MagneticComponent:
         return stacked_core_study_excitation
 
     def stacked_core_study(self, number_primary_coil_turns: int,
-                           time_current_vectors: List[List[List[float]]],
+                           time_current_vectors: list[list[list[float]]],
                            plot_waveforms: bool = False, fft_filter_value_factor: float = 0.01) -> None:
         """
         Comprehensive component analysis for the 2 winding stacked transformers with dedicated choke.
@@ -1782,7 +1781,7 @@ class MagneticComponent:
             transformer losses without effect of the choke
         :type number_primary_coil_turns: int
                 :param time_current_vectors: time-current vectors for primary and secondary, e.g. [[time, current_prim], [time, current_sec]]
-        :type time_current_vectors: List[List[List[float]]]
+        :type time_current_vectors: list[list[list[float]]]
         :param plot_waveforms: True to watch the pre-calculated waveforms
         :type plot_waveforms: bool
         :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all
@@ -1851,8 +1850,8 @@ class MagneticComponent:
                               study_excitation["linear_losses"]["current_phases_deg"],
                               inductance_dict=inductance_dict, core_hyst_loss=p_hyst_core_parts)
 
-    def stacked_core_center_tapped_pre_study(self, time_current_vectors: List[List[List[float]]], plot_waveforms: bool = False,
-                                             fft_filter_value_factor: float = 0.01) -> Dict:
+    def stacked_core_center_tapped_pre_study(self, time_current_vectors: list[list[list[float]]], plot_waveforms: bool = False,
+                                             fft_filter_value_factor: float = 0.01) -> dict:
         """
         Generate the current waveforms needed for the stacked_core_center_tapped_study().
 
@@ -1861,14 +1860,14 @@ class MagneticComponent:
         inductance values and so on.
 
         :param time_current_vectors: time-current vectors for primary and secondary, e.g. [[time, current_prim], [time, current_sec]]
-        :type time_current_vectors: List[List[List[float]]]
+        :type time_current_vectors: list[list[list[float]]]
         :param plot_waveforms: True to watch the pre-calculated waveforms
         :type plot_waveforms: bool
         :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all
             amplitudes below 1 % of the maximum amplitude from the result-frequency list
         :type fft_filter_value_factor: float
         :return: new current waveform vector
-        :rtype: Dict
+        :rtype: dict
 
         return dict:
         center_tapped_study_excitation = {
@@ -1890,28 +1889,28 @@ class MagneticComponent:
             }
         }
         """
-        def split_hysteresis_loss_excitation_center_tapped(hyst_frequency: List, hyst_loss_amplitudes: List, hyst_loss_phases_deg: List):
+        def split_hysteresis_loss_excitation_center_tapped(hyst_frequency: list, hyst_loss_amplitudes: list, hyst_loss_phases_deg: list):
             """
             Split the last winding (2nd) peak current into half and add a 3rd winding with the same value.
 
             :param hyst_frequency: list with the fundamental frequency of core losses
-            :type hyst_frequency: List
+            :type hyst_frequency: list
             :param hyst_loss_amplitudes: amplitudes for all windings in a list
-            :type hyst_loss_amplitudes: List
+            :type hyst_loss_amplitudes: list
             :param hyst_loss_phases_deg: phases in degree for all windings in a list
-            :type hyst_loss_phases_deg: List
+            :type hyst_loss_phases_deg: list
             """
             hyst_loss_amplitudes[-1] = hyst_loss_amplitudes[-1] / 2
             hyst_loss_amplitudes.append(hyst_loss_amplitudes[-1])
             hyst_loss_phases_deg.append(hyst_loss_phases_deg[-1])
             return hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg
 
-        def split_time_current_vectors_center_tapped(time_current_vectors: List[List[List[float]]]):
+        def split_time_current_vectors_center_tapped(time_current_vectors: list[list[list[float]]]):
             """
             Split the given time-current vectors (primary and a common secondary) into primary, secondary and tertiary current.
 
             :param time_current_vectors: e.g. [[time_vec, i_primary_vec], [time_vec, i_secondary_vec]]
-            :type time_current_vectors: List[List[List[float]]]
+            :type time_current_vectors: list[list[list[float]]]
             """
             positive_secondary_current = np.copy(time_current_vectors[1][1])
             positive_secondary_current[positive_secondary_current < 0] = 0
@@ -3292,9 +3291,9 @@ class MagneticComponent:
 
         text_file.close()
 
-    def calculate_and_write_freq_domain_log(self, number_frequency_simulations: int = 1, current_amplitude_list: List = None,
-                                            phase_deg_list: List = None, frequencies: List = None,
-                                            core_hyst_losses: List[float] = None, inductance_dict: Optional[List] = None):
+    def calculate_and_write_freq_domain_log(self, number_frequency_simulations: int = 1, current_amplitude_list: list = None,
+                                            phase_deg_list: list = None, frequencies: list = None,
+                                            core_hyst_losses: list[float] = None, inductance_dict: list | None = None):
         """
         Read back the results from the .dat result files created by the ONELAB simulation client.
 
@@ -3324,9 +3323,9 @@ class MagneticComponent:
         :param core_hyst_losses: Optional core hysteresis losses value from another simulation. If a value is given,
             the external value is used in the result-log. Otherwise, the hysteresis losses of the
             fundamental frequency is used
-        :type core_hyst_losses: List[float]
+        :type core_hyst_losses: list[float]
         :param inductance_dict: Given inductance dictionary to write to the result log.
-        :type inductance_dict: Dict
+        :type inductance_dict: dict
         """
         fundamental_index = 0  # index of the fundamental frequency
 
@@ -3516,7 +3515,7 @@ class MagneticComponent:
         log_dict["total_losses"]["eddy_core"] = sum(
             log_dict["single_sweeps"][d]["core_eddy_losses"] for d in range(len(log_dict["single_sweeps"])))
 
-        if isinstance(core_hyst_losses, List) or isinstance(core_hyst_losses, np.ndarray):
+        if isinstance(core_hyst_losses, list) or isinstance(core_hyst_losses, np.ndarray):
             # overwrite the hysteresis losses for each core part
             # Note: This generation MUST BE before summing up the total core losses
             # 1. set all hysteresis losses for all frequencies to zero
@@ -3578,12 +3577,12 @@ class MagneticComponent:
         with open(self.file_data.e_m_results_log_path, "w+", encoding='utf-8') as outfile:
             json.dump(final_log_dict, outfile, indent=2, ensure_ascii=False)
 
-    def calculate_and_write_time_domain_log(self, inductance_dict: Optional[List] = None):
+    def calculate_and_write_time_domain_log(self, inductance_dict: list | None = None):
         """
         Process and log the results of time domain simulations.
 
         :param inductance_dict: Given inductance dictionary to write to the result log.
-        :type inductance_dict: Dict
+        :type inductance_dict: dict
 
         Reads back the results from the simulation output files and stores them in a JSON format.
         The log includes detailed information about each time step of the simulation, as well as average and total losses.
@@ -3848,17 +3847,17 @@ class MagneticComponent:
 
         # ---- Print current configuration ----
         log_dict["simulation_settings"] = MagneticComponent.encode_settings(self)
-        if isinstance(inductance_dict, Dict):
+        if isinstance(inductance_dict, dict):
             log_dict["inductances"] = inductance_dict
 
         return log_dict
 
-    def read_log(self) -> Dict:
+    def read_log(self) -> dict:
         """
         Read results from electromagnetic simulation.
 
         :return: Logfile as a dictionary
-        :rtype: Dict
+        :rtype: dict
         """
         with open(self.file_data.e_m_results_log_path, "r") as fd:
             content = json.loads(fd.read())
@@ -3986,12 +3985,12 @@ class MagneticComponent:
             with open(self.file_data.material_log_path, "w+", encoding='utf-8') as outfile:
                 json.dump(material_dict, outfile, indent=2, ensure_ascii=False)
 
-    def read_thermal_log(self) -> Dict:
+    def read_thermal_log(self) -> dict:
         """
         Read results from electromagnetic simulation.
 
         :return: Logfile as a dictionary
-        :rtype: Dict
+        :rtype: dict
         """
         with open(os.path.join(self.file_data.results_folder_path, "results_thermal.json"), "r") as fd:
             content = json.loads(fd.read())
@@ -4893,7 +4892,7 @@ class MagneticComponent:
         file.close()
 
     @staticmethod
-    def calculate_point_average(x1: float, y1: float, x2: float, y2: float) -> Tuple[float, float]:
+    def calculate_point_average(x1: float, y1: float, x2: float, y2: float) -> tuple[float, float]:
         """Calculate the middle point between two given points.
 
         :param x1: Point1 x
@@ -4910,14 +4909,14 @@ class MagneticComponent:
         # TODO Move to femmt_functions
         return (x1 + x2) / 2, (y1 + y2) / 2
 
-    def femm_thermal_validation(self, thermal_conductivity_dict: Dict, boundary_temperature: Dict, case_gap_top: float,
+    def femm_thermal_validation(self, thermal_conductivity_dict: dict, boundary_temperature: dict, case_gap_top: float,
                                 case_gap_right: float, case_gap_bot: float):
         """Create a thermal model in femm and simulates it with the given thermal conductivities.
 
-        :param thermal_conductivity_dict: Dict containing conductivities for air, winding, case, core
-        :type thermal_conductivity_dict: Dict
-        :param boundary_temperature: Dict containing temperatures on boundary lines
-        :type boundary_temperature: Dict
+        :param thermal_conductivity_dict: dict containing conductivities for air, winding, case, core
+        :type thermal_conductivity_dict: dict
+        :param boundary_temperature: dict containing temperatures on boundary lines
+        :type boundary_temperature: dict
         :param case_gap_top: Length top case
         :type case_gap_top: float
         :param case_gap_right: Length right case
@@ -5211,13 +5210,13 @@ class MagneticComponent:
         # femm.closefemm()
 
     @staticmethod
-    def encode_settings(o) -> Dict:
+    def encode_settings(o) -> dict:
         """Encode the magnetic component in a dictionary.
 
         :param o: Magnetic component containing the model.
         :type o: MagneticComponent
         :return: Model encodes as dictionary
-        :rtype: Dict
+        :rtype: dict
         """
         content = {
             "simulation_name": o.simulation_name,
@@ -5284,7 +5283,7 @@ class MagneticComponent:
             else:
                 raise ValueError("unknown core_type for decoding from result_log.")
 
-            if isinstance(settings["core"]["sigma"], List):
+            if isinstance(settings["core"]["sigma"], list):
                 # in case of sigma is a complex number, it is given as a list and needs to translated to complex.
                 settings["core"]["sigma"] = complex(settings["core"]["sigma"][0], settings["core"]["sigma"][1])
 

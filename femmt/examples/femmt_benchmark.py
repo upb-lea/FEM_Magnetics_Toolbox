@@ -4,7 +4,6 @@ It contains multiple benchmark functions in order to analyze the runtime and the
 """
 
 # Python standard libraries
-from typing import List, Optional
 from dataclasses import dataclass
 import os
 import json
@@ -41,7 +40,7 @@ class SingleBenchmark:
 
     execution_time_: float                      # all measurements summed up
 
-    flux_over_current: List[float]
+    flux_over_current: list[float]
     total_losses: float
     total_winding_losses: float
 
@@ -141,7 +140,7 @@ class Benchmark:
 # ------ Generic Functions ------
 
 
-def create_model(working_directory: str, mesh_accuracies=Optional[MeshAccuracies], aspect_ratio: float = 10,
+def create_model(working_directory: str, mesh_accuracies=MeshAccuracies, aspect_ratio: float = 10,
                  wwr_enabled: bool = True, number_of_conductors: int = 9):
     """
     Create the model for benchmark.
@@ -299,14 +298,14 @@ def create_rectangular_conductor_model(working_directory: str, mesh_accuracies: 
 
     return geo
 
-def plot_mesh_over_precision(benchmarks, x_list: List, x_label: str, title: str):
+def plot_mesh_over_precision(benchmarks, x_list: list, x_label: str, title: str):
     """
     Plot the mesh over precision.
 
     :param benchmarks:
     :type benchmarks:
     :param x_list: list with simulation numbers
-    :type x_list: List
+    :type x_list: list
     :param x_label: x-label for the plot
     :type x_label: str
     :param title: title for the plot

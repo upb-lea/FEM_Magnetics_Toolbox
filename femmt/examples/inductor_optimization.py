@@ -9,7 +9,6 @@ from itertools import product
 # import logging
 import inspect
 import time
-from typing import Optional
 
 # 3rd party libraries
 import numpy as np

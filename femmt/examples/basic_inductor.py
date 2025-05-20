@@ -181,4 +181,4 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
 
 
 if __name__ == "__main__":
-    basic_example_inductor(show_visual_outputs=False)
+    basic_example_inductor(show_visual_outputs=True)

@@ -1,7 +1,6 @@
 """DTOs for the stacked transformer optimization."""
 # python libraries
 from dataclasses import dataclass
-from typing import List, Optional
 
 # 3rd party libraries
 import numpy as np
@@ -34,23 +33,23 @@ class StoTargetAndFixedParameters:
     i_peak_2: float
     i_phase_deg_1: float
     i_phase_deg_2: float
-    material_dto_curve_list: List[MaterialCurve]
-    magnet_hub_model_list: List[LossModel]
-    time_extracted_vec: List
-    current_extracted_1_vec: List
-    current_extracted_2_vec: List
+    material_dto_curve_list: list[MaterialCurve]
+    magnet_hub_model_list: list[LossModel]
+    time_extracted_vec: list
+    current_extracted_1_vec: list
+    current_extracted_2_vec: list
     fundamental_frequency: float
     target_inductance_matrix: np.ndarray
     working_directories: WorkingDirectories
     # winding 1
-    fft_frequency_list_1: List[float]
-    fft_amplitude_list_1: List[float]
-    fft_phases_list_1: List[float]
+    fft_frequency_list_1: list[float]
+    fft_amplitude_list_1: list[float]
+    fft_phases_list_1: list[float]
 
     # winding 2
-    fft_frequency_list_2: List[float]
-    fft_amplitude_list_2: List[float]
-    fft_phases_list_2: List[float]
+    fft_frequency_list_2: list[float]
+    fft_amplitude_list_2: list[float]
+    fft_phases_list_2: list[float]
 
 @dataclass
 class StoInsulation:
@@ -107,10 +106,10 @@ class StoSingleInputConfig:
     n_p_top_min_max_list: list
     n_p_bot_min_max_list: list
     material_list: list
-    core_name_list: Optional[List[str]]
-    core_inner_diameter_min_max_list: Optional[List[float]]
-    window_w_min_max_list: Optional[List[float]]
-    window_h_bot_min_max_list: Optional[List[float]]
+    core_name_list: list[str] | None
+    core_inner_diameter_min_max_list: list[float] | None
+    window_w_min_max_list: list[float] | None
+    window_h_bot_min_max_list: list[float] | None
     primary_litz_wire_list: list
     secondary_litz_wire_list: list
 
@@ -196,9 +195,9 @@ class ReluctanceModelInput:
     magnet_material_model: LossModel
 
     temperature: float
-    time_extracted_vec: List
-    current_extracted_vec_1: List
-    current_extracted_vec_2: List
+    time_extracted_vec: list
+    current_extracted_vec_1: list
+    current_extracted_vec_2: list
     fundamental_frequency: float
 
     i_rms_1: float
@@ -208,14 +207,14 @@ class ReluctanceModelInput:
     secondary_litz_dict: dict
 
     # # winding 1
-    fft_frequency_list_1: List[float]
-    fft_amplitude_list_1: List[float]
-    fft_phases_list_1: List[float]
+    fft_frequency_list_1: list[float]
+    fft_amplitude_list_1: list[float]
+    fft_phases_list_1: list[float]
     #
     # # winding 2
-    fft_frequency_list_2: List[float]
-    fft_amplitude_list_2: List[float]
-    fft_phases_list_2: List[float]
+    fft_frequency_list_2: list[float]
+    fft_amplitude_list_2: list[float]
+    fft_phases_list_2: list[float]
 
 @dataclass
 class ReluctanceModelOutput:

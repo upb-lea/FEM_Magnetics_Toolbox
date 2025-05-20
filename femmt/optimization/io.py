@@ -5,7 +5,6 @@ import datetime
 import pickle
 import logging
 import shutil
-from typing import List, Optional
 import json
 
 # 3rd party libraries
@@ -328,8 +327,8 @@ class InductorOptimization:
             return reluctance_model_output
 
         @staticmethod
-        def start_proceed_study(config: InductorOptimizationDTO, number_trials: Optional[int] = None,
-                                target_number_trials: Optional[int] = None, storage: str = 'sqlite',
+        def start_proceed_study(config: InductorOptimizationDTO, number_trials: int | None = None,
+                                target_number_trials: int | None = None, storage: str = 'sqlite',
                                 sampler=optuna.samplers.NSGAIIISampler(),
                                 ) -> None:
             """
@@ -578,14 +577,14 @@ class InductorOptimization:
             return filtered_df
 
         @staticmethod
-        def df_from_trial_numbers(df: pd.DataFrame, trial_number_list: List[int]) -> pd.DataFrame:
+        def df_from_trial_numbers(df: pd.DataFrame, trial_number_list: list[int]) -> pd.DataFrame:
             """
             Generate a new dataframe from a given one, just with the trial numbers from the trial_number_list.
 
             :param df: input dataframe
             :type df: pandas.DataFrame
             :param trial_number_list: list of trials, e.g. [1530, 1870, 3402]
-            :type trial_number_list: List[int]
+            :type trial_number_list: list[int]
             :return: dataframe with trial numbers from trial_number_list
             :rtype: pandas.DataFrame
             """
@@ -851,7 +850,7 @@ class InductorOptimization:
             return fem_output
 
         @staticmethod
-        def full_simulation(df_geometry: pd.DataFrame, current_waveform: List, inductor_config_filepath: str, process_number: int = 1,
+        def full_simulation(df_geometry: pd.DataFrame, current_waveform: list, inductor_config_filepath: str, process_number: int = 1,
                             print_derivations: bool = False) -> tuple:
             """
             Reluctance model (hysteresis losses) and FEM simulation (winding losses and eddy current losses) for geometries from df_geometry.
@@ -859,7 +858,7 @@ class InductorOptimization:
             :param df_geometry: Pandas dataframe with geometries
             :type df_geometry: pd.DataFrame
             :param current_waveform: Current waveform to simulate
-            :type current_waveform: List
+            :type current_waveform: list
             :param inductor_config_filepath: Filepath of the inductor optimization configuration file
             :type inductor_config_filepath: str
             :param process_number: process number to run the simulation on

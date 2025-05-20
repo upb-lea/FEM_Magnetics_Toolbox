@@ -2,9 +2,8 @@
 import matplotlib.pyplot as plt
 import femmt as fmt
 import os
-from typing import Optional
 
-def basic_example_sweep(onelab_folder: Optional[str] = None, show_visual_outputs: bool = True, is_test: bool = False):
+def basic_example_sweep(onelab_folder: str | None = None, show_visual_outputs: bool = True, is_test: bool = False):
     """
     Advanced example to demonstrate an air gap sweep for an inductor.
 

@@ -10,13 +10,12 @@ folder .../femmt/examples/example_results/simulation_file_name/results/log_elect
 """
 import femmt as fmt
 import os
-from typing import Optional
 import logging
 
 # configure logging to show femmt terminal output
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
-def basic_example_transformer_three_winding(onelab_folder: Optional[str] = None, show_visual_outputs: bool = True,
+def basic_example_transformer_three_winding(onelab_folder: str | None = None, show_visual_outputs: bool = True,
                                             is_test: bool = False):
     """
     Run the example code for the three-winding transformer.

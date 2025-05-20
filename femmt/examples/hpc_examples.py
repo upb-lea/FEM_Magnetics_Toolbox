@@ -1,6 +1,5 @@
 """Examples for the parallel simulation."""
 # Python standard libraries
-from typing import Dict
 from itertools import product
 import os
 import time
@@ -94,7 +93,7 @@ def create_parallel_example_inductor(inductor_frequency: int, air_gap_height: fl
 
     return geo
 
-def custom_hpc(parameters: Dict):
+def custom_hpc(parameters: dict):
     """Very simple example for a custom hpc_function which can be given to the hpc.run() function.
 
     :param parameters: Dictionary containing the model and the given simulation_parameters.

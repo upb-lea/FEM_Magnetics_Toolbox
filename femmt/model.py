@@ -4,7 +4,6 @@ Conductors, Core, AirGaps, Insulations, WindingWindow, StrayPath and the Virtual
 """
 # Python standard libraries
 from dataclasses import dataclass
-from typing import List, Tuple, Optional, Union
 
 # 3rd party libraries
 import numpy as np
@@ -30,13 +29,13 @@ class Conductor:
 
     # TODO More documentation
     conductor_type: ConductorType
-    conductor_arrangement: Optional[ConductorArrangement] = None
-    wrap_para: Optional[WrapParaType] = None
-    conductor_radius: Optional[float] = None
+    conductor_arrangement: ConductorArrangement | None = None
+    wrap_para: WrapParaType | None = None
+    conductor_radius: float | None = None
     winding_number: int
-    thickness: Optional[float] = None
-    ff: Optional[float] = None
-    strand_radius: Optional[float] = None
+    thickness: float | None = None
+    ff: float | None = None
+    strand_radius: float | None = None
     n_strands: int = 0
     n_layers: int
     a_cell: float
@@ -45,7 +44,7 @@ class Conductor:
     conductor_is_set: bool
 
     # Not used in femmt_classes. Only needed for to_dict()
-    conductivity: Optional[Conductivity] = None
+    conductivity: Conductivity | None = None
 
     def __init__(self, winding_number: int, conductivity: Conductivity, parallel: bool = False,
                  winding_material_temperature: float = 100):
@@ -93,14 +92,14 @@ class Conductor:
         self.a_cell = None  # can only be set after the width is determined
         self.conductor_radius = 1  # Revisit
 
-    def set_solid_round_conductor(self, conductor_radius: float, conductor_arrangement: Optional[ConductorArrangement]):
+    def set_solid_round_conductor(self, conductor_radius: float, conductor_arrangement: ConductorArrangement | None):
         """
         Set a solid round conductor.
 
         :param conductor_radius: conductor radius in m
         :type conductor_radius: float
         :param conductor_arrangement: conductor arrangement (Square / SquareFullWidth / Hexagonal)
-        :type conductor_arrangement: Optional[ConductorArrangement]
+        :type conductor_arrangement: ConductorArrangement | None
         """
         if self.conductor_is_set:
             raise Exception("Only one conductor can be set for each winding!")
@@ -111,22 +110,22 @@ class Conductor:
         self.conductor_radius = conductor_radius
         self.a_cell = np.pi * conductor_radius ** 2
 
-    def set_litz_round_conductor(self, conductor_radius: Optional[float], number_strands: Optional[int],
-                                 strand_radius: Optional[float],
-                                 fill_factor: Optional[float], conductor_arrangement: ConductorArrangement):
+    def set_litz_round_conductor(self, conductor_radius: float | None, number_strands: int | None,
+                                 strand_radius: float | None,
+                                 fill_factor: float | None, conductor_arrangement: ConductorArrangement):
         """
         Set a round conductor made of litz wire.
 
         Only 3 of the 4 parameters are needed. The other one needs to be none.
 
         :param conductor_radius: conductor radius in m
-        :type conductor_radius: Optional[float]
+        :type conductor_radius: float | None
         :param number_strands: number of strands inside the litz wire
-        :type number_strands: Optional[int]
+        :type number_strands: int | None
         :param strand_radius: radius of a single strand in m
-        :type strand_radius: Optional[float]
+        :type strand_radius: float | None
         :param fill_factor: fill factor of the litz wire
-        :type fill_factor: Optional[float]
+        :type fill_factor: float | None
         :param conductor_arrangement: conductor arrangement (Square, SquareFullWidth, Hexagonal)
         :type conductor_arrangement: ConductorArrangement
         """
@@ -530,13 +529,13 @@ class AirGaps:
     """
 
     core: Core
-    midpoints: List[List[float]]  #: list: [position_tag, air_gap_position, air_gap_h]
+    midpoints: list[list[float]]  #: list: [position_tag, air_gap_position, air_gap_h]
     number: int
 
     # Needed for to_dict
-    air_gap_settings: List
+    air_gap_settings: list
 
-    def __init__(self, method: Optional[AirGapMethod], core: Optional[Core]):
+    def __init__(self, method: AirGapMethod | None, core: Core | None):
         """Create an AirGaps object. An AirGapMethod needs to be set.
 
         This determines the way the air gap will be added to the model. In order to calculate the air gap positions the core object needs to be given.
@@ -552,7 +551,7 @@ class AirGaps:
         self.number = 0
         self.air_gap_settings = []
 
-    def add_air_gap(self, leg_position: AirGapLegPosition, height: float, position_value: Optional[float] = 0,
+    def add_air_gap(self, leg_position: AirGapLegPosition, height: float, position_value: float | None = 0,
                     stacked_position: StackedPosition = None):
         """
         Brings a single air gap to the core.
@@ -665,9 +664,9 @@ class Insulation:
     In general, it is not necessary to add an insulation object at all when no insulation is needed.
     """
 
-    cond_cond: List[List[
+    cond_cond: list[list[
         float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
-    core_cond: List[
+    core_cond: list[
         float]  # list with size 4x1, with respectively isolation of cond_n -> [top_core, bot_core, left_core, right_core]
 
     flag_insulation: bool = True
@@ -694,14 +693,14 @@ class Insulation:
         """
         self.flag_insulation = flag
 
-    def add_winding_insulations(self, inner_winding_insulation: List[List[float]]):
+    def add_winding_insulations(self, inner_winding_insulation: list[list[float]]):
         """Add insulations between turns of one winding and insulation between virtual winding windows.
 
         Insulation between virtual winding windows is not always needed.
         :param inner_winding_insulation: List of floats which represent the insulations between turns of the same winding. This does not correspond to
         the order conductors are added to the winding! Instead, the winding number is important. The conductors are sorted by ascending winding number.
         The lowest winding number therefore is combined with index 0. The second lowest with index 1 and so on.
-        :type inner_winding_insulation: List[List[float]]
+        :type inner_winding_insulation: list[list[float]]
         """
         if inner_winding_insulation == [[]]:
             raise Exception("Inner winding insulations list cannot be empty.")
@@ -777,12 +776,11 @@ class VirtualWindingWindow:
     right_bound: float
 
     winding_type: WindingType
-    winding_scheme: Union[
-        WindingScheme, InterleavedWindingScheme]  # Either WindingScheme or InterleavedWindingScheme (Depending on the winding)
+    winding_scheme: WindingScheme | InterleavedWindingScheme  # Either WindingScheme or InterleavedWindingScheme (Depending on the winding)
     wrap_para: WrapParaType
 
-    windings: List[Conductor]
-    turns: List[int]
+    windings: list[Conductor]
+    turns: list[int]
 
     winding_is_set: bool
     winding_insulation: float
@@ -808,10 +806,10 @@ class VirtualWindingWindow:
         self.right_bound = right_bound
         self.winding_is_set = False
 
-    def set_winding(self, conductor: Conductor, turns: int, winding_scheme: WindingScheme, alignment: Optional[Align] = None,
-                    placing_strategy: Optional[ConductorDistribution] = None, zigzag: bool = False,
-                    wrap_para_type: WrapParaType = None, foil_vertical_placing_strategy: Optional[FoilVerticalDistribution] = None,
-                    foil_horizontal_placing_strategy: Optional[FoilHorizontalDistribution] = None):
+    def set_winding(self, conductor: Conductor, turns: int, winding_scheme: WindingScheme, alignment: Align | None = None,
+                    placing_strategy: ConductorDistribution | None = None, zigzag: bool = False,
+                    wrap_para_type: WrapParaType = None, foil_vertical_placing_strategy: FoilVerticalDistribution | None = None,
+                    foil_horizontal_placing_strategy: FoilHorizontalDistribution | None = None):
         """Set a single winding to the current virtual winding window. A single winding always contains one conductor.
 
         :param conductor: Conductor which will be set to the vww.
@@ -831,7 +829,7 @@ class VirtualWindingWindow:
         :param foil_horizontal_placing_strategy: foil_horizontal_placing_strategy defines the way the rectangular foil Horizontal conductors are placing in vww
         :type foil_horizontal_placing_strategy: foil_horizontal_placing_strategy, optional
         :param alignment: List of alignments: ToEdges, CenterOnVerticalAxis, CenterOnHorizontalAxis
-        :type alignment: Optional[Align]
+        :type alignment: Align | None
         """
         self.winding_type = WindingType.Single
         self.winding_scheme = winding_scheme
@@ -980,10 +978,10 @@ class WindingWindow:
 
     # 4 different insulations which can be Null if there is a vww overlapping
     # The lists contain 4 values x1, y1, x2, y2 where (x1, y1) is the lower left and (x2, y2) the upper right point
-    top_iso: List[float]
-    left_iso: List[float]
-    bot_iso: List[float]
-    right_iso: List[float]
+    top_iso: list[float]
+    left_iso: list[float]
+    bot_iso: list[float]
+    right_iso: list[float]
 
     insulations: Insulation
     split_type: WindingWindowSplit
@@ -993,7 +991,7 @@ class WindingWindow:
     horizontal_split_factor: float
     vertical_split_factor: float
 
-    virtual_winding_windows: List[VirtualWindingWindow]
+    virtual_winding_windows: list[VirtualWindingWindow]
 
     def __init__(self, core: Core, insulations: Insulation, stray_path: StrayPath = None, air_gaps: AirGaps = None):
         """Create a winding window which then creates up to 4 virtual winding windows.
@@ -1044,7 +1042,7 @@ class WindingWindow:
     def split_window(self, split_type: WindingWindowSplit, split_distance: float = 0,
                      horizontal_split_factor: float = 0.5, vertical_split_factor: float = 0.5,
                      top_bobbin: float = None, bot_bobbin: float = None, left_bobbin: float = None,
-                     right_bobbin: float = None) -> Tuple[VirtualWindingWindow]:
+                     right_bobbin: float = None) -> tuple[VirtualWindingWindow]:
         """Create up to 4 virtual winding windows depending on the split type and the horizontal and vertical split factors.
 
         The split factors are values between 0 and 1 and determine a horizontal and vertical line at which the window is split.
@@ -1069,7 +1067,7 @@ class WindingWindow:
         :param vertical_split_factor: Vertical split factor 0...1, defaults to 0.5
         :type vertical_split_factor: float, optional
         :return: Tuple containing the virtual winding windows
-        :rtype: Tuple[VirtualWindingWindow]
+        :rtype: tuple[VirtualWindingWindow]
         :param top_bobbin: top bobbin thickness in m
         :type top_bobbin: float
         :param bot_bobbin: bottom bobbin thickness in m
@@ -1187,7 +1185,7 @@ class WindingWindow:
         else:
             raise Exception(f"Winding window split type {split_type} not found")
 
-    def NCellsSplit(self, split_distance: float = 0, horizontal_split_factors: List[float] = None, vertical_split_factor: float = 0.5):
+    def NCellsSplit(self, split_distance: float = 0, horizontal_split_factors: list[float] = None, vertical_split_factor: float = 0.5):
         """
         Split a winding window into N columns (horizontal).
 
@@ -1269,8 +1267,8 @@ class WindingWindow:
         return self.virtual_winding_windows
 
     def flexible_split(self, split_distance: float = 0,
-                       horizontal_split_factors: Optional[List[float]] = None,
-                       vertical_split_factors: Optional[List[List[float]]] = None) -> List[VirtualWindingWindow]:
+                       horizontal_split_factors: list[float] | None = None,
+                       vertical_split_factors: list[list[float]] | None = None) -> list[VirtualWindingWindow]:
         """
         Flexible split function to divide a window into sections based on provided horizontal and vertical split factors.
 

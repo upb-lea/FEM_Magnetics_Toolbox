@@ -2,7 +2,6 @@
 # python libraries
 import shutil
 import os
-from typing import List, Tuple
 import inspect
 
 import femmt
@@ -35,14 +34,14 @@ def _copy_electro_magnetic_necessary_files(src_folder: str, dest_folder: str):
         shutil.copy(from_path, to_path)
 
 
-def dto_list_to_vec(dto_list: List[ItoSingleResultFile]) -> Tuple:
+def dto_list_to_vec(dto_list: list[ItoSingleResultFile]) -> tuple:
     """
     Brings a list of dto-objects to two lists.
 
     Use case is to bring the pareto-front into two vectors for further calculations
 
     :param dto_list: list of ItoSingleResultFile-DTOs
-    :type dto_list: List[ItoSingleResultFile]
+    :type dto_list: list[ItoSingleResultFile]
 
     """
     for dto in dto_list:
@@ -248,7 +247,7 @@ def integrated_transformer_fem_simulation_from_result_dto(config_dto: ItoSingleI
 
 
 def integrated_transformer_fem_simulations_from_result_dtos(config_dto: ItoSingleInputConfig,
-                                                            simulation_dto_list: List[ItoSingleResultFile],
+                                                            simulation_dto_list: list[ItoSingleResultFile],
                                                             visualize: bool = False,
                                                             ):
     """
@@ -257,7 +256,7 @@ def integrated_transformer_fem_simulations_from_result_dtos(config_dto: ItoSingl
     :param config_dto: configuration DTO (data transfer object)
     :type config_dto: ItoSingleInputConfig
     :param simulation_dto_list: List of simulation DTOs to perform the FEM simulation
-    :type simulation_dto_list: List[ItoSingleResultFile]
+    :type simulation_dto_list: list[ItoSingleResultFile]
     :param visualize: True to visualize the results
     :type visualize: bool
     """
@@ -302,7 +301,7 @@ def integrated_transformer_fem_simulations_from_result_dtos(config_dto: ItoSingl
 
 
 def integrated_transformer_fem_thermal_simulations_from_result_dtos(
-        config_dto: ItoSingleInputConfig, simulation_dto_list: List[ItoSingleResultFile],
+        config_dto: ItoSingleInputConfig, simulation_dto_list: list[ItoSingleResultFile],
         visualize: bool = False):
     """
     Thermal FEM simulation for the integrated transformer from a result DTO.
@@ -310,7 +309,7 @@ def integrated_transformer_fem_thermal_simulations_from_result_dtos(
     :param config_dto: configuration DTO (data transfer object)
     :type config_dto: ItoSingleInputConfig
     :param simulation_dto_list: List of simulation DTOs to perform thermal FEM simulation
-    :type simulation_dto_list: List[ItoSingleResultFile]
+    :type simulation_dto_list: list[ItoSingleResultFile]
     :param visualize: True to visualize the results
     :type visualize: bool
     """

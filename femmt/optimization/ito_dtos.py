@@ -1,7 +1,6 @@
 """DTOs for the integrated transformer optimization."""
 # python libraries
 from dataclasses import dataclass
-from typing import List
 
 # 3rd party libraries
 import numpy as np
@@ -107,24 +106,24 @@ class ItoTargetAndFixedParameters:
     i_peak_2: float
     i_phase_deg_1: float
     i_phase_deg_2: float
-    material_dto_curve_list: List[MaterialCurve]
-    magnet_hub_model_list: List[LossModel]
-    time_extracted_vec: List
-    current_extracted_1_vec: List
-    current_extracted_2_vec: List
+    material_dto_curve_list: list[MaterialCurve]
+    magnet_hub_model_list: list[LossModel]
+    time_extracted_vec: list
+    current_extracted_1_vec: list
+    current_extracted_2_vec: list
     fundamental_frequency: float
     target_inductance_matrix: np.ndarray
     working_directories: WorkingDirectories
 
     # winding 1
-    fft_frequency_list_1: List[float]
-    fft_amplitude_list_1: List[float]
-    fft_phases_list_1: List[float]
+    fft_frequency_list_1: list[float]
+    fft_amplitude_list_1: list[float]
+    fft_phases_list_1: list[float]
 
     # winding 2
-    fft_frequency_list_2: List[float]
-    fft_amplitude_list_2: List[float]
-    fft_phases_list_2: List[float]
+    fft_frequency_list_2: list[float]
+    fft_amplitude_list_2: list[float]
+    fft_phases_list_2: list[float]
 
 @dataclass
 class ItoSingleResultFile:
@@ -187,9 +186,9 @@ class ItoReluctanceModelInput:
     magnet_material_model: LossModel
 
     temperature: float
-    time_extracted_vec: List
-    current_extracted_vec_1: List
-    current_extracted_vec_2: List
+    time_extracted_vec: list
+    current_extracted_vec_1: list
+    current_extracted_vec_2: list
     fundamental_frequency: float
 
     i_rms_1: float
@@ -199,14 +198,14 @@ class ItoReluctanceModelInput:
     litz_dict_2: dict
 
     # winding 1
-    fft_frequency_list_1: List[float]
-    fft_amplitude_list_1: List[float]
-    fft_phases_list_1: List[float]
+    fft_frequency_list_1: list[float]
+    fft_amplitude_list_1: list[float]
+    fft_phases_list_1: list[float]
 
     # winding 2
-    fft_frequency_list_2: List[float]
-    fft_amplitude_list_2: List[float]
-    fft_phases_list_2: List[float]
+    fft_frequency_list_2: list[float]
+    fft_amplitude_list_2: list[float]
+    fft_phases_list_2: list[float]
 
 @dataclass
 class ItoReluctanceModelOutput:
