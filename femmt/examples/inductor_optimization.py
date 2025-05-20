@@ -943,12 +943,12 @@ class AutomatedDesign:
 
         return return_data_matrix
 
-    def fem_simulation(self, count: Optional[int] = None):
+    def fem_simulation(self, count: int | None = None):
         """
         Perform FEM simulation of the design cases. Save the result in the given working directory for later analysis.
 
         :param count: Number of cases to simulate
-        :type count: Optional[int]
+        :type count: int | None
         """
         start_time = time.time()
 
