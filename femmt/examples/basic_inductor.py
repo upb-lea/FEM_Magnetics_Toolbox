@@ -10,9 +10,12 @@ folder .../femmt/examples/example_results/simulation_file_name/results/log_elect
 """
 import femmt as fmt
 import os
+import logging
 
+# configure logging to show femmt terminal output
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
-def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
+def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool = False, is_test: bool = False):
     """
     Run the example code for the inductor.
 
@@ -100,7 +103,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.FreqDomain, component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
+                                is_gui=is_test)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
     if onelab_folder is not None:

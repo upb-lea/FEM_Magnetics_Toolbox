@@ -3,7 +3,6 @@
 import datetime
 import logging
 import os
-from typing import List, Optional
 import shutil
 import json
 import pickle
@@ -500,8 +499,8 @@ class StackedTransformerOptimization:
             return reluctance_output
 
         @staticmethod
-        def start_proceed_study(config: StoSingleInputConfig, number_trials: Optional[int] = None,
-                                target_number_trials: Optional[int] = None, storage: str = 'sqlite',
+        def start_proceed_study(config: StoSingleInputConfig, number_trials: int | None = None,
+                                target_number_trials: int | None = None, storage: str = 'sqlite',
                                 sampler=optuna.samplers.NSGAIIISampler(),
                                 ) -> None:
             """
@@ -697,13 +696,13 @@ class StackedTransformerOptimization:
             Remove designs with too high losses compared to the minimum losses.
 
             :param df: list of valid DTOs
-            :type df: List[ItoSingleResultFile]
+            :type df: list[ItoSingleResultFile]
             :param factor_min_dc_losses: filter factor for the minimum dc losses
             :type factor_min_dc_losses: float
             :param factor_max_dc_losses: dc_max_loss = factor_max_dc_losses * min_available_dc_losses_in_pareto_front
             :type factor_max_dc_losses: float
             :returns: list with removed objects (too small air gaps)
-            :rtype: List[ItoSingleResultFile]
+            :rtype: list[ItoSingleResultFile]
             """
             # figure out pareto front
             # pareto_volume_list, pareto_core_hyst_list, pareto_dto_list = self.pareto_front(volume_list, core_hyst_loss_list, valid_design_list)
@@ -732,14 +731,14 @@ class StackedTransformerOptimization:
             return pareto_df_offset
 
         @staticmethod
-        def df_trial_numbers(df: pd.DataFrame, trial_number_list: List[int]) -> pd.DataFrame:
+        def df_trial_numbers(df: pd.DataFrame, trial_number_list: list[int]) -> pd.DataFrame:
             """
             Generate a new dataframe from a given one, just with the trial numbers from the trial_number_list.
 
             :param df: input dataframe
             :type df: pandas.DataFrame
             :param trial_number_list: list of trials, e.g. [1530, 1870, 3402]
-            :type trial_number_list: List[int]
+            :type trial_number_list: list[int]
             :return: dataframe with trial numbers from trial_number_list
             :rtype: pandas.DataFrame
             """
@@ -893,7 +892,7 @@ class StackedTransformerOptimization:
 
             # 1. chose simulation type
             geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
-                                        working_directory=fem_input.working_directory, verbosity=fmt.Verbosity.Silent)
+                                        working_directory=fem_input.working_directory, onelab_verbosity=fmt.Verbosity.Silent)
 
             # 2. set core parameters
             core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=fem_input.core_inner_diameter,
@@ -1042,7 +1041,7 @@ class StackedTransformerOptimization:
             return reluctance_df
 
         @staticmethod
-        def full_simulation(df_geometry: pd.DataFrame, current_waveform: List, stacked_transformer_config_filepath: str, process_number: int = 1,
+        def full_simulation(df_geometry: pd.DataFrame, current_waveform: list, stacked_transformer_config_filepath: str, process_number: int = 1,
                             show_visual_outputs: bool = False, print_derivations: bool = False):
             """
             Reluctance model (hysteresis losses) and FEM simulation (winding losses and eddy current losses) for geometries from df_geometry.
@@ -1050,7 +1049,7 @@ class StackedTransformerOptimization:
             :param df_geometry: Pandas dataframe with geometries
             :type df_geometry: pd.DataFrame
             :param current_waveform: Current waveform to simulate
-            :type current_waveform: List
+            :type current_waveform: list
             :param stacked_transformer_config_filepath: Filepath of the inductor optimization configuration file
             :type stacked_transformer_config_filepath: str
             :param process_number: process number to run the simulation on

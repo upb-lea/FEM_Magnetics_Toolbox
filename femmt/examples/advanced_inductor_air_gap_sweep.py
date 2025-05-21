@@ -2,9 +2,8 @@
 import matplotlib.pyplot as plt
 import femmt as fmt
 import os
-from typing import Optional
 
-def basic_example_sweep(onelab_folder: Optional[str] = None, show_visual_outputs: bool = True, is_test: bool = False):
+def basic_example_sweep(onelab_folder: str | None = None, show_visual_outputs: bool = True, is_test: bool = False):
     """
     Advanced example to demonstrate an air gap sweep for an inductor.
 
@@ -39,7 +38,7 @@ def basic_example_sweep(onelab_folder: Optional[str] = None, show_visual_outputs
 
         working_directories.append(directory)
 
-        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=directory, verbosity=fmt.Verbosity.Silent, is_gui=is_test)
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=directory, is_gui=is_test)
 
         # This line is for automated pytest running on GitHub only. Please ignore this line!
         if onelab_folder is not None:

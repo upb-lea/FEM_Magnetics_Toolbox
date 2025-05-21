@@ -1,7 +1,6 @@
 """Functions to draw different conductor schemes for the FEM simulation."""
 # python libraries
 import copy
-from typing import List
 
 # 3rd party libraries
 import numpy as np
@@ -26,7 +25,7 @@ def number_of_rows(row: ConductorRow) -> int:
 
 
 def single_row(number_of_conds_per_winding: int, window_width: float, winding_tag: WindingTag, conductor_type: ConductorType,
-               thickness: Optional[float] = None, radius: Optional[float] = None, cond_cond_isolation=None,
+               thickness: float | None = None, radius: float | None = None, cond_cond_isolation=None,
                additional_bobbin: float = 0) -> ConductorRow:
     """
     Define a full row of the defined conductor in the specified window width.
@@ -211,15 +210,15 @@ def get_height_of_group(group: CenterTappedGroup) -> float:
     return total_height
 
 
-def add_tertiary_winding_to_stack(stack_order_without_tertiary: List[ConductorRow],
-                                  tertiary_row_to_be_added: List[ConductorRow]):
+def add_tertiary_winding_to_stack(stack_order_without_tertiary: list[ConductorRow],
+                                  tertiary_row_to_be_added: list[ConductorRow]):
     """
     Add tertiary winding to stack.
 
     :param stack_order_without_tertiary: list of ConductorRows
-    :type stack_order_without_tertiary: List[ConductorRow]
+    :type stack_order_without_tertiary: list[ConductorRow]
     :param tertiary_row_to_be_added: list of ConductorRows
-    :type tertiary_row_to_be_added: List[ConductorRow]
+    :type tertiary_row_to_be_added: list[ConductorRow]
     """
     secondary_tags = []
     number_of_added_tertiaries = 0
@@ -233,12 +232,12 @@ def add_tertiary_winding_to_stack(stack_order_without_tertiary: List[ConductorRo
 
 
 # Insert insulations into the stack_order
-def insert_insulations_to_stack(stack_order: List, isolations: ThreeWindingIsolation):
+def insert_insulations_to_stack(stack_order: list, isolations: ThreeWindingIsolation):
     """
     Insert insulations to a stack.
 
     :param stack_order: order of the stack
-    :type stack_order: List
+    :type stack_order: list
     :param isolations: isolations according to the ThreeWindingIsolation class
     :type isolations: ThreeWindingIsolation
     """
@@ -292,13 +291,13 @@ def insert_insulations_to_stack(stack_order: List, isolations: ThreeWindingIsola
     # print(f"{insulation_tags = }")
 
 
-def get_set_of_integers_from_string_list(string_list: List[str]):
+def get_set_of_integers_from_string_list(string_list: list[str]):
     """Get the list of the set of integers in a list of strings.
 
     Used by winding_scheme key.
 
     :param string_list:
-    :type string_list: List[str]
+    :type string_list: list[str]
     """
     integer_list = []
     for single_string in string_list:
@@ -310,7 +309,7 @@ def get_set_of_integers_from_string_list(string_list: List[str]):
     return integer_list
 
 
-def stack_order_from_interleaving_scheme(interleaving_scheme: InterleavingSchemesFoilLitz, stack_order: List,
+def stack_order_from_interleaving_scheme(interleaving_scheme: InterleavingSchemesFoilLitz, stack_order: list,
                                          primary_additional_bobbin: float, center_foil_additional_bobbin: float,
                                          primary_row: ConductorRow, secondary_row: ConductorRow,
                                          tertiary_row: ConductorRow, insulations: ThreeWindingIsolation):
@@ -320,7 +319,7 @@ def stack_order_from_interleaving_scheme(interleaving_scheme: InterleavingScheme
     :param interleaving_scheme: interleaving scheme
     :type interleaving_scheme: InterleavingSchemesFoilLitz
     :param stack_order: order of the stack
-    :type stack_order: List
+    :type stack_order: list
     :param primary_additional_bobbin: primary additional bobbin thickness in m in the center
     :type primary_additional_bobbin: float
     :param center_foil_additional_bobbin: additional bobbin thickness in m for the center foil
@@ -469,8 +468,8 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
     :type center_foil_additional_bobbin: float
     """
     if not check_secondary_and_tertiary_are_the_same(secondary_row, tertiary_row):
-        print("Secondary and tertiary winding are not defined similar. "
-              "That is not a nice center-tapped transformer :(")
+        logger.warning("Secondary and tertiary winding are not defined similar. "
+                       "That is not a nice center-tapped transformer :(")
 
     elif interleaving_type == CenterTappedInterleavingType.TypeA:
         # Usually for center-tapped it is the secondary/=tertiary winding number
@@ -607,31 +606,31 @@ def is_even(x: int):
         return True
 
 
-def center(l_list: List):
+def center(l_list: list):
     """
     Return the center index of a list. Rounds off.
 
     :param l_list: list to return the center index
-    :type l_list: List
+    :type l_list: list
     """
     return int(len(l_list) / 2)
 
 
-def mix_x_and_i(input_x: List, input_i: List):
+def mix_x_and_i(input_x: list, input_i: list):
     """General usage to interleave windings. One winding could be input_x and the other input_i. Experimental.
 
     Example: 16 primary windings (input_x), 3 secondary windings (input_i).
     Tries to fit these windings symmetric into the winding window.
 
     :param input_x: List of e.g. primary windings
-    :type input_x: List
+    :type input_x: list
     :param input_i: List of e.g. secondary windings
-    :type input_i: List
+    :type input_i: list
     """
     len_x = len(input_x)
     len_i = len(input_i)
     if len_x > len_i:
-        print("x must be smaller or equal I")
+        logger.warning("x must be smaller or equal I")
     else:
         if len_x == 0:
             return input_i
@@ -656,6 +655,5 @@ def mix_x_and_i(input_x: List, input_i: List):
                 temp_mixed = mix_x_and_i(x[0:-1], current)
                 temp_mixed.insert(center(temp_mixed), temp_x)
                 current = temp_mixed
-            # print(f"{I = }")
             input_list = [input_x[0], input_i[0]]
             return [input_list[i] for i in current]

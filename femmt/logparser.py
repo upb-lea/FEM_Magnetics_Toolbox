@@ -2,7 +2,6 @@
 import os
 import json
 import matplotlib.pyplot as plt
-from typing import List, Dict
 from enum import Enum
 from dataclasses import dataclass
 
@@ -35,7 +34,7 @@ class SweepData:
     core_eddy_losses: float
     core_hyst_losses: float
     winding_losses: float
-    windings: List[WindingData]
+    windings: list[WindingData]
 
 
 @dataclass
@@ -43,7 +42,7 @@ class FileData:
     """General data for the result-log file."""
 
     file_path: str
-    sweeps: List[SweepData]
+    sweeps: list[SweepData]
     total_winding_losses: float
     total_core_eddy_losses: float
     total_core_hyst_losses: float
@@ -59,13 +58,13 @@ class FEMMTLogParser:
     """
 
     # Contains the complete data
-    data: Dict[str, FileData]
+    data: dict[str, FileData]
 
-    def __init__(self, file_paths_dict: Dict):
+    def __init__(self, file_paths_dict: dict):
         """Create the data dict out of the given file_paths.
 
         :param file_paths_dict: List of paths to every log file that should be added to the data.
-        :type file_paths_dict: List[str]
+        :type file_paths_dict: list[str]
         """
         self.data = {}
 
@@ -75,7 +74,7 @@ class FEMMTLogParser:
 
             self.data[name] = self.parse_file(file_path, SweepTypes.SingleSweep)
 
-    def plot_frequency_sweep_losses(self, data_names: List[str], loss_parameter: str, plot_label: str = "") -> None:
+    def plot_frequency_sweep_losses(self, data_names: list[str], loss_parameter: str, plot_label: str = "") -> None:
         """
         Sweep over the frequency of different simulations from one or multiple files.
 
@@ -151,7 +150,7 @@ class FEMMTLogParser:
         plt.show()
 
     @staticmethod
-    def get_log_files_from_working_directories(working_directories: List[str]) -> Dict:
+    def get_log_files_from_working_directories(working_directories: list[str]) -> dict:
         """
         Get the log files as dict for each given working directory together with the name of the directory as key.
 

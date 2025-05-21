@@ -3,7 +3,10 @@ import numpy as np
 import femmt as fmt
 import materialdatabase as mdb
 import os
-# from matplotlib import pyplot as plt
+import logging
+
+# configure logging to show femmt terminal output
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 def basic_example_inductor_time_domain(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
     """
@@ -28,7 +31,7 @@ def basic_example_inductor_time_domain(onelab_folder: str = None, show_visual_ou
     # 1. chose simulation type
     geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.TimeDomain,
                                 component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
+                                is_gui=is_test)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
     if onelab_folder is not None:

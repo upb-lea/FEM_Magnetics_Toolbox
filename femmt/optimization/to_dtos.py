@@ -1,7 +1,6 @@
 """Includes the DTOs to perform a transformer optimization."""
 # python libraries
 from dataclasses import dataclass
-from typing import List, Union
 
 # 3rd party libraries
 import numpy as np
@@ -110,10 +109,10 @@ class ToTargetAndFixedParameters:
     i_peak_2: float
     i_phase_deg_1: float
     i_phase_deg_2: float
-    material_dto_curve_list: List[MaterialCurve]
-    time_extracted_vec: List
-    current_extracted_1_vec: List
-    current_extracted_2_vec: List
+    material_dto_curve_list: list[MaterialCurve]
+    time_extracted_vec: list
+    current_extracted_1_vec: list
+    current_extracted_2_vec: list
     fundamental_frequency: float
     target_inductance_matrix: np.ndarray
     working_directories: WorkingDirectories
@@ -124,5 +123,5 @@ class CurrentWorkingPoint:
     """Stores the working point of currents together with a human-readable name."""
 
     name: str
-    time_current_1_vec: Union[np.ndarray, list]
-    time_current_2_vec: Union[np.ndarray, list]
+    time_current_1_vec: np.ndarray | list
+    time_current_2_vec: np.ndarray | list

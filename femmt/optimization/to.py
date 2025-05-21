@@ -168,7 +168,7 @@ class TransformerOptimization:
 
             geo = femmt.MagneticComponent(component_type=femmt.ComponentType.Transformer,
                                           working_directory=working_directory_single_process,
-                                          verbosity=verbosity, simulation_name=f"Case_{trial.number}")
+                                          onelab_verbosity=verbosity, simulation_name=f"Case_{trial.number}")
 
             geo.update_mesh_accuracies(config.mesh_accuracy, config.mesh_accuracy, config.mesh_accuracy,
                                        config.mesh_accuracy)
@@ -465,7 +465,7 @@ class TransformerOptimization:
                                       working_directory=os.path.join(
                                           target_and_fixed_parameters.working_directories.fem_working_directory,
                                           'process_1'),
-                                      verbosity=femmt.Verbosity.Silent,
+                                      onelab_verbosity=femmt.Verbosity.Silent,
                                       simulation_name=f"Single_Case_{loaded_trial_params['number']}")
 
         geo.update_mesh_accuracies(mesh_accuracy_air_gaps=mesh_accuracy, mesh_accuracy_core=mesh_accuracy,
@@ -641,7 +641,7 @@ class TransformerOptimization:
     @staticmethod
     def create_full_report(df: pd.DataFrame, trials_numbers: list[int], config: ToSingleInputConfig,
                            thermal_config: ThermalConfig,
-                           current_waveforms_operating_points: List[CurrentWorkingPoint],
+                           current_waveforms_operating_points: list[CurrentWorkingPoint],
                            fft_filter_value_factor: float = 0.01, mesh_accuracy: float = 0.5):
         """
         Create for several geometries and several working points a report.
@@ -652,13 +652,13 @@ class TransformerOptimization:
         :param df: Dataframe, generated from an optuna study (exported by optuna)
         :type df: pd.Dataframe
         :param trials_numbers: List of trial numbers to re-simulate
-        :type trials_numbers: List[int]
+        :type trials_numbers: list[int]
         :param config: stacked transformer optimization configuration file
         :type config: ToSingleInputConfig
         :param thermal_config: thermal configuration file
         :type thermal_config: ThermalConfig
         :param current_waveforms_operating_points: Trial numbers in a list to re-simulate
-        :type current_waveforms_operating_points: List[int]
+        :type current_waveforms_operating_points: list[int]
         :param fft_filter_value_factor: Factor to filter frequencies from the fft.
             E.g. 0.01 [default] removes all amplitudes below 1 % of the maximum amplitude from the result-frequency list
         :type fft_filter_value_factor: float

@@ -4,6 +4,11 @@ import materialdatabase as mdb
 import os
 # from matplotlib import pyplot as plt
 import numpy as np
+import logging
+
+# configure logging to show femmt terminal output
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+
 def basic_example_transformer_time_domain(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
     """
     Demonstrate how to simulate a two winding transformer in time domain.
@@ -27,7 +32,7 @@ def basic_example_transformer_time_domain(onelab_folder: str = None, show_visual
     # 1. chose simulation type
     geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.TimeDomain,
                                 component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
-                                verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
+                                is_gui=is_test)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
     if onelab_folder is not None:

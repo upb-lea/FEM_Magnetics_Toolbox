@@ -9,7 +9,6 @@ from itertools import product
 # import logging
 import inspect
 import time
-from typing import Optional
 
 # 3rd party libraries
 import numpy as np
@@ -20,7 +19,6 @@ import materialdatabase as mdb
 
 # femmt libraries
 import femmt as fmt
-
 
 material_db = mdb.MaterialDatabase()
 
@@ -945,12 +943,12 @@ class AutomatedDesign:
 
         return return_data_matrix
 
-    def fem_simulation(self, count: Optional[int] = None):
+    def fem_simulation(self, count: int | None = None):
         """
         Perform FEM simulation of the design cases. Save the result in the given working directory for later analysis.
 
         :param count: Number of cases to simulate
-        :type count: Optional[int]
+        :type count: int | None
         """
         start_time = time.time()
 
@@ -963,7 +961,7 @@ class AutomatedDesign:
         for count in cases:
             # MagneticComponent class object
             geo = fmt.MagneticComponent(component_type=self.component_type_dict[self.magnetic_component],
-                                        working_directory=self.femmt_working_directory, verbosity=fmt.Verbosity.Silent)
+                                        working_directory=self.femmt_working_directory, onelab_verbosity=fmt.Verbosity.Silent)
 
             core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=self.data_matrix_fem[count, self.param["core_inner_diameter"]],
                                                             window_w=self.data_matrix_fem[count, self.param["window_w"]],

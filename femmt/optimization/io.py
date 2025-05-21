@@ -5,7 +5,6 @@ import datetime
 import pickle
 import logging
 import shutil
-from typing import List, Optional
 import json
 
 # 3rd party libraries
@@ -27,6 +26,8 @@ import femmt.optimization.ito_functions as itof
 import femmt.optimization.functions_optimization as fo
 import femmt as fmt
 import materialdatabase as mdb
+
+logger = logging.getLogger(__name__)
 
 class InductorOptimization:
     """Reluctance model and FEM simulation for the inductor optimization."""
@@ -188,7 +189,7 @@ class InductorOptimization:
                 (available_height + config.insulations.primary_to_primary) / (litz_wire_diameter + config.insulations.primary_to_primary))
             max_turns = possible_number_turns_per_row * possible_number_turns_per_column
             if max_turns < 1:
-                logging.warning("Max. number of turns per window < 1")
+                logger.warning("Max. number of turns per window < 1")
                 return float('nan'), float('nan')
 
             turns = trial.suggest_int('turns', 1, max_turns)
@@ -222,7 +223,7 @@ class InductorOptimization:
             try:
                 reluctance_output: ReluctanceModelOutput = InductorOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_input)
             except ValueError as e:
-                logging.info("bot air gap: No fitting air gap length")
+                logger.info("bot air gap: No fitting air gap length")
                 return float('nan'), float('nan')
 
             trial.set_user_attr('p_winding', reluctance_output.p_winding)
@@ -326,8 +327,8 @@ class InductorOptimization:
             return reluctance_model_output
 
         @staticmethod
-        def start_proceed_study(config: InductorOptimizationDTO, number_trials: Optional[int] = None,
-                                target_number_trials: Optional[int] = None, storage: str = 'sqlite',
+        def start_proceed_study(config: InductorOptimizationDTO, number_trials: int | None = None,
+                                target_number_trials: int | None = None, storage: str = 'sqlite',
                                 sampler=optuna.samplers.NSGAIIISampler(),
                                 ) -> None:
             """
@@ -473,7 +474,7 @@ class InductorOptimization:
             loaded_study = optuna.load_study(study_name=config.inductor_study_name, storage=database_url)
             df = loaded_study.trials_dataframe()
             df.to_csv(f'{config.inductor_optimization_directory}/{config.inductor_study_name}.csv')
-            logging.info(f"Exported study as .csv file: {config.inductor_optimization_directory}/{config.inductor_study_name}.csv")
+            logger.info(f"Exported study as .csv file: {config.inductor_optimization_directory}/{config.inductor_study_name}.csv")
             return df
 
         @staticmethod
@@ -576,14 +577,14 @@ class InductorOptimization:
             return filtered_df
 
         @staticmethod
-        def df_from_trial_numbers(df: pd.DataFrame, trial_number_list: List[int]) -> pd.DataFrame:
+        def df_from_trial_numbers(df: pd.DataFrame, trial_number_list: list[int]) -> pd.DataFrame:
             """
             Generate a new dataframe from a given one, just with the trial numbers from the trial_number_list.
 
             :param df: input dataframe
             :type df: pandas.DataFrame
             :param trial_number_list: list of trials, e.g. [1530, 1870, 3402]
-            :type trial_number_list: List[int]
+            :type trial_number_list: list[int]
             :return: dataframe with trial numbers from trial_number_list
             :rtype: pandas.DataFrame
             """
@@ -775,7 +776,7 @@ class InductorOptimization:
             """
             # 1. chose simulation type
             geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.FreqDomain, component_type=fmt.ComponentType.Inductor,
-                                        working_directory=fem_input.working_directory, verbosity=fmt.Verbosity.Silent,
+                                        working_directory=fem_input.working_directory, onelab_verbosity=fmt.Verbosity.Silent,
                                         simulation_name=fem_input.simulation_name)
 
             # 2. set core parameters
@@ -849,7 +850,7 @@ class InductorOptimization:
             return fem_output
 
         @staticmethod
-        def full_simulation(df_geometry: pd.DataFrame, current_waveform: List, inductor_config_filepath: str, process_number: int = 1,
+        def full_simulation(df_geometry: pd.DataFrame, current_waveform: list, inductor_config_filepath: str, process_number: int = 1,
                             print_derivations: bool = False) -> tuple:
             """
             Reluctance model (hysteresis losses) and FEM simulation (winding losses and eddy current losses) for geometries from df_geometry.
@@ -857,7 +858,7 @@ class InductorOptimization:
             :param df_geometry: Pandas dataframe with geometries
             :type df_geometry: pd.DataFrame
             :param current_waveform: Current waveform to simulate
-            :type current_waveform: List
+            :type current_waveform: list
             :param inductor_config_filepath: Filepath of the inductor optimization configuration file
             :type inductor_config_filepath: str
             :param process_number: process number to run the simulation on

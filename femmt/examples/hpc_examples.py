@@ -1,6 +1,5 @@
 """Examples for the parallel simulation."""
 # Python standard libraries
-from typing import Dict
 from itertools import product
 import os
 import time
@@ -23,7 +22,7 @@ For more information have a look here: https://docs.python.org/2/library/multipr
 # ---- Utility functions ----
 def create_parallel_example_transformer() -> fmt.MagneticComponent:
     """Create an example model which is used for the parallel execution example. This does implement a simple transformer."""
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory, verbosity=fmt.Verbosity.ToFile)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory, onelab_verbosity=fmt.Verbosity.ToFile)
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295, core_h=0.015/2)
     core = fmt.Core(core_dimensions=core_dimensions, non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10,
                     permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom,
@@ -59,7 +58,7 @@ def create_parallel_example_inductor(inductor_frequency: int, air_gap_height: fl
     :type air_gap_position: int
     """ 
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=None,  # Can be set to None since it will be overwritten anyway
-                                clean_previous_results=False, verbosity=fmt.Verbosity.ToFile)
+                                clean_previous_results=False, onelab_verbosity=fmt.Verbosity.ToFile)
     core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
                                                     window_w=core_db["window_w"],
@@ -94,7 +93,7 @@ def create_parallel_example_inductor(inductor_frequency: int, air_gap_height: fl
 
     return geo
 
-def custom_hpc(parameters: Dict):
+def custom_hpc(parameters: dict):
     """Very simple example for a custom hpc_function which can be given to the hpc.run() function.
 
     :param parameters: Dictionary containing the model and the given simulation_parameters.

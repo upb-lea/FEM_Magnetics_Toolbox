@@ -1,8 +1,6 @@
 """Test different winding options."""
 # python libraries
 import os
-from typing import Dict, List
-
 
 import femmt as fmt
 inductor_combinations = [
@@ -76,14 +74,14 @@ transformer_combinations = [
     },
 ]
 
-def run_inductor_simulations(working_directory: str, combinations: List[Dict]):
+def run_inductor_simulations(working_directory: str, combinations: list[dict]):
     """
     Run the simulations to test several winding options for the inductor.
 
     :param working_directory: working directory
     :type working_directory: str
     :param combinations: combinations to simulate in a dictionary which are stored in a list
-    :type combinations: List
+    :type combinations: list
     """
     not_working = []
     for combination in combinations:
@@ -135,14 +133,14 @@ def run_inductor_simulations(working_directory: str, combinations: List[Dict]):
     print(not_working)
 
 
-def run_transformer_simulations(working_directory: str, combinations: List[Dict]):
+def run_transformer_simulations(working_directory: str, combinations: list[dict]):
     """
     Run the simulations to test several winding options for the transformer.
 
     :param working_directory: working directory
     :type working_directory: str
     :param combinations: combinations to simulate in a dictionary which are stored in a list
-    :type combinations: List
+    :type combinations: list
     """
     not_working = []
     for combination in combinations:
