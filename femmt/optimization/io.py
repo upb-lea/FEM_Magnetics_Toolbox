@@ -223,7 +223,7 @@ class InductorOptimization:
             try:
                 reluctance_output: ReluctanceModelOutput = InductorOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_input)
             except ValueError as e:
-                logger.info("bot air gap: No fitting air gap length")
+                logger.debug("bot air gap: No fitting air gap length")
                 return float('nan'), float('nan')
 
             trial.set_user_attr('p_winding', reluctance_output.p_winding)
