@@ -457,6 +457,14 @@ class MagneticComponent:
         :param insulation: insulation object
         :type insulation: Insulation
         """
+        if self.simulation_type == SimulationType.ElectroStatic:
+            insulation.bobbin_dimensions = True
+        else:
+            insulation.bobbin_dimensions = False
+
+        if self.simulation_type == SimulationType.ElectroStatic and insulation.bobbin_dimensions is None:
+            raise Exception("bobbin parameters must be set in electrostatic simulations")
+
         if insulation.cond_cond is None or not insulation.cond_cond:
             raise Exception("insulations between the conductors must be set")
 
@@ -3167,8 +3175,8 @@ class MagneticComponent:
 
         return voltages
 
-    def get_inductor_capacitance(self, show_visual_outputs: bool = False, plot_interpolation: bool = False, show_fem_simulation_results: bool = False, benchmark: bool = False,
-                                 save_to_excel: bool = False):
+    def get_capacitance_of_inductor_component(self, show_visual_outputs: bool = False, plot_interpolation: bool = False, show_fem_simulation_results: bool = False, benchmark: bool = False,
+                                              save_to_excel: bool = False):
         """Function for finding parasitic capacitance of an inductor"""
         # Define 3 simulation potential cases
         # Format: [V_A, V_B, V_core]
@@ -3248,10 +3256,10 @@ class MagneticComponent:
 
         return c_vec
 
-    def get_inductor_stray_capacitance(self, show_visual_outputs: bool = False, plot_interpolation: bool = False,
-                                       show_fem_simulation_results: bool = True,
-                                       benchmark: bool = False,
-                                       save_to_excel: bool = False):
+    def get_stray_capacitance_of_inductor_component(self, show_visual_outputs: bool = False, plot_interpolation: bool = False,
+                                                    show_fem_simulation_results: bool = True,
+                                                    benchmark: bool = False,
+                                                    save_to_excel: bool = False):
         """
         Compute the stray (parasitic) capacitance of an inductor via a single electrostatic simulation.
         Assumes a 1V potential applied across the windings.
@@ -3301,9 +3309,9 @@ class MagneticComponent:
 
         return c_ab_stray
 
-    def get_transformer_capacitance(self, c_meas_open: float | None,
-                                 c_meas_short: float | None, flag_cd: bool = False, show_visual_outputs: bool = False, plot_interpolation: bool = False, show_fem_simulation_results: bool = False, benchmark: bool = False,
-                                 save_to_excel: bool = False, measured_values: tuple | list | None = None, show_plot_comparison: bool = True):
+    def get_capacitance_of_transformer(self, c_meas_open: float | None,
+                                       c_meas_short: float | None, flag_cd: bool = False, show_visual_outputs: bool = False, plot_interpolation: bool = False, show_fem_simulation_results: bool = False, benchmark: bool = False,
+                                       save_to_excel: bool = False, measured_values: tuple | list | None = None, show_plot_comparison: bool = True):
         """Function for finding parasitic capacitance of a transformer"""
         # Define 10 simulations potential cases
         # Format: [V_A, V_B, V_C, V_D]

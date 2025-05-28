@@ -223,7 +223,6 @@ class Core:
                  # dimensions
                  core_type: CoreType = CoreType.Single,
                  core_dimensions=None,
-                 bobbin_dimensions = None,
                  detailed_core_model: bool = False,
 
                  # material data
@@ -292,17 +291,6 @@ class Core:
             self.window_h_top = core_dimensions.window_h_top
             self.core_h = self.window_h_bot + 2 * self.core_thickness
             self.number_core_windows = 4
-
-        # bobbin dimensions
-        if bobbin_dimensions is not None:
-            self.bobbin_dimensions = True
-        else:
-            self.bobbin_dimensions = False
-        if bobbin_dimensions is not None:
-            self.bobbin_inner_diameter = bobbin_dimensions.bobbin_inner_diameter
-            self.bobbin_window_w = bobbin_dimensions.bobbin_window_w
-            self.bobbin_window_h = bobbin_dimensions.bobbin_window_h
-            self.bobbin_h = bobbin_dimensions.bobbin_h
 
         if detailed_core_model:
             # Definition of the center core height
@@ -691,7 +679,7 @@ class Insulation:
     flag_insulation: bool = True
     max_aspect_ratio: float
 
-    def __init__(self, max_aspect_ratio: float = 10, flag_insulation: bool = True):
+    def __init__(self, max_aspect_ratio: float = 10, flag_insulation: bool = True, bobbin_dimensions = None):
         """Create an insulation object.
 
         Sets an insulation_delta value. In order to simplify the drawing of the isolations between core and winding window the isolation rectangles
@@ -702,6 +690,14 @@ class Insulation:
         # If the gaps between insulations and core (or windings) are to big/small just change this value
         self.flag_insulation = flag_insulation
         self.max_aspect_ratio = max_aspect_ratio
+        # As there is a gap between the core and the bobbin, the definition of bobbin parameters is needed in electrostatic simulation
+        if bobbin_dimensions is not None:
+            self.bobbin_inner_diameter = bobbin_dimensions.bobbin_inner_diameter
+            self.bobbin_window_w = bobbin_dimensions.bobbin_window_w
+            self.bobbin_window_h = bobbin_dimensions.bobbin_window_h
+            self.bobbin_h = bobbin_dimensions.bobbin_h
+
+
 
     def set_flag_insulation(self, flag: bool):  # to differentiate between the simulation with and without insulation
         """
@@ -1052,14 +1048,15 @@ class WindingWindow:
         self.core: Core = core
         self.stray_path: StrayPath = stray_path
         self.air_gaps: AirGaps = air_gaps
+        self.insulations: Insulation = insulations
 
         if self.core.core_type == CoreType.Single:
-            if self.core.bobbin_dimensions:
+            if self.insulations.bobbin_dimensions:
                 # top - bot
-                bobbin_height = self.core.bobbin_window_h
+                bobbin_height = self.insulations.bobbin_window_h
                 insulation_delta_top_bot = (self.core.window_h - bobbin_height) / 2
                 # left
-                bobbin_inner_radius = self.core.bobbin_inner_diameter / 2
+                bobbin_inner_radius = self.insulations.bobbin_inner_diameter / 2
                 core_inner_radius = self.core.core_inner_diameter / 2
                 insulation_delta_left = bobbin_inner_radius - core_inner_radius
                 # insulation_delta_left = 3e-4

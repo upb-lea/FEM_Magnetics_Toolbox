@@ -1594,7 +1594,7 @@ class TwoDaxiSymmetric:
             # Insulation between winding and core
             # Since an aspect ratio is given the insulation delta is calculated using the length of the longest side of the triangle,
             # which is always smaller than c_window.
-            if not self.core.bobbin_dimensions:
+            if not self.insulation.bobbin_dimensions:
 
                 if self.insulation.max_aspect_ratio == 0:
                     # If no aspect ratio is set insulations will not be drawn
@@ -1739,10 +1739,10 @@ class TwoDaxiSymmetric:
 
                     # Handle the insulation delta for electrostatic transformer
                     # top - bot
-                    bobbin_h = self.core.bobbin_window_h
+                    bobbin_h = self.insulation.bobbin_window_h
                     insulation_delta_top_bot = (window_h - bobbin_h) / 2
                     # left
-                    bobbin_inner_radius = self.core.bobbin_inner_diameter / 2
+                    bobbin_inner_radius = self.insulation.bobbin_inner_diameter / 2
                     core_inner_radius = self.core.core_inner_diameter / 2
                     insulation_delta_left = bobbin_inner_radius - core_inner_radius
                     # insulation_delta_left = 3e-4
