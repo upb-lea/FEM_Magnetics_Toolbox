@@ -60,9 +60,18 @@ def basic_example_inductor_foil_vertical_electrostatic(onelab_folder: str = None
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005)
     geo.set_air_gaps(air_gaps)
 
-    insulation = fmt.Insulation(flag_insulation=False)
+    # 4. set insulations
+    bobbin_db = fmt.bobbin_database()["PQ 40/40"]
+    bobbin_dimensions = fmt.dtos.BobbinDimensions(bobbin_inner_diameter=bobbin_db["bobbin_inner_diameter"],
+                                                  bobbin_window_w=bobbin_db["bobbin_window_w"],
+                                                  bobbin_window_h=bobbin_db["bobbin_window_h"],
+                                                  bobbin_h=bobbin_db["bobbin_h"])
+    insulation = fmt.Insulation(flag_insulation=True, bobbin_dimensions=bobbin_dimensions)
     insulation.add_core_insulations(0.001, 0.001, 0.001, 0.001)
-    insulation.add_winding_insulations([[0.0005]])
+    #insulation.add_winding_insulations([[0.0005]])
+    insulation.add_winding_insulations([[0.025e-3]])
+    insulation.add_conductor_air_conductor_insulation([[0.0005, 0.0005, 0.0005, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4],
+                                                       [1e-3, 1e-3]])
     geo.set_insulation(insulation)
 
     winding_window = fmt.WindingWindow(core, insulation)
@@ -78,7 +87,8 @@ def basic_example_inductor_foil_vertical_electrostatic(onelab_folder: str = None
     geo.create_model(freq=100000, pre_visualize_geometry=show_visual_outputs, save_png=False)
 
     # 8. run electrostatic simulation
-    geo.electrostatic_simulation(voltage=[[0, 0, 5]], ground_core=False, ground_outer_boundary=False,
+
+    geo.electrostatic_simulation(voltage=[[1, 0.5, 0]], ground_outer_boundary=False, core_voltage=0,
                                  show_fem_simulation_results=show_visual_outputs, save_to_excel=False)
     # Call the electrostatic FEMM simulation function
     # voltages = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]

@@ -874,26 +874,30 @@ class Mesh:
         :param curve_loop_iso_cond: List of insulation curve loops
         :type curve_loop_iso_cond: list
         """
+        if not self.insulation.add_turn_insulations:
+            self.femmt_print("Turn insulation drawing skipped.")
+            return []
         p_iso_cond_center = []
         # points of conductor insulation
         for num in range(len(self.windings)):
-            current_center_points = []  # Center points to be embedded later
-            # Process insulation points for each conductor turn
-            for i in range(self.model.p_iso_conductor[num].shape[0]):
-                point = gmsh.model.geo.addPoint(
-                    self.model.p_iso_conductor[num][i][0],
-                    self.model.p_iso_conductor[num][i][1],
-                    0,
-                    self.model.p_iso_conductor[num][i][3])
-
-                if self.windings[num].conductor_type in [ConductorType.RoundLitz, ConductorType.RoundSolid]:
-                    p_iso_cond[num].append(point)
-
-            p_iso_cond_center.append(current_center_points)
-
-            # Curves of Conductor insulation
             if self.windings[num].conductor_type in [ConductorType.RoundLitz, ConductorType.RoundSolid]:
-                # Round conductor
+                current_center_points = []  # Center points to be embedded later
+                # Process insulation points for each conductor turn
+                for i in range(self.model.p_iso_conductor[num].shape[0]):
+                    point = gmsh.model.geo.addPoint(
+                        self.model.p_iso_conductor[num][i][0],
+                        self.model.p_iso_conductor[num][i][1],
+                        0,
+                        self.model.p_iso_conductor[num][i][3])
+
+                    if self.windings[num].conductor_type in [ConductorType.RoundLitz, ConductorType.RoundSolid]:
+                        p_iso_cond[num].append(point)
+
+                p_iso_cond_center.append(current_center_points)
+
+                # Curves of Conductor insulation
+                #if self.windings[num].conductor_type in [ConductorType.RoundLitz, ConductorType.RoundSolid]:
+                    # Round conductor
                 for i in range(int(len(p_iso_cond[num]) / 5)):
                     l_iso_cond[num].append(gmsh.model.geo.addCircleArc(
                         p_iso_cond[num][5 * i + 1],
@@ -926,15 +930,14 @@ class Mesh:
                         )
                     )
                 self.curve_loop_iso_cond = curve_loop_iso_cond
-
-            else:
-                raise Exception(f"ConductorType {self.windings[num].conductor_type} is not implemented")
-
+            # TODO Add logic for rectanguölarsolid.
+            # else:
+            #     raise Exception(f"ConductorType {self.windings[num].conductor_type} is not implemented")
         # Synchronize the GMSH model
         gmsh.model.geo.synchronize()
 
         # Print success message
-        self.femmt_print(f"Insulation around conductors drawn and subtracted successfully.")
+        self.femmt_print(f"Insulation around conductors drawn successfully.")
         return curve_loop_iso_cond
 
     def air_single(self, l_core_air: list, l_air_gaps_air: list, curve_loop_air: list, curve_loop_cond: list, curve_loop_iso_core: list,
@@ -1334,6 +1337,7 @@ class Mesh:
         # layer insulation
         curve_loop_iso_layer = self.insulation_between_layers(p_iso_layer)
         # insulation of conductor
+        #if self.insulation.add_turn_insulations:
         curve_loop_iso_cond = self.conductor_insulation(p_iso_cond, l_iso_cond, curve_loop_iso_cond)
 
         # Define mesh for air

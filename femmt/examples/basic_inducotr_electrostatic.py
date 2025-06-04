@@ -79,12 +79,13 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
                                                   bobbin_h=bobbin_db["bobbin_h"])
     insulation = fmt.Insulation(flag_insulation=True, bobbin_dimensions=bobbin_dimensions)
     insulation.add_core_insulations(1.5e-3, 1.5e-3, 1e-3, 1e-3)
-    insulation.add_winding_insulations([[0.0002]])
+    insulation.add_turn_insulation([0.25e-5], add_turn_insulations=False)
+    insulation.add_winding_insulations([[1e-3, 0.1e-3, 1e-3, 1e-3, 1e-3, 1e-3],
+                                                       [1e-3, 1e-3]], per_layer_of_turns=False)
     # insulation.add_winding_insulations([[0.0025e-3]])
-    insulation.add_conductor_air_conductor_insulation([[1e-3, 1e-3, 1e-3, 1e-3, 1e-3, 1e-3],
-                                                       [1e-3, 1e-3]])
-    insulation.add_kapton_insulation(add_kapton=True, thickness=1e-3)
-    # insulation.add_kapton_insulation(add_kapton=True, thickness=0.07e-3)
+    # insulation.add_conductor_air_conductor_insulation([[1e-3, 1e-3, 1e-3, 1e-3, 1e-3, 1e-3],
+    #                                                    [1e-3, 1e-3]])
+    insulation.add_kapton_insulation(add_kapton_material=False, thickness=1e-3)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -97,7 +98,7 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
     winding.parallel = False  # set True to make the windings parallel, currently only for solid conductors
     # 7. add conductor to vww and add winding window to MagneticComponent
     vww.set_winding(winding, 14, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.VerticalUpward_HorizontalRightward,
-                    zigzag=False)
+                    zigzag=True)
     geo.set_winding_windows([winding_window])
     # 8. create the model
     geo.create_model(freq=inductor_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False, skin_mesh_factor=0.5)
