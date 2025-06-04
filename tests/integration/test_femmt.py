@@ -147,7 +147,7 @@ def fixture_inductor_core_material_database(temp_folder: pytest.fixture):
 
         # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                    verbosity=fmt.Verbosity.Silent, is_gui=True)
+                                    onelab_verbosity=fmt.Verbosity.Silent, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
@@ -268,7 +268,7 @@ def fixture_inductor_core_material_database_measurement(temp_folder: pytest.fixt
 
         # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                    verbosity=fmt.Verbosity.Silent, is_gui=True)
+                                    onelab_verbosity=fmt.Verbosity.Silent, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
@@ -393,7 +393,7 @@ def fixture_inductor_core_fixed_loss_angle(temp_folder: pytest.fixture):
 
         # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                    verbosity=fmt.Verbosity.Silent, is_gui=True)
+                                    onelab_verbosity=fmt.Verbosity.Silent, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
@@ -513,7 +513,7 @@ def fixture_inductor_core_fixed_loss_angle_dc(temp_folder: pytest.fixture):
 
         # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                    verbosity=fmt.Verbosity.Silent, is_gui=True)
+                                    onelab_verbosity=fmt.Verbosity.Silent, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
@@ -632,7 +632,7 @@ def fixture_inductor_core_fixed_loss_angle_litz_wire(temp_folder: pytest.fixture
 
         # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                    verbosity=fmt.Verbosity.Silent, is_gui=True)
+                                    onelab_verbosity=fmt.Verbosity.Silent, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
@@ -755,7 +755,7 @@ def fixture_inductor_core_fixed_loss_angle_foil_vertical(temp_folder: pytest.fix
 
         # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                    verbosity=fmt.Verbosity.Silent, is_gui=True)
+                                    onelab_verbosity=fmt.Verbosity.Silent, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
@@ -879,7 +879,7 @@ def fixture_inductor_core_fixed_loss_angle_foil_horizontal(temp_folder: pytest.f
 
         # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                    verbosity=fmt.Verbosity.Silent, is_gui=True)
+                                    onelab_verbosity=fmt.Verbosity.Silent, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
@@ -1000,7 +1000,7 @@ def fixture_transformer_core_fixed_loss_angle(temp_folder: pytest.fixture):
 
         # 1. chose simulation type
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
-                                    verbosity=fmt.Verbosity.Silent, is_gui=True)
+                                    onelab_verbosity=fmt.Verbosity.Silent, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
@@ -1129,7 +1129,7 @@ def fixture_transformer_interleaved_core_fixed_loss_angle(temp_folder: pytest.fi
 
         # 1. chose simulation type
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
-                                    verbosity=fmt.Verbosity.Silent, is_gui=True)
+                                    onelab_verbosity=fmt.Verbosity.Silent, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
@@ -1257,7 +1257,7 @@ def fixture_transformer_integrated_core_fixed_loss_angle(temp_folder: pytest.fix
 
         # 1. chose simulation type
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
-                                    working_directory=working_directory, verbosity=fmt.Verbosity.Silent, is_gui=True)
+                                    working_directory=working_directory, onelab_verbosity=fmt.Verbosity.Silent, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
@@ -1394,7 +1394,7 @@ def fixture_transformer_stacked_center_tapped(temp_folder: pytest.fixture):
 
         # 1. chose simulation type
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
-                                    working_directory=working_directory, verbosity=fmt.Verbosity.Silent,
+                                    working_directory=working_directory, onelab_verbosity=fmt.Verbosity.Silent,
                                     is_gui=True)
 
         # Set onelab path manually
@@ -1547,7 +1547,7 @@ def fixture_transformer_5_windings(temp_folder: pytest.fixture):
 
         # 1. chose simulation type
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
-                                    verbosity=fmt.Verbosity.Silent, is_gui=True)
+                                    onelab_verbosity=fmt.Verbosity.Silent, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
@@ -1712,7 +1712,7 @@ def fixture_inductor_time_domain(temp_folder: pytest.fixture):
 
         # 1. chose simulation type
         geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.TimeDomain, component_type=fmt.ComponentType.Inductor,
-                                    working_directory=working_directory, verbosity=fmt.Verbosity.Silent, is_gui=True)
+                                    working_directory=working_directory, onelab_verbosity=fmt.Verbosity.Silent, is_gui=True)
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
 
@@ -1803,7 +1803,7 @@ def fixture_transformer_time_domain(temp_folder: pytest.fixture):
 
         # 1. chose simulation type
         geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.TimeDomain, component_type=fmt.ComponentType.Transformer,
-                                    working_directory=working_directory, verbosity=fmt.Verbosity.Silent, is_gui=True)
+                                    working_directory=working_directory, onelab_verbosity=fmt.Verbosity.Silent, is_gui=True)
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
 
@@ -1895,7 +1895,7 @@ def fixture_transformer_3_windings_time_domain(temp_folder: pytest.fixture):
 
         # 1. chose simulation type
         geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.TimeDomain, component_type=fmt.ComponentType.Transformer,
-                                    working_directory=working_directory, verbosity=fmt.Verbosity.Silent, is_gui=True)
+                                    working_directory=working_directory, onelab_verbosity=fmt.Verbosity.Silent, is_gui=True)
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
 

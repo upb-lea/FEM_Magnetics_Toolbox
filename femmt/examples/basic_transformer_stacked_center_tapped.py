@@ -10,7 +10,10 @@ folder .../femmt/examples/example_results/simulation_file_name/results/log_elect
 """
 import femmt as fmt
 import os
+import logging
 
+# configure logging to show femmt terminal output
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, show_visual_outputs: bool = True,
                                                     is_test: bool = False):
@@ -98,7 +101,7 @@ def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, s
         os.mkdir(working_directory)
 
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
-                                working_directory=working_directory, verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
+                                working_directory=working_directory, is_gui=is_test)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
     if onelab_folder is not None:
@@ -142,6 +145,9 @@ def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, s
         center_foil_additional_bobbin=0e-3,
         wrap_para_type=fmt.WrapParaType.FixedThickness,
         foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalUpward)
+
+    insulation.add_turn_insulation([0.25e-5], add_turn_insulations=False)
+    insulation.add_kapton_insulation(add_kapton_material=False, thickness=0.0005)
 
     geo.set_insulation(insulation)
     geo.set_winding_windows([coil_window, transformer_window])

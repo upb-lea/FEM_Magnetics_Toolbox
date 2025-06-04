@@ -1,5 +1,6 @@
 """Create and calculate reluctance models."""
 # python imports
+import logging
 
 # 3rd library imports
 import numpy as np
@@ -9,6 +10,7 @@ from matplotlib import pyplot as plt
 import femmt.functions_reluctance as fr
 from femmt.constants import mu_0
 
+logger = logging.getLogger(__name__)
 
 def plot_limitation():
     """Plot limitation."""
@@ -18,7 +20,7 @@ def plot_limitation():
 
     r_mx = 1 / (mu_0 * (width / 2 / length + 2 / np.pi * (
                 1 + np.log(np.pi * height / 4 / length))))
-    print(height)
+    logger.info(height)
 
     # width_c = 100
     # length_c = 0.5
@@ -68,7 +70,7 @@ def plot_r_basic():
 
     (using Schwarz-Christoffel transformation) at page no. 35.
     It plots the Reluctance formula with respect to its variables (h/l and w/l).
-    It is an independent function and has been used to analyse the expression and its limitation.
+    It is an independent function and has been used to analyze the expression and its limitation.
     """
     # # Uncomment this section of code if Reluctance change with respect to h/l is desired
     # width = 100
@@ -217,8 +219,8 @@ def create_data_matrix(core_inner_diameter: list, window_h: list, window_w: list
     :param mu_rel: Relative permeability of the core [in F/m]
     :type mu_rel: list
     :param mult_air_gap_type: Two types of equally distributed air-gaps (used only for air-gaps more than 1)
-        Type 1: Equally distributed air-gaps including corner air-gaps (eg: air-gaps-position = [0, 50, 100] for 3 air-gaps)
-        Type 2: Equally distributed air-gaps excluding corner air-gaps (eg: air-gaps-position = [25, 50, 75] for 3 air-gaps)
+        Type 1: Equally distributed air-gaps including corner air-gaps (e.g.: air-gaps-position = [0, 50, 100] for 3 air-gaps)
+        Type 2: Equally distributed air-gaps excluding corner air-gaps (e.g.: air-gaps-position = [25, 50, 75] for 3 air-gaps)
     :type mult_air_gap_type: list
     """
     # Structure: data_matrix = [core_inner_diameter, window_h, window_w, mu_rel, no_of_turns, n_air_gaps, air_gap_h,
@@ -284,7 +286,7 @@ class MagneticCircuit:
                  air_gap_h: list, air_gap_position: list, mu_r_abs: list, mult_air_gap_type: list = None,
                  air_gap_method: str = 'Percent', component_type: str = 'inductor', sim_type: str = 'single'):
         """
-        Init the MagneticCircuit class.
+        Initialize the MagneticCircuit class.
 
         :param core_inner_diameter: Diameter of center leg of the core in meter
         :type core_inner_diameter: list
@@ -303,8 +305,8 @@ class MagneticCircuit:
         :param mu_r_abs: Relative permeability of the core [in F/m]
         :type mu_r_abs: list
         :param mult_air_gap_type: Two types of equally distributed air-gaps (used only for air-gaps more than 1)
-            Type 1: Equally distributed air-gaps including corner air-gaps (eg: air-gaps-position = [0, 50, 100] for 3 air-gaps)
-            Type 2: Equally distributed air-gaps excluding corner air-gaps (eg: air-gaps-position = [25, 50, 75] for 3 air-gaps)
+            Type 1: Equally distributed air-gaps including corner air-gaps (e.g.: air-gaps-position = [0, 50, 100] for 3 air-gaps)
+            Type 2: Equally distributed air-gaps excluding corner air-gaps (e.g.: air-gaps-position = [25, 50, 75] for 3 air-gaps)
         :type mult_air_gap_type: list
                 :param air_gap_h: Air-gap height [in meter]
         :param air_gap_method: Input method of air gap position ( either in 'Percent', 'Center' or 'Manually')
@@ -436,8 +438,8 @@ class MagneticCircuit:
                                                          zip(*sorted(zip(self.air_gap_position, self.air_gap_h)))]
                 self.air_gap_h = np.array(self.air_gap_h)
                 self.air_gap_position = np.array(self.air_gap_position)
-                print(self.air_gap_position)
-                print(self.air_gap_h)
+                logger.info(self.air_gap_position)
+                logger.info(self.air_gap_h)
         if self.sim_type == 'sweep':
             if not self.air_gap_method == 'Percent':
                 raise Exception("For sim_type = 'sweep', 'air_gap_method' should be only provided in percent")
@@ -649,8 +651,8 @@ class MagneticCircuit:
                 if self.air_gap_method == 'Percent':
                     self.position = np.array(
                         self.air_gap_position) / 100 * self.window_h  # Convert percent position to absolute value position
-                print(f"Max percent: {self.max_percent_position}")
-                print(f"Min percent: {self.min_percent_position}")
+                logger.info(f"Max percent: {self.max_percent_position}")
+                logger.info(f"Min percent: {self.min_percent_position}")
 
                 if self.air_gap_position[0] <= self.min_percent_position:
                     flag_0 = 1
@@ -663,7 +665,7 @@ class MagneticCircuit:
                     self.reluctance[:, 5] = self.reluctance[:, 5] + fr.r_air_gap_round_inf([self.air_gap_h[0]],
                                                                                            [self.core_inner_diameter],
                                                                                            [h])
-                    print('air gap is at lower corner')
+                    logger.info('air gap is at lower corner')
 
                 if self.air_gap_position[self.n_air_gaps - 1] >= self.max_percent_position:
                     flag_1 = 1
@@ -676,7 +678,7 @@ class MagneticCircuit:
 
                     self.reluctance[:, 5] = self.reluctance[:, 5] + fr.r_air_gap_round_inf(
                         [self.air_gap_h[self.n_air_gaps - 1]], [self.core_inner_diameter], [h])
-                    print('air gap is at upper corner')
+                    logger.info('air gap is at upper corner')
 
                 for i in range(self.n_air_gaps[0]):
                     if self.min_percent_position < self.air_gap_position[i] < self.max_percent_position:
@@ -702,23 +704,23 @@ class MagneticCircuit:
                         if flag_0 == 0 and flag_1 == 0:
                             h1 = (self.position[i + 1] - self.position[i] - self.air_gap_h[i + 1] / 2 - self.air_gap_h[i] / 2) / 2
                             h2 = (self.position[i + 2] - self.position[i + 1] - self.air_gap_h[i + 2] / 2 - self.air_gap_h[i + 1] / 2) / 2
-                            print('No corner air gap detected')
+                            logger.info('No corner air gap detected')
                         elif flag_0 == 1 and flag_1 == 0:
                             h1 = (self.position[i] - self.position[i - 1] - self.air_gap_h[i] / 2 - self.air_gap_h[
                                 i - 1] / 2) / 2
                             h2 = (self.position[i + 1] - self.position[i] - self.air_gap_h[i + 1] / 2 - self.air_gap_h[
                                 i] / 2) / 2
-                            print('Lower air gap detected')
+                            logger.info('Lower air gap detected')
                         elif flag_0 == 0 and flag_1 == 1:
                             h1 = (self.position[i + 1] - self.position[i] - self.air_gap_h[i + 1] / 2 - self.air_gap_h[i] / 2) / 2
                             h2 = (self.position[i + 2] - self.position[i + 1] - self.air_gap_h[i + 2] / 2 - self.air_gap_h[i + 1] / 2) / 2
-                            print('Upper air gap detected')
+                            logger.info('Upper air gap detected')
                         else:
                             h1 = (self.position[i] - self.position[i - 1] - self.air_gap_h[i] / 2 - self.air_gap_h[
                                 i - 1] / 2) / 2
                             h2 = (self.position[i + 1] - self.position[i] - self.air_gap_h[i + 1] / 2 - self.air_gap_h[
                                 i] / 2) / 2
-                            print('Both air gap detected')
+                            logger.info('Both air gap detected')
 
                         self.reluctance[:, 5] = self.reluctance[:, 5] + fr.r_air_gap_round_round([self.air_gap_h[i]], [
                             self.core_inner_diameter], [h1], [h2])
@@ -755,7 +757,7 @@ class MagneticCircuit:
         """Calculate the inductance from Number of turns and total reluctance (L = N^2 / R_m)."""
         self.cal_inductance = (self.no_of_turns * self.no_of_turns) / np.sum(self.reluctance, axis=1)
         self.data_matrix[:, 9] = self.cal_inductance
-        print(f"Inductance:{self.cal_inductance}")
+        logger.info(f"Inductance:{self.cal_inductance}")
 
     def add_column_to_data_matrix(self, data_matrix, column_value, column_name: str):
         """

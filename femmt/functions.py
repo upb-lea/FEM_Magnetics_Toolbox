@@ -1,17 +1,14 @@
 """Contains different functions, used by the whole FEMMT functions."""
 # Python standard libraries
+# Python standard libraries
 import json
 import pkg_resources
 import subprocess
 import sys
 import os
-import re
 import warnings
-from typing import Union, List, Tuple, Dict
-from scipy.integrate import quadrature
-import pandas as pd
-import win32com.client
-
+from scipy.integrate import quad
+import logging
 
 # Third parry libraries
 import gmsh
@@ -25,13 +22,15 @@ from femmt.enumerations import ConductorType
 from femmt.dtos import *
 import femmt.functions_reluctance as fr
 
+logger = logging.getLogger(__name__)
+
 colors_femmt_default = {"blue": (28, 113, 216),
                         'red': (192, 28, 40),
                         "green": (46, 194, 126),
                         "orange": (230, 97, 0),
                         "purple": (129, 61, 156),
                         "brown": (134, 94, 60),
-                        "grey": (119, 118, 123),
+                        "gray": (119, 118, 123),
                         "yellow": (245, 194, 17),
                         "black": (0, 0, 0),
                         "white": (255, 255, 255)
@@ -40,11 +39,11 @@ colors_femmt_default = {"blue": (28, 113, 216),
 colors_geometry_femmt_default = {
     "core": "black",
     "air_gap": "yellow",
-    "winding": ["orange", "brown", "yellow", "green", "red", "black", "grey", "blue", "orange", "purple", "grey",
+    "winding": ["orange", "brown", "yellow", "green", "red", "black", "gray", "blue", "orange", "purple", "gray",
                 "blue", "orange", "purple"],
     "insulation": "blue",
-    "potting_inner": "grey",
-    "potting_outer": "grey",
+    "potting_inner": "gray",
+    "potting_outer": "gray",
 }
 
 colors_ba_jonas = {"blue": (28, 113, 216),
@@ -53,34 +52,34 @@ colors_ba_jonas = {"blue": (28, 113, 216),
                    "orange": (230, 97, 0),
                    "purple": (129, 61, 156),
                    "brown": (134, 94, 60),
-                   "grey": (193, 193, 193),
+                   "gray": (193, 193, 193),
                    "yellow": (255, 171, 6),
                    "black": (58, 58, 58),
                    "white": (255, 255, 255),
-                   "grey_dark": (109, 109, 109),
-                   "grey_dark_dark": (50, 50, 50)
+                   "gray_dark": (109, 109, 109),
+                   "gray_dark_dark": (50, 50, 50)
                    }
 
 colors_geometry_ba_jonas = {
     "core": "black",
     "air_gap": "yellow",
     "winding": ["green", "red", "yellow"],
-    "insulation": "grey_dark",
-    "potting_inner": "grey",
-    "potting_outer": "grey_dark_dark",
+    "insulation": "gray_dark",
+    "potting_inner": "gray",
+    "potting_outer": "gray_dark_dark",
 }
 
 colors_geometry_draw_only_lines = {
-    "core": "grey_dark",
-    "air_gap": "grey_dark",
+    "core": "gray_dark",
+    "air_gap": "gray_dark",
     "winding": ["green", "green", "green"],
-    "insulation": "grey_dark",
-    "potting_inner": "grey_dark",
-    "potting_outer": "grey_dark",
+    "insulation": "gray_dark",
+    "potting_inner": "gray_dark",
+    "potting_outer": "gray_dark",
 }
 
 
-def core_database() -> Dict:
+def core_database() -> dict:
     """
     Return a core geometry for defined core structure.
 
@@ -96,7 +95,7 @@ def core_database() -> Dict:
     max derivation / mean = 1.07 (< 7% accuracy)
 
     :return: Dict including core_h, core_inner_diameter, window_h, window_w
-    :rtype: Dict
+    :rtype: dict
     """
     core_dict = {}
 
@@ -244,7 +243,7 @@ def core_database() -> Dict:
     }
     return core_dict
 
-def bobbin_database() -> Dict:
+def bobbin_database() -> dict:
     """
     Return a dictionary containing bobbin dimensions for various core structures.
 
@@ -345,12 +344,12 @@ def bobbin_database() -> Dict:
 
 
 
-def litz_database() -> Dict:
+def litz_database() -> dict:
     """
     Return litz parameters for defined litz wires.
 
     :return: Dict including litz parameters like strand_numbers, strand_radii and conductor_radii
-    :rtype: Dict
+    :rtype: dict
     """
     litz_dict = {}
 
@@ -491,12 +490,12 @@ def litz_database() -> Dict:
     return litz_dict
 
 
-def wire_material_database() -> Dict[str, WireMaterial]:
+def wire_material_database() -> dict[str, WireMaterial]:
     """
-    Return wire materials e.g. copper, aluminium in a dictionary.
+    Return wire materials e.g. copper, aluminum in a dictionary.
 
     :return: Dict with materials and conductivity
-    :rtype: Dict
+    :rtype: dict
     """
     wire_material = {}
 
@@ -509,8 +508,8 @@ def wire_material_database() -> Dict[str, WireMaterial]:
         volumetric_mass_density=8920,
     )
 
-    wire_material["Aluminium"] = WireMaterial(
-        name="aluminium",
+    wire_material["Aluminum"] = WireMaterial(
+        name="aluminum",
         sigma=3.7e7,
         temperature=25,
         temperature_coefficient=3.9e-3,
@@ -557,7 +556,7 @@ def create_folders(*args: str) -> None:
             os.mkdir(folder)
 
 
-def cost_material_database() -> Dict:
+def cost_material_database() -> dict:
     """
     Return costs for core and winding. This is split in material and fabrication costs.
 
@@ -626,11 +625,11 @@ def install_pyfemm_if_missing() -> None:
     missing = required - installed
 
     if missing:
-        print("Missing 'pyfemm' installation.")
-        print("Installing 'pyfemm' ...")
+        logger.info("Missing 'pyfemm' installation.")
+        logger.info("Installing 'pyfemm' ...")
         python = sys.executable
         subprocess.check_call([python, '-m', 'pip', 'install', *missing], stdout=subprocess.DEVNULL)
-        print("'pyfemm' is now installed!")
+        logger.info("'pyfemm' is now installed!")
 
 def litz_calculate_number_strands(n_layers: int) -> int:
     """
@@ -664,9 +663,9 @@ def litz_calculate_number_layers(n_strands: int) -> int:
 
 
 def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str = 'no', mode: str = 'rad',
-        f0: Union[float, None] = None, title: str = 'ffT', filter_type: str = 'factor',
+        f0: float | None = None, title: str = 'ffT', filter_type: str = 'factor',
         filter_value_factor: float = 0.01, filter_value_harmonic: int = 100,
-        figure_size: Tuple = None, figure_directory: str = None) -> npt.NDArray[list]:
+        figure_size: tuple = None, figure_directory: str = None) -> npt.NDArray[list]:
     """
     Calculate the FFT for a given input signal. Input signal is in vector format and should include one period.
 
@@ -700,9 +699,9 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
         Note: count 1 is DC component, count 2 is the fundamental frequency
     :type filter_value_harmonic: int
     :param figure_directory: full path with file extension
-    :type figure_directory: Tuple
+    :type figure_directory: tuple
     :param figure_size: None for auto-fit; fig_size for matplotlib (width, length)
-    :type figure_size: Tuple
+    :type figure_size: tuple
 
     :return: numpy-array [[frequency-vector],[amplitude-vector],[phase-vector]]
     :rtype: npt.NDArray[list]
@@ -713,7 +712,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
     # check for input is list. Convert to numpy-array
     if isinstance(period_vector_t_i, list):
         if plot != 'no' and plot is not False:
-            print("Input is list, convert to np.array()")
+            logger.warning("Input is list, convert to np.array()")
         period_vector_t_i = np.array(period_vector_t_i)
 
     # first value of time vector must be zero
@@ -773,14 +772,14 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
             f"filter_type '{filter_value_harmonic}' not available: Must be 'factor','harmonic' or 'disabled ")
 
     if plot != 'no' and plot is not False:
-        print(f"{title=}")
-        print(f"{t[-1]=}")
-        print(f"{f0=}")
-        print(f"{Fs=}")
-        print(f"{sample_factor=}")
-        print(f"f_out = {np.around(f_out, decimals=0)}")
-        print(f"x_out = {np.around(x_out, decimals=3)}")
-        print(f"phi_rad_out = {np.around(phi_rad_out, decimals=3)}")
+        logger.info(f"{title=}")
+        logger.info(f"{t[-1]=}")
+        logger.info(f"{f0=}")
+        logger.info(f"{Fs=}")
+        logger.info(f"{sample_factor=}")
+        logger.info(f"f_out = {np.around(f_out, decimals=0)}")
+        logger.info(f"x_out = {np.around(x_out, decimals=3)}")
+        logger.info(f"phi_rad_out = {np.around(phi_rad_out, decimals=3)}")
 
         reconstructed_signal = 0
         for i_range in range(len(f_out)):
@@ -815,17 +814,17 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
     return np.array([f_out, x_out, phi_rad_out])
 
 
-def plot_fourier_coefficients(frequency_list: List, amplitude_list: List, phi_rad_list: List,
+def plot_fourier_coefficients(frequency_list: list, amplitude_list: list, phi_rad_list: list,
                               sample_factor: int = 1000, figure_directory: str = None):
     """
     Plot fourier coefficients in a visual figure.
 
     :param frequency_list: List of frequencies in Hz
-    :type frequency_list: List
+    :type frequency_list: list
     :param amplitude_list: List of amplitudes in A
-    :type amplitude_list: List
+    :type amplitude_list: list
     :param phi_rad_list: List of angles in rad
-    :type phi_rad_list: List
+    :type phi_rad_list: list
     :param sample_factor: sample factor
     :type sample_factor: int
     :param figure_directory: directory of figure to save
@@ -873,7 +872,7 @@ def plot_fourier_coefficients(frequency_list: List, amplitude_list: List, phi_ra
 
 
 def compare_fft_list(input_data_list: list, sample_factor: int = 1000, mode: str = 'rad',
-                     f0: Union[float, None] = None) -> None:
+                     f0: float | None = None) -> None:
     """
     Generate fft curves from input curves and compare them to each other.
 
@@ -889,7 +888,7 @@ def compare_fft_list(input_data_list: list, sample_factor: int = 1000, mode: str
     :type mode: str
     :param f0: fundamental frequency. Needs to be set in 'rad'- or 'deg'-mode
     :type f0: float
-    :param sample_factor: samle factor, defaults to 1000
+    :param sample_factor: sample factor, defaults to 1000
     :type sample_factor: int
     """
     out = []
@@ -929,12 +928,12 @@ def store_as_npy_in_directory(dir_path: str, file_name: str, numpy_data) -> None
     np.save(dir_path + "/" + file_name, numpy_data)
 
 
-def get_dicts_with_keys_and_values(data, **kwargs) -> Dict:
+def get_dicts_with_keys_and_values(data, **kwargs) -> dict:
     """
     Return a list of dictionaries out of a list of dictionaries which contains pairs of the given key(s) and value(s).
 
     :param data: list of dicts
-    :type data: List
+    :type data: list
     :param kwargs: keys and values in dicts
     """
     invalid_index = []
@@ -947,7 +946,7 @@ def get_dicts_with_keys_and_values(data, **kwargs) -> Dict:
     return valid_data
 
 
-def get_dict_with_unique_keys(data: list[dict], *keys) -> Dict:
+def get_dict_with_unique_keys(data: list[dict], *keys) -> dict:
     """
     Return a dictionary out of a list of dictionaries which contains the given key(s).
 
@@ -969,25 +968,25 @@ def get_dict_with_unique_keys(data: list[dict], *keys) -> Dict:
     return valid_data[0]
 
 
-def find_common_frequencies(frequency_list_1: List, amplitude_list_1: List, phase_list_1_rad_or_deg: List,
-                            frequency_list_2: List, amplitude_list_2: List, phase_list_2_rad_or_deg: List) -> List:
+def find_common_frequencies(frequency_list_1: list, amplitude_list_1: list, phase_list_1_rad_or_deg: list,
+                            frequency_list_2: list, amplitude_list_2: list, phase_list_2_rad_or_deg: list) -> list:
     """
     Find common frequencies and returns a list of intersections.
 
     :param amplitude_list_1: Amplitudes signal 1
-    :type amplitude_list_1: List
+    :type amplitude_list_1: list
     :param phase_list_1_rad_or_deg: Phases signal 1, can be degree or rad. return is same as input.
-    :type phase_list_1_rad_or_deg: List
+    :type phase_list_1_rad_or_deg: list
     :param frequency_list_1: Frequencies signal 1
-    :type frequency_list_1: List
+    :type frequency_list_1: list
     :param amplitude_list_2: Amplitudes signal 2
-    :type amplitude_list_2: List
+    :type amplitude_list_2: list
     :param phase_list_2_rad_or_deg: Phases signal 2, can be degree or rad. return is same as input
-    :type phase_list_2_rad_or_deg: List
+    :type phase_list_2_rad_or_deg: list
     :param frequency_list_2: Frequencies signal 2
-    :type frequency_list_2: List
+    :type frequency_list_2: list
     :return: [current_pair_list, phase_pair_list, common_frequency_list]
-    :rtype: Tuple
+    :rtype: tuple
 
     :Example:
 
@@ -1011,12 +1010,12 @@ def find_common_frequencies(frequency_list_1: List, amplitude_list_1: List, phas
     common_phases_list_2 = []
 
     common_frequency_list = list(set(frequency_list_1).intersection(frequency_list_2))
-    print(f"{common_frequency_list=}")
+    logger.info(f"{common_frequency_list=}")
     common_frequency_list.sort()
-    print(f"{common_frequency_list=}")
+    logger.info(f"{common_frequency_list=}")
 
     # Delete the corresponding phases and amplitudes
-    if isinstance(amplitude_list_1, List):
+    if isinstance(amplitude_list_1, list):
         for frequency in common_frequency_list:
             common_amplitude_list_1.append(amplitude_list_1[frequency_list_1.index(frequency)])
             common_phase_list_1.append(phase_list_1_rad_or_deg[frequency_list_1.index(frequency)])
@@ -1037,21 +1036,21 @@ def find_common_frequencies(frequency_list_1: List, amplitude_list_1: List, phas
     return [common_frequency_list, current_pair_list, phase_pair_list]
 
 
-def sort_out_small_harmonics(frequency_list: List, amplitude_pair_list: List,
-                             phase_pair_list_rad_or_deg: List, sort_out_factor: float) -> List:
+def sort_out_small_harmonics(frequency_list: list, amplitude_pair_list: list,
+                             phase_pair_list_rad_or_deg: list, sort_out_factor: float) -> list:
     """
     Sort out small harmonics from a given fft-output of a signal.
 
-    :param frequency_list: List of input frequencies
-    :type frequency_list: List
+    :param frequency_list: list of input frequencies
+    :type frequency_list: list
     :param amplitude_pair_list: list of amplitude pairs
-    :type amplitude_pair_list: List
+    :type amplitude_pair_list: list
     :param phase_pair_list_rad_or_deg: list of phase pairs (can be rad or degree)
-    :type phase_pair_list_rad_or_deg: List
+    :type phase_pair_list_rad_or_deg: list
     :param sort_out_factor: sort out factor [0...1]
     :type sort_out_factor: float
     :return: [frequency_list, amplitude_pair_list, phase_pair_list_rad_or_deg]
-    :rtype: List
+    :rtype: list
     """
     # Calculate geometric lengths
     amp_tot = np.sqrt(np.sum(np.array(amplitude_pair_list) ** 2, axis=0))
@@ -1088,7 +1087,7 @@ def calculate_cylinder_volume(cylinder_diameter: float, cylinder_height: float):
 
 def create_physical_group(dim: int, entities: int, name: str):
     """
-    Greate a physical group, what is used inside ONELAB.
+    Create a physical group, what is used inside ONELAB.
 
     :param dim: dim inside onelab
     :type dim: int
@@ -1191,7 +1190,7 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
 
     return loaded_results_dict
 
-def point_is_in_rect(x: float, y: float, rect: List):
+def point_is_in_rect(x: float, y: float, rect: list):
     """
     Check if a given x-y point is inside a rectangular field (e.g. inside a conductor).
 
@@ -1200,7 +1199,7 @@ def point_is_in_rect(x: float, y: float, rect: List):
     :param y: y coordinate of the point to check
     :type y: float
     :param rect: rectangular
-    :type rect: List
+    :type rect: list
     """
     # x, y of the point
     # List of 4 points given as tuples with (x, y) in the order top-right, top-left, bottom-right, bottom-left
@@ -1211,14 +1210,14 @@ def point_is_in_rect(x: float, y: float, rect: List):
     return False
 
 
-def get_number_of_turns_of_winding(winding_windows: List, windings: List, winding_number: int):
+def get_number_of_turns_of_winding(winding_windows: list, windings: list, winding_number: int):
     """
     Get the number of turns of a winding.
 
-    :param winding_windows: List of winding windows
-    :type winding_windows: List
-    :param windings: List of windings
-    :type windings: List
+    :param winding_windows: list of winding windows
+    :type winding_windows: list
+    :param windings: list of windings
+    :type windings: list
     :param winding_number: number of winding
     :type winding_number: int
     """
@@ -1253,8 +1252,8 @@ def cost_function_core(core_weight: float, core_type: str = "ferrite") -> float:
     return sigma_core * core_weight
 
 
-def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[str],
-                          single_strand_cross_section_list: Union[List[float], None] = None):
+def cost_function_winding(wire_weight_list: list[float], wire_type_list: list[str],
+                          single_strand_cross_section_list: list[float] | None = None):
     """
     Calculate single winding material and fabrication costs depending on winding-type and weight.
 
@@ -1262,11 +1261,11 @@ def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[st
     of Switched-Mode Power Converters"
 
     :param wire_weight_list: winding weight in kg in list-form
-    :type wire_weight_list: List[float]
+    :type wire_weight_list: list[float]
     :param wire_type_list: winding type. Must fit to enum-names in ConductorType-Enum
-    :type wire_type_list: List[str]
+    :type wire_type_list: list[str]
     :param single_strand_cross_section_list: single strand cross-section in list-form
-    :type single_strand_cross_section_list: List[float]
+    :type single_strand_cross_section_list: list[float]
     :return: winding cost of single winding
     :rtype: float
     """
@@ -1304,8 +1303,8 @@ def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[st
     return winding_cost_list
 
 
-def cost_function_total(core_weight: float, core_type: str, wire_weight_list: List[float], wire_type_list: List[str],
-                        single_strand_cross_section_list: Union[None, List[float]] = None) -> float:
+def cost_function_total(core_weight: float, core_type: str, wire_weight_list: list[float], wire_type_list: list[str],
+                        single_strand_cross_section_list: None | list[float] = None) -> float:
     """
     Calculate the total costs for an inductive element.
 
@@ -1321,9 +1320,9 @@ def cost_function_total(core_weight: float, core_type: str, wire_weight_list: Li
     :param wire_weight_list: winding weight in kg
     :type wire_weight_list: float
     :param wire_type_list: winding type in list-form. Must fit to enum-names in ConductorType-Enum
-    :type wire_type_list: List[str]
+    :type wire_type_list: list[str]
     :param single_strand_cross_section_list: single strand cross-section in list-form
-    :type single_strand_cross_section_list: List[float]
+    :type single_strand_cross_section_list: list[float]
     :return: total costs for inductive element
     :rtype: float
     """
@@ -1346,11 +1345,11 @@ def find_result_log_file(result_log_folder: str, keyword_list: list, value_min_m
     """
     Find a result log-file in a folder with many result-log files.
 
-    Check a dictornary keyword list for matching a certain value (equel, greater equal, smaller equal).
+    Check a dictionary keyword list for matching a certain value (equal, greater equal, smaller equal).
 
     :param result_log_folder: filepath to result-log folder
     :type result_log_folder: str
-    :param keyword_list: list with hirarchical keywords for dictionary structure, e.g. ["simulation_settings", "core", "core_inner_diameter"]
+    :param keyword_list: list with hierarchical keywords for dictionary structure, e.g. ["simulation_settings", "core", "core_inner_diameter"]
     :type keyword_list: list
     :param value_min_max: value to check for
     :type value_min_max: list
@@ -1383,7 +1382,7 @@ def find_result_log_file(result_log_folder: str, keyword_list: list, value_min_m
                 keyword_list[4]]
 
         if value_min <= data_to_compare <= value_max:
-            print(f"{value_min} <= {data_to_compare} <= {value_max} for file named {file}")
+            logger.info(f"{value_min} <= {data_to_compare} <= {value_max} for file named {file}")
 
 
 def wave_vector(f: float, complex_permeability: complex, complex_permittivity: complex, conductivity: float):
@@ -1423,7 +1422,7 @@ def axial_wavelength(f: float, complex_permeability: float, complex_permittivity
 
 
 def check_mqs_condition(radius: float, frequency: float, complex_permeability: float, complex_permittivity: float,
-                        conductivity: float, relative_margin_to_first_resonance: float = 0.5, silent: bool = False):
+                        conductivity: float, relative_margin_to_first_resonance: float = 0.5):
     """
     Check if the condition for a magnetoquasistatic simulation is fulfilled.
 
@@ -1443,8 +1442,6 @@ def check_mqs_condition(radius: float, frequency: float, complex_permeability: f
     :type conductivity: float
     :param relative_margin_to_first_resonance: relative margin to the first resonance. Defaults to 0.5.
     :type relative_margin_to_first_resonance: float
-    :param silent: True for no terminal output
-    :type silent: bool
     """
     if frequency == 0:
         raise ValueError("check_mqs_condition() only works for frequencies != 0")
@@ -1455,11 +1452,10 @@ def check_mqs_condition(radius: float, frequency: float, complex_permeability: f
     if diameter_to_wavelength_ratio > diameter_to_wavelength_ratio_of_first_resonance * relative_margin_to_first_resonance:
         # raise Warning(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance} - "
         #               f"1 means 1st resonance - should be kept well below 1 to ensure MQS approach to be correct! ")
-        if not silent:
-            print(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance}")
+        logger.info(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance}")
 
 
-def create_open_circuit_excitation_sweep(I0: float, n: float, frequency: float) -> List[List[float]]:
+def create_open_circuit_excitation_sweep(I0: float, n: float, frequency: float) -> list[list[float]]:
     """
     Create a circuit excitation sweep with the other windings unloaded.
 
@@ -1495,14 +1491,14 @@ def list_to_complex(complex_list: list):
     return complex(complex_list[0], complex_list[1])
 
 
-def get_self_inductances_from_log(log: Dict) -> List:
+def get_self_inductances_from_log(log: dict) -> list:
     """
     Read the self-inductances from the result log file (dictionary).
 
     :param log: Result log dictionary
-    :type log: Dict
+    :type log: dict
     :return: self-inductances in a list
-    :rtype: List
+    :rtype: list
     """
     self_inductances = []
     for ol_index, open_loop_result in enumerate(log["single_sweeps"]):
@@ -1511,14 +1507,14 @@ def get_self_inductances_from_log(log: Dict) -> List:
     return self_inductances
 
 
-def get_flux_linkages_from_log(log: Dict) -> List:
+def get_flux_linkages_from_log(log: dict) -> list:
     """
     Read the flux-linkages from the result log file (dictionary).
 
     :param log: Result log dictionary
-    :type log: Dict
+    :type log: dict
     :return: flux-linkages in a list
-    :rtype: List
+    :rtype: list
     """
     flux_linkages = []
     for ol_index, open_loop_result in enumerate(log["single_sweeps"]):
@@ -1528,12 +1524,12 @@ def get_flux_linkages_from_log(log: Dict) -> List:
     return flux_linkages
 
 
-def get_coupling_matrix(flux_linkages: List) -> np.array:
+def get_coupling_matrix(flux_linkages: list) -> np.array:
     """
     Calculate the coupling factors from the given flux linkages.
 
     :param flux_linkages: flux-linkages
-    :type flux_linkages: List
+    :type flux_linkages: list
     :return: coupling-matrix in a matrix (np.array)
     :rtype: np.array
     """
@@ -1578,115 +1574,99 @@ def get_inductance_matrix(self_inductances: np.array, mean_coupling_factors: np.
     return inductance_matrix
 
 
-def visualize_flux_linkages(flux_linkages: List, silent: bool) -> None:
+def visualize_flux_linkages(flux_linkages: list) -> None:
     """
     Print the flux linkages to the terminal (or file-) output.
 
     :param flux_linkages: flux-linkages in a list
-    :type flux_linkages: List
-    :param silent: True for no output
-    :type silent: bool
+    :type flux_linkages: list
     """
     string_to_print = ""
     for x in range(0, len(flux_linkages)):
         for y in range(0, len(flux_linkages)):
             string_to_print += f"Phi_{x+1}{y+1} = {flux_linkages[x][y]}     Induced by I_{y+1} in Winding{x+1}\n"
-    if not silent:
-        print("\nFluxes: ")
-        print(string_to_print)
+
+    logger.info("\nFluxes: ")
+    logger.info(string_to_print)
 
 
-def visualize_self_inductances(self_inductances: Union[List, np.array], flux_linkages: Union[List, np.array], silent: bool) -> None:
+def visualize_self_inductances(self_inductances: list | np.ndarray, flux_linkages: list | np.ndarray) -> None:
     """
     Print the self-inductances to the terminal (or file-) output.
 
     :param self_inductances: self-inductances in H in a list or numpy array
-    :type self_inductances: Union[List, np.array]
+    :type self_inductances: list | np.ndarray
     :param flux_linkages: flux linkages
-    :type flux_linkages: Union[List, np.array]
-    :param silent: True for no output
-    :type silent: bool
+    :type flux_linkages: st | np.ndarray
     """
     string_to_print = ""
     for x in range(0, len(flux_linkages)):
         string_to_print += f"L_{x+1}_{x+1} = {self_inductances[x]}\n"
-    if not silent:
-        print("\n"
-              "Self Inductances: ")
-        print(string_to_print)
+    logger.info("\n"
+                "Self Inductances: ")
+    logger.info(string_to_print)
 
 
-def visualize_self_resistances(self_inductances: List, flux_linkages: List, frequency: float, silent: bool) -> None:
+def visualize_self_resistances(self_inductances: list, flux_linkages: list, frequency: float) -> None:
     """
     Calculate and print the self resistances to the terminal (or file-) output.
 
     :param self_inductances: self-inductances in a list
-    :type self_inductances: List
+    :type self_inductances: list
     :param flux_linkages: flux-linkage
-    :type flux_linkages: List
+    :type flux_linkages: list
     :param frequency: Frequency in Hz
     :type frequency: float
-    :param silent: True for no output
-    :type silent: bool
     """
     string_to_print = ""
     for x in range(0, len(flux_linkages)):
         string_to_print += f"Z_{x+1}_{x+1} = {self_inductances[x].imag*2*np.pi*frequency}\n"
-    if not silent:
-        print("\n"
-              "Self Resistances: ")
-        print(string_to_print)
+    logger.info("\n"
+                "Self Resistances: ")
+    logger.info(string_to_print)
 
 
-def visualize_coupling_factors(coupling_matrix: np.array, flux_linkages: List, silent: bool):
+def visualize_coupling_factors(coupling_matrix: np.array, flux_linkages: list):
     """
     Print the coupling factors to the terminal (or file-) output.
 
     :param coupling_matrix: matrix with coupling factors between the windings
     :type coupling_matrix: np.array
     :param flux_linkages: flux-linkages in a list
-    :type flux_linkages: List
-    :param silent: True for no output
-    :type silent: bool
+    :type flux_linkages: list
     """
     string_to_print = ""
     for x in range(0, len(flux_linkages)):
         for y in range(0, len(coupling_matrix)):
             string_to_print += f"K_{x + 1}{y + 1} = Phi_{x + 1}{y + 1} / Phi_{y + 1}{y + 1} = {coupling_matrix[x][y]}\n"
-    if not silent:
-        print("\n"
-              "Coupling Factors: ")
-        print(string_to_print)
+    logger.info("\n"
+                "Coupling Factors: ")
+
+    logger.info(string_to_print)
 
 
-def visualize_mean_coupling_factors(mean_coupling_factors: List, silent: bool):
+def visualize_mean_coupling_factors(mean_coupling_factors: list):
     """
     Print the mean coupling factors to the terminal (or file-) output.
 
     :param mean_coupling_factors: mean_coupling_factors in a list
-    :type mean_coupling_factors: List
-    :param silent: True for no output
-    :type silent: bool
+    :type mean_coupling_factors: list
     """
     string_to_print = ""
     for x in range(0, len(mean_coupling_factors)):
         for y in range(0, len(mean_coupling_factors)):
             string_to_print += f"k_{x + 1}{y + 1} = Sqrt(K_{x + 1}{y + 1} * K_{y + 1}{x + 1}) = M_{x + 1}{y + 1} " \
                                f"/ Sqrt(L_{x + 1}_{x + 1} * L_{y + 1}_{y + 1}) = {mean_coupling_factors[x][y]}\n"
-        if not silent:
-            print("\n"
-                  "Mean Coupling Factors: ")
-            print(string_to_print)
+    logger.info("\nMean Coupling Factors: ")
+    logger.info(string_to_print)
 
 
-def visualize_mean_mutual_inductances(inductance_matrix: np.array, silent: bool):
+def visualize_mean_mutual_inductances(inductance_matrix: np.array):
     """
-    Print the mean mutal inductances to the terminal (or file-) output.
+    Print the mean mutual inductances to the terminal (or file-) output.
 
     :param inductance_matrix: inductance matrix
     :type inductance_matrix: np.array
-    :param silent: True for no output
-    :type silent: bool
 
     e.g.  M_12 = M_21 = k_12 * (L_11 * L_22) ** 0.5
     """
@@ -1697,22 +1677,18 @@ def visualize_mean_mutual_inductances(inductance_matrix: np.array, silent: bool)
                 pass
             else:
                 string_to_print += f"M_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
-    if not silent:
-        print("\n"
-              "Mean Mutual Inductances: ")
-        print(string_to_print)
+    logger.info("\nMean Mutual Inductances: ")
+    logger.info(string_to_print)
 
 
-def visualize_mutual_inductances(self_inductances: List, coupling_factors: List, silent: bool):
+def visualize_mutual_inductances(self_inductances: list, coupling_factors: list):
     """
-    Print the mutal inductances to the terminal (or file-) output.
+    Print the mutual inductances to the terminal (or file-) output.
 
     :param self_inductances: Matrix with self inductances
-    :type self_inductances: List
+    :type self_inductances: list
     :param coupling_factors: Matrix with coupling factors
-    :type coupling_factors: List
-    :param silent: True for no output
-    :type silent: bool
+    :type coupling_factors: list
 
     e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
     """
@@ -1723,21 +1699,17 @@ def visualize_mutual_inductances(self_inductances: List, coupling_factors: List,
                 pass
             else:
                 string_to_print += f"M_{x + 1}{y + 1} = {self_inductances[y].real * coupling_factors[x][y]}\n"
-    if not silent:
-        print("\n"
-              "Mutual Inductances: ")
-        print(string_to_print)
+    logger.info("\nMutual Inductances: ")
+    logger.info(string_to_print)
 
 
-def visualize_inductance_matrix_coefficients(inductance_matrix: np.array, silent: bool):
+def visualize_inductance_matrix_coefficients(inductance_matrix: np.array):
     """Visualize the inductance matrix coefficients in the terminal.
 
     e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
 
     :param inductance_matrix: inductance matrix of transformer
     :type inductance_matrix: np.array
-    :param silent: False to show the terminal output
-    :type silent: bool
     """
     string_to_print = ""
     for x in range(0, len(inductance_matrix)):
@@ -1746,20 +1718,16 @@ def visualize_inductance_matrix_coefficients(inductance_matrix: np.array, silent
                 string_to_print += f"L_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
             else:
                 string_to_print += f"M_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
-    if not silent:
-        print("\n"
-              "Inductance Matrix Coefficients: ")
-        print(string_to_print)
+    logger.info("Inductance Matrix Coefficients: ")
+    logger.info(string_to_print)
 
 
-def visualize_inductance_matrix(inductance_matrix: np.array, silent: bool) -> None:
+def visualize_inductance_matrix(inductance_matrix: np.array) -> None:
     """
     Visualize the inductance matrix in the terminal.
 
     :param inductance_matrix: inductance matrix in H
     :type inductance_matrix: np.array
-    :param silent: True for no output
-    :type silent: bool
 
     e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
     """
@@ -1769,47 +1737,45 @@ def visualize_inductance_matrix(inductance_matrix: np.array, silent: bool) -> No
             string_to_print += f"{np.round(inductance_matrix[x][y].real, 12)} "
         string_to_print += "\n"
 
-    if not silent:
-        print("\n"
-              "Inductance Matrix: ")
-        print(string_to_print)
+    logger.info("\nInductance Matrix: ")
+    logger.info(string_to_print)
 
-def calculate_quadrature_integral(time_steps: List[float], data: List[float]) -> float:
+def calculate_quadrature_integral(time_steps: list[float], data: list[float]) -> float:
     """
-    Calculate the integral of given data over specific time steps using the quadrature method.
+    Calculate the integral of given data over specific time steps using the quad method.
 
     :param time_steps: List of time steps.
-    :type time_steps: List[float]
+    :type time_steps: list[float]
     :param data: List of data corresponding to each timestep.
-    :type data: List[float]
+    :type data: list[float]
     :return: The calculated integral.
     :rtype: float
     """
     func = lambda x: np.interp(x, time_steps, data)
-    return quadrature(func, time_steps[0], time_steps[-1])[0]
+    return quad(func, time_steps[0], time_steps[-1])[0]
 
-def calculate_squared_quadrature_integral(time_steps: List[float], data: List[float]) -> float:
+def calculate_squared_quadrature_integral(time_steps: list[float], data: list[float]) -> float:
     """
-    Calculate the integral of squared given data over specific time steps using the quadrature method..
+    Calculate the integral of squared given data over specific time steps using the quad method.
 
     :param time_steps: List of time steps.
-    :type time_steps: List[float]
+    :type time_steps: list[float]
     :param data: List of data corresponding to each timestep.
-    :type data: List[float]
+    :type data: list[float]
     :return: The calculated integral.
     :rtype: float
     """
     func = lambda x: np.interp(x, time_steps, data) ** 2
-    return quadrature(func, time_steps[0], time_steps[-1])[0]
+    return quad(func, time_steps[0], time_steps[-1])[0]
 
-def calculate_average(integral: float, time_steps: List[float]) -> float:
+def calculate_average(integral: float, time_steps: list[float]) -> float:
     """
     Compute the average in general.
 
     :param integral: The integral value.
     :type integral: float
     :param time_steps: List of time steps.
-    :type time_steps: List[float]
+    :type time_steps: list[float]
 
     Returns:
     :return: The calculated average.
@@ -1820,14 +1786,14 @@ def calculate_average(integral: float, time_steps: List[float]) -> float:
         raise ValueError("Total time cannot be zero.")
     return integral / total_time
 
-def calculate_rms(squared_integral: float, time_steps: List[float]) -> float:
+def calculate_rms(squared_integral: float, time_steps: list[float]) -> float:
     """
     Compute the RMS.
 
     :param squared_integral: The integral value.
     :type squared_integral: float
     :param time_steps: List of time steps.
-    :type time_steps: List[float]
+    :type time_steps: list[float]
 
     Returns:
     :return: The calculated average.
@@ -1865,14 +1831,14 @@ def convert_air_gap_corner_points_to_center_and_distance(corner_points: list) ->
     return centers, heights
 
 
-def time_current_vector_to_fft_excitation(time_current_vectors: List[List[List[float]]], fft_filter_value_factor: float = 0.01):
+def time_current_vector_to_fft_excitation(time_current_vectors: list[list[list[float]]], fft_filter_value_factor: float = 0.01):
     """
     Perform FFT to get the primary and secondary currents e.g. to calculate the wire losses.
 
     For further calculations e.g. calculating wire losses, the single frequencies can be 'linear added' to get the total winding losses.
 
     :param time_current_vectors: primary and secondary current waveforms over time
-    :type time_current_vectors: List[List[List[float]]]
+    :type time_current_vectors: list[list[list[float]]]
     :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default]
         removes all amplitudes below 1 % of the maximum amplitude from the result-frequency list
     :type fft_filter_value_factor: float
@@ -1920,7 +1886,7 @@ def time_current_vector_to_fft_excitation(time_current_vectors: List[List[List[f
     return frequency_list, current_list_list, phi_deg_list_list
 
 
-def hysteresis_current_excitation(input_time_current_vectors: List[List[List[float]]]):
+def hysteresis_current_excitation(input_time_current_vectors: list[list[list[float]]]):
     """
     Collect the peak current and the corresponding phase shift for the fundamental frequency for all windings.
 
@@ -1928,10 +1894,10 @@ def hysteresis_current_excitation(input_time_current_vectors: List[List[List[flo
     In case of a center-tapped transformer, halving the amplitudes will be done by split_hysteresis_loss_excitation_center_tapped.
 
     :param input_time_current_vectors: e.g. [[time_vec, i_primary_vec], [time_vec, i_secondary_vec]]
-    :type input_time_current_vectors: List[List[List[float]]]
+    :type input_time_current_vectors: list[list[list[float]]]
     :raises ValueError: if time vector does not start at zero seconds.
     :return: hyst_frequency, hyst_current_amplitudes, hyst_phases_deg, e.g. 200400.80170764355 [6.13, 26.65] [49.13, 229.49]
-    :rtype: List[List[float]]
+    :rtype: list[list[float]]
     """
     if input_time_current_vectors[0][0][0] != 0:
         raise ValueError("time must start at 0 seconds!")

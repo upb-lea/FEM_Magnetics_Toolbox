@@ -1,14 +1,13 @@
 """Classes for thermal simulation."""
 
 # Python standard libraries
-from typing import List, Tuple, Dict
 
 
 class ConstraintPro:
     """Boundary constraints."""
 
     # For boundary constraints, the tuple contains (key, region, value)
-    boundary_constraints: List[Tuple[str, str, str]]
+    boundary_constraints: list[tuple[str, str, str]]
 
     def __init__(self):
         self.boundary_constraints = []
@@ -27,12 +26,12 @@ class ConstraintPro:
         """
         return f"\t\tIf({flag}==1)\n\t\t\t{{ Region {region} ; Type Assign; Value {value} ; }}\n\t\tEndIf\n"
 
-    def add_boundary_constraint(self, more_constraints: List):
+    def add_boundary_constraint(self, more_constraints: list):
         """
         Add boundary constraint.
 
         :param more_constraints: constraints
-        :type more_constraints: List
+        :type more_constraints: list
         """
         for constraint in more_constraints:
             self.boundary_constraints.append(constraint)
@@ -59,12 +58,12 @@ class GroupPro:
     def __init__(self):
         self.regions = {}
 
-    def add_regions(self, more_regions: Dict):
+    def add_regions(self, more_regions: dict):
         """
         Add given regions to the group.
 
         :param more_regions:
-        :type more_regions: Dict
+        :type more_regions: dict
         """
         self.regions.update(more_regions)
 
@@ -104,12 +103,12 @@ class ParametersPro:
     def __init__(self):
         self.parameters = {}
 
-    def add_to_parameters(self, more_parameters: Dict):
+    def add_to_parameters(self, more_parameters: dict):
         """
         Add more_parameters to existing parameters.
 
         :param more_parameters:
-        :type more_parameters: Dict
+        :type more_parameters: dict
         """
         self.parameters.update(more_parameters)
 
@@ -141,17 +140,17 @@ class FunctionPro:
         self.q_vol = {}
 
     @staticmethod
-    def dict_as_function_str(name: str, dct: Dict):
+    def dict_as_function_str(name: str, dictionary: dict):
         """
         Write dictionary as a string.
 
         :param name: name
         :type name: str
-        :param dct: Dictionary
-        :type dct: Dict
+        :param dictionary: dictionary
+        :type dictionary: dict
         """
         dict_as_str = ""
-        for key, value in dct.items():
+        for key, value in dictionary.items():
             dict_as_str += f"\t{name}[{key}] = {value};\n"
 
         return dict_as_str
@@ -189,7 +188,7 @@ class FunctionPro:
 class PostOperationPro:
     """For creating a post_operation.pro."""
 
-    statements: List[str]    
+    statements: list[str]
 
     def __init__(self):
         self.statements = []

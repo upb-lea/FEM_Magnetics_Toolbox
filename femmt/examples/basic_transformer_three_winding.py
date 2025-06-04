@@ -10,9 +10,12 @@ folder .../femmt/examples/example_results/simulation_file_name/results/log_elect
 """
 import femmt as fmt
 import os
-from typing import Optional
+import logging
 
-def basic_example_transformer_three_winding(onelab_folder: Optional[str] = None, show_visual_outputs: bool = True,
+# configure logging to show femmt terminal output
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+
+def basic_example_transformer_three_winding(onelab_folder: str | None = None, show_visual_outputs: bool = True,
                                             is_test: bool = False):
     """
     Run the example code for the three-winding transformer.
@@ -100,7 +103,7 @@ def basic_example_transformer_three_winding(onelab_folder: Optional[str] = None,
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
-                                verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
+                                is_gui=is_test)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
     if onelab_folder is not None:
@@ -124,7 +127,9 @@ def basic_example_transformer_three_winding(onelab_folder: Optional[str] = None,
     insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
     insulation.add_winding_insulations([[0.0002, 0.0004, 0.0004],
                                         [0.0004, 0.0002, 0.0004],
-                                        [0.0004, 0.0004, 0.0002]])
+                                        [0.0004, 0.0004, 0.0002]], per_layer_of_turns=False)
+    insulation.add_turn_insulation([0.25e-5, 0.25e-5, 0.25e-5], add_turn_insulations=False)
+    insulation.add_kapton_insulation(add_kapton_material=False, thickness=0.0005)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)

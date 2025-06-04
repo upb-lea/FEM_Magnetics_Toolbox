@@ -1,6 +1,5 @@
 """Functions used by the optimization methods in general."""
 # python libraries
-from typing import List, Dict
 
 # 3rd party libraries
 from matplotlib import pyplot as plt
@@ -169,12 +168,12 @@ def is_pareto_efficient(costs: np.array, return_mask: bool = True):
     else:
         return is_efficient
 
-def pareto_front_from_dtos(dto_list: List[ItoSingleResultFile]) -> tuple:
+def pareto_front_from_dtos(dto_list: list[ItoSingleResultFile]) -> tuple:
     """
     Calculate the Pareto front from a list of ItoSingleResultFiles.
 
     :param dto_list: List of ItoSingleResultFiles
-    :type dto_list: List[ItoSingleResultFiles]
+    :type dto_list: list[ItoSingleResultFiles]
     :return: x-Pareto vector, y-Pareto vector
     :rtype: tuple
     """
@@ -213,20 +212,20 @@ def pareto_front_from_df(df: pd.DataFrame) -> pd.DataFrame:
     :return: Pandas dataframe with pareto efficient points
     :rtype: pd.DataFrame
     """
-    x_vec = df["values_0"][~np.isnan(df["values_0"])]
-    y_vec = df["values_1"][~np.isnan(df["values_0"])]
+    x_vec = df["values_0"][~pd.isnull(df["values_0"])]
+    y_vec = df["values_1"][~pd.isnull(df["values_0"])]
     numpy_zip = np.column_stack((x_vec, y_vec))
     pareto_tuple_mask_vec = is_pareto_efficient(numpy_zip)
-    pareto_df = df[~np.isnan(df['values_0'])][pareto_tuple_mask_vec]
+    pareto_df = df[~pd.isnull(df['values_0'])][pareto_tuple_mask_vec]
     return pareto_df
 
 
-def pareto_front_from_result_dicts(result_dict_list: List[Dict]) -> tuple:
+def pareto_front_from_result_dicts(result_dict_list: list[dict]) -> tuple:
     """
     Calculate the Pareto front from a list of result log dictionaries.
 
     :param result_dict_list: List of result log dictionaries
-    :type result_dict_list: List[Dict]
+    :type result_dict_list: list[dict]
     :return: x-Pareto vector, y-Pareto vector
     :rtype: tuple
     """

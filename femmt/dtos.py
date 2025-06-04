@@ -1,7 +1,6 @@
 """Data transfer objects (DTOs) used by this toolbox."""
 from dataclasses import dataclass
 from femmt.enumerations import WindingTag
-from typing import Optional, List
 
 
 @dataclass
@@ -37,10 +36,10 @@ class ConductorRow:
     """Defines the conductors in one row."""
 
     number_of_conds_per_winding: int
-    number_of_conds_per_row: Optional[int]
-    row_height: Optional[float]
+    number_of_conds_per_row: int | None
+    row_height: float | None
     winding_tag: WindingTag
-    number_of_rows: Optional[int]
+    number_of_rows: int | None
     additional_bobbin: float
 
 
@@ -63,11 +62,11 @@ class ThreeWindingIsolation:
 class CenterTappedGroup:
     """Definitions for the center tapped group. A group is made of several primary and secondary rows."""
 
-    primary_number_of_rows: Optional[int]
-    secondary_number_of_rows: Optional[int]
-    primary_rest: Optional[int]
-    secondary_rest: Optional[int]
-    stack: List[WindingTag]
+    primary_number_of_rows: int | None
+    secondary_number_of_rows: int | None
+    primary_rest: int | None
+    secondary_rest: int | None
+    stack: list[WindingTag]
 
 
 @dataclass
@@ -75,8 +74,8 @@ class ConductorStack:
     """Definitions for the conductor stack."""
 
     number_of_groups: int
-    number_of_single_rows: Optional[int]
-    order: List[int]
+    number_of_single_rows: int | None
+    order: list[int]
 
 
 @dataclass
@@ -114,16 +113,16 @@ class TransformerInductance:
 class ThreeWindingTransformerInductance:
     """Inductance definitions for a three-winding transformer."""
 
-    M_12: Optional[float]
-    M_13: Optional[float]
-    M_23: Optional[float]
-    L_s1: Optional[float]
-    L_s2: Optional[float]
-    L_s3: Optional[float]
-    L_h: Optional[float]
-    n_12: Optional[float]
-    n_13: Optional[float]
-    n_23: Optional[float]
-    L_s12: Optional[float]
-    L_s13: Optional[float]
-    L_s23: Optional[float]
+    M_12: float | None
+    M_13: float | None
+    M_23: float | None
+    L_s1: float | None
+    L_s2: float | None
+    L_s3: float | None
+    L_h: float | None
+    n_12: float | None
+    n_13: float | None
+    n_23: float | None
+    L_s12: float | None
+    L_s13: float | None
+    L_s23: float | None

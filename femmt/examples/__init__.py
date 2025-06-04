@@ -1,1 +1,1 @@
-"""Init-file for the FEMMT examples."""
+"""Initialize the FEMMT examples."""

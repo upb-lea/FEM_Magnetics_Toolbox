@@ -37,8 +37,8 @@ def basic_example_inductor_foil_vertical_electrostatic(onelab_folder: str = None
     wrap_para_type = fmt.WrapParaType.FixedThickness
 
     # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
-    geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.ElectroStatic, component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
+    geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.ElectroStatic, component_type=fmt.ComponentType.Inductor,
+                                working_directory=working_directory, is_gui=is_test)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
     if onelab_folder is not None:
@@ -68,10 +68,8 @@ def basic_example_inductor_foil_vertical_electrostatic(onelab_folder: str = None
                                                   bobbin_h=bobbin_db["bobbin_h"])
     insulation = fmt.Insulation(flag_insulation=True, bobbin_dimensions=bobbin_dimensions)
     insulation.add_core_insulations(0.001, 0.001, 0.001, 0.001)
-    #insulation.add_winding_insulations([[0.0005]])
     insulation.add_winding_insulations([[0.025e-3]])
-    insulation.add_conductor_air_conductor_insulation([[0.0005, 0.0005, 0.0005, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4],
-                                                       [1e-3, 1e-3]])
+    insulation.add_turn_insulation([0.25e-5], add_turn_insulations=False)
     geo.set_insulation(insulation)
 
     winding_window = fmt.WindingWindow(core, insulation)

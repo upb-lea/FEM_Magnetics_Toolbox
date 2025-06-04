@@ -2,9 +2,8 @@
 import femmt as fmt
 import os
 import numpy as np
-from typing import Optional
 
-def transformer_component_study(onelab_folder: Optional[str] = None, show_visual_outputs: bool = True, is_test: bool = False):
+def transformer_component_study(onelab_folder: str | None = None, show_visual_outputs: bool = True, is_test: bool = False):
     """
     Perform a component study.
 
@@ -38,7 +37,7 @@ def transformer_component_study(onelab_folder: Optional[str] = None, show_visual
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
-                                verbosity=fmt.Verbosity.Silent, is_gui=is_test)
+                                onelab_verbosity=fmt.Verbosity.Silent, is_gui=is_test)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
     if onelab_folder is not None:

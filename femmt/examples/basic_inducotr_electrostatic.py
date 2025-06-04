@@ -36,8 +36,8 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.ElectroStatic, component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
+    geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.ElectroStatic, component_type=fmt.ComponentType.Inductor,
+                                working_directory=working_directory, is_gui=is_test)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
     if onelab_folder is not None:
@@ -79,13 +79,9 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
                                                   bobbin_h=bobbin_db["bobbin_h"])
     insulation = fmt.Insulation(flag_insulation=True, bobbin_dimensions=bobbin_dimensions)
     insulation.add_core_insulations(1.5e-3, 1.5e-3, 1e-3, 1e-3)
-    insulation.add_turn_insulation([0.25e-5], add_turn_insulations=False)
-    insulation.add_winding_insulations([[1e-3, 0.1e-3, 1e-3, 1e-3, 1e-3, 1e-3],
-                                                       [1e-3, 1e-3]], per_layer_of_turns=False)
-    # insulation.add_winding_insulations([[0.0025e-3]])
-    # insulation.add_conductor_air_conductor_insulation([[1e-3, 1e-3, 1e-3, 1e-3, 1e-3, 1e-3],
-    #                                                    [1e-3, 1e-3]])
-    insulation.add_kapton_insulation(add_kapton_material=False, thickness=1e-3)
+    insulation.add_turn_insulation([0.5e-4], add_turn_insulations=True)
+    insulation.add_winding_insulations([[0.6e-3, 0.1e-3]], per_layer_of_turns=True)
+    insulation.add_kapton_insulation(add_kapton_material=True, thickness=0.6e-3)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -111,11 +107,11 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
         V_A - (V_A - V_B) * i / (num_turns_w1 - 1)
         for i in range(num_turns_w1)
     ]
-    geo.electrostatic_simulation(voltage=[voltages_winding_1], ground_outer_boundary=False, core_voltage=0,
-                                 show_fem_simulation_results=show_visual_outputs, save_to_excel=False)
+    # geo.electrostatic_simulation(voltage=[voltages_winding_1], ground_outer_boundary=False, core_voltage=0,
+    #                              show_fem_simulation_results=show_visual_outputs, save_to_excel=False)
     # Run simulation in FEMM
-    # geo.femm_reference_electrostatic(voltages=[voltages_winding_1], ground_core=True, ground_outer_boundary=True,
-    #                                  non_visualize=0, save_to_excel=False, compare_excel_files_to_femmt=False, mesh_size_conductor=0.0)
+    geo.femm_reference_electrostatic(voltages=[voltages_winding_1], ground_core=True, ground_outer_boundary=True,
+                                     non_visualize=0, save_to_excel=False, compare_excel_files_to_femmt=False, mesh_size_conductor=0.0)
 
 
 if __name__ == "__main__":

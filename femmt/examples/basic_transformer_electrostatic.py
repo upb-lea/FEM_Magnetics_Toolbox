@@ -36,7 +36,7 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.ElectroStatic, component_type=fmt.ComponentType.Transformer,
-                                working_directory=working_directory, verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
+                                working_directory=working_directory, is_gui=is_test)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
     if onelab_folder is not None:
@@ -82,30 +82,18 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
                                                   bobbin_window_h=bobbin_db["bobbin_window_h"],
                                                   bobbin_h=bobbin_db["bobbin_h"])
     insulation = fmt.Insulation(flag_insulation=True, bobbin_dimensions=bobbin_dimensions)
-    # insulation.add_core_insulations(2.2e-3, 2.2e-3, 1.25e-3, 1.25e-3)
-    # # core_insulation (measured)
-    # insulation.add_core_insulations(1.7e-3, 1.7e-3, 1.25e-3, 1.25e-3)
-    # core_insulation (from datasheet)
     insulation.add_core_insulations(1.55e-3, 1.55e-3, 0.9e-3, 1.5e-4)
-    # # # # 109-49 transformer
     insulation.add_winding_insulations([[0.0002, 0.095e-3],
-                                        [0.095e-3, 0.0002]])
-    # insulation.add_winding_insulations([[0.025e-3, 0.095e-3],
-    #                                     [0.095e-3, 0.025e-3]])
-    insulation.add_conductor_air_conductor_insulation([[1e-3, 1e-3, 1e-3, 1e-3],
-                                                       [1e-3, 1e-3]])
-    insulation.add_kapton_insulation(add_kapton=True, thickness=1e-3)
-    # 59-56 transformer
-    # insulation.add_winding_insulations([[1.33125e-4, 0.095e-3],
-    #                                     [0.095e-3, 1.88667e-4]])
-
+                                        [0.095e-3, 0.0002]], per_layer_of_turns=True)
+    insulation.add_turn_insulation([0.25e-5, 0.25e-5], add_turn_insulations=False)
+    insulation.add_kapton_insulation(add_kapton_material=True, thickness=0.5e-3)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
     winding_window = fmt.WindingWindow(core, insulation)
     # bot, top = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit, split_distance=0.001)
     # 109-49
-    cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.4],
+    cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.29],
                                                        vertical_split_factors=None)
     # cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.],
     #                                                    vertical_split_factors=None)
@@ -130,9 +118,9 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
 
     # 7. add conductor to vww and add winding window to MagneticComponent
     # top.set_winding(winding2, 15, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
-    cells[1].set_winding(winding2, 4, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
+    cells[1].set_winding(winding2, 10, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
     # bot.set_winding(winding2, 29, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
-    cells[0].set_winding(winding1, 4, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
+    cells[0].set_winding(winding1, 10, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
     # top.set_winding(winding1, 109, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
     geo.set_winding_windows([winding_window])
 

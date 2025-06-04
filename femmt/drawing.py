@@ -1,14 +1,14 @@
 """Draw structures inside Onelab."""
 # Python standard libraries
 import numpy as np
-from logging import Logger
-from typing import List
+import logging
 
 # Local libraries
 from femmt.enumerations import *
 from femmt.data import MeshData
 from femmt.model import Core, WindingWindow, AirGaps, StrayPath, Insulation
 
+logger = logging.getLogger(__name__)
 
 class TwoDaxiSymmetric:
     """
@@ -18,7 +18,7 @@ class TwoDaxiSymmetric:
     """
 
     core: Core
-    winding_windows: List[WindingWindow]
+    winding_windows: list[WindingWindow]
     air_gaps: AirGaps
     stray_path: StrayPath
     insulation: Insulation
@@ -27,7 +27,6 @@ class TwoDaxiSymmetric:
     mesh_data: MeshData
     number_of_windings: int
     verbosity: Verbosity
-    logger: Logger
 
     # List of points which represent the model
     # Every List is a List of 4 Points: x, y, z, mesh_factor
@@ -35,24 +34,23 @@ class TwoDaxiSymmetric:
     p_region_bound: np.ndarray
     p_window: np.ndarray
     p_air_gaps: np.ndarray
-    # p_conductor: List[List[float]]
-    p_iso_core: List[List[float]]
-    p_iso_pri_sec: List[List[float]]
+    # p_conductor: list[list[float]]
+    p_iso_core: list[list[float]]
+    p_iso_pri_sec: list[list[float]]
 
-    def __init__(self, core: Core, mesh_data: MeshData, air_gaps: AirGaps, winding_windows: List[WindingWindow],
-                 stray_path: StrayPath, insulation: Insulation, simulation_type: SimulationType, component_type: ComponentType, number_of_windings: int,
-                 verbosity: Verbosity, logger: Logger):
+    def __init__(self, core: Core, mesh_data: MeshData, air_gaps: AirGaps, winding_windows: list[WindingWindow],
+                 stray_path: StrayPath, insulation: Insulation, component_type: ComponentType, number_of_windings: int, verbosity: Verbosity):
+
         self.core = core
         self.mesh_data = mesh_data
         self.winding_windows = winding_windows
         self.air_gaps = air_gaps
-        self.simulation_type = simulation_type
+        self.simulation_type = SimulationType
         self.component_type = component_type
         self.stray_path = stray_path
         self.insulation = insulation
         self.number_of_windings = number_of_windings
         self.verbosity = verbosity
-        self.logger = logger
 
         # -- Arrays for geometry data -- 
         # TODO Is the zero initialization necessary?
@@ -77,16 +75,6 @@ class TwoDaxiSymmetric:
         self.r_inner = core.r_inner
         self.r_outer = core.r_outer
 
-    def femmt_print(self, text: str):
-        """
-        Print text to terminal or to log-file, dependent on the current verbosity.
-
-        :param text: text to print
-        :type text: str
-        """
-        if not self.verbosity == Verbosity.Silent:
-            self.logger.info(text)
-
     def draw_outer(self):
         """Draws the outer points of the main core (single core)."""
         # Outer Core
@@ -102,7 +90,6 @@ class TwoDaxiSymmetric:
     def draw_single_window(self):
         """Draw a single window."""
         # At this point both windows (in a cut) are modeled
-        # print(f"win: c_window: {self.component.mesh.c_window}")
         self.p_window[0] = [-self.r_inner,
                             -self.core.window_h / 2,
                             0,
@@ -283,9 +270,6 @@ class TwoDaxiSymmetric:
                 right_bound = virtual_winding_window.right_bound
 
                 # Check, if virtual winding window fits in physical window
-                # print(f"{bot_bound = }\n", f"{top_bound = }\n", f"{left_bound = }\n", f"{right_bound = }\n")
-                # print(f"{winding_window.max_bot_bound = }\n", f"{winding_window.max_top_bound = }\n", f"{winding_window.max_left_bound = }\n",
-                # f"{winding_window.max_right_bound = }\n")
                 if bot_bound < winding_window.max_bot_bound or top_bound > winding_window.max_top_bound or \
                         left_bound < winding_window.max_left_bound or right_bound > winding_window.max_right_bound:
                     # Set valid to False, so that geometry is to be neglected in geometry sweep
@@ -315,9 +299,9 @@ class TwoDaxiSymmetric:
             
                             """
                             if winding0.conductor_radius != winding1.conductor_radius:
-                                print("For bifilar winding scheme both conductors must be of the same radius!")
+                                logger.warning("For bifilar winding scheme both conductors must be of the same radius!")
                             else:
-                                print("Bifilar winding scheme is applied")
+                                logger.info("Bifilar winding scheme is applied")
 
                             raise Exception("Bifilar winding scheme is not implemented yet.")
 
@@ -947,20 +931,20 @@ class TwoDaxiSymmetric:
                                 # Set the starting position and step size based on initial conditions
                                 if vertical_first:
                                     if upward_movement:
-                                        start_y = bot_bound + winding.conductor_radius  # Start from the bottom
+                                        start_y = bot_bound + winding.conductor_radius + self.insulation.turn_ins[num]  # Start from the bottom
                                         step_y = winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num]
                                     else:
-                                        start_y = top_bound - winding.conductor_radius  # Start from the top
+                                        start_y = top_bound - winding.conductor_radius - self.insulation.turn_ins[num]  # Start from the top
                                         step_y = -(winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] )
 
                                     if rightward_movement:
-                                        start_x = left_bound + winding.conductor_radius   # Moving right after completing a column
+                                        start_x = left_bound + winding.conductor_radius + self.insulation.turn_ins[num]  # Moving right after completing a column
                                         step_x = winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num]+ self.insulation.kapton
                                         # For insulation between layer
                                         start_x_layer = left_bound + 2 * winding.conductor_radius + 2 * self.insulation.turn_ins[num]
                                         step_x_layer = winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + self.insulation.kapton
                                     else:
-                                        start_x = right_bound - winding.conductor_radius  # Moving left after completing a column
+                                        start_x = right_bound - winding.conductor_radius - self.insulation.turn_ins[num] # Moving left after completing a column
                                         step_x = -(winding.conductor_radius * 2 +  2 * self.insulation.turn_ins[num] + self.insulation.kapton)
                                         # For insulation between layer
                                         start_x_layer = right_bound - 2 * winding.conductor_radius - 2 * self.insulation.turn_ins[num]
@@ -968,20 +952,20 @@ class TwoDaxiSymmetric:
                                         # Determine if the first movement is horizontally (rightward or leftward)
                                 else:
                                     if rightward_movement:
-                                        start_x = left_bound + winding.conductor_radius  # start from the left
+                                        start_x = left_bound + winding.conductor_radius + self.insulation.turn_ins[num]  # start from the left
                                         step_x = winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num]
                                     else:
-                                        start_x = right_bound - winding.conductor_radius  # Start from the right
+                                        start_x = right_bound - winding.conductor_radius - self.insulation.turn_ins[num]  # Start from the right
                                         step_x = -(winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num])
 
                                     if upward_movement:
-                                        start_y = bot_bound + winding.conductor_radius   # Moving top after completing a raw
+                                        start_y = bot_bound + winding.conductor_radius + self.insulation.turn_ins[num]   # Moving top after completing a raw
                                         step_y = winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num]+ self.insulation.kapton
                                         # For insulation between layer
                                         start_y_layer = bot_bound + 2 * winding.conductor_radius + 2 * self.insulation.turn_ins[num]
                                         step_y_layer = winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + self.insulation.kapton
                                     else:
-                                        start_y = top_bound - winding.conductor_radius   # Moving bottom after completing a raw
+                                        start_y = top_bound - winding.conductor_radius - self.insulation.turn_ins[num]  # Moving bottom after completing a raw
                                         step_y = -(winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + self.insulation.kapton)
                                         # For insulation between layer
                                         start_y_layer = top_bound - 2 * winding.conductor_radius - 2 * self.insulation.turn_ins[num]
@@ -1554,8 +1538,8 @@ class TwoDaxiSymmetric:
                 drawn_number_of_turns += int(self.p_conductor[winding.winding_number].shape[0] / 5)  # rectangular conductors
 
         if drawn_number_of_turns != needed_number_of_turns:
-            self.femmt_print(f"{drawn_number_of_turns=}")
-            self.femmt_print(f"{needed_number_of_turns=}")
+            logger.info(f"{drawn_number_of_turns=}")
+            logger.info(f"{needed_number_of_turns=}")
             raise Exception("Winding mismatch. Probably too many turns that do not fit in the winding window")
 
     def draw_region_single(self):
@@ -1597,7 +1581,7 @@ class TwoDaxiSymmetric:
         if self.component_type == ComponentType.IntegratedTransformer:
             # TODO: insulations implement for integrated_transformers
             # TODO Change back to warnings?
-            self.femmt_print("Insulations are not set because they are not implemented for integrated transformers.")
+            logger.info("Insulations are not set because they are not implemented for integrated transformers.")
         else:
             window_h = self.core.window_h
             iso = self.insulation
@@ -2052,7 +2036,7 @@ class TwoDaxiSymmetric:
                     self.p_iso_conductor[winding_number] = np.array(insulation_points)
                 # TODO Add logic for rectangularsolid.
 
-        self.femmt_print("Insulation around conductors drawn successfully.")
+        logger.info("Insulation around conductors drawn successfully.")
 
     def draw_model(self):
         """Draw the full component.
@@ -2080,18 +2064,18 @@ class TwoDaxiSymmetric:
         #     self.draw_region_stacked()
 
     @staticmethod
-    def get_center_of_rect(p1: List[float], p2: List[float], p3: List[float], p4: List[float]):
+    def get_center_of_rect(p1: list[float], p2: list[float], p3: list[float], p4: list[float]):
         """
         Get center point of a rectangular conductor.
 
         :param p1: Point 1 as a x,y-List
-        :type p1: List[float]
+        :type p1: list[float]
         :param p2: Point 1 as a x,y-List
-        :type p2: List[float]
+        :type p2: list[float]
         :param p3: Point 1 as a x,y-List
-        :type p3: List[float]
+        :type p3: list[float]
         :param p4: Point 1 as a x,y-List
-        :type p4: List[float]
+        :type p4: list[float]
         """
         x_list = [p1[0], p2[0], p3[0], p4[0]]
         y_list = [p1[1], p2[1], p3[1], p4[1]]

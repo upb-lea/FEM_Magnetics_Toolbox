@@ -1,6 +1,6 @@
 """Functions to calculate reluctance models."""
 # python libraries
-from typing import Union, List
+import logging
 
 # femmt libraries
 from femmt.constants import *
@@ -11,13 +11,14 @@ import numpy as np
 import scipy
 from matplotlib import pyplot as plt
 
+logger = logging.getLogger(__name__)
 
-def calculate_ls_lh_n_from_inductance_matrix(inductance_matrix: Union[float, np.array]):
+def calculate_ls_lh_n_from_inductance_matrix(inductance_matrix: float | np.ndarray):
     """
     Calculate the transformer primary concentrated circuit parameters from matrix.
 
     :param inductance_matrix: input reluctance matrix in form of [[L_11, M], [M, L_22]] in H
-    :type inductance_matrix: Union[float, np.array]
+    :type inductance_matrix: float | np.ndarray
     :return l_s: primary concentrated stray inductance in H
     :return l_h: primary concentrated main inductance in H
     :return n: ratio
@@ -35,19 +36,19 @@ def calculate_ls_lh_n_from_inductance_matrix(inductance_matrix: Union[float, np.
     return l_s, l_h, n
 
 
-def calculate_inductance_matrix_from_ls_lh_n(l_s_target_value: Union[float, np.array], l_h_target_value: Union[float, np.array],
-                                             n_target_value: Union[float, np.array]) -> Union[float, np.array]:
+def calculate_inductance_matrix_from_ls_lh_n(l_s_target_value: float | np.ndarray, l_h_target_value: float | np.ndarray,
+                                             n_target_value: float | np.ndarray) -> float | np.ndarray:
     """
     Calculate the inductance matrix from ls, lh, n parameters.
 
     :param l_s_target_value: serial inductance in H
-    :type l_s_target_value: Union[float, np.array]
+    :type l_s_target_value: float | np.ndarray
     :param l_h_target_value: mutual inductance in H
-    :type l_h_target_value: Union[float, np.array]
+    :type l_h_target_value: float | np.ndarray
     :param n_target_value: transfer ratio
-    :type n_target_value: Union[float, np.array]
+    :type n_target_value: float | np.ndarray
     :return: inductance matrix in H
-    :rtype: Union[float, np.array]
+    :rtype: float | np.ndarray
     """
     inductance_matrix = [
         [l_s_target_value + l_h_target_value, l_h_target_value / n_target_value],
@@ -62,25 +63,25 @@ def power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(
     Calculate the hysteresis losses inside a cylinder, where the flux flows in radial direction.
 
     :param flux: flux in Wb
-    :type flux: Union[float, np.array]
+    :type flux: float | np.ndarray
     :param cylinder_height: cylinder height in m
-    :type cylinder_height: Union[float, np.array]
+    :type cylinder_height: float | np.ndarray
     :param cylinder_inner_radius: cylinder inner radius in m
-    :type cylinder_inner_radius: Union[float, np.array]
+    :type cylinder_inner_radius: float | np.ndarray
     :param cylinder_outer_radius: cylinder outer radius in m
-    :type cylinder_outer_radius: Union[float, np.array]
+    :type cylinder_outer_radius: float | np.ndarray
     :param fundamental_frequency: fundamental frequency in Hz
-    :type fundamental_frequency: Union[float, np.array]
+    :type fundamental_frequency: float | np.ndarray
     :param mu_r_imag_data_vec: imaginary part of u_r as vector
-    :type mu_r_imag_data_vec: Union[List, np.array]
+    :type mu_r_imag_data_vec: list | np.ndarray
     :param mu_r_abs: absolute value of mu_r: abs(mu_r)
-    :type mu_r_abs: Union[float, np.array]
+    :type mu_r_abs: float | np.ndarray
     :param flux_density_data_vec: flux-density data vector in T
-    :type flux_density_data_vec: Union[List, np.array]
+    :type flux_density_data_vec: list | np.ndarray
     """
 
-    def flux_density_cylinder_envelope(cylinder_radius: Union[float, np.array], flux_in_cylinder: Union[float, np.array],
-                                       height_of_cylinder: Union[float, np.array]):
+    def flux_density_cylinder_envelope(cylinder_radius: float | np.ndarray, flux_in_cylinder: float | np.ndarray,
+                                       height_of_cylinder: float | np.ndarray):
         """
         Helper-function, what is used as a function to integrate by scipy.integrate.quad.
 
@@ -90,16 +91,16 @@ def power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(
         Note: function parameter names differ from outer parameters to avoid 'shadows name from outer scope'.
 
         :param cylinder_radius: cylinder radius
-        :type cylinder_radius: Union[float, np.array]
+        :type cylinder_radius: float | np.ndarray
         :param flux_in_cylinder: flux trough cylinder envelope depending on its radius
-        :type flux_in_cylinder: Union[float, np.array]
+        :type flux_in_cylinder: float | np.ndarray
         :param height_of_cylinder: cylinder height
-        :type height_of_cylinder: Union[float, np.array]
+        :type height_of_cylinder: float | np.ndarray
         """
         return flux_in_cylinder / (2 * np.pi * cylinder_radius * height_of_cylinder)
 
-    def power_loss_density_cylinder_envelope(cylinder_radius: Union[float, np.array], flux_in_cylinder: Union[float, np.array],
-                                             height_of_cylinder: Union[float, np.array]) -> Union[float, np.array]:
+    def power_loss_density_cylinder_envelope(cylinder_radius: float | np.ndarray, flux_in_cylinder: float | np.ndarray,
+                                             height_of_cylinder: float | np.ndarray) -> float | np.ndarray:
         """
         Helper-function, what is used as a function to integrate by scipy.integrate.quad.
 
@@ -117,11 +118,11 @@ def power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(
         Note: function parameter names differ from outer parameters to avoid 'shadows name from outer scope'.
 
         :param cylinder_radius: cylinder radius in m
-        :type cylinder_radius: Union[float, np.array]
+        :type cylinder_radius: float | np.ndarray
         :param flux_in_cylinder: flux in Wb inside the cylinder
-        :type flux_in_cylinder: Union[float, np.array]
+        :type flux_in_cylinder: float | np.ndarray
         :param height_of_cylinder: height of the cylinder in m
-        :type height_of_cylinder: Union[float, np.array]
+        :type height_of_cylinder: float | np.ndarray
         """
         mu_r_imag = np.interp(flux_density_cylinder_envelope(cylinder_radius, flux_in_cylinder, height_of_cylinder),
                               flux_density_data_vec, mu_r_imag_data_vec)
@@ -134,9 +135,9 @@ def power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(
                                 args=(flux, cylinder_height), epsabs=1e-4)[0]
 
 
-def hyst_losses_core_half_mu_r_imag(core_inner_diameter: Union[float, np.array], window_h_half: Union[float, np.array], window_w: Union[float, np.array],
-                                    mu_r_abs: Union[float, np.array], flux_max: Union[float, np.array], fundamental_frequency: Union[float, np.array],
-                                    flux_density_data_vec: Union[List, np.array], mu_r_imag_data_vec: Union[List, np.array]) -> Union[float, np.array]:
+def hyst_losses_core_half_mu_r_imag(core_inner_diameter: float | np.ndarray, window_h_half: float | np.ndarray, window_w: float | np.ndarray,
+                                    mu_r_abs: float | np.ndarray, flux_max: float | np.ndarray, fundamental_frequency: float | np.ndarray,
+                                    flux_density_data_vec: list | np.ndarray, mu_r_imag_data_vec: list | np.ndarray) -> float | np.ndarray:
     """
     Calculate the losses of a core cylinder half.
 
@@ -146,23 +147,23 @@ def hyst_losses_core_half_mu_r_imag(core_inner_diameter: Union[float, np.array],
     with each the half window_h
 
     :param core_inner_diameter: core inner diameter in m
-    :type core_inner_diameter: Union[float, np.array]
+    :type core_inner_diameter: float | np.ndarray
     :param window_h_half: window height of the core-half to consider in m
-    :type window_h_half: Union[float, np.array]
+    :type window_h_half: float | np.ndarray
     :param window_w: window width in m
-    :type window_w: Union[float, np.array]
+    :type window_w: float | np.ndarray
     :param mu_r_abs: (absolute) mu_r value from core material datasheet
-    :type mu_r_abs: Union[float, np.array]
+    :type mu_r_abs: float | np.ndarray
     :param mu_r_imag_data_vec: imaginary part of mu_r as data vector
-    :type mu_r_imag_data_vec: Union[List, np.array]
+    :type mu_r_imag_data_vec: list | np.ndarray
     :param flux_max: maximum flux in Wb what appears in the core-half
-    :type flux_max: Union[float, np.array]
+    :type flux_max: float | np.ndarray
     :param fundamental_frequency: fundamental frequency of flux in Hz
-    :type fundamental_frequency: Union[float, np.array]
+    :type fundamental_frequency: float | np.ndarray
     :param flux_density_data_vec: flux density as data vector
-    :type flux_density_data_vec: Union[float, np.array]
+    :type flux_density_data_vec: float | np.ndarray
     :return: hysteresis losses of the core half in W
-    :rtype: Union[float, np.array]
+    :rtype: float | np.ndarray
     """
     core_cross_section = (core_inner_diameter / 2) ** 2 * np.pi
     flux_density_max = flux_max / core_cross_section
@@ -180,7 +181,7 @@ def hyst_losses_core_half_mu_r_imag(core_inner_diameter: Union[float, np.array],
     return 2 * losses_cylinder_inner + losses_cylinder_radial
 
 
-def calculate_core_2daxi_total_volume(core_inner_diameter: Union[float, np.array], window_h: Union[float, np.array], window_w: Union[float, np.array]):
+def calculate_core_2daxi_total_volume(core_inner_diameter: float | np.ndarray, window_h: float | np.ndarray, window_w: float | np.ndarray):
     """
     Calculate the full volume of a rotationally symmetric core.
 
@@ -188,11 +189,11 @@ def calculate_core_2daxi_total_volume(core_inner_diameter: Union[float, np.array
     This is the total volume used by the magnetic itself.
 
     :param core_inner_diameter: core inner diameter
-    :type core_inner_diameter: Union[float, np.array]
+    :type core_inner_diameter: float | np.ndarray
     :param window_h: winding window height
-    :type window_h: Union[float, np.array]
+    :type window_h: float | np.ndarray
     :param window_w: winding window width
-    :type window_w: Union[float, np.array]
+    :type window_w: float | np.ndarray
     """
     outer_core_radius = calculate_r_outer(core_inner_diameter, window_w)
 
@@ -201,50 +202,50 @@ def calculate_core_2daxi_total_volume(core_inner_diameter: Union[float, np.array
     return core_2daxi_total_volume
 
 
-def calculate_r_outer(core_inner_diameter: Union[float, np.array], window_w: Union[float, np.array],
-                      outer_core_cross_section_scale: Union[float, np.array] = 1.0) -> Union[float, np.array]:
+def calculate_r_outer(core_inner_diameter: float | np.ndarray, window_w: float | np.ndarray,
+                      outer_core_cross_section_scale: float | np.ndarray = 1.0) -> float | np.ndarray:
     """
-    calculate outer core radius.
+    Calculate outer core radius.
 
     Default assumption: outer core cross-section is same as inner core cross-section.
 
     :param outer_core_cross_section_scale: scales the outer legs cross-section relative to the center leg cross-section
-    :type outer_core_cross_section_scale: Union[float, np.array]
+    :type outer_core_cross_section_scale: float | np.ndarray
     :param core_inner_diameter: core inner diameter in m
-    :type core_inner_diameter: Union[float, np.array]
+    :type core_inner_diameter: float | np.ndarray
     :param window_w: width of core window in m
-    :type window_w: Union[float, np.array]
+    :type window_w: float | np.ndarray
     """
     outer_core_radius = np.sqrt(outer_core_cross_section_scale * (core_inner_diameter/2)**2 + (core_inner_diameter / 2 + window_w)**2)
     return outer_core_radius
 
 
 def power_losses_hysteresis_cylinder_radial_direction(
-        flux: Union[float, np.array], cylinder_height: Union[float, np.array], cylinder_inner_radius: Union[float, np.array],
-        cylinder_outer_radius: Union[float, np.array], fundamental_frequency: Union[float, np.array], mu_r_imag: Union[float, np.array],
-        mu_r_abs: Union[float, np.array]) -> Union[float, np.array]:
+        flux: float | np.ndarray, cylinder_height: float | np.ndarray, cylinder_inner_radius: float | np.ndarray,
+        cylinder_outer_radius: float | np.ndarray, fundamental_frequency: float | np.ndarray, mu_r_imag: float | np.ndarray,
+        mu_r_abs: float | np.ndarray) -> float | np.ndarray:
     """
     Calculate the hysteresis losses inside a cylinder, where the flux flows in radial direction.
 
     :param flux: flux in Wb
-    :type flux: Union[float, np.array]
+    :type flux: float | np.ndarray
     :param cylinder_height: cylinder height in m
-    :type cylinder_height: Union[float, np.array]
+    :type cylinder_height: float | np.ndarray
     :param cylinder_inner_radius: cylinder inner radius in m
-    :type cylinder_inner_radius: Union[float, np.array]
+    :type cylinder_inner_radius: float | np.ndarray
     :param cylinder_outer_radius: cylinder outer radius in m
-    :type cylinder_outer_radius: Union[float, np.array]
+    :type cylinder_outer_radius: float | np.ndarray
     :param fundamental_frequency: fundamental frequency in Hz
-    :type fundamental_frequency: Union[float, np.array]
+    :type fundamental_frequency: float | np.ndarray
     :param mu_r_imag: imaginary part of u_r
-    :type mu_r_imag: Union[float, np.array]
+    :type mu_r_imag: float | np.ndarray
     :param mu_r_abs: absolute value of mu_r: abs(mu_r)
-    :type mu_r_abs: Union[float, np.array]
+    :type mu_r_abs: float | np.ndarray
     :return: Hysteresis losses in W of cylinder with flux in radial direction
-    :rtype: Union[float, np.array]
+    :rtype: float | np.ndarray
     """
-    def flux_density_cylinder_envelope(cylinder_radius: Union[float, np.array], flux_in_cylinder: Union[float, np.array],
-                                       height_of_cylinder: Union[float, np.array]) -> Union[float, np.array]:
+    def flux_density_cylinder_envelope(cylinder_radius: float | np.ndarray, flux_in_cylinder: float | np.ndarray,
+                                       height_of_cylinder: float | np.ndarray) -> float | np.ndarray:
         """
         Helper-function, what is used as a function to integrate by scipy.integrate.quad.
 
@@ -254,18 +255,18 @@ def power_losses_hysteresis_cylinder_radial_direction(
         Note: function parameter names differ from outer parameters to avoid 'shadows name from outer scope'.
 
         :param cylinder_radius: cylinder radius in m
-        :type cylinder_radius: Union[float, np.array]
+        :type cylinder_radius: float | np.ndarray
         :param flux_in_cylinder: flux in Wb trough cylinder envelope depending on its radius
-        :type flux_in_cylinder: Union[float, np.array]
+        :type flux_in_cylinder: float | np.ndarray
         :param height_of_cylinder: cylinder height in m
-        :type height_of_cylinder: Union[float, np.array]
+        :type height_of_cylinder: float | np.ndarray
         :return: Flux density in T
-        :rtype: Union[float, np.array]
+        :rtype: float | np.ndarray
         """
         return flux_in_cylinder / (2 * np.pi * cylinder_radius * height_of_cylinder)
 
-    def power_loss_density_cylinder_envelope(cylinder_radius: Union[float, np.array], flux_in_cylinder: Union[float, np.array],
-                                             height_of_cylinder: Union[float, np.array]) -> Union[float, np.array]:
+    def power_loss_density_cylinder_envelope(cylinder_radius: float | np.ndarray, flux_in_cylinder: float | np.ndarray,
+                                             height_of_cylinder: float | np.ndarray) -> float | np.ndarray:
         """
         Helper-function, what is used as a function to integrate by scipy.integrate.quad.
 
@@ -289,13 +290,13 @@ def power_losses_hysteresis_cylinder_radial_direction(
         Note: function parameter names differ from outer parameters to avoid 'shadows name from outer scope'.
 
         :param cylinder_radius: cylinder radius in m
-        :type cylinder_radius: Union[float, np.array]
+        :type cylinder_radius: float | np.ndarray
         :param flux_in_cylinder: Flux in cylinder in Wb
-        :type flux_in_cylinder: Union[float, np.array]
+        :type flux_in_cylinder: float | np.ndarray
         :param height_of_cylinder: height of cylinder in m
-        :type height_of_cylinder: Union[float, np.array]
+        :type height_of_cylinder: float | np.ndarray
         :return: Power loss density in W/m³
-        :rtype: Union[float, np.array]
+        :rtype: float | np.ndarray
         """
         return 2 * np.pi * cylinder_radius * height_of_cylinder * np.pi * fundamental_frequency * mu_0 * mu_r_imag * \
             (flux_density_cylinder_envelope(cylinder_radius,
@@ -305,9 +306,9 @@ def power_losses_hysteresis_cylinder_radial_direction(
                                 args=(flux, cylinder_height), epsabs=1e-4)[0]
 
 
-def hyst_losses_core_half(core_inner_diameter: Union[float, np.array], window_h_half: Union[float, np.array], window_w: Union[float, np.array],
-                          mu_r_imag: Union[float, np.array], mu_r_abs: Union[float, np.array], flux_max: Union[float, np.array],
-                          fundamental_frequency: Union[float, np.array]) -> Union[float, np.array]:
+def hyst_losses_core_half(core_inner_diameter: float | np.ndarray, window_h_half: float | np.ndarray, window_w: float | np.ndarray,
+                          mu_r_imag: float | np.ndarray, mu_r_abs: float | np.ndarray, flux_max: float | np.ndarray,
+                          fundamental_frequency: float | np.ndarray) -> float | np.ndarray:
     """
     Calculate the losses of a core cylinder half.
 
@@ -317,21 +318,21 @@ def hyst_losses_core_half(core_inner_diameter: Union[float, np.array], window_h_
     function twice with each the half window_h
 
     :param core_inner_diameter: core inner diameter in m
-    :type core_inner_diameter: Union[float, np.array]
+    :type core_inner_diameter: float | np.ndarray
     :param window_h_half: window height in m of the core-half to consider
-    :type window_h_half: Union[float, np.array]
+    :type window_h_half: float | np.ndarray
     :param window_w: window width in m
-    :type window_w: Union[float, np.array]
+    :type window_w: float | np.ndarray
     :param mu_r_abs: (absolute) mu_r value from core material datasheet
-    :type mu_r_abs: Union[float, np.array]
+    :type mu_r_abs: float | np.ndarray
     :param mu_r_imag: imaginary part of mu_r
-    :type mu_r_imag: Union[float, np.array]
+    :type mu_r_imag: float | np.ndarray
     :param flux_max: maximum flux in Wb what appears in the core-half
-    :type flux_max: Union[float, np.array]
+    :type flux_max: float | np.ndarray
     :param fundamental_frequency: fundamental frequency of flux in Hz
-    :type fundamental_frequency: Union[float, np.array]
+    :type fundamental_frequency: float | np.ndarray
     :return: Hysteresis losses in W of the core half
-    :rtype: Union[float, np.array]
+    :rtype: float | np.ndarray
     """
     core_cross_section = (core_inner_diameter / 2) ** 2 * np.pi
     flux_density_max = flux_max / core_cross_section
@@ -376,16 +377,16 @@ def calculate_reluctance_matrix(winding_matrix: np.array, inductance_matrix: np.
     return np.matmul(np.matmul(winding_matrix, L_invert), np.transpose(winding_matrix))
 
 
-def calculate_inductance_matrix(reluctance_matrix: Union[float, np.array], winding_matrix: Union[float, np.array]) -> Union[float, np.array]:
+def calculate_inductance_matrix(reluctance_matrix: float | np.ndarray, winding_matrix: float | np.ndarray) -> float | np.ndarray:
     """
     Calculate the inductance matrix out of reluctance matrix and winding matrix.
 
     :param reluctance_matrix: matrix of transformer reluctance
-    :type reluctance_matrix: Union[float, np.array]
+    :type reluctance_matrix: float | np.ndarray
     :param winding_matrix: matrix of transformer windings
-    :type winding_matrix: Union[float, np.array]
+    :type winding_matrix: float | np.ndarray
     :return: inductance matrix in H
-    :rtype: Union[float, np.array]
+    :rtype: float | np.ndarray
 
 
     reluctance matrix e.g.
@@ -405,8 +406,8 @@ def calculate_inductance_matrix(reluctance_matrix: Union[float, np.array], windi
     return np.matmul(np.matmul(np.transpose(winding_matrix), reluctance_matrix_invert), winding_matrix)
 
 
-def calculate_flux_matrix(reluctance_matrix: Union[float, np.array], winding_matrix: Union[float, np.array],
-                          current_matrix: Union[float, np.array]) -> Union[float, np.array]:
+def calculate_flux_matrix(reluctance_matrix: float | np.ndarray, winding_matrix: float | np.ndarray,
+                          current_matrix: float | np.ndarray) -> float | np.ndarray:
     """
     Calculate the flux for e.g. an integrated transformer.
 
@@ -423,13 +424,13 @@ def calculate_flux_matrix(reluctance_matrix: Union[float, np.array], winding_mat
     flux_matrix = [ [flux_1], [flux_2] ]
 
     :param reluctance_matrix: matrix of transformer reluctance
-    :type reluctance_matrix: Union[float, np.array]
+    :type reluctance_matrix: float | np.ndarray
     :param winding_matrix: matrix of transformer windings
-    :type winding_matrix: Union[float, np.array]
+    :type winding_matrix: float | np.ndarray
     :return: inductance matrix in H
-    :rtype: Union[float, np.array]
+    :rtype: float | np.ndarray
     :param current_matrix: matrix of currents in A
-    :type current_matrix: Union[float, np.array]
+    :type current_matrix: float | np.ndarray
     """
     if np.ndim(reluctance_matrix) == 0:
         reluctance_matrix_invert = 1 / reluctance_matrix
@@ -439,12 +440,12 @@ def calculate_flux_matrix(reluctance_matrix: Union[float, np.array], winding_mat
     return np.matmul(np.matmul(reluctance_matrix_invert, winding_matrix), current_matrix)
 
 
-def time_vec_current_vec_from_time_current_vec(time_current_vec: List[List[float]]):
+def time_vec_current_vec_from_time_current_vec(time_current_vec: list[list[float]] | np.ndarray):
     """
     Split a time-current vector into time and current vector.
 
     :param time_current_vec: [time_vector, current_vector]
-    :type time_current_vec: List[List[float]]
+    :type time_current_vec: list[list[float]]
     """
     return time_current_vec[0], time_current_vec[1]
 
@@ -487,17 +488,17 @@ def visualize_current_and_flux(time, flux_top_vec, flux_bot_vec, flux_stray_vec,
     Visualize current and flux over time for the integrated transformer.
 
     :param time: time vector
-    :type time: Union[List, np.array]
+    :type time: list | np.ndarray
     :param flux_top_vec: flux vector in top core part
-    :type flux_top_vec: Union[List, np.array]
+    :type flux_top_vec: list | np.ndarray
     :param flux_bot_vec: flux vector in bottom core part
-    :type flux_bot_vec: Union[List, np.array]
+    :type flux_bot_vec: list | np.ndarray
     :param flux_stray_vec: flux vector in stray core part
-    :type flux_stray_vec: Union[List, np.array]
+    :type flux_stray_vec: list | np.ndarray
     :param current_1_vec: current vector of winding 1
-    :type current_1_vec: Union[List, np.array]
+    :type current_1_vec: list | np.ndarray
     :param current_2_vec: current vector of winding 2
-    :type current_2_vec: Union[List, np.array]
+    :type current_2_vec: list | np.ndarray
 
     """
     figure, axis = plt.subplots(2, figsize=(4, 4))
@@ -555,58 +556,58 @@ def phases_deg_from_time_current(time_vec: list, *args):
     return tuple(phases_deg)
 
 
-def power_loss_hysteresis_simple_volume(fundamental_frequency: Union[float, np.array], mu_r_imag: Union[float, np.array],
-                                        flux_density_max: Union[float, np.array],
-                                        mu_r_abs: Union[float, np.array], core_volume: Union[float, np.array]) -> Union[float, np.array]:
+def power_loss_hysteresis_simple_volume(fundamental_frequency: float | np.ndarray, mu_r_imag: float | np.ndarray,
+                                        flux_density_max: float | np.ndarray,
+                                        mu_r_abs: float | np.ndarray, core_volume: float | np.ndarray) -> float | np.ndarray:
     """
     Calculate the hysteresis losses depending on the input parameters.
 
     The output are the losses for a certain volume of core.
 
     :param fundamental_frequency: fundamental frequency in Hz
-    :type fundamental_frequency: Union[float, np.array]
+    :type fundamental_frequency: float | np.ndarray
     :param mu_r_imag: imaginary part of u_r
-    :type mu_r_imag: Union[float, np.array]
+    :type mu_r_imag: float | np.ndarray
     :param flux_density_max: maximum flux density
-    :type flux_density_max: Union[float, np.array]
+    :type flux_density_max: float | np.ndarray
     :param mu_r_abs: abs(mu_r)
-    :type mu_r_abs: Union[float, np.array]
+    :type mu_r_abs: float | np.ndarray
     :param core_volume: core volume in m³
-    :type core_volume: Union[float, np.array]
+    :type core_volume: float | np.ndarray
     :return: Hysteresis losses in W for a given volume
-    :rtype: Union[float, np.array]
+    :rtype: float | np.ndarray
     """
     return core_volume * np.pi * fundamental_frequency * mu_r_imag * mu_0 * (flux_density_max / mu_0 / mu_r_abs) ** 2
 
 
-def power_loss_hysteresis_simple_volume_mu_r_imag(fundamental_frequency: Union[float, np.array], flux_density_max: Union[float, np.array],
-                                                  mu_r_abs: Union[float, np.array], core_volume: Union[float, np.array],
-                                                  flux_density_data_vec: Union[float, np.array], mu_r_imag_data_vec: Union[float, np.array]):
+def power_loss_hysteresis_simple_volume_mu_r_imag(fundamental_frequency: float | np.ndarray, flux_density_max: float | np.ndarray,
+                                                  mu_r_abs: float | np.ndarray, core_volume: float | np.ndarray,
+                                                  flux_density_data_vec: float | np.ndarray, mu_r_imag_data_vec: float | np.ndarray):
     """
     Calculate the hysteresis losses depending on the input parameters.
 
     The output are the losses for a certain volume of core.
 
     :param fundamental_frequency: fundamental frequency in Hz
-    :type fundamental_frequency: Union[float, np.array]
+    :type fundamental_frequency: float | np.ndarray
     :param mu_r_imag_data_vec: imaginary part of u_r as data vector
-    :type mu_r_imag_data_vec: Union[float, np.array]
+    :type mu_r_imag_data_vec: float | np.ndarray
     :param flux_density_max: maximum flux density
-    :type flux_density_max: Union[float, np.array]
+    :type flux_density_max: float | np.ndarray
     :param mu_r_abs: abs(mu_r)
-    :type mu_r_abs: Union[float, np.array]
+    :type mu_r_abs: float | np.ndarray
     :param core_volume: core volume
-    :type core_volume: Union[float, np.array]
+    :type core_volume: float | np.ndarray
     :param flux_density_data_vec: flux density as data input vector
-    :type flux_density_data_vec: Union[float, np.array]
+    :type flux_density_data_vec: float | np.ndarray
     """
     mu_r_imag = np.interp(flux_density_max, flux_density_data_vec, mu_r_imag_data_vec)
 
     return core_volume * np.pi * fundamental_frequency * mu_r_imag * mu_0 * (flux_density_max / mu_0 / mu_r_abs) ** 2
 
 
-def r_basic_round_inf(air_gap_radius: Union[float, np.array], air_gap_basic_height: Union[float, np.array],
-                      core_height: Union[float, np.array]) -> Union[float, np.array]:
+def r_basic_round_inf(air_gap_radius: float | np.ndarray, air_gap_basic_height: float | np.ndarray,
+                      core_height: float | np.ndarray) -> float | np.ndarray:
     """
     Calculate the r_basic for a round to infinite structure. Do not use this function directly.
 
@@ -619,14 +620,14 @@ def r_basic_round_inf(air_gap_radius: Union[float, np.array], air_gap_basic_heig
     [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
 
     :param air_gap_radius: air gap radius in m
-    :type air_gap_radius: Union[float, np.array]
+    :type air_gap_radius: float | np.ndarray
     :param air_gap_basic_height: air gap height in m for the BASIC-AIR-GAP (e.g. if you use a round-round structure,
         this is half of the total air gap).
-    :type air_gap_basic_height: Union[float, np.array]
+    :type air_gap_basic_height: float | np.ndarray
     :param core_height: core height in m
-    :type core_height: Union[float, np.array]
+    :type core_height: float | np.ndarray
     :return: basic reluctance for round - infinite structure
-    :rtype: Union[float, np.array]
+    :rtype: float | np.ndarray
     """
     conductance_basic = mu_0 * (air_gap_radius * 2 / 2 / air_gap_basic_height + 2 / np.pi * \
                                 (1 + np.log(np.pi * core_height / 4 / air_gap_basic_height)))
@@ -634,8 +635,8 @@ def r_basic_round_inf(air_gap_radius: Union[float, np.array], air_gap_basic_heig
     return 1 / conductance_basic
 
 
-def sigma_round(r_equivalent: Union[float, np.array], air_gap_radius: Union[float, np.array], air_gap_total_height: Union[float, np.array])\
-        -> Union[float, np.array]:
+def sigma_round(r_equivalent: float | np.ndarray, air_gap_radius: float | np.ndarray, air_gap_total_height: float | np.ndarray)\
+        -> float | np.ndarray:
     """
     Calculate sigma for a round structure. Do not use this function directly.
 
@@ -645,32 +646,32 @@ def sigma_round(r_equivalent: Union[float, np.array], air_gap_radius: Union[floa
     instead!
 
     :param r_equivalent: this is a series/parallel connection of r_basic, depending on the air gap structure
-    :type r_equivalent: Union[float, np.array]
+    :type r_equivalent: float | np.ndarray
     :param air_gap_radius: air gap radius in m
-    :type air_gap_radius: Union[float, np.array]
+    :type air_gap_radius: float | np.ndarray
     :param air_gap_total_height: air gap total height in m (for the total air gap, also for round-round structures)
-    :type air_gap_total_height: Union[float, np.array]
+    :type air_gap_total_height: float | np.ndarray
     :return: fringing factor 'sigma'
-    :rtype: Union[float, np.array]
+    :rtype: float | np.ndarray
     """
     return r_equivalent * mu_0 * air_gap_radius / air_gap_total_height
 
 
-def r_air_gap_round_round(air_gap_total_height: Union[float, np.array], core_inner_diameter: Union[float, np.array], core_height_upper: Union[float, np.array],
-                          core_height_lower: Union[float, np.array]) -> Union[float, np.array]:
+def r_air_gap_round_round(air_gap_total_height: float | np.ndarray, core_inner_diameter: float | np.ndarray, core_height_upper: float | np.ndarray,
+                          core_height_lower: float | np.ndarray) -> float | np.ndarray:
     """
     Return the reluctance of a round-round air gap structure and includes fringing effects.
 
     :param air_gap_total_height: total air gap height of the air gap
-    :type air_gap_total_height: Union[float, np.array]
+    :type air_gap_total_height: float | np.ndarray
     :param core_inner_diameter: core inner diameter
-    :type core_inner_diameter: Union[float, np.array]
+    :type core_inner_diameter: float | np.ndarray
     :param core_height_upper: core height upper (needed for better calculating fringing effects)
-    :type core_height_upper: Union[float, np.array]
+    :type core_height_upper: float | np.ndarray
     :param core_height_lower: core height lower (needed for better calculating fringing effects)
-    :type core_height_lower: Union[float, np.array]
+    :type core_height_lower: float | np.ndarray
     :return: air gap reluctance for round-round structure including fringing effects
-    :rtype: Union[float, np.array]
+    :rtype: float | np.ndarray
     """
     if np.any(air_gap_total_height == 0):
         raise ValueError("'air_gap_total_height' can not be Zero!")
@@ -703,39 +704,39 @@ def r_air_gap_round_round(air_gap_total_height: Union[float, np.array], core_inn
     return r_air_gap
 
 
-def r_air_gap_round_round_sct(air_gap_total_height: Union[float, np.array], core_inner_diameter: Union[float, np.array],
-                              core_height_upper: Union[float, np.array], core_height_lower: Union[float, np.array],
-                              target_reluctance: Union[float, np.array]) -> Union[float, np.array]:
+def r_air_gap_round_round_sct(air_gap_total_height: float | np.ndarray, core_inner_diameter: float | np.ndarray,
+                              core_height_upper: float | np.ndarray, core_height_lower: float | np.ndarray,
+                              target_reluctance: float | np.ndarray) -> float | np.ndarray:
     """
     Calculate the air gap length of a round-round structure by a given target reluctance.
 
     :param air_gap_total_height: total height in m of all air gaps
-    :type air_gap_total_height: Union[float, np.array]
+    :type air_gap_total_height: float | np.ndarray
     :param core_inner_diameter: core inner diameter in m
-    :type core_inner_diameter: Union[float, np.array]
+    :type core_inner_diameter: float | np.ndarray
     :param target_reluctance: target reluctance
-    :type target_reluctance: Union[float, np.array]
+    :type target_reluctance: float | np.ndarray
     :param core_height_upper: height of upper core part in m
-    :type core_height_upper: Union[float, np.array]
+    :type core_height_upper: float | np.ndarray
     :param core_height_lower: height of lower core part in m
-    :type core_height_lower: Union[float, np.array]
+    :type core_height_lower: float | np.ndarray
     """
     return r_air_gap_round_round(air_gap_total_height, core_inner_diameter, core_height_upper, core_height_lower) - \
         target_reluctance
 
 
-def r_air_gap_round_inf(air_gap_total_height: Union[float, np.array], core_inner_diameter: Union[float, np.array], core_height: Union[float, np.array]):
+def r_air_gap_round_inf(air_gap_total_height: float | np.ndarray, core_inner_diameter: float | np.ndarray, core_height: float | np.ndarray):
     """
     Return the reluctance of a round-infinite air gap structure and includes fringing effects.
 
     :param air_gap_total_height: total air gap height of the air gap in m
-    :type air_gap_total_height: Union[float, np.array]
+    :type air_gap_total_height: float | np.ndarray
     :param core_inner_diameter: core inner diameter in m
-    :type core_inner_diameter: Union[float, np.array]
+    :type core_inner_diameter: float | np.ndarray
     :param core_height: core height in m (needed for better calculating fringing effects)
-    :type core_height: Union[float, np.array]
+    :type core_height: float | np.ndarray
     :return: air gap reluctance for round-inf structure including fringing effects
-    :rtype: Union[float, np.array]
+    :rtype: float | np.ndarray
     """
     air_gap_total_height = np.array(air_gap_total_height)
     core_inner_diameter = np.array(core_inner_diameter)
@@ -753,25 +754,25 @@ def r_air_gap_round_inf(air_gap_total_height: Union[float, np.array], core_inner
     return r_air_gap
 
 
-def r_air_gap_round_inf_sct(air_gap_total_height: Union[float, np.array], core_inner_diameter: Union[float, np.array],
-                            core_height: Union[float, np.array], target_reluctance: Union[float, np.array]) -> Union[float, np.array]:
+def r_air_gap_round_inf_sct(air_gap_total_height: float | np.ndarray, core_inner_diameter: float | np.ndarray,
+                            core_height: float | np.ndarray, target_reluctance: float | np.ndarray) -> float | np.ndarray:
     """
     Calculate the air gap length of a round infinite structure by a given target reluctance.
 
     :param air_gap_total_height: total height in m of all air gaps
-    :type air_gap_total_height: Union[float, np.array]
+    :type air_gap_total_height: float | np.ndarray
     :param core_inner_diameter: core inner diameter in m
-    :type core_inner_diameter: Union[float, np.array]
+    :type core_inner_diameter: float | np.ndarray
     :param target_reluctance: target reluctance
-    :type target_reluctance: Union[float, np.array]
+    :type target_reluctance: float | np.ndarray
     :param core_height: height of core in m
-    :type core_height: Union[float, np.array]
+    :type core_height: float | np.ndarray
     """
     return r_air_gap_round_inf(air_gap_total_height, core_inner_diameter, core_height) - target_reluctance
 
 
-def r_basic_tablet_cyl(tablet_height: Union[float, np.array], air_gap_basic_height: Union[float, np.array],
-                       tablet_radius: Union[float, np.array]) -> Union[float, np.array]:
+def r_basic_tablet_cyl(tablet_height: float | np.ndarray, air_gap_basic_height: float | np.ndarray,
+                       tablet_radius: float | np.ndarray) -> float | np.ndarray:
     """
     Calculate the r_basic for round to infinite structure. Do not use this function directly.
 
@@ -785,14 +786,14 @@ def r_basic_tablet_cyl(tablet_height: Union[float, np.array], air_gap_basic_heig
     Note: this is the same function as r_basic_round_inf, but with clear variable names for tablet-cylinder structure
 
     :param tablet_height: tablet height in m = air gap width for tablet-cylinder structure
-    :type tablet_height: Union[float, np.array]
+    :type tablet_height: float | np.ndarray
     :param air_gap_basic_height: air gap height in m for the BASIC-AIR-GAP (e.g. if you use a round-round structure, this
         is half of the total air gap).
-    :type air_gap_basic_height: Union[float, np.array]
+    :type air_gap_basic_height: float | np.ndarray
     :param tablet_radius: tablet radius in m
-    :type tablet_radius: Union[float, np.array]
+    :type tablet_radius: float | np.ndarray
     :return: basic reluctance for tablet in m - cylinder structure
-    :rtype: Union[float, np.array]
+    :rtype: float | np.ndarray
     """
     if air_gap_basic_height == 0:
         raise ZeroDivisionError(f"Division by zero: {air_gap_basic_height=}")
@@ -803,7 +804,7 @@ def r_basic_tablet_cyl(tablet_height: Union[float, np.array], air_gap_basic_heig
     return 1 / conductance_basic
 
 
-def sigma_tablet_cyl(r_equivalent: Union[float, np.array], tablet_height: Union[float, np.array], air_gap_total_height: Union[float, np.array]):
+def sigma_tablet_cyl(r_equivalent: float | np.ndarray, tablet_height: float | np.ndarray, air_gap_total_height: float | np.ndarray):
     """
     Do not use this function directly! Calculate sigma for a tablet-cylinder structure.
 
@@ -814,34 +815,34 @@ def sigma_tablet_cyl(r_equivalent: Union[float, np.array], tablet_height: Union[
     Note: this is the same function as sigma_round, but with clear variable names for tablet-cylinder structure
 
     :param r_equivalent: this is a series/parallel connection of r_basic, depending on the air gap structure
-    :type r_equivalent: Union[float, np.array]
+    :type r_equivalent: float | np.ndarray
     :param tablet_height: tablet height
-    :type tablet_height: Union[float, np.array]
+    :type tablet_height: float | np.ndarray
     :param air_gap_total_height: air gap total height (for the total air gap)
-    :type air_gap_total_height: Union[float, np.array]
+    :type air_gap_total_height: float | np.ndarray
     :return: fringing factor 'sigma' for tablet - cylinder structure
-    :rtype: Union[float, np.array]
+    :rtype: float | np.ndarray
     """
     return r_equivalent * mu_0 * tablet_height / air_gap_total_height
 
 
-def r_air_gap_tablet_cyl(tablet_height: Union[float, np.array], air_gap_total_height: Union[float, np.array], core_inner_diameter: Union[float, np.array],
-                         window_w: Union[float, np.array]) -> Union[float, np.array]:
+def r_air_gap_tablet_cyl(tablet_height: float | np.ndarray, air_gap_total_height: float | np.ndarray, core_inner_diameter: float | np.ndarray,
+                         window_w: float | np.ndarray) -> float | np.ndarray:
     """
     Return the reluctance of a cylinder-tablet air gap structure and includes fringing effects.
 
     This function calculates the air gap reluctance for a 2D-axisymmetric core.
 
     :param tablet_height: tablet height in m
-    :type tablet_height: Union[float, np.array]
+    :type tablet_height: float | np.ndarray
     :param air_gap_total_height: total air gap height in m
-    :type air_gap_total_height: Union[float, np.array]
+    :type air_gap_total_height: float | np.ndarray
     :param core_inner_diameter: core inner diameter in m
-    :type core_inner_diameter: Union[float, np.array]
+    :type core_inner_diameter: float | np.ndarray
     :param window_w: core window width in m
-    :type window_w: Union[float, np.array]
+    :type window_w: float | np.ndarray
     :return: air gap reluctance for tablet - cylinder structure including air gap fringing
-    :rtype: Union[float, np.array]
+    :rtype: float | np.ndarray
     """
     r_inner = core_inner_diameter / 2 + window_w
 
@@ -863,22 +864,22 @@ def r_air_gap_tablet_cyl(tablet_height: Union[float, np.array], air_gap_total_he
     return r_air_gap
 
 
-def r_air_gap_tablet_cylinder_sct(air_gap_total_height: Union[float, np.array], core_inner_diameter: Union[float, np.array],
-                                  tablet_height: Union[float, np.array], window_w: Union[float, np.array],
-                                  target_reluctance: Union[float, np.array]) -> Union[float, np.array]:
+def r_air_gap_tablet_cylinder_sct(air_gap_total_height: float | np.ndarray, core_inner_diameter: float | np.ndarray,
+                                  tablet_height: float | np.ndarray, window_w: float | np.ndarray,
+                                  target_reluctance: float | np.ndarray) -> float | np.ndarray:
     """
     Calculate the air gap length of a table cylinder by a given target reluctance.
 
     :param air_gap_total_height: total height in m of all air gaps
-    :type air_gap_total_height: Union[float, np.array]
+    :type air_gap_total_height: float | np.ndarray
     :param core_inner_diameter: core inner diameter in m
-    :type core_inner_diameter: Union[float, np.array]
+    :type core_inner_diameter: float | np.ndarray
     :param tablet_height: height of tablet in m
-    :type tablet_height: Union[float, np.array]
+    :type tablet_height: float | np.ndarray
     :param window_w: window width in m
-    :type window_w: Union[float, np.array]
+    :type window_w: float | np.ndarray
     :param target_reluctance: target reluctance
-    :type target_reluctance: Union[float, np.array]
+    :type target_reluctance: float | np.ndarray
     """
     return r_air_gap_tablet_cyl(tablet_height, air_gap_total_height, core_inner_diameter, window_w) - target_reluctance
 
@@ -895,15 +896,15 @@ def r_air_gap_tablet_cyl_no_2d_axi(tablet_height, air_gap_total_length, core_inn
     core when you are in a xy-coordinate system.
 
     :param tablet_height: tablet height in m
-    :type tablet_height: Union[float, np.array]
+    :type tablet_height: float | np.ndarray
     :param air_gap_total_length: air gap total length
-    :type air_gap_total_length: Union[float, np.array]
+    :type air_gap_total_length: float | np.ndarray
     :param core_inner_diameter: core inner diameter in m
-    :type core_inner_diameter: Union[float, np.array]
+    :type core_inner_diameter: float | np.ndarray
     :param window_w: core window width in m
-    :type window_w: Union[float, np.array]
+    :type window_w: float | np.ndarray
     :return: air gap reluctance for tablet - cylinder structure including air gap fringing
-    :rtype: Union[float, np.array]
+    :rtype: float | np.ndarray
     """
     r_inner = core_inner_diameter / 2 + window_w
 
@@ -946,19 +947,19 @@ def r_air_gap_tablet_cyl_no_2d_axi(tablet_height, air_gap_total_length, core_inn
     return r_air_gap
 
 
-def r_core_tablet(tablet_height: Union[float, np.array], tablet_radius: Union[float, np.array], mu_r_abs: Union[float, np.array],
-                  core_inner_diameter: Union[float, np.array]):
+def r_core_tablet(tablet_height: float | np.ndarray, tablet_radius: float | np.ndarray, mu_r_abs: float | np.ndarray,
+                  core_inner_diameter: float | np.ndarray):
     """
     Calculate the magnetic resistance of the core tablet.
 
     :param tablet_height: tablet height in m
-    :type tablet_height: Union[float, np.array]
+    :type tablet_height: float | np.ndarray
     :param tablet_radius: tablet radius in m
-    :type tablet_radius: Union[float, np.array]
+    :type tablet_radius: float | np.ndarray
     :param mu_r_abs: relative permeability (mu_r) of the core material from datasheet
-    :type mu_r_abs: Union[float, np.array]
+    :type mu_r_abs: float | np.ndarray
     :param core_inner_diameter: core inner diameter. For idealized core material, this value can be 0.001.
-    :type core_inner_diameter: Union[float, np.array]
+    :type core_inner_diameter: float | np.ndarray
     """
     return np.log(tablet_radius / (core_inner_diameter / 2)) / (2 * np.pi * mu_0 * mu_r_abs * tablet_height)
 
@@ -978,34 +979,34 @@ def r_core_tablet_2(tablet_height, tablet_radius, mu_r_abs):
     return tablet_height / (np.pi * mu_0 * mu_r_abs * tablet_radius ** 2)
 
 
-def r_core_top_bot_radiant(core_inner_diameter: Union[float, np.array], window_w: Union[float, np.array], mu_r_abs: Union[float, np.array],
-                           core_top_bot_height: Union[float, np.array]) -> Union[float, np.array]:
+def r_core_top_bot_radiant(core_inner_diameter: float | np.ndarray, window_w: float | np.ndarray, mu_r_abs: float | np.ndarray,
+                           core_top_bot_height: float | np.ndarray) -> float | np.ndarray:
     """
     Calculate the top or bottom core material part.
 
     :param core_inner_diameter: core inner diameter
-    :type core_inner_diameter: Union[float, np.array]
+    :type core_inner_diameter: float | np.ndarray
     :param window_w: width of winding window
-    :type window_w: Union[float, np.array]
+    :type window_w: float | np.ndarray
     :param mu_r_abs: relative permeability (mu_r) of the core material from datasheet
-    :type mu_r_abs: Union[float, np.array]
+    :type mu_r_abs: float | np.ndarray
     :param core_top_bot_height: height of the core material top / bottom of the winding window
-    :type core_top_bot_height: Union[float, np.array]
+    :type core_top_bot_height: float | np.ndarray
     """
     return np.log((core_inner_diameter + 2 * window_w) / core_inner_diameter) / \
         (2 * np.pi * mu_0 * mu_r_abs * core_top_bot_height)
 
 
-def r_core_round(core_inner_diameter: Union[float, np.array], core_round_height: Union[float, np.array], mu_r_abs: Union[float, np.array]):
+def r_core_round(core_inner_diameter: float | np.ndarray, core_round_height: float | np.ndarray, mu_r_abs: float | np.ndarray):
     """
     Calculate the core reluctance for a round structure.
 
     :param core_round_height: height of the round core part section
-    :type core_round_height: Union[float, np.array]
+    :type core_round_height: float | np.ndarray
     :param core_inner_diameter: core inner diameter
-    :type core_inner_diameter: Union[float, np.array]
+    :type core_inner_diameter: float | np.ndarray
     :param mu_r_abs: relative permeability (mu_r) of the core material from datasheet
-    :type mu_r_abs: Union[float, np.array]
+    :type mu_r_abs: float | np.ndarray
     """
     return core_round_height / (mu_0 * mu_r_abs * (core_inner_diameter / 2) ** 2 * np.pi)
 
@@ -1023,7 +1024,7 @@ def resistance_solid_wire(core_inner_diameter: float, window_w: float, turns_cou
     :type turns_count: int
     :param conductor_radius: conductor radius
     :type conductor_radius: float
-    :param material: Material, e.g. "Copper" or "Aluminium"
+    :param material: Material, e.g. "Copper" or "Aluminum"
     :type material: str
     :param temperature: temperature in °C
     :type temperature: float
@@ -1061,7 +1062,7 @@ def resistance_litz_wire(core_inner_diameter: float, window_w: float, window_h: 
     :type window_w: float
     :param turns_count: number of turns
     :type turns_count: int
-    :param material: Material, e.g. "Copper" or "Aluminium"
+    :param material: Material, e.g. "Copper" or "Aluminum"
     :type material: str
     :param temperature: temperature in °C
     :type temperature: float
@@ -1115,8 +1116,30 @@ def resistance_litz_wire(core_inner_diameter: float, window_w: float, window_h: 
 
         # get the total turn length
         total_turn_length = np.sum(np.multiply(windings_per_column, turn_length_per_column))
-    if scheme == "horizontal_first":
-        raise NotImplementedError("'horizontal_first'-scheme not implemented yet.")
+    elif scheme == "horizontal_first":
+        number_of_columns = (window_w - iso_core_left - iso_core_right + iso_primary_to_primary) / (litz_wire_diameter + iso_primary_to_primary)
+        length_row_per_turn = np.zeros(int(number_of_columns))
+
+        # figure out the turn length per row
+        r_inner = np.array([core_inner_diameter / 2 + iso_core_left])
+        middle_radius_per_column = np.array([])
+        for count, _ in enumerate(length_row_per_turn):
+            middle_radius_per_column = np.append(middle_radius_per_column, r_inner + count * iso_primary_to_primary + (count + 0.5) * litz_wire_diameter)
+        turn_length_per_column = 2 * middle_radius_per_column * np.pi  # diameter * pi
+
+        # figure out the windings per row
+        number_of_rows = np.ceil(turns_count / possible_number_turns_per_row)
+        windings_per_row = possible_number_turns_per_row * np.ones(int(number_of_rows))
+        last_row_turns = np.mod(turns_count, possible_number_turns_per_row)
+        windings_per_row[-1] = last_row_turns
+
+        # get the total turn length
+        total_turn_length = 0
+        for windings_in_row in windings_per_row:
+            logger.info(f"{windings_in_row=}")
+            total_turn_length += np.sum(turn_length_per_column[:int(windings_in_row)])
+    else:
+        raise ValueError(f"{scheme} not defined. Must be 'horizontal_first' or 'vertical_first'.")
 
     sigma_copper = ff.conductivity_temperature(material, temperature)
     # return R = rho * l / A
@@ -1160,7 +1183,7 @@ def calc_skin_depth(frequency: float, material_name: str = "Copper", temperature
 
     :param frequency: Frequency in Hz
     :type frequency: float
-    :param material_name: material name, e.g. 'Copper' or 'Aluminium'
+    :param material_name: material name, e.g. 'Copper' or 'Aluminum'
     :type material_name: str
     :param temperature: Temperature in °C
     :type temperature: float
@@ -1189,7 +1212,7 @@ def calc_proximity_factor(litz_wire_name: str, number_turns: int, window_h: floa
     :type iso_core_bot: float
     :param frequency: Frequency in Hz
     :type frequency: float
-    :param litz_wire_material_name: material name, e.g. 'Copper' or 'Aluminium'
+    :param litz_wire_material_name: material name, e.g. 'Copper' or 'Aluminum'
     :type litz_wire_material_name: str
     :param temperature: Temperature in °C
     :type temperature: float
@@ -1218,7 +1241,7 @@ def calc_proximity_factor_air_gap(litz_wire_name: str, number_turns: int, r_1: f
     :type winding_area: float
     :param frequency: Frequency in Hz
     :type frequency: float
-    :param litz_wire_material_name: material name, e.g. 'Copper' or 'Aluminium'
+    :param litz_wire_material_name: material name, e.g. 'Copper' or 'Aluminum'
     :type litz_wire_material_name: str
     :param temperature: Temperature in °C
     :type temperature: float

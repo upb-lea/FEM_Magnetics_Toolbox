@@ -1,10 +1,9 @@
 """Speed up of FEMMT by using parallel processing. File to generate benchmarks of different speed-up techniques.
 
-It contains multiple benchmarking functions in order to analyse the runtime and the accuracy of the simulation results.
+It contains multiple benchmark functions in order to analyze the runtime and the accuracy of the simulation results.
 """
 
 # Python standard libraries
-from typing import List, Optional
 from dataclasses import dataclass
 import os
 import json
@@ -41,7 +40,7 @@ class SingleBenchmark:
 
     execution_time_: float                      # all measurements summed up
 
-    flux_over_current: List[float]
+    flux_over_current: list[float]
     total_losses: float
     total_winding_losses: float
 
@@ -141,7 +140,7 @@ class Benchmark:
 # ------ Generic Functions ------
 
 
-def create_model(working_directory: str, mesh_accuracies=Optional[MeshAccuracies], aspect_ratio: float = 10,
+def create_model(working_directory: str, mesh_accuracies=MeshAccuracies, aspect_ratio: float = 10,
                  wwr_enabled: bool = True, number_of_conductors: int = 9):
     """
     Create the model for benchmark.
@@ -162,7 +161,7 @@ def create_model(working_directory: str, mesh_accuracies=Optional[MeshAccuracies
     inductor_frequency = 270000
     
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                verbosity=fmt.Verbosity.Silent, wwr_enabled=wwr_enabled)
+                                onelab_verbosity=fmt.Verbosity.Silent, wwr_enabled=wwr_enabled)
 
     core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
@@ -230,7 +229,7 @@ def create_rectangular_conductor_model(working_directory: str, mesh_accuracies: 
     inductor_frequency = 270000
     
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                verbosity=fmt.Verbosity.Silent, wwr_enabled=wwr_enabled)
+                                onelab_verbosity=fmt.Verbosity.Silent, wwr_enabled=wwr_enabled)
 
     core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
@@ -299,14 +298,14 @@ def create_rectangular_conductor_model(working_directory: str, mesh_accuracies: 
 
     return geo
 
-def plot_mesh_over_precision(benchmarks, x_list: List, x_label: str, title: str):
+def plot_mesh_over_precision(benchmarks, x_list: list, x_label: str, title: str):
     """
     Plot the mesh over precision.
 
     :param benchmarks:
     :type benchmarks:
     :param x_list: list with simulation numbers
-    :type x_list: List
+    :type x_list: list
     :param x_label: x-label for the plot
     :type x_label: str
     :param title: title for the plot
@@ -382,7 +381,7 @@ def benchmark_rectangular_conductor_offset(working_directory):
         axis[1].plot(left_bound_deltas, current_winding_losses, "o")
         axis[2].plot(left_bound_deltas, current_execution_times, "o", label=f"Mesh accuracy: {mesh_accuracy}")
 
-    axis[0].set_ylabel("|Self indutance|")
+    axis[0].set_ylabel("|Self inductance|")
     axis[0].set_xticks(left_bound_deltas)
     axis[0].grid()
     
@@ -401,7 +400,7 @@ def benchmark_rectangular_conductor_offset(working_directory):
 
 def benchmark_rectangular_conductor(working_directory: str):
     """
-    Benchmark mesh accuracies inside a rectangular condutor.
+    Benchmark mesh accuracies inside a rectangular conductor.
 
     :param working_directory: working directory
     :type working_directory: str

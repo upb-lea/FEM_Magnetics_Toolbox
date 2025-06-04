@@ -11,8 +11,7 @@ GMSH default procedure
 import os
 import numpy as np
 import warnings
-from logging import Logger
-from typing import Dict, List
+import logging
 
 # Third parry libraries
 import gmsh
@@ -24,6 +23,7 @@ from femmt.data import FileData
 from femmt.model import Conductor, Core, StrayPath, AirGaps, Insulation, WindingWindow
 from femmt.drawing import TwoDaxiSymmetric
 
+logger = logging.getLogger(__name__)
 
 class Mesh:
     """Create a mesh from the given model."""
@@ -34,9 +34,9 @@ class Mesh:
     insulation: Insulation
     simulation_type: SimulationType
     component_type: ComponentType
-    windings: List[Conductor]
-    winding_windows: List[WindingWindow]
-    air_gaps: List[AirGaps]
+    windings: list[Conductor]
+    winding_windows: list[WindingWindow]
+    air_gaps: list[AirGaps]
     correct_outer_leg: bool
     region: bool
 
@@ -48,14 +48,13 @@ class Mesh:
     thermal_mesh_file: str
 
     verbosity: Verbosity
-    logger: Logger
     wwr_enabled: bool
 
     # Additionally there are all the needed lists for points, lines, curve_loops and plane_surfaces
     # See set_empty_lists()
 
-    def __init__(self, model: TwoDaxiSymmetric, windings: List[Conductor], winding_windows: List[WindingWindow], correct_outer_leg: bool,
-                 file_paths: FileData, verbosity: Verbosity, logger: Logger, region: bool = None, wwr_enabled: bool = True):
+    def __init__(self, model: TwoDaxiSymmetric, windings: list[Conductor], winding_windows: list[WindingWindow], correct_outer_leg: bool,
+                 file_paths: FileData, verbosity: Verbosity, region: bool = None, wwr_enabled: bool = True):
 
         self.verbosity = verbosity
         self.logger = logger
@@ -98,16 +97,6 @@ class Mesh:
         self.e_m_mesh_file = file_paths.e_m_mesh_file
         self.thermal_mesh_file = file_paths.thermal_mesh_file
         self.gmsh_log = file_paths.gmsh_log
-
-    def femmt_print(self, text: str):
-        """
-        Print text to terminal or to log-file, dependent on the current verbosity.
-
-        :param text: text to print
-        :type text: str
-        """
-        if not self.verbosity == Verbosity.Silent:
-            self.logger.info(text)
 
     def set_empty_point_lists(self):
         """Initialize point lists. For internal overview as a mirrored gmsh information set."""
@@ -198,7 +187,7 @@ class Mesh:
         Set a single core with one physical winding window.
 
         :param p_core: points for the core
-        :type p_core: List
+        :type p_core: list
         :param p_island: points for the island
         :type p_island: list
         :param l_bound_core: list of bounds for the core
@@ -800,12 +789,12 @@ class Mesh:
             for i, center_point in enumerate(center_points):
                 gmsh.model.mesh.embed(0, [center_point], 2, self.plane_surface_cond[num][i])
 
-    def insulations_core_cond(self, p_iso_core: list) -> List:
+    def insulations_core_cond(self, p_iso_core: list) -> list:
         """
         Set the rectangular electrical insulation between conductors and core.
 
         :param p_iso_core:
-        :type p_iso_core: List
+        :type p_iso_core: list
 
         :return:
         :rtype: list
@@ -875,7 +864,7 @@ class Mesh:
         :type curve_loop_iso_cond: list
         """
         if not self.insulation.add_turn_insulations:
-            self.femmt_print("Turn insulation drawing skipped.")
+            logger.info("Turn insulation drawing skipped.")
             return []
         p_iso_cond_center = []
         # points of conductor insulation
@@ -937,7 +926,7 @@ class Mesh:
         gmsh.model.geo.synchronize()
 
         # Print success message
-        self.femmt_print(f"Insulation around conductors drawn successfully.")
+        logger.info(f"Insulation around conductors drawn successfully.")
         return curve_loop_iso_cond
 
     def air_single(self, l_core_air: list, l_air_gaps_air: list, curve_loop_air: list, curve_loop_cond: list, curve_loop_iso_core: list,
@@ -1013,16 +1002,16 @@ class Mesh:
         # else:
         #     self.plane_surface_air.append(gmsh.model.geo.addPlaneSurface(curve_loop_air + flatten_curve_loop_cond))
 
-    def air_stacked(self, l_core_air: list, l_bound_air: List, curve_loop_cond: list):
+    def air_stacked(self, l_core_air: list, l_bound_air: list, curve_loop_cond: list):
         """
         Generate gmsh entities (points, lines, closed loops and planes) and draw the air gaps for the stacked core.
 
         :param l_core_air: line
-        :type l_core_air: List
+        :type l_core_air: list
         :param l_bound_air:
-        :type l_bound_air: List
+        :type l_bound_air: list
         :param curve_loop_cond:
-        :type curve_loop_cond: List
+        :type curve_loop_cond: list
         """
         # Air
         # Points are partwise double designated
@@ -1273,11 +1262,11 @@ class Mesh:
             gmsh.write(self.hybrid_color_png_file)  # save png
             gmsh.fltk.finalize()
 
-    def generate_hybrid_mesh(self, color_scheme: Dict = ff.colors_femmt_default, colors_geometry: Dict = ff.colors_geometry_femmt_default,
+    def generate_hybrid_mesh(self, color_scheme: dict = ff.colors_femmt_default, colors_geometry: dict = ff.colors_geometry_femmt_default,
                              visualize_before: bool = False,
                              save_png: bool = True, refine=0, alternative_error=0) -> None:
         """
-        Generate the hybird mesh.
+        Generate the hybrid mesh.
 
         - interaction with gmsh
         - mesh generation
@@ -1288,9 +1277,9 @@ class Mesh:
 
 
         :param colors_geometry: colors of the geometry
-        :type colors_geometry: Dict
+        :type colors_geometry: dict
         :param color_scheme: color scheme
-        :type color_scheme: Dict
+        :type color_scheme: dict
         :param visualize_before: visualize geometry before FEM simulation
         :type visualize_before: bool
         :param save_png: True to save a .png figure
@@ -1300,7 +1289,7 @@ class Mesh:
         :param alternative_error:
         :type alternative_error:
         """
-        self.femmt_print("Hybrid Mesh Generation in Gmsh")
+        logger.info("Hybrid Mesh Generation in Gmsh")
         # Clear gmsh
         gmsh.clear()
         # Initialization
@@ -1378,7 +1367,7 @@ class Mesh:
         :param refine:
         :type refine: int
         """
-        self.femmt_print("Electro Magnetic Mesh Generation in Gmsh (write physical entities)")
+        logger.info("Electro Magnetic Mesh Generation in Gmsh (write physical entities)")
 
         self.PN_BOUND = 111111
         # Needed for electrostatic simulation
@@ -1526,16 +1515,16 @@ class Mesh:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # TODO: Adaptive Meshing
         if refine == 1:
-            self.femmt_print("\n ------- \nRefined Mesh Creation ")
+            logger.info("\n ------- \nRefined Mesh Creation ")
             # mesh the new gmsh.model using the size field
             bg_field = gmsh.model.mesh.field.add("PostView")
             # TODO: gmsh.model.mesh.field.setNumber(bg_field, "ViewTag", sf_view)
             gmsh.model.mesh.field.setAsBackgroundMesh(bg_field)
-            self.femmt_print("\nMeshing...\n")
+            logger.info("\nMeshing...\n")
             gmsh.model.mesh.generate(2)
         else:
             # Mesh the model
-            self.femmt_print("\nMeshing...\n")
+            logger.info("\nMeshing...\n")
             gmsh.model.mesh.generate(2)
 
         if not os.path.exists(self.mesh_folder_path):
@@ -1552,7 +1541,7 @@ class Mesh:
                 fd.write(text)
 
     def generate_thermal_mesh(self, case_gap_top: float, case_gap_right: float, case_gap_bot: float,
-                              color_scheme: Dict, colors_geometry: Dict, visualize_before: bool) -> None:
+                              color_scheme: dict, colors_geometry: dict, visualize_before: bool) -> None:
         """
         Generate the mesh for the thermal FEM simulation.
 
@@ -1563,13 +1552,13 @@ class Mesh:
         :param case_gap_bot: gap length in meter on the bottom of the case
         :type case_gap_bot: float
         :param color_scheme: color scheme
-        :type color_scheme: Dict
+        :type color_scheme: dict
         :param colors_geometry: colors of the geometry
-        :type colors_geometry: Dict
+        :type colors_geometry: dict
         :param visualize_before: True to visualize geometry before performing the simulation
         :type visualize_before: bool
         """
-        self.femmt_print("Thermal Mesh Generation in Gmsh (write physical entities)")
+        logger.info("Thermal Mesh Generation in Gmsh (write physical entities)")
 
         gmsh.open(self.model_geo_file)
 
@@ -1873,12 +1862,12 @@ class Mesh:
 
         gmsh.write(self.thermal_mesh_file)
 
-    def inter_conductor_meshing(self, p_cond: List):
+    def inter_conductor_meshing(self, p_cond: list):
         """
         To be defined.
 
         :param p_cond:
-        :type p_cond: List
+        :type p_cond: list
         """
         p_inter = None
         for ww in self.model.winding_windows:
@@ -1915,7 +1904,7 @@ class Mesh:
 
         # TODO: Inter conductor meshing!
         if all(winding.conductor_type == ConductorType.RoundSolid for winding in self.windings):
-            self.femmt_print("Making use of skin based meshing\n")
+            logger.info("Making use of skin based meshing\n")
             for num in range(len(self.windings)):
                 for i in range(0, int(len(p_cond[num]) / 5)):
                     gmsh.model.mesh.embed(0, [p_cond[num][5 * i + 0]], 2, self.plane_surface_cond[num][i])
@@ -2032,7 +2021,7 @@ class Mesh:
                             valid = False
                             break
                     else:
-                        print(f"Winding window rasterization skipped becuase ConductorType {winding.conductor_type.name} is not supported.")
+                        logger.info(f"Winding window rasterization skipped because ConductorType {winding.conductor_type.name} is not supported.")
                         return
 
                 if not valid:
@@ -2105,8 +2094,8 @@ class Mesh:
             if self.wwr_enabled:
                 # Winding Windows list has exactly two winding windows: top and bot: 
                 if len(self.winding_windows) != 2:
-                    print(f"Winding Window Rasterization is only implemented for stacked core with exactly 2 winding windows. "
-                          f"{len(self.winding_windows)} winding windows were given.")
+                    logger.info(f"Winding Window Rasterization is only implemented for stacked core with exactly 2 winding windows. "
+                                f"{len(self.winding_windows)} winding windows were given.")
                     gmsh.model.geo.synchronize()
                     return
 
@@ -2131,7 +2120,7 @@ class Mesh:
     def rectangular_conductor_center_points(self):
         """Add center points for rectangular conductors for better meshing."""
         def calculate_center_points(left_bound: float, right_bound: float, top_bound: float, bottom_bound: float,
-                                    center_point: List, min_distance: float):
+                                    center_point: list, min_distance: float):
             """
             Calculate the coordinates for the new center points.
 
@@ -2144,7 +2133,7 @@ class Mesh:
             :param bottom_bound: bottom bound
             :type bottom_bound: float
             :param center_point: center point
-            :type center_point: List
+            :type center_point: list
             :param min_distance: minimum distance
             :type min_distance: float
             """

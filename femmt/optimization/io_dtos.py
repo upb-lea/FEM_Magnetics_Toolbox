@@ -1,7 +1,6 @@
 """Data transfer objects (DTOs) for the inductor optimization."""
 # python libraries
 import dataclasses
-from typing import List, Optional
 
 # 3rd party libraries
 from magnethub.loss import LossModel
@@ -46,15 +45,15 @@ class InductorOptimizationDTO:
     # fixed parameters
     insulations: InductorInsulationDTO
     temperature: float
-    time_current_vec: List
+    time_current_vec: list
 
     # optimization parameters
-    material_name_list: List[str]
-    core_name_list: Optional[List[str]]
-    core_inner_diameter_list: Optional[List[float]]
-    window_w_list: Optional[List[float]]
-    window_h_list: Optional[List[float]]
-    litz_wire_list: List[str]
+    material_name_list: list[str]
+    core_name_list: list[str] | None
+    core_inner_diameter_list: list[float] | None
+    window_w_list: list[float] | None
+    window_h_list: list[float] | None
+    litz_wire_list: list[str]
 
     # FEM simulation
     material_data_sources: InductorMaterialDataSources
@@ -69,15 +68,15 @@ class InductorOptimizationTargetAndFixedParameters:
 
     i_rms: float
     i_peak: float
-    material_dto_curve_list: List[MaterialCurve]
-    magnet_hub_model_list: List[LossModel]
-    time_extracted_vec: List
-    current_extracted_vec: List
+    material_dto_curve_list: list[MaterialCurve]
+    magnet_hub_model_list: list[LossModel]
+    time_extracted_vec: list
+    current_extracted_vec: list
     fundamental_frequency: float
     working_directories: WorkingDirectories
-    fft_frequency_list: List[float]
-    fft_amplitude_list: List[float]
-    fft_phases_list: List[float]
+    fft_frequency_list: list[float]
+    fft_amplitude_list: list[float]
+    fft_phases_list: list[float]
 
 @dataclasses.dataclass
 class FemInput:
@@ -103,9 +102,9 @@ class FemInput:
     # operating point conditions
     temperature: float
     fundamental_frequency: float
-    fft_frequency_list: List[float]
-    fft_amplitude_list: List[float]
-    fft_phases_list: List[float]
+    fft_frequency_list: list[float]
+    fft_amplitude_list: list[float]
+    fft_phases_list: list[float]
 
 @dataclasses.dataclass
 class FemOutput:
@@ -134,11 +133,11 @@ class ReluctanceModelInput:
     magnet_material_model: LossModel
 
     temperature: float
-    current_extracted_vec: List
+    current_extracted_vec: list
     fundamental_frequency: float
-    fft_frequency_list: List[float]
-    fft_amplitude_list: List[float]
-    fft_phases_list: List[float]
+    fft_frequency_list: list[float]
+    fft_amplitude_list: list[float]
+    fft_phases_list: list[float]
 
 @dataclasses.dataclass
 class ReluctanceModelOutput:

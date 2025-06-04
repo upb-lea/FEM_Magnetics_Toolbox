@@ -5,7 +5,6 @@ import datetime
 import pickle
 import logging
 import shutil
-from typing import List, Optional
 import json
 
 # 3rd party libraries
@@ -27,6 +26,8 @@ import femmt.optimization.ito_functions as itof
 import femmt.optimization.functions_optimization as fo
 import femmt as fmt
 import materialdatabase as mdb
+
+logger = logging.getLogger(__name__)
 
 class InductorOptimization:
     """Reluctance model and FEM simulation for the inductor optimization."""
@@ -63,7 +64,7 @@ class InductorOptimization:
         x_pareto_vec = sorted_vector[0]
         y_pareto_vec = sorted_vector[1]
 
-        total_losses_list = df[y][~np.isnan(df[y])].to_numpy()
+        total_losses_list = df[y][~pd.isnull(df[y])].to_numpy()
 
         min_total_dc_losses = total_losses_list[np.argmin(total_losses_list)]
         loss_offset = factor_min_dc_losses * min_total_dc_losses
@@ -188,7 +189,7 @@ class InductorOptimization:
                 (available_height + config.insulations.primary_to_primary) / (litz_wire_diameter + config.insulations.primary_to_primary))
             max_turns = possible_number_turns_per_row * possible_number_turns_per_column
             if max_turns < 1:
-                logging.warning("Max. number of turns per window < 1")
+                logger.warning("Max. number of turns per window < 1")
                 return float('nan'), float('nan')
 
             turns = trial.suggest_int('turns', 1, max_turns)
@@ -221,8 +222,8 @@ class InductorOptimization:
             )
             try:
                 reluctance_output: ReluctanceModelOutput = InductorOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_input)
-            except ValueError:
-                logging.warning("bot air gap: No fitting air gap length")
+            except ValueError as e:
+                logger.info("bot air gap: No fitting air gap length")
                 return float('nan'), float('nan')
 
             trial.set_user_attr('p_winding', reluctance_output.p_winding)
@@ -326,8 +327,8 @@ class InductorOptimization:
             return reluctance_model_output
 
         @staticmethod
-        def start_proceed_study(config: InductorOptimizationDTO, number_trials: Optional[int] = None,
-                                target_number_trials: Optional[int] = None, storage: str = 'sqlite',
+        def start_proceed_study(config: InductorOptimizationDTO, number_trials: int | None = None,
+                                target_number_trials: int | None = None, storage: str = 'sqlite',
                                 sampler=optuna.samplers.NSGAIIISampler(),
                                 ) -> None:
             """
@@ -473,7 +474,7 @@ class InductorOptimization:
             loaded_study = optuna.load_study(study_name=config.inductor_study_name, storage=database_url)
             df = loaded_study.trials_dataframe()
             df.to_csv(f'{config.inductor_optimization_directory}/{config.inductor_study_name}.csv')
-            logging.info(f"Exported study as .csv file: {config.inductor_optimization_directory}/{config.inductor_study_name}.csv")
+            logger.info(f"Exported study as .csv file: {config.inductor_optimization_directory}/{config.inductor_study_name}.csv")
             return df
 
         @staticmethod
@@ -509,7 +510,7 @@ class InductorOptimization:
             :type interactive: bool
             """
             if color_list is None:
-                color_list = ['red', 'blue', 'green', 'grey']
+                color_list = ['red', 'blue', 'green', 'gray']
             for count, df in enumerate(dataframes):
                 # color_list was before list(ff.colors_femmt_default.keys())
                 df['color_r'], df['color_g'], df['color_b'] = ff.colors_femmt_default[color_list[count]]
@@ -576,14 +577,14 @@ class InductorOptimization:
             return filtered_df
 
         @staticmethod
-        def df_from_trial_numbers(df: pd.DataFrame, trial_number_list: List[int]) -> pd.DataFrame:
+        def df_from_trial_numbers(df: pd.DataFrame, trial_number_list: list[int]) -> pd.DataFrame:
             """
             Generate a new dataframe from a given one, just with the trial numbers from the trial_number_list.
 
             :param df: input dataframe
             :type df: pandas.DataFrame
             :param trial_number_list: list of trials, e.g. [1530, 1870, 3402]
-            :type trial_number_list: List[int]
+            :type trial_number_list: list[int]
             :return: dataframe with trial numbers from trial_number_list
             :rtype: pandas.DataFrame
             """
@@ -604,7 +605,7 @@ class InductorOptimization:
             :type reluctance_df: pandas.DataFrame
             :param config: Configuration for the optimization of the transformer
             :type config: InductorOptimizationDTO
-            :param show_visual_outputs: Ture to show visual outputs like the geometry
+            :param show_visual_outputs: True to show visual outputs like the geometry
             :type show_visual_outputs: bool
             :param process_number: Process number for parallel simulations on multiple cpu cores
             :type process_number: int
@@ -726,7 +727,7 @@ class InductorOptimization:
             fig, ax = plt.subplots()
             legend_list = []
             plt.legend(handles=legend_list)
-            plt.scatter(df["values_0"], df["values_1"], s=10, label='Relucatance Model')  # c=color_array
+            plt.scatter(df["values_0"], df["values_1"], s=10, label='Reluctance Model')  # c=color_array
             df["fem_total_loss"] = df["fem_core"] + df["fem_p_loss_winding"]
             plt.scatter(df["values_0"], df["fem_total_loss"], s=10, label='FEM simulation')  # c=color_array
             plt.scatter(df["values_0"], df["combined_losses"], s=10, label="combined_losses")
@@ -775,7 +776,7 @@ class InductorOptimization:
             """
             # 1. chose simulation type
             geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.FreqDomain, component_type=fmt.ComponentType.Inductor,
-                                        working_directory=fem_input.working_directory, verbosity=fmt.Verbosity.Silent,
+                                        working_directory=fem_input.working_directory, onelab_verbosity=fmt.Verbosity.Silent,
                                         simulation_name=fem_input.simulation_name)
 
             # 2. set core parameters
@@ -849,7 +850,7 @@ class InductorOptimization:
             return fem_output
 
         @staticmethod
-        def full_simulation(df_geometry: pd.DataFrame, current_waveform: List, inductor_config_filepath: str, process_number: int = 1,
+        def full_simulation(df_geometry: pd.DataFrame, current_waveform: list, inductor_config_filepath: str, process_number: int = 1,
                             print_derivations: bool = False) -> tuple:
             """
             Reluctance model (hysteresis losses) and FEM simulation (winding losses and eddy current losses) for geometries from df_geometry.
@@ -857,12 +858,12 @@ class InductorOptimization:
             :param df_geometry: Pandas dataframe with geometries
             :type df_geometry: pd.DataFrame
             :param current_waveform: Current waveform to simulate
-            :type current_waveform: List
+            :type current_waveform: list
             :param inductor_config_filepath: Filepath of the inductor optimization configuration file
             :type inductor_config_filepath: str
             :param process_number: process number to run the simulation on
             :type process_number: int
-            :param print_derivations: True to print derivation from FEM simulaton to reluctance model
+            :param print_derivations: True to print derivation from FEM simulation to reluctance model
             :type print_derivations: bool
             :return: volume, loss
             :rtype: tuple

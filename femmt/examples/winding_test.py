@@ -1,8 +1,6 @@
 """Test different winding options."""
 # python libraries
 import os
-from typing import Dict, List
-
 
 import femmt as fmt
 inductor_combinations = [
@@ -76,14 +74,14 @@ transformer_combinations = [
     },
 ]
 
-def run_inductor_simulations(working_directory: str, combinations: List[Dict]):
+def run_inductor_simulations(working_directory: str, combinations: list[dict]):
     """
     Run the simulations to test several winding options for the inductor.
 
     :param working_directory: working directory
     :type working_directory: str
     :param combinations: combinations to simulate in a dictionary which are stored in a list
-    :type combinations: List
+    :type combinations: list
     """
     not_working = []
     for combination in combinations:
@@ -100,7 +98,9 @@ def run_inductor_simulations(working_directory: str, combinations: List[Dict]):
             
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.001, 0.001)
-        insulation.add_winding_insulations([0.0001, 0.0001], 0.001)
+        insulation.add_winding_insulations([[0.0001], [0.0001]], False)
+        insulation.add_turn_insulation([0.25e-5, 0.25e-5, 0.25e-5], add_turn_insulations=False)
+        insulation.add_kapton_insulation(add_kapton_material=False, thickness=0.0005)
         geo.set_insulation(insulation)
 
         conductor = fmt.Conductor(0, fmt.Conductivity.Copper)
@@ -135,18 +135,19 @@ def run_inductor_simulations(working_directory: str, combinations: List[Dict]):
     print(not_working)
 
 
-def run_transformer_simulations(working_directory: str, combinations: List[Dict]):
+def run_transformer_simulations(working_directory: str, combinations: list[dict]):
     """
     Run the simulations to test several winding options for the transformer.
 
     :param working_directory: working directory
     :type working_directory: str
     :param combinations: combinations to simulate in a dictionary which are stored in a list
-    :type combinations: List
+    :type combinations: list
     """
     not_working = []
     for combination in combinations:
-        geo = fmt.MagneticComponent(fmt.ComponentType.Transformer, working_directory, True)
+        geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.FreqDomain, component_type=fmt.ComponentType.Transformer,
+                                    working_directory=working_directory, is_gui=False)
 
         core_db = fmt.core_database()["PQ 40/40"]
         core = fmt.Core(core_db["core_inner_diameter"], core_db["window_w"], core_db["window_h"],
