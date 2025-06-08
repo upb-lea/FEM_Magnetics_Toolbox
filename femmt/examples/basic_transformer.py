@@ -126,11 +126,10 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     # 4. set insulation
     insulation = fmt.Insulation(flag_insulation=True)
     insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
+    insulation.add_turn_insulation([0.25e-5, 0.25e-5], add_turn_insulations=False)
     insulation.add_winding_insulations([[0.0002, 0.001],
-                                        [0.001, 0.0002]])
-    insulation.add_conductor_air_conductor_insulation([[1e-3, 1e-3, 1e-3, 1e-3, 1e-3, 1e-3],
-                                                       [1e-3, 1e-3, 1e-3]])
-    insulation.add_kapton_insulation(add_kapton=True, thickness=1e-3)
+                                        [0.001, 0.0002]], per_layer_of_turns=False)
+    insulation.add_kapton_insulation(add_kapton_material=False, thickness=1e-3)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -161,7 +160,7 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     geo.create_model(freq=200000, pre_visualize_geometry=show_visual_outputs)
     geo.single_simulation(freq=200000, current=[2, 2], phi_deg=[0, 180],
                           show_fem_simulation_results=show_visual_outputs)
-    geo.get_capacitance(ground_core=True, ground_outer_boundary=False, show_fem_simulation_results=False, show_turn_capacitances=True, show_winding_capacitances=False)
+    #geo.get_capacitance(ground_core=True, ground_outer_boundary=False, show_fem_simulation_results=False, show_turn_capacitances=True, show_winding_capacitances=False)
 
     #example_thermal_simulation(show_visual_outputs, flag_insulation=True)
     #geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
