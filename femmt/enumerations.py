@@ -1,6 +1,6 @@
 """Enumeration for FEMMT."""
 from enum import IntEnum, Enum
-
+from materialdatabase.meta.data_enums import Material, MeasurementSetup
 
 class Verbosity(IntEnum):
     """State of verbosity."""
@@ -347,40 +347,3 @@ class MeasurementDataType(str, Enum):
     ComplexPermeability = "complex_permeability"
     ComplexPermittivity = "complex_permittivity"
     Steinmetz = "Steinmetz"
-
-
-class MeasurementSetup(str, Enum):
-    """Sets the source from where data is taken."""
-
-    LEA_MTB = "LEA_MTB"
-    LEA_MTB_small_signal = "LEA_MTB_small_signal"
-    LEA_LK = "LEA_LK"
-    ManufacturerDatasheet = "datasheet"
-    MagNet = "MagNet"
-
-
-class Material(str, Enum):
-    """Sets the name of the core material as enums."""
-
-    _3F46 = "3F46"
-    _3C90 = "3C90"
-    _3C92 = "3C92"
-    _3C94 = "3C94"
-    _3C95 = "3C95"
-    _3E6 = "3E6"
-    _3F4 = "3F4"
-    _77 = "77"
-    _78 = "78"
-    _79 = "79"
-    ML95S = "ML95S"
-    N27 = "N27"
-    N30 = "N30"
-    N49 = "N49"
-    N87 = "N87"
-    N95 = "N95"
-    T37 = "T37"
-    PC200 = "PC200"
-    custom_material = "custom_material"
-    DMR96A = "DMR96A"
-    DMR96A2 = "DMR96A2"
-    DMR96A2_test = "DMR96A2_test"

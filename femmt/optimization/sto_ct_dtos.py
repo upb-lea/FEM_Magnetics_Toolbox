@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 # 3rd party libraries
 import numpy as np
-from materialdatabase.dtos import MaterialCurve
+from materialdatabase.meta.data_classes import MaterialCurve
 from femmt.enumerations import *
 
 
