@@ -154,7 +154,7 @@ class Conductor:
         else:
             raise Exception("1 of the 4 parameters need to be None.")
 
-        self.n_layers = ff.litz_calculate_number_layers(number_strands)
+        self.n_layers = ff.litz_calculate_number_layers(self.n_strands)
         self.a_cell = self.n_strands * self.strand_radius ** 2 * np.pi / self.ff
 
     def __eq__(self, other):
