@@ -3002,7 +3002,31 @@ class MagneticComponent:
     # Post-Processing --- Capacitance extractio---
     def get_capacitance_of_inductor_component(self, show_visual_outputs: bool = False, plot_interpolation: bool = False,
                                               show_fem_simulation_results: bool = False, benchmark: bool = False, save_to_excel: bool = False):
-        """Function for finding parasitic capacitance of an inductor"""
+        """
+        Function for finding parasitic capacitance of an inductor.
+        A--.------.---A
+           |      |
+           |      |
+           |      c1
+           |      |
+           |      |
+        B--|------.---B
+           |      |
+           c2     c3
+           |      |
+        E--.-----.----E
+
+        :param show_visual_outputs: show the electrostatic model before simulation
+        :type show_visual_outputs: bool, optional
+        :param plot_interpolation: if True, plot the interpolation between the provided values for the material.
+        :type plot_interpolation: bool
+        :param show_fem_simulation_results: if True, show the simulation results after the simulation has finished
+        :type show_fem_simulation_results: bool
+        :param benchmark: Benchmark simulation (stop time). Defaults to False.
+        :type benchmark: bool
+        :param save_to_excel: save the result to exel file.
+        :type save_to_excel: bool
+        """
         # Define 3 simulation potential cases
         # Format: [V_A, V_B, V_core]
         potentials = [
@@ -3087,7 +3111,7 @@ class MagneticComponent:
                                                     save_to_excel: bool = False):
         """
         Compute the stray (parasitic) capacitance of an inductor via a single electrostatic simulation.
-        Assumes a 1V potential applied across the windings.
+        Assumes a 1V potential applied across the windings. The effect of the core is ignored.
         """
 
         # Define terminal voltages for the simulation
@@ -3134,10 +3158,50 @@ class MagneticComponent:
 
         return c_ab_stray
 
-    def get_capacitance_of_transformer(self, c_meas_open: float | None,
-                                       c_meas_short: float | None, flag_cd: bool = False, show_visual_outputs: bool = False, plot_interpolation: bool = False, show_fem_simulation_results: bool = False, benchmark: bool = False,
-                                       save_to_excel: bool = False, measured_values: tuple | list | None = None, show_plot_comparison: bool = True):
-        """Function for finding parasitic capacitance of a transformer"""
+    def get_capacitance_of_transformer(self, c_meas_open: float | None = None,
+                                       c_meas_short: float | None = None, measured_capacitances: tuple | list | None = None, flag_cd: bool = False,
+                                       show_visual_outputs: bool = False, plot_interpolation: bool = False, show_fem_simulation_results: bool = False,
+                                       benchmark: bool = False, save_to_excel: bool = False, show_plot_comparison: bool = True):
+        """
+        Get 10 parasitic capacitance of a transformer.
+
+        Perform 10 electrostatic simulations and calculate the 10 parasitic capacitance through W = 0.5 CV^2.
+
+        A--.------.-----c4--------.------.------C
+           |      |  \          / |      |
+           |      |    c5   c6    |      |
+           |      c1     \/       c2     |
+           |      |     /    \    |      |
+           |      |  /         \  |      |
+        B--|------.-----c3--------.------|------D
+           |      |               |      |
+           c7     c8              c10    c9
+           |      |               |      |
+        E--.-----.-----------------------.------E
+
+        The result can be compared to the results obtain from the measurement.
+
+        :param c_meas_open: measured open-circuit capacitance provided by the user.
+        :type c_meas_open: float
+        :param c_meas_short: measured short-circuit capacitance provided by the user.
+        :type c_meas_short: float
+        :param measured_capacitances: measured 10 capacitances provided by the user.
+        :type measured_capacitances: float
+        :param flag_cd: flip the terminal C and D of the secondary.
+        :type flag_cd: bool
+        :param show_visual_outputs: show the electrostatic model before simulation
+        :type show_visual_outputs: bool, optional
+        :param plot_interpolation: if True, plot the interpolation between the provided values for the material.
+        :type plot_interpolation: bool
+        :param show_fem_simulation_results: if True, show the simulation results after the simulation has finished
+        :type show_fem_simulation_results: bool
+        :param benchmark: Benchmark simulation (stop time). Defaults to False.
+        :type benchmark: bool
+        :param save_to_excel: save the result to exel file.
+        :type save_to_excel: bool
+        :param show_plot_comparison: compare between the simulation and measurement results.
+        :type show_plot_comparison: bool
+        """
         # Define 10 simulations potential cases
         # Format: [V_A, V_B, V_C, V_D]
         if not flag_cd:
@@ -3298,9 +3362,9 @@ class MagneticComponent:
             'C_BC_ADE': lambda C: C[0] + C[1] + C[2] + C[3] + C[7] + C[8],
         }
 
-        if measured_values is not None:
-            if len(measured_values) != 10:
-                raise ValueError("measured_values must be a sequence of 10 numbers (float or None).")
+        if measured_capacitances is not None:
+            if len(measured_capacitances) != 10:
+                raise ValueError("measured_capacitances must be a sequence of 10 numbers (float or None).")
 
             # build simulated connection sums
             sim_sums = [connection_sums[k](c_vec) for k in connection_keys]
@@ -3313,7 +3377,7 @@ class MagneticComponent:
             idx_used, meas_pf_used, calc_pf_used, ratio_used = [], [], [], []
 
             for i, (k, meas, sim) in enumerate(zip(connection_keys,
-                                                   measured_values,
+                                                   measured_capacitances,
                                                    sim_sums)):
                 sim_pf = sim * 1e12
                 if meas is None or (isinstance(meas, float) and np.isnan(meas)):

@@ -115,7 +115,7 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
                     permeability_datasource=fmt.MaterialDataSource.Custom,
                     permittivity_datasource=fmt.MaterialDataSource.Custom,
-                    detailed_core_model=False)
+                    detailed_core_model=True)
     geo.set_core(core)
 
     # 3. set air gap parameters
@@ -160,7 +160,9 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     geo.create_model(freq=200000, pre_visualize_geometry=show_visual_outputs)
     geo.single_simulation(freq=200000, current=[2, 2], phi_deg=[0, 180],
                           show_fem_simulation_results=show_visual_outputs)
-
+    # Extract capacitance of transformer component
+    # geo.get_capacitance_of_transformer()
+    # thermal simulation
     example_thermal_simulation(show_visual_outputs, flag_insulation=True)
     #geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
 

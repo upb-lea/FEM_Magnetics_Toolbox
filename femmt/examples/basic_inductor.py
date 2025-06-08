@@ -178,10 +178,11 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     geo.single_simulation(freq=inductor_frequency, current=[4.5],
                           plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
     # geo.get_inductances(I0=2, op_frequency=20000, skin_mesh_factor=0.5)
+    # geo.femm_reference(freq=inductor_frequency, current=[4.5], sign=[1], non_visualize=0)#
+    
+    # Extract the capacitance of inductor component
     # geo.get_capacitance_of_inductor_component(show_fem_simulation_results=False)
     # geo.get_inductor_stray_capacitance(show_visual_outputs=True)
-
-    # geo.femm_reference(freq=inductor_frequency, current=[4.5], sign=[1], non_visualize=0)
 
     # 6.b. Excitation Sweep Example
     # Perform a sweep using more than one frequency
