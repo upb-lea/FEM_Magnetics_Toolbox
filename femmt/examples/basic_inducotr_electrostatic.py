@@ -15,7 +15,7 @@ import femmt as fmt
 import os
 
 
-def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
+def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = True):
     """
     Run the example code for the inductor.
 
@@ -79,8 +79,11 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
                                                   bobbin_h=bobbin_db["bobbin_h"])
     insulation = fmt.Insulation(flag_insulation=True, bobbin_dimensions=bobbin_dimensions)
     insulation.add_core_insulations(1.5e-3, 1.5e-3, 1e-3, 1e-3)
+    # This is the insulation of the turn itself
     insulation.add_turn_insulation([0.5e-4], add_turn_insulations=True)
+    # This is an air between turns if needed
     insulation.add_winding_insulations([[0.6e-3, 0.1e-3]], per_layer_of_turns=True)
+    # Kapton material is added between every layer of turns
     insulation.add_kapton_insulation(add_kapton_material=True, thickness=0.6e-3)
     geo.set_insulation(insulation)
 
@@ -107,8 +110,8 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
         V_A - (V_A - V_B) * i / (num_turns_w1 - 1)
         for i in range(num_turns_w1)
     ]
-    # geo.electrostatic_simulation(voltage=[voltages_winding_1], ground_outer_boundary=False, core_voltage=0,
-    #                              show_fem_simulation_results=show_visual_outputs, save_to_excel=False)
+    geo.electrostatic_simulation(voltage=[voltages_winding_1], ground_outer_boundary=False, core_voltage=0,
+                                 show_fem_simulation_results=show_visual_outputs, save_to_excel=False)
     # Run simulation in FEMM
     geo.femm_reference_electrostatic(voltages=[voltages_winding_1], ground_core=True, ground_outer_boundary=True,
                                      non_visualize=0, save_to_excel=False, compare_excel_files_to_femmt=False, mesh_size_conductor=0.0)

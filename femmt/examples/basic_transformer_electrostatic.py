@@ -127,26 +127,15 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
 
 
     # 8. start simulation with given frequency, currents and phases
-    # [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    # [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150]
-    # [30, 35, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]
-    # [20, 40, 60, 80, 100]
     geo.create_model(freq=0, pre_visualize_geometry=show_visual_outputs)
-    # voltages = [[5, 0, 0, 0, 0, 0], [0, 0, 0]]
-    # voltages_winding_1 = [1] * 59
-    # voltages_winding_1 = [1 + 2 * i for i in range(59)]
-    # num_turns_winding1 = 59
-    # terminal a
-    # voltages_winding_1 = [1 - i / (num_turns_winding1 - 1) for i in range(num_turns_winding1)]
-    # terminal B
-    # voltages_winding_1 = [i / (num_turns_winding1 - 1) for i in range(num_turns_winding1)]
-    # voltages_winding_2 = [0] * 52
-    # voltages_winding_2 = [1 + 2 * i for i in range(52)]
     # Number of turns in each winding
-    num_turns_w1 = 109
-    num_turns_w2 = 49
+    num_turns_w1 = 10
+    num_turns_w2 = 10
 
-    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""Case 1"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """---------------------------------The definition of the 10 simulations needed for extracting the capacitance of the transformer------------------- """
+    # Note that the user can run these 10 simulations by simply calling the get_capacitance_of_transformer() function
+    # and capacitance extraction is shown in the terminal
+
     # --------------------------------------------------------------------------------------
     # Simulation 1 (V_A, V_B, V_C, V_D = 1, 0, 0 , 0) --- (V_1, V_2, V_3, V_4 = 1, 0, 0, 0)
     V_A = 1
@@ -237,117 +226,6 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     # # Create a fixed voltage from C to D
     # voltages_winding_1 = [1] * num_turns_w1
     # voltages_winding_2 = [2] * num_turns_w2
-
-    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""Case 2"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-    # --------------------------------------------------------------------------------------
-    # # Simulation 1 (V_A, V_B, V_C, V_D = 1, 0, 0 , 0) --- (V_1, V_2, V_3, V_4 = 1, 0, 0, 0)
-    # V_A = 1
-    # V_B = 0
-    # voltages_winding_1 = [
-    #     V_A - (V_A - V_B) * i / (num_turns_w1 - 1)
-    #     for i in range(num_turns_w1)
-    # ]
-    # voltages_winding_2 = [0] * num_turns_w2
-
-    # --------------------------------------------------------------------------------------
-    # # Simulation 2 (V_A, V_B, V_C, V_D = 0, 1, 0 , 0) --- (V_1, V_2, V_3, V_4 = -1, 0, -1, 1)
-    # V_A = 0.0
-    # V_B = 1.0
-    # voltages_winding_1 = [
-    #     V_A + (V_B - V_A) * i / (num_turns_w1 - 1)
-    #     for i in range(num_turns_w1)
-    # ]
-    # voltages_winding_2 = [0] * num_turns_w2
-
-    # ---------------------------------------------------------------------------------------------
-    # # Simulation 3 (V_A, V_B, V_C, V_D = 0, 0, 1 , 0) --- (V_1, V_2, V_3, V_4 = 0, 1, 0, 0)
-    # voltages_winding_1 = [0] * num_turns_w1
-    # V_C = 1.0
-    # V_D = 0.0
-    # voltages_winding_2 = [
-    #     V_C - (V_C - V_D) * i / (num_turns_w2 - 1)
-    #     for i in range(num_turns_w2)
-    # ]
-
-    # ---------------------------------------------------------------------------------------------
-    # Simulation 4 (V_A, V_B, V_C, V_D = 0, 0, 0 , 1) --- (V_1, V_2, V_3, V_4 = 0, -1, 1, 0)
-    # voltages_winding_1 = [0] * num_turns_w1
-    # V_C = 0.0
-    # V_D = 1.0
-    # voltages_winding_2 = [
-    #     V_C + (V_D - V_C) * i / (num_turns_w2 - 1)
-    #     for i in range(num_turns_w2)
-    # ]
-
-    # ---------------------------------------------------------------------------------------------
-    # # Simulation 5 (V_A, V_B, V_C, V_D = 1, 1, 0 , 0) --- (V_1, V_2, V_3, V_4 = 0, 0, -1, 1)
-    # voltages_winding_1 = [1] * num_turns_w1
-    # voltages_winding_2 = [0] * num_turns_w2
-
-    # ---------------------------------------------------------------------------------------------
-    # # Simulation 6 (V_A, V_B, V_C, V_D = 1, 0, 1 , 0) --- (V_1, V_2, V_3, V_4 = 1, 1, 0, 0)
-    # V_A = 1.0
-    # V_B = 0.0
-    # V_C = 1.0
-    # V_D = 0.0
-    # voltages_winding_1 = [
-    #     V_A - (V_A - V_B) * i / (num_turns_w1 - 1)
-    #     for i in range(num_turns_w1)
-    # ]
-    # voltages_winding_2 = [
-    #     V_C - (V_C - V_D) * i / (num_turns_w2 - 1)
-    #     for i in range(num_turns_w2)
-    # ]
-
-    # ---------------------------------------------------------------------------------------------
-    # # Simulation 7 (V_A, V_B, V_C, V_D = 1, 0, 0 , 1) --- (V_1, V_2, V_3, V_4 = 1, -1, 1, 0)
-    # V_A = 1.0
-    # V_B = 0.0
-    # V_C = 0.0
-    # V_D = 1.0
-    # voltages_winding_1 = [
-    #     V_A - (V_A - V_B) * i / (num_turns_w1 - 1)
-    #     for i in range(num_turns_w1)
-    # ]
-    # voltages_winding_2 = [
-    #     V_C + (V_D - V_C) * i / (num_turns_w2 - 1)
-    #     for i in range(num_turns_w2)
-    # ]
-
-    # ---------------------------------------------------------------------------------------------
-    # # Simulation 8 (V_A, V_B, V_C, V_D = 0, 1, 1 , 0) --- (V_1, V_2, V_3, V_4 = -1, 1, -1, 1)
-    # V_A = 0.0
-    # V_B = 1.0
-    # V_C = 1.0
-    # V_D = 0.0
-    # voltages_winding_1 = [
-    #     V_A + (V_B - V_A) * i / (num_turns_w1 - 1)
-    #     for i in range(num_turns_w1)
-    # ]
-    # voltages_winding_2 = [
-    #     V_C - (V_C - V_D) * i / (num_turns_w2 - 1)
-    #     for i in range(num_turns_w2)
-    # ]
-
-    # ---------------------------------------------------------------------------------------------
-    # # Simulation 9 (V_A, V_B, V_C, V_D = 0, 1, 0 , 1) --- (V_1, V_2, V_3, V_4 = -1, -1, 0, 1)
-    # V_A = 0.0
-    # V_B = 1.0
-    # V_C = 0.0
-    # V_D = 1.0
-    # voltages_winding_1 = [
-    #     V_A + (V_B - V_A) * i / (num_turns_w1 - 1)
-    #     for i in range(num_turns_w1)
-    # ]
-    # voltages_winding_2 = [
-    #     V_C + (V_D - V_C) * i / (num_turns_w2 - 1)
-    #     for i in range(num_turns_w2)
-    # ]
-
-    # ---------------------------------------------------------------------------------------------
-    # Simulation 10 (V_A, V_B, V_C, V_D = 0, 0, 1 , 1) --- (V_1, V_2, V_3, V_4 = 0, 0, 1, 0)
-    # voltages_winding_1 = [0] * num_turns_w1
-    # voltages_winding_2 = [1] * num_turns_w2
 
     geo.electrostatic_simulation( voltage=[voltages_winding_1, voltages_winding_2], core_voltage=0, ground_outer_boundary=False,
                                  show_fem_simulation_results=show_visual_outputs, save_to_excel=False)
