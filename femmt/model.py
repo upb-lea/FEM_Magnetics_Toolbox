@@ -675,6 +675,7 @@ class Insulation:
         float]
     cond_air_cond: list[list[
         float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
+    bobbin_dimensions: None
     kapton: float
     consistent_ins: bool = True
     add_kapton_material: bool = True
@@ -694,6 +695,7 @@ class Insulation:
         # If the gaps between insulations and core (or windings) are to big/small just change this value
         self.flag_insulation = flag_insulation
         self.max_aspect_ratio = max_aspect_ratio
+        self.bobbin_dimensions = bobbin_dimensions
         # As there is a gap between the core and the bobbin, the definition of bobbin parameters is needed in electrostatic simulation
         if bobbin_dimensions is not None:
             self.bobbin_inner_diameter = bobbin_dimensions.bobbin_inner_diameter
@@ -712,7 +714,7 @@ class Insulation:
         """
         self.flag_insulation = flag
 
-    def add_winding_insulations(self, inner_winding_insulation: list[list[float]], per_layer_of_turns: bool = True):
+    def add_winding_insulations(self, inner_winding_insulation: list[list[float]], per_layer_of_turns: bool = False):
         """Add a consistent insulation between turns of one winding and insulation between virtual winding windows.
 
         Insulation between virtual winding windows is not always needed.
@@ -733,7 +735,7 @@ class Insulation:
         else:
             self.consistent_ins = True
 
-    def add_turn_insulation(self, turn_insulation: list[float], add_turn_insulations: bool = True):
+    def add_turn_insulation(self, turn_insulation: list[float], add_turn_insulations: bool = False):
         """Add insulation for turns in every winding.
 
         :param turn_insulation: List of floats which represent the insulation around every winding.

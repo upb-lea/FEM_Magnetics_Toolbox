@@ -136,7 +136,10 @@ def basic_example_transformer_n_winding(onelab_folder: str = None, show_visual_o
          [0.0004, 0.0002, 0.0004, 0.0002, 0.0002, 0.0004, 0.0002, 0.0002, 0.0002, 0.0004, 0.0002, 0.0004],
          [0.0002, 0.0004, 0.0004, 0.0002, 0.0002, 0.0004, 0.0002, 0.0002, 0.0002, 0.0004, 0.0002, 0.0004],
          [0.0004, 0.0002, 0.0004, 0.0002, 0.0002, 0.0004, 0.0002, 0.0002, 0.0002, 0.0004, 0.0002, 0.0004],
-         [0.0004, 0.0002, 0.0004, 0.0002, 0.0002, 0.0004, 0.0002, 0.0002, 0.0002, 0.0004, 0.0002, 0.0004]])
+         [0.0004, 0.0002, 0.0004, 0.0002, 0.0002, 0.0004, 0.0002, 0.0002, 0.0002, 0.0004, 0.0002, 0.0004]], per_layer_of_turns=False)
+    insulation.add_turn_insulation([0.25e-5, 0.25e-5, 0.25e-5, 0.25e-5, 0.25e-5, 0.25e-5, 0.25e-5, 0.25e-5,0.25e-5, 0.25e-5, 0.25e-5, 0.25e-5],
+                                   add_turn_insulations=False)
+    insulation.add_kapton_insulation(add_kapton_material=False, thickness=0.0002)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
