@@ -320,6 +320,7 @@ class Core:
             self.material = material
         self.file_path_to_solver_folder = None
         self.temperature = temperature
+
         # Permeability
         if permeability_datasource != 'custom' and isinstance(permeability_datasource, str):
             permeability_datasource = MaterialDataSource(permeability_datasource)
@@ -335,6 +336,7 @@ class Core:
         self.mu_r_abs = mu_r_abs
         self.phi_mu_deg = phi_mu_deg
         self.loss_approach = loss_approach
+
         # Permittivity
         self.complex_permittivity = None
         if permittivity_datasource != 'custom' and isinstance(permittivity_datasource, str):
@@ -349,64 +351,24 @@ class Core:
                              "datatype": permittivity_datatype}
         self.sigma = sigma
 
-        # Check loss approach
-        if loss_approach == LossApproach.Steinmetz:
-            self.sigma = 0
-            if self.material != "custom":
-                self.permeability_type = PermeabilityType.FromData
-                self.mu_r_abs = self.material_database.get_material_attribute(material_name=self.material,
-                                                                              attribute="initial_permeability")
-
-                steinmetz_data = self.material_database.get_steinmetz_data(material_name=self.material,
-                                                                           type="Steinmetz",
-                                                                           datasource="measurements")
-                self.ki = steinmetz_data['ki']
-                self.alpha = steinmetz_data['alpha']
-                self.beta = steinmetz_data['beta']
-
-            if self.material == "custom":  # ----steinmetz_parameter consist of list of ki, alpha , beta from the user
-                self.ki = steinmetz_parameter[0]
-                self.alpha = steinmetz_parameter[1]
-                self.beta = steinmetz_parameter[2]
-            else:
-                raise Exception("When steinmetz losses are set a material needs to be set as well.")
-        # if loss_approach == LossApproach.Generalized_Steinmetz:
-        #     raise NotImplemented
-        # self.sigma = 0
-        # if self.material != "custom":
-        #     self.permeability_type = PermeabilityType.FromData
-        #     self.mu_rel = Database.get_initial_permeability(material_name=self.material)
-        #     self.t_rise = Database.get_steinmetz_data(material_name=self.material, type="Generalized_Steinmetz")[
-        #         't_rise']
-        #     self.t_fall = Database.get_steinmetz_data(material_name=self.material, type="Generalized_Steinmetz")[
-        #         't_fall']
-        # elif self.material == "custom":  # ----generalized_steinmetz_parameter consist of list of ki, alpha , beta from the user
-        #     self.t_rise = generalized_steinmetz_parameter[0]
-        #     self.t_fall = generalized_steinmetz_parameter[1]
-
-        if loss_approach == LossApproach.LossAngle:
-
-            if self.permittivity["datasource"] == MaterialDataSource.Custom:
-                self.sigma = sigma  # from user
-            else:
-                self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material,
-                                                                               attribute="resistivity")
-
-            if self.permeability["datasource"] == MaterialDataSource.Custom:
-                # this is a service for the user:
-                # In case of not giving a fixed loss angle phi_mu_deg,
-                # the initial permeability from datasheet is used (RealValue)
-                if phi_mu_deg is not None and phi_mu_deg != 0:
-                    self.permeability_type = PermeabilityType.FixedLossAngle
-                else:
-                    self.permeability_type = PermeabilityType.RealValue
-            else:
-                self.permeability_type = PermeabilityType.FromData
-                self.mu_r_abs = self.material_database.get_material_attribute(material_name=self.material,
-                                                                              attribute="initial_permeability")
-
+        if self.permittivity["datasource"] == MaterialDataSource.Custom:
+            self.sigma = sigma  # from user
         else:
-            raise Exception("Loss approach {loss_approach.value} is not implemented")
+            self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material,
+                                                                           attribute="resistivity")
+
+        if self.permeability["datasource"] == MaterialDataSource.Custom:
+            # this is a service for the user:
+            # In case of not giving a fixed loss angle phi_mu_deg,
+            # the initial permeability from datasheet is used (RealValue)
+            if phi_mu_deg is not None and phi_mu_deg != 0:
+                self.permeability_type = PermeabilityType.FixedLossAngle
+            else:
+                self.permeability_type = PermeabilityType.RealValue
+        else:
+            self.permeability_type = PermeabilityType.FromData
+            self.mu_r_abs = self.material_database.get_material_attribute(material_name=self.material,
+                                                                          attribute="initial_permeability")
 
         # Set attributes of core with given keywords
         # TODO Should we allow this? Technically this is not how an user interface should be designed
