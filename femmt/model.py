@@ -208,7 +208,6 @@ class Core:
     loss_approach: LossApproach = None
 
     # Database
-    # material_database is variable to load in material_database
     temperature: float  # temperature at which data is required
     material: str  # material to be accessed from data base
     datasource: str  # type of data to be accessed ( datasheet or measurement)
@@ -313,7 +312,7 @@ class Core:
         # Material Parameters
         # General
         # Initialize database
-        self.material_database = mdb.MaterialDatabase(self.mdb_verbosity == Verbosity.Silent)
+        self.material_database = mdb.Data()  # Todo: self.mdb_verbosity == Verbosity.Silent
         if material != 'custom' and isinstance(material, str):
             self.material = Material(material)
         else:
@@ -354,8 +353,10 @@ class Core:
         if self.permittivity["datasource"] == MaterialDataSource.Custom:
             self.sigma = sigma  # from user
         else:
-            self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material,
-                                                                           attribute="resistivity")
+            raise NotImplementedError("Needs to be added, like it was with the previous version of the "
+                                      "materialdatabase. (see below)")
+            # self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material,
+            #                                                                attribute="resistivity")
 
         if self.permeability["datasource"] == MaterialDataSource.Custom:
             # this is a service for the user:
@@ -367,8 +368,10 @@ class Core:
                 self.permeability_type = PermeabilityType.RealValue
         else:
             self.permeability_type = PermeabilityType.FromData
-            self.mu_r_abs = self.material_database.get_material_attribute(material_name=self.material,
-                                                                          attribute="initial_permeability")
+            raise NotImplementedError("Needs to be added, like it was with the previous version of the "
+                                      "materialdatabase. (see below)")
+            # self.mu_r_abs = self.material_database.get_material_attribute(material_name=self.material,
+            #                                                               attribute="initial_permeability")
 
         # Set attributes of core with given keywords
         # TODO Should we allow this? Technically this is not how an user interface should be designed
