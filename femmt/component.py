@@ -1059,7 +1059,7 @@ class MagneticComponent:
             self.core.update_core_material_pro_file(frequency, self.file_data.electro_magnetic_folder_path,
                                                     plot_interpolation)  # frequency update to core class
         if self.core.permittivity["datasource"] != MaterialDataSource.Custom:
-            self.core.update_sigma(frequency)
+            self.core.update_permittivity(frequency)
         # Has the user provided a list of phase angles?
         phase_deg_list = phase_deg_list or []
         # phase_deg_list = np.asarray(phase_deg_list)
@@ -1158,7 +1158,7 @@ class MagneticComponent:
                                                     self.file_data.electro_magnetic_folder_path,
                                                     plot_interpolation)  # frequency update to core class
         if self.core.permittivity["datasource"] != MaterialDataSource.Custom:
-            self.core.update_sigma(self.frequency)
+            self.core.update_permittivity(self.frequency)
         # time simulation parameters
         self.initial_time = 0  # defined 0
         self.step_time = time_list[1]  # convention!!! for fixed time steps

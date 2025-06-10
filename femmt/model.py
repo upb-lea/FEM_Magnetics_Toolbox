@@ -381,7 +381,7 @@ class Core:
         # Needed because of to_dict
         self.kwargs = kwargs
 
-    def update_sigma(self, frequency: bool) -> None:
+    def update_permittivity(self, frequency: bool) -> None:
         """
         Update the core conductivity.
 
