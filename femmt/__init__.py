@@ -3,7 +3,7 @@ from femmt.enumerations import *
 from femmt.logparser import *
 from femmt.data import *
 from femmt.functions import *
-from femmt.model import Conductor, Core, AirGaps, Insulation, StrayPath, VirtualWindingWindow, WindingWindow
+from femmt.model import *
 from femmt.thermal import *
 from femmt.component import *
 from femmt.reluctance import *

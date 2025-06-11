@@ -586,7 +586,7 @@ class MagneticComponent:
             logger.info(f"{complex_permeability=}")
         if self.core.material.permeability_type == PermeabilityType.FixedLossAngle:
             complex_permeability = mu_0 * self.core.material.mu_r_abs * complex(np.cos(np.deg2rad(self.core.material.phi_mu_deg)),
-                                                                       np.sin(np.deg2rad(self.core.material.phi_mu_deg)))
+                                                                                np.sin(np.deg2rad(self.core.material.phi_mu_deg)))
         if self.core.material.permeability_type == PermeabilityType.RealValue:
             complex_permeability = mu_0 * self.core.material.mu_r_abs
         return complex_permeability
@@ -1057,7 +1057,7 @@ class MagneticComponent:
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
         if self.core.material.permeability["datasource"] != MaterialDataSource.Custom:
             self.core.material.update_core_material_pro_file(frequency, self.file_data.electro_magnetic_folder_path,
-                                                    plot_interpolation)  # frequency update to core class
+                                                             plot_interpolation)  # frequency update to core class
         if self.core.material.permittivity["datasource"] != MaterialDataSource.Custom:
             self.core.material.update_permittivity(frequency)
         # Has the user provided a list of phase angles?
@@ -1155,8 +1155,8 @@ class MagneticComponent:
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
         if self.core.material.permeability["datasource"] != MaterialDataSource.Custom:
             self.core.material.update_core_material_pro_file(self.frequency,
-                                                    self.file_data.electro_magnetic_folder_path,
-                                                    plot_interpolation)  # frequency update to core class
+                                                             self.file_data.electro_magnetic_folder_path,
+                                                             plot_interpolation)  # frequency update to core class
         if self.core.material.permittivity["datasource"] != MaterialDataSource.Custom:
             self.core.material.update_permittivity(self.frequency)
         # time simulation parameters
@@ -2152,7 +2152,9 @@ class MagneticComponent:
                         # second part (outer leg). It can be handled as outer corner
                         s_2 = np.sqrt(((self.core.geometry.r_inner ** 2) + (self.core.geometry.r_outer ** 2)) / 2) - self.core.geometry.r_inner
                         core_outer_stray_length = (np.pi / 4) * (s_2 + (core_part_length / 2))
-                        core_outer_stray_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter, core_outer_stray_length, self.core.material.mu_r_abs) * 2
+                        core_outer_stray_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter,
+                                                                      core_outer_stray_length,
+                                                                      self.core.material.mu_r_abs) * 2
                         # third part (window section). it can be handled as winding window section
                         radius_center_leg = self.core.geometry.core_inner_diameter / 2
                         radius_window_section = self.stray_path.length - radius_center_leg
@@ -2192,7 +2194,10 @@ class MagneticComponent:
             # winding window
             length_window = self.core.geometry.window_w
             window_reluctance = (fr.r_core_top_bot_radiant
-                                 (self.core.geometry.core_inner_diameter, length_window, self.core.material.mu_r_abs, self.core.geometry.core_inner_diameter / 4) * 2)
+                                 (self.core.geometry.core_inner_diameter,
+                                  length_window,
+                                  self.core.material.mu_r_abs,
+                                  self.core.geometry.core_inner_diameter / 4) * 2)
             core_part3_reluctance = corner_reluctance + window_reluctance
             # if it is integrated transformer, half will be to the top part and half to the bottom part
             if self.stray_path:

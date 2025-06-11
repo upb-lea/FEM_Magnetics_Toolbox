@@ -17,6 +17,8 @@ from femmt.enumerations import *
 from femmt.constants import *
 from femmt.functions_drawing import *
 import materialdatabase as mdb
+from materialdatabase import Material, MeasurementSetup
+
 
 class Conductor:
     """
@@ -222,10 +224,9 @@ class CoreGeometry:
 
             # Empirical correction based on core measurements
             width_meas = 23e-3  # [m]
-            h_meas = 5.2e-3     # [m]
+            h_meas = 5.2e-3  # [m]
             alpha = np.arcsin((width_meas / 2) / (self.core_inner_diameter / 2 + self.window_w))
-            h_outer = (h_meas * 4 * alpha * (self.core_inner_diameter / 2 + self.window_w)) / (
-                2 * np.pi * (self.core_inner_diameter / 2 + self.window_w))
+            h_outer = (h_meas * 4 * alpha * (self.core_inner_diameter / 2 + self.window_w)) / (2 * np.pi * (self.core_inner_diameter / 2 + self.window_w))
             self.core_h: float = self.window_w + 2 * h_outer
         else:
             self.r_outer: float = fr.calculate_r_outer(self.core_inner_diameter, self.window_w)
@@ -259,10 +260,12 @@ class CoreGeometry:
 
         return base
 
+
 class CoreMaterial:
     """Encapsulate a magnetic core's material properties for simulation.
 
-    This includes magnetic permeability, electric permittivity, conductivity, and core loss modeling. The data can be sourced from measurements, manufacturer datasheets, or set manually.
+    This includes magnetic permeability, electric permittivity, conductivity, and core loss modeling.
+    The data can be sourced from measurements, manufacturer datasheets, or set manually.
     """
 
     def __init__(self,
@@ -327,13 +330,15 @@ class CoreMaterial:
 
         self.permeability = {
             "datasource": MaterialDataSource(permeability_datasource) if isinstance(permeability_datasource, str) else permeability_datasource,
-            "measurement_setup": MeasurementSetup(permeability_measurement_setup) if isinstance(permeability_measurement_setup, str) else permeability_measurement_setup,
+            "measurement_setup": MeasurementSetup(permeability_measurement_setup) if isinstance(permeability_measurement_setup,
+                                                                                                str) else permeability_measurement_setup,
             "datatype": MeasurementDataType(permeability_datatype) if isinstance(permeability_datatype, str) else permeability_datatype,
         }
 
         self.permittivity = {
             "datasource": MaterialDataSource(permittivity_datasource) if isinstance(permittivity_datasource, str) else permittivity_datasource,
-            "measurement_setup": MeasurementSetup(permittivity_measurement_setup) if isinstance(permittivity_measurement_setup, str) else permittivity_measurement_setup,
+            "measurement_setup": MeasurementSetup(permittivity_measurement_setup) if isinstance(permittivity_measurement_setup,
+                                                                                                str) else permittivity_measurement_setup,
             "datatype": MeasurementDataType(permittivity_datatype) if isinstance(permittivity_datatype, str) else permittivity_datatype,
         }
 
@@ -434,6 +439,7 @@ class CoreMaterial:
             "permittivity_measurement_setup": self.permittivity["measurement_setup"],
             "permittivity_datatype": self.permittivity["datatype"]
         }
+
 
 class Core:
     """Combines geometry and material properties of a magnetic core.
@@ -555,6 +561,7 @@ class Core:
         :rtype: dict
         """
         return {**self.geometry.to_dict(), **self.material.to_dict()}
+
 
 class AirGaps:
     """
@@ -1455,7 +1462,7 @@ class WindingWindow:
         :return:
         """
         if vertical_split_factors is None:
-            vertical_split_factors = [None] * (len(horizontal_split_factors)+1)
+            vertical_split_factors = [None] * (len(horizontal_split_factors) + 1)
 
         # Convert horizontal_split_factors to a numpy array
         horizontal_split_factors = np.array(horizontal_split_factors)
@@ -1471,7 +1478,7 @@ class WindingWindow:
             split_distance = distance  # here, the distance between the two vwws is set automatically
         else:
             horizontal_splits = [self.max_left_bound]
-            horizontal_splits = horizontal_splits + list(self.max_left_bound + (self.max_right_bound-self.max_left_bound) * horizontal_split_factors)
+            horizontal_splits = horizontal_splits + list(self.max_left_bound + (self.max_right_bound - self.max_left_bound) * horizontal_split_factors)
             horizontal_splits.append(self.max_right_bound)
 
         # Initialize lists for cells and virtual_winding_windows
@@ -1479,7 +1486,7 @@ class WindingWindow:
         self.virtual_winding_windows = []
 
         # Create the remaining pairs of virtual winding windows
-        for i in range(0, len(horizontal_splits)-1):
+        for i in range(0, len(horizontal_splits) - 1):
             vertical_splits = [self.max_bot_bound]
             if vertical_split_factors[i] is not None:
                 vertical_splits = vertical_splits + list(self.max_bot_bound + (self.max_top_bound - self.max_bot_bound) * np.array(vertical_split_factors[i]))
@@ -1488,9 +1495,9 @@ class WindingWindow:
             for j in range(0, len(vertical_splits) - 1):
                 self.cells.append(VirtualWindingWindow(
                     bot_bound=vertical_splits[j],
-                    top_bound=vertical_splits[j+1],
+                    top_bound=vertical_splits[j + 1],
                     left_bound=horizontal_splits[i],
-                    right_bound=horizontal_splits[i+1]))
+                    right_bound=horizontal_splits[i + 1]))
 
         # Loop through the number of horizontal splits (plus one to account for the last cells)
         # Append each pair of left and right cells to the virtual_winding_windows list.
