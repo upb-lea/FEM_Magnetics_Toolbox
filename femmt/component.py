@@ -2116,7 +2116,7 @@ class MagneticComponent:
             # If no air gaps, calculate reluctance for the whole left part
             if not sorted_midpoints:
                 core_part_length = self.core.geometry.window_h
-                core_part_reluctance = fr.r_core_tablet_2(core_part_length, self.core.geometry.core_inner_diameter / 2, self.core.geometry.mu_r_abs)
+                core_part_reluctance = fr.r_core_tablet_2(core_part_length, self.core.geometry.core_inner_diameter / 2, self.core.material.mu_r_abs)
                 core_parts_reluctance.append(core_part_reluctance)
                 length.append(core_part_length)
             else:
