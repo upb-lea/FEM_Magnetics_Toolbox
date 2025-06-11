@@ -229,8 +229,7 @@ class CoreGeometry:
             base.update({
                 "window_w": self.window_w,
                 "window_h_bot": self.window_h_bot,
-                "window_h_top": self.window_h_top,
-                "core_h": self.core_h
+                "window_h_top": self.window_h_top
             })
         return base
 
