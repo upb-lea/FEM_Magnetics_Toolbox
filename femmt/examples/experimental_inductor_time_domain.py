@@ -60,7 +60,7 @@ def basic_example_inductor_time_domain(onelab_folder: str = None, show_visual_ou
 
     core = fmt.Core(core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
-                    material=mdb.Material.N49, temperature=45, frequency=inductor_frequency,
+                    material=mdb.Material.N49, temperature=45,
                     permeability_datasource=fmt.MaterialDataSource.Custom,
                     mu_r_abs=3000, phi_mu_deg=0,
                     permittivity_datasource=fmt.MaterialDataSource.Custom,

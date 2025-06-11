@@ -180,310 +180,200 @@ class Conductor:
         }
 
 
-class Core:
-    """
-    Creates the core base for the model.
-
-    # TODO More documentation and get rid of double initialization
-    frequency = 0: mu_r_abs only used if non_linear == False
-    frequency > 0: mu_r_abs is used
-    """
-
-    # Standard material data
-    material: str
-
-    # Permeability
-    # TDK N95 as standard material:
-    permeability_type: PermeabilityType
-    mu_r_abs: float  # Relative Permeability [if complex: mu_complex = re_mu_rel + j*im_mu_rel with mu_rel=|mu_complex|]
-    phi_mu_deg: float  # mu_complex = mu_r_abs * exp(j*phi_mu_deg)
-
-    # Permittivity - [Conductivity in a magneto-quasistatic sense]
-    sigma: complex  # complex equivalent permittivity [frequency-dependent], real and imaginary part
-
-    steinmetz_loss: int = 0
-    generalized_steinmetz_loss: int = 0
-
-    # Needed for to_dict
-    loss_approach: LossApproach = None
-
-    # Database
-    temperature: float  # temperature at which data is required
-    material: str  # material to be accessed from data base
-    datasource: str  # type of data to be accessed ( datasheet or measurement)
-
-    file_path_to_solver_folder: str  # location to create temporary pro file
-
-    mdb_verbosity: Verbosity
-
-    def __init__(self,
-                 # dimensions
-                 core_type: CoreType = CoreType.Single,
-                 core_dimensions=None,
-                 detailed_core_model: bool = False,
-
-                 # material data
-                 material: str = "custom",
-                 temperature: float = None,
-                 loss_approach: LossApproach = LossApproach.LossAngle,
-                 mu_r_abs: float = 3000,
-
-                 # permeability
-                 permeability_datasource: MaterialDataSource = None,
-                 permeability_datatype: MeasurementDataType = None,
-                 permeability_measurement_setup: str = None,
-                 phi_mu_deg: float = None,
-                 non_linear: bool = False,
-
-                 # permittivity
-                 permittivity_datasource: str = None,
-                 permittivity_datatype: str = None,
-                 permittivity_measurement_setup: str = None,
-                 sigma: complex = None,
-                 steinmetz_parameter: list = None,
-                 generalized_steinmetz_parameter: list = None,
-                 mdb_verbosity: Verbosity = Verbosity.Silent,
-                 **kwargs):  # TODO Is this kwargs really needed? Can this be removed?
-        """Initialize the core.
-
-        :param core_inner_diameter: diameter of the inner core
-        :type core_inner_diameter: float
-        :param window_w: width of the winding window
-        :type window_w: float
-        :param window_h: height of the winding window
-        :type window_h: float
-        :param material: Material name, e.g. 'N95', defaults to "custom"mu_rel
-        :type material: str, optional
-        :param mu_r_abs: absolute value of the permeability, defaults to 3000
-        :type mu_r_abs: float, optional
-        :param phi_mu_deg: loss angle of the material in degree, defaults to None
-        :type phi_mu_deg: float, optional
-        :param sigma: core conductivity, defaults to None
-        :type sigma: float, optional
-        :param non_linear: _description_, defaults to False
-        :type non_linear: bool, optional
-        :param detailed_core_model: Manual correction so cross-section of inner leg is not same as outer leg (PQ 40/40 only!!), defaults to False (recommended!)
-        :type detailed_core_model: bool, optional
-        """
-        self.mdb_verbosity = mdb_verbosity
-
-        # Set parameters
-        self.core_type = core_type  # Basic shape of magnetic conductor
-
-        # Geometric Parameters
+class CoreGeometry:
+    def __init__(self, core_type, core_dimensions, detailed_core_model):
+        self.core_type = core_type
+        self.correct_outer_leg = detailed_core_model
         self.core_inner_diameter = core_dimensions.core_inner_diameter
         self.window_w = core_dimensions.window_w
-        self.correct_outer_leg = detailed_core_model
-        self.core_thickness = self.core_inner_diameter / 4  # default: A_inner_leg = A_outer_leg(s)
-
+        self.core_thickness = self.core_inner_diameter / 4
         self.r_inner = self.window_w + self.core_inner_diameter / 2
 
         if self.core_type == CoreType.Single:
             self.window_h = core_dimensions.window_h
             self.number_core_windows = 2
             self.core_h = self.window_h + 2 * self.core_thickness
-            self.core_h_center_leg = self.window_h + 2 * self.core_thickness
-        if self.core_type == CoreType.Stacked:
+            self.core_h_center_leg = self.core_h
+
+        elif self.core_type == CoreType.Stacked:
             self.window_h_bot = core_dimensions.window_h_bot
             self.window_h_top = core_dimensions.window_h_top
             self.core_h = self.window_h_bot + 2 * self.core_thickness
             self.number_core_windows = 4
 
         if detailed_core_model:
-            # Definition of the center core height
-            self.core_h_center_leg = core_dimensions.core_h  # Directly taken from core database
-
-            # Calculation of the outer core radius  TODO: additional value from core specification needed
-            # self.r_outer = np.sqrt(A_out / np.pi + self.r_inner ** 2)  # Hardcode for PQ 40/40
+            self.core_h_center_leg = core_dimensions.core_h
             self.r_outer = fr.calculate_r_outer(self.core_inner_diameter, self.window_w)
-
-            # Calculation of the outer core height TODO:additional value from core specification needed
-            width_meas = 23e-3  # for PQ4040
-            h_meas = 5.2e-3  # for PQ4040
+            width_meas = 23e-3
+            h_meas = 5.2e-3
             alpha = np.arcsin((width_meas / 2) / (self.core_inner_diameter / 2 + self.window_w))
-            h_outer = (h_meas * 4 * alpha * (self.core_inner_diameter / 2 + self.window_w)) / (2 * np.pi * (self.core_inner_diameter / 2 + self.window_w))
+            h_outer = (h_meas * 4 * alpha * (self.core_inner_diameter / 2 + self.window_w)) / (
+                    2 * np.pi * (self.core_inner_diameter / 2 + self.window_w))
             self.core_h = self.window_h + 2 * h_outer
-
         else:
-            # set r_outer, so cross-section of outer leg has same cross-section as inner leg
-            # this is the default-case
             self.r_outer = fr.calculate_r_outer(self.core_inner_diameter, self.window_w)
-
-        # Material Parameters
-        # General
-        # Initialize database
-        self.material_database = mdb.Data()  # Todo: self.mdb_verbosity == Verbosity.Silent
-        if material != 'custom' and isinstance(material, str):
-            self.material = Material(material)
-        else:
-            self.material = material
-        self.file_path_to_solver_folder = None
-        self.temperature = temperature
-
-        # Permeability
-        if permeability_datasource != 'custom' and isinstance(permeability_datasource, str):
-            permeability_datasource = MaterialDataSource(permeability_datasource)
-        if permeability_measurement_setup != 'custom' and permeability_measurement_setup is not None and isinstance(permeability_datasource, str):
-            permeability_measurement_setup = MeasurementSetup(permeability_measurement_setup)
-        if permeability_datatype != 'custom' and permeability_datatype is not None and isinstance(permeability_datatype, str):
-            permeability_datatype = MeasurementDataType(permeability_datatype)
-
-        self.permeability = {"datasource": permeability_datasource,
-                             "measurement_setup": permeability_measurement_setup,
-                             "datatype": permeability_datatype}
-        self.non_linear = non_linear
-        self.mu_r_abs = mu_r_abs
-        self.phi_mu_deg = phi_mu_deg
-        self.loss_approach = loss_approach
-
-        # Permittivity
-        self.complex_permittivity = None
-        if permittivity_datasource != 'custom' and isinstance(permittivity_datasource, str):
-            permittivity_datasource = MaterialDataSource(permittivity_datasource)
-        if permittivity_measurement_setup != 'custom' and permittivity_measurement_setup is not None and isinstance(permittivity_datasource, str):
-            permittivity_measurement_setup = MeasurementSetup(permittivity_measurement_setup)
-        if permittivity_datatype != 'custom' and permittivity_datatype is not None and isinstance(permittivity_datatype, str):
-            permittivity_datatype = MeasurementDataType(permittivity_datatype)
-
-        self.permittivity = {"datasource": permittivity_datasource,
-                             "measurement_setup": permittivity_measurement_setup,
-                             "datatype": permittivity_datatype}
-        self.sigma = sigma
-
-        if self.permittivity["datasource"] == MaterialDataSource.Custom:
-            self.sigma = sigma  # from user
-        else:
-            raise NotImplementedError("Needs to be added, like it was with the previous version of the "
-                                      "materialdatabase. (see below)")
-            # self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material,
-            #                                                                attribute="resistivity")
-
-        if self.permeability["datasource"] == MaterialDataSource.Custom:
-            # this is a service for the user:
-            # In case of not giving a fixed loss angle phi_mu_deg,
-            # the initial permeability from datasheet is used (RealValue)
-            if phi_mu_deg is not None and phi_mu_deg != 0:
-                self.permeability_type = PermeabilityType.FixedLossAngle
-            else:
-                self.permeability_type = PermeabilityType.RealValue
-        else:
-            self.permeability_type = PermeabilityType.FromData
-            raise NotImplementedError("Needs to be added, like it was with the previous version of the "
-                                      "materialdatabase. (see below)")
-            # self.mu_r_abs = self.material_database.get_material_attribute(material_name=self.material,
-            #                                                               attribute="initial_permeability")
-
-        # Set attributes of core with given keywords
-        # TODO Should we allow this? Technically this is not how an user interface should be designed
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
-        # Needed because of to_dict
-        self.kwargs = kwargs
-
-    def update_permittivity(self, frequency: bool) -> None:
-        """
-        Update the core conductivity.
-
-        The core conductivity is used to calculate eddy current losses inside the FEM simulation.
-
-        In case of datasheet parameters, the DC-resistance is loaded from the material database.
-        In case of measurement parameters, the AC-resistance is loaded from the material database.
-         * The AC-resistance is interpolated by the material database for the certain frequency
-         * AC-resistance = imaginary part of complex permittivity
-
-        The AC-resistance decreases when increasing the frequency.
-        Using AC-resistance (interpolated from measurements) is more accurate than the static DC-datasheet resistance.
-
-        The conductivity 'sigma' = (1 / AC-resistance) is used for the simulation.
-
-        :param frequency: operating frequency in Hz
-        :type frequency: float
-        """
-        if self.permittivity["datasource"] == MaterialDataSource.Measurement:
-            epsilon_r, phi_epsilon_deg = self.material_database.get_permittivity(temperature=self.temperature,
-                                                                                 frequency=frequency,
-                                                                                 material_name=self.material,
-                                                                                 datasource=self.permittivity["datasource"],
-                                                                                 measurement_setup=self.permittivity["measurement_setup"],
-                                                                                 datatype=self.permittivity["datatype"])
-            self.complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(phi_epsilon_deg)), np.sin(np.deg2rad(phi_epsilon_deg)))
-            self.sigma = 2 * np.pi * frequency * complex(self.complex_permittivity.imag, self.complex_permittivity.real)
-            # self.sigma = 2 * np.pi * frequency * complex(self.complex_permittivity.imag, 0)
-            # self.sigma = complex(1/10, 0)
-
-        if self.permittivity["datasource"] == MaterialDataSource.ManufacturerDatasheet:
-            self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material, attribute="resistivity")
-
-    def update_core_material_pro_file(self, frequency: int, electro_magnetic_folder: str, plot_interpolation: bool = False):
-        """
-        Update the pro file for the solver depending on the frequency of the upcoming simulation.
-
-        :param frequency: Frequency in Hz
-        :type frequency: int
-        :param electro_magnetic_folder: electro magnetic results filepath
-        :type electro_magnetic_folder: str
-        :param plot_interpolation: True to plot the interpolation results for the material parameters
-        :type plot_interpolation: bool
-        """
-        if self.mdb_verbosity == Verbosity.ToConsole:
-            logger.info(f"{self.permeability['datasource']=}")
-        self.material_database.permeability_data_to_pro_file(temperature=self.temperature, frequency=frequency,
-                                                             material_name=self.material,
-                                                             datasource=self.permeability["datasource"],
-                                                             datatype=self.permeability["datatype"],
-                                                             measurement_setup=self.permeability["measurement_setup"],
-                                                             parent_directory=electro_magnetic_folder,
-                                                             plot_interpolation=plot_interpolation)
 
     def to_dict(self):
-        """Transfer object parameters to a dictionary. Important method to create the final result-log."""
-        # TODO: mdb
+        base = {
+            "core_type": self.core_type,
+            "core_inner_diameter": self.core_inner_diameter,
+            "correct_outer_leg": self.correct_outer_leg,
+        }
         if self.core_type == CoreType.Single:
-            return {
-                "core_type": self.core_type,
-                "core_inner_diameter": self.core_inner_diameter,
-                "core_h": self.core_h,
+            base.update({
                 "window_w": self.window_w,
                 "window_h": self.window_h,
-                "material": self.material,
-                "loss_approach": self.loss_approach.name,
-                "mu_r_abs": self.mu_r_abs,
-                "phi_mu_deg": self.phi_mu_deg,
-                "sigma": [self.sigma.real, self.sigma.imag],
-                "non_linear": self.non_linear,
-                "correct_outer_leg": self.correct_outer_leg,
-                "temperature": self.temperature,
-                "permeability_datasource": self.permeability["datasource"],
-                "permeability_measurement_setup": self.permeability["measurement_setup"],
-                "permeability_datatype": self.permeability["datatype"],
-                "permittivity_datasource": self.permittivity["datasource"],
-                "permittivity_measurement_setup": self.permittivity["measurement_setup"],
-                "permittivity_datatype": self.permittivity["datatype"]
-            }
-
-        elif self.core_type == CoreType.Stacked:
-            return {
-                "core_type": self.core_type,
-                "core_inner_diameter": self.core_inner_diameter,
+                "core_h": self.core_h
+            })
+        else:
+            base.update({
                 "window_w": self.window_w,
                 "window_h_bot": self.window_h_bot,
                 "window_h_top": self.window_h_top,
-                "material": self.material,
-                "loss_approach": self.loss_approach.name,
-                "mu_r_abs": self.mu_r_abs,
-                "phi_mu_deg": self.phi_mu_deg,
-                "sigma": [self.sigma.real, self.sigma.imag],
-                "non_linear": self.non_linear,
-                "correct_outer_leg": self.correct_outer_leg,
-                "temperature": self.temperature,
-                "permeability_datasource": self.permeability["datasource"],
-                "permeability_measurement_setup": self.permeability["measurement_setup"],
-                "permeability_datatype": self.permeability["datatype"],
-                "permittivity_datasource": self.permittivity["datasource"],
-                "permittivity_measurement_setup": self.permittivity["measurement_setup"],
-                "permittivity_datatype": self.permittivity["datatype"]
-            }
+                "core_h": self.core_h
+            })
+        return base
+
+
+class CoreMaterial:
+    def __init__(self,
+                 material,
+                 temperature,
+                 loss_approach,
+                 mu_r_abs,
+                 permeability_datasource,
+                 permeability_datatype,
+                 permeability_measurement_setup,
+                 phi_mu_deg,
+                 non_linear,
+                 permittivity_datasource,
+                 permittivity_datatype,
+                 permittivity_measurement_setup,
+                 sigma,
+                 mdb_verbosity):
+        self.material_database = mdb.MaterialDatabase()
+        self.file_path_to_solver_folder = None
+        self.temperature = temperature
+        self.loss_approach = loss_approach
+        self.non_linear = non_linear
+        self.mu_r_abs = mu_r_abs
+        self.phi_mu_deg = phi_mu_deg
+        self.mdb_verbosity = mdb_verbosity
+
+        self.material = Material(material) if material != 'custom' else material
+
+        self.permeability = {
+            "datasource": MaterialDataSource(permeability_datasource) if isinstance(permeability_datasource, str) else permeability_datasource,
+            "measurement_setup": MeasurementSetup(permeability_measurement_setup) if isinstance(permeability_measurement_setup, str) else permeability_measurement_setup,
+            "datatype": MeasurementDataType(permeability_datatype) if isinstance(permeability_datatype, str) else permeability_datatype,
+        }
+
+        self.permittivity = {
+            "datasource": MaterialDataSource(permittivity_datasource) if isinstance(permittivity_datasource, str) else permittivity_datasource,
+            "measurement_setup": MeasurementSetup(permittivity_measurement_setup) if isinstance(permittivity_measurement_setup, str) else permittivity_measurement_setup,
+            "datatype": MeasurementDataType(permittivity_datatype) if isinstance(permittivity_datatype, str) else permittivity_datatype,
+        }
+
+        if self.permittivity["datasource"] == MaterialDataSource.Custom:
+            self.sigma = sigma
+        else:
+            self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material, attribute="resistivity")
+
+        if self.permeability["datasource"] == MaterialDataSource.Custom:
+            self.permeability_type = PermeabilityType.FixedLossAngle if phi_mu_deg else PermeabilityType.RealValue
+        else:
+            self.permeability_type = PermeabilityType.FromData
+            self.mu_r_abs = self.material_database.get_material_attribute(material_name=self.material, attribute="initial_permeability")
+
+        self.complex_permittivity = None
+
+    def update_permittivity(self, frequency: float) -> None:
+        if self.permittivity["datasource"] == MaterialDataSource.Measurement:
+            epsilon_r, phi_epsilon_deg = self.material_database.get_permittivity(
+                temperature=self.temperature,
+                frequency=frequency,
+                material_name=self.material,
+                datasource=self.permittivity["datasource"],
+                measurement_setup=self.permittivity["measurement_setup"],
+                datatype=self.permittivity["datatype"]
+            )
+            self.complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(phi_epsilon_deg)),
+                                                                         np.sin(np.deg2rad(phi_epsilon_deg)))
+            self.sigma = 2 * np.pi * frequency * complex(self.complex_permittivity.imag,
+                                                         self.complex_permittivity.real)
+
+        elif self.permittivity["datasource"] == MaterialDataSource.ManufacturerDatasheet:
+            self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material,
+                                                                           attribute="resistivity")
+
+    def update_core_material_pro_file(self, frequency: int, folder: str, plot_interpolation=False):
+        self.material_database.permeability_data_to_pro_file(
+            temperature=self.temperature,
+            frequency=frequency,
+            material_name=self.material,
+            datasource=self.permeability["datasource"],
+            datatype=self.permeability["datatype"],
+            measurement_setup=self.permeability["measurement_setup"],
+            parent_directory=folder,
+            plot_interpolation=plot_interpolation
+        )
+
+    def to_dict(self):
+        return {
+            "material": self.material,
+            "loss_approach": self.loss_approach.name,
+            "mu_r_abs": self.mu_r_abs,
+            "phi_mu_deg": self.phi_mu_deg,
+            "sigma": [self.sigma.real, self.sigma.imag],
+            "non_linear": self.non_linear,
+            "temperature": self.temperature,
+            "permeability_datasource": self.permeability["datasource"],
+            "permeability_measurement_setup": self.permeability["measurement_setup"],
+            "permeability_datatype": self.permeability["datatype"],
+            "permittivity_datasource": self.permittivity["datasource"],
+            "permittivity_measurement_setup": self.permittivity["measurement_setup"],
+            "permittivity_datatype": self.permittivity["datatype"]
+        }
+
+
+class Core:
+    def __init__(self,
+                 core_type: CoreType = CoreType.Single,
+                 core_dimensions=None,
+                 detailed_core_model: bool = False,
+
+                 material: str = "custom",
+                 temperature: float = None,
+                 loss_approach: LossApproach = LossApproach.LossAngle,
+                 mu_r_abs: float = 3000,
+
+                 permeability_datasource: MaterialDataSource = None,
+                 permeability_datatype: MeasurementDataType = None,
+                 permeability_measurement_setup: str = None,
+                 phi_mu_deg: float = None,
+                 non_linear: bool = False,
+
+                 permittivity_datasource: str = None,
+                 permittivity_datatype: str = None,
+                 permittivity_measurement_setup: str = None,
+                 sigma: complex = None,
+
+                 mdb_verbosity: Verbosity = Verbosity.Silent):
+
+        self.geometry = CoreGeometry(core_type, core_dimensions, detailed_core_model)
+        self.material = CoreMaterial(material, temperature, loss_approach, mu_r_abs,
+                                     permeability_datasource, permeability_datatype, permeability_measurement_setup,
+                                     phi_mu_deg, non_linear, permittivity_datasource, permittivity_datatype,
+                                     permittivity_measurement_setup, sigma, mdb_verbosity)
+
+    def update_permittivity(self, frequency: float):
+        self.material.update_permittivity(frequency)
+
+    def update_core_material_pro_file(self, frequency: int, folder: str, plot_interpolation=False):
+        self.material.update_core_material_pro_file(frequency, folder, plot_interpolation)
+
+    def to_dict(self):
+        return {**self.geometry.to_dict(), **self.material.to_dict()}
 
 
 class AirGaps:
@@ -559,8 +449,8 @@ class AirGaps:
             if position_value > 100 or position_value < 0:
                 raise Exception("AirGap position values for the percent method need to be between 0 and 100.")
             # Calculate the maximum and minimum position in percent considering the winding window height and air gap length
-            max_position = 100 - (height / self.core.window_h) * 51
-            min_position = (height / self.core.window_h) * 51
+            max_position = 100 - (height / self.core.geometry.window_h) * 51
+            min_position = (height / self.core.geometry.window_h) * 51
 
             # Adjust the position value if it exceeds the bounds of 0 to 100 percent
             if position_value > max_position:
@@ -568,32 +458,32 @@ class AirGaps:
             elif position_value < min_position:
                 position_value = min_position
 
-            position = position_value / 100 * self.core.window_h - self.core.window_h / 2
+            position = position_value / 100 * self.core.geometry.window_h - self.core.geometry.window_h / 2
 
             # # When the position is above the winding window it needs to be adjusted
-            if position + height / 2 > self.core.window_h / 2:
-                position -= (position + height / 2) - self.core.window_h / 2
-            elif position - height / 2 < -self.core.window_h / 2:
-                position += -self.core.window_h / 2 - (position - height / 2)
+            if position + height / 2 > self.core.geometry.window_h / 2:
+                position -= (position + height / 2) - self.core.geometry.window_h / 2
+            elif position - height / 2 < -self.core.geometry.window_h / 2:
+                position += -self.core.geometry.window_h / 2 - (position - height / 2)
 
             self.midpoints.append([leg_position.value, position, height])
             self.number += 1
 
         elif self.method == AirGapMethod.Stacked:
             # Error check for air gap height exceeding core section height
-            if stacked_position == StackedPosition.Top and height > self.core.window_h_top:
+            if stacked_position == StackedPosition.Top and height > self.core.geometry.window_h_top:
                 raise ValueError(f"Air gap height ({height} m) exceeds the available top core section height "
-                                 f"({self.core.window_h_top} m).")
-            elif stacked_position == StackedPosition.Bot and height > self.core.window_h_bot:
+                                 f"({self.core.geometry.window_h_top} m).")
+            elif stacked_position == StackedPosition.Bot and height > self.core.geometry.window_h_bot:
                 raise ValueError(f"Air gap height ({height} m) exceeds the available bottom core section height "
-                                 f"({self.core.window_h_bot} m).")
+                                 f"({self.core.geometry.window_h_bot} m).")
             # set midpoints
             # TODO: handle top and bot
             if stacked_position == StackedPosition.Bot:
                 self.midpoints.append([0, 0, height])
                 self.number += 1
             if stacked_position == StackedPosition.Top:
-                self.midpoints.append([0, self.core.window_h_bot / 2 + self.core.core_thickness + height / 2, height])
+                self.midpoints.append([0, self.core.geometry.window_h_bot / 2 + self.core.geometry.core_thickness + height / 2, height])
                 self.number += 1
 
         else:
@@ -979,16 +869,16 @@ class WindingWindow:
         self.stray_path: StrayPath = stray_path
         self.air_gaps: AirGaps = air_gaps
 
-        if self.core.core_type == CoreType.Single:
-            self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[1]
-            self.max_top_bound = core.window_h / 2 - insulations.core_cond[0]
-            self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
-            self.max_right_bound = core.r_inner - insulations.core_cond[3]
-        elif self.core.core_type == CoreType.Stacked:  # top, bot, left, right
-            self.max_bot_bound = -core.window_h_bot / 2 + insulations.core_cond[1]
-            self.max_top_bound = core.window_h_bot / 2 + core.window_h_top + core.core_thickness - insulations.core_cond[0]
-            self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
-            self.max_right_bound = core.r_inner - insulations.core_cond[3]
+        if self.core.geometry.core_type == CoreType.Single:
+            self.max_bot_bound = -core.geometry.window_h / 2 + insulations.core_cond[1]
+            self.max_top_bound = core.geometry.window_h / 2 - insulations.core_cond[0]
+            self.max_left_bound = core.geometry.core_inner_diameter / 2 + insulations.core_cond[2]
+            self.max_right_bound = core.geometry.r_inner - insulations.core_cond[3]
+        elif self.core.geometry.core_type == CoreType.Stacked:  # top, bot, left, right
+            self.max_bot_bound = -core.geometry.window_h_bot / 2 + insulations.core_cond[1]
+            self.max_top_bound = core.geometry.window_h_bot / 2 + core.geometry.window_h_top + core.geometry.core_thickness - insulations.core_cond[0]
+            self.max_left_bound = core.geometry.core_inner_diameter / 2 + insulations.core_cond[2]
+            self.max_right_bound = core.geometry.r_inner - insulations.core_cond[3]
 
         # Insulations
         self.insulations = insulations

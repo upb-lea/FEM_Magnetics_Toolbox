@@ -159,7 +159,7 @@ def fixture_inductor_core_material_database(temp_folder: pytest.fixture):
                                                         core_h=core_db["core_h"])
 
         core = fmt.Core(core_type=fmt.CoreType.Single,
-                        core_dimensions=core_dimensions, material=mdb.Material.N95, temperature=25, frequency=100000,
+                        core_dimensions=core_dimensions, material=mdb.Material.N95, temperature=25,
                         permeability_datasource=fmt.MaterialDataSource.ManufacturerDatasheet,
                         permittivity_datasource=fmt.MaterialDataSource.ManufacturerDatasheet)
         geo.set_core(core)
@@ -280,7 +280,7 @@ def fixture_inductor_core_material_database_measurement(temp_folder: pytest.fixt
                                                         core_h=core_db["core_h"])
 
         core = fmt.Core(core_type=fmt.CoreType.Single,
-                        core_dimensions=core_dimensions, material=mdb.Material.N95, temperature=25, frequency=100000,
+                        core_dimensions=core_dimensions, material=mdb.Material.N95, temperature=25,
                         permeability_datasource=fmt.MaterialDataSource.Measurement,
                         permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
                         permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
@@ -1141,7 +1141,7 @@ def fixture_transformer_interleaved_core_fixed_loss_angle(temp_folder: pytest.fi
 
         # 2. set core parameters
         core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
-                        non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10,
+                        non_linear=False, sigma=1, mu_r_abs=3000, phi_mu_deg=10,
                         permeability_datasource=fmt.MaterialDataSource.Custom,
                         permittivity_datasource=fmt.MaterialDataSource.Custom)
         geo.set_core(core)
@@ -1275,7 +1275,7 @@ def fixture_transformer_integrated_core_fixed_loss_angle(temp_folder: pytest.fix
         geo.set_core(core)
 
         # 2.1 set stray path parameters
-        stray_path = fmt.StrayPath(start_index=0, length=geo.core.core_inner_diameter / 2 + geo.core.window_w - 0.001)
+        stray_path = fmt.StrayPath(start_index=0, length=geo.core.geometry.core_inner_diameter / 2 + geo.core.geometry.window_w - 0.001)
         geo.set_stray_path(stray_path)
 
         # 3. set air gap parameters
@@ -1555,7 +1555,7 @@ def fixture_transformer_5_windings(temp_folder: pytest.fixture):
         # 2. set core parameters
         core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=16.1e-3, window_w=(22.5 - 12) / 2 * 1e-3,
                                                         core_inner_diameter=12e-3, core_h=22e-3)
-        core = fmt.Core(core_dimensions=core_dimensions, material=fmt.Material.N95, temperature=60, frequency=100000,
+        core = fmt.Core(core_dimensions=core_dimensions, material=fmt.Material.N95, temperature=60,
                         # permeability_datasource="manufacturer_datasheet",
                         permeability_datasource=fmt.MaterialDataSource.Measurement,
                         permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
@@ -1725,7 +1725,7 @@ def fixture_inductor_time_domain(temp_folder: pytest.fixture):
         inductor_frequency = 270000
         core = fmt.Core(core_type=fmt.CoreType.Single,
                         core_dimensions=core_dimensions,
-                        material=mdb.Material.N49, temperature=45, frequency=inductor_frequency,
+                        material=mdb.Material.N49, temperature=45,
                         permeability_datasource=fmt.MaterialDataSource.Custom,
                         mu_r_abs=3000, phi_mu_deg=0,
                         permittivity_datasource=fmt.MaterialDataSource.Custom,
@@ -1811,7 +1811,7 @@ def fixture_transformer_time_domain(temp_folder: pytest.fixture):
         core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295, core_h=0.04)
         core = fmt.Core(core_type=fmt.CoreType.Single,
                         core_dimensions=core_dimensions,
-                        material=mdb.Material.N49, temperature=45, frequency=200000,
+                        material=mdb.Material.N49, temperature=45,
                         permeability_datasource=fmt.MaterialDataSource.Custom,
                         mu_r_abs=3000, phi_mu_deg=0,
                         permittivity_datasource=fmt.MaterialDataSource.Custom,
@@ -1903,7 +1903,7 @@ def fixture_transformer_3_windings_time_domain(temp_folder: pytest.fixture):
         core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.06, window_w=0.03, core_inner_diameter=0.015, core_h=0.08)
         core = fmt.Core(core_type=fmt.CoreType.Single,
                         core_dimensions=core_dimensions,
-                        material=mdb.Material.N49, temperature=45, frequency=200000,
+                        material=mdb.Material.N49, temperature=45,
                         permeability_datasource=fmt.MaterialDataSource.Custom,
                         mu_r_abs=3000, phi_mu_deg=0,
                         permittivity_datasource=fmt.MaterialDataSource.Custom,

@@ -44,7 +44,7 @@ def advanced_example_inductor_sweep(onelab_folder: str = None, show_visual_outpu
 
     core = fmt.Core(core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
-                    material=mdb.Material.N95, temperature=30, frequency=inductor_frequency,
+                    material=mdb.Material.N95, temperature=30,
                     permeability_datasource=fmt.MaterialDataSource.Measurement,
                     permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
                     permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,

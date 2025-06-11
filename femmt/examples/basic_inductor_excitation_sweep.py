@@ -60,7 +60,7 @@ def basic_example_inductor_excitation_sweep(onelab_folder: str = None, show_visu
 
     core = fmt.Core(core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
-                    material="N95", temperature=25, frequency=100000,
+                    material="N95", temperature=25,
                     permeability_datasource=fmt.MaterialDataSource.Measurement,
                     permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
                     permeability_measurement_setup="LEA_LK",

@@ -24,8 +24,8 @@ def create_stacked_winding_windows(core: Core, insulation: Insulation) -> (Windi
     winding_window_top = WindingWindow(core, insulation)
     winding_window_bot = WindingWindow(core, insulation)
 
-    max_pos = core.window_h_bot / 2 + core.core_inner_diameter / 4  # TODO: could also be done arbitrarily
-    min_pos = core.window_h_bot / 2
+    max_pos = core.geometry.window_h_bot / 2 + core.geometry.core_inner_diameter / 4  # TODO: could also be done arbitrarily
+    min_pos = core.geometry.window_h_bot / 2
     distance = max_pos - min_pos
     horizontal_split = min_pos + distance / 2
     insulation.vww_insulations = distance + 2 * min(insulation.core_cond)  # TODO: enhance the insulations situation!!!
@@ -301,14 +301,14 @@ def set_center_tapped_windings(core: Core,
 
     def define_rows():
         primary_row = single_row(number_of_conds_per_winding=primary_turns,
-                                 window_width=core.window_w - insulation.core_cond[2] - insulation.core_cond[3],
+                                 window_width=core.geometry.window_w - insulation.core_cond[2] - insulation.core_cond[3],
                                  winding_tag=WindingTag.Primary,
                                  conductor_type=ConductorType.RoundLitz,
                                  radius=primary_radius,
                                  cond_cond_isolation=insulation.cond_cond[0][0])
 
         secondary_row = single_row(number_of_conds_per_winding=secondary_parallel_turns,
-                                   window_width=core.window_w - insulation.core_cond[2] - insulation.core_cond[3],
+                                   window_width=core.geometry.window_w - insulation.core_cond[2] - insulation.core_cond[3],
                                    winding_tag=WindingTag.Secondary,
                                    conductor_type=ConductorType.RectangularSolid,
                                    thickness=secondary_thickness_foil)
@@ -319,16 +319,16 @@ def set_center_tapped_windings(core: Core,
     primary_row, secondary_row, tertiary_row = define_rows()
 
     # Depending on core geometry, define the winding window
-    if core.core_type == CoreType.Single:
+    if core.geometry.core_type == CoreType.Single:
         ww_bot = WindingWindow(core, insulation)
-        available_height = core.window_h - iso_top_core - iso_bot_core
-    elif core.core_type == CoreType.Stacked:
+        available_height = core.geometry.window_h - iso_top_core - iso_bot_core
+    elif core.geometry.core_type == CoreType.Stacked:
         ww_top, ww_bot = create_stacked_winding_windows(core, insulation)
         vww_top = ww_top.split_window(WindingWindowSplit.NoSplitWithBobbin, top_bobbin=bobbin_coil_top, bot_bobbin=bobbin_coil_bot,
                                       left_bobbin=bobbin_coil_left, right_bobbin=bobbin_coil_right)
-        available_height = core.window_h_bot - iso_top_core - iso_bot_core
+        available_height = core.geometry.window_h_bot - iso_top_core - iso_bot_core
     else:
-        raise Exception(f"Unknown core type {core.core_type}")
+        raise Exception(f"Unknown core type {core.geometry.core_type}")
 
     # Define the transformer winding stack
     transformer_stack = stack_center_tapped_transformer(primary_row, secondary_row, tertiary_row,
@@ -345,11 +345,11 @@ def set_center_tapped_windings(core: Core,
                                       wrap_para_type=wrap_para_type, foil_horizontal_placing_strategy=foil_horizontal_placing_strategy)
 
     # If "stacked-core", also set primary coil turns
-    if core.core_type == CoreType.Stacked:
+    if core.geometry.core_type == CoreType.Stacked:
         vww_top.set_winding(winding1, primary_coil_turns, None)
 
     # Depending on core geometry, return winding window(s) and insulation
-    if core.core_type == CoreType.Single:
+    if core.geometry.core_type == CoreType.Single:
         return insulation, ww_bot
-    elif core.core_type == CoreType.Stacked:
+    elif core.geometry.core_type == CoreType.Stacked:
         return insulation, ww_top, ww_bot

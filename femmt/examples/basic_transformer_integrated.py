@@ -117,7 +117,7 @@ def basic_example_transformer_integrated(onelab_folder: str = None, show_visual_
     geo.set_core(core)
 
     # 2.1 set stray path parameters
-    stray_path = fmt.StrayPath(start_index=0, length=geo.core.core_inner_diameter / 2 + geo.core.window_w - 0.001)
+    stray_path = fmt.StrayPath(start_index=0, length=geo.core.geometry.core_inner_diameter / 2 + geo.core.geometry.window_w - 0.001)
     geo.set_stray_path(stray_path)
     print(stray_path)
 

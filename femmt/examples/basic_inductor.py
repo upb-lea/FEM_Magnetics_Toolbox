@@ -121,7 +121,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     core = fmt.Core(core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
                     detailed_core_model=False,
-                    material=fmt.Material.N49, temperature=45, frequency=inductor_frequency,
+                    material=fmt.Material.N49, temperature=45,
                     # permeability_datasource="manufacturer_datasheet",
                     permeability_datasource=fmt.MaterialDataSource.Measurement,
                     permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,

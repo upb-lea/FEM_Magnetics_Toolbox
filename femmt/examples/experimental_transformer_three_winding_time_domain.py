@@ -45,7 +45,7 @@ def basic_example_transformer_three_windings_time_domain(onelab_folder: str = No
     #                 permittivity_datasource=fmt.MaterialDataSource.Custom)
     core = fmt.Core(core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
-                    material=mdb.Material.N49, temperature=45, frequency=200000,
+                    material=mdb.Material.N49, temperature=45,
                     permeability_datasource=fmt.MaterialDataSource.Custom,
                     mu_r_abs=3000, phi_mu_deg=0,
                     permittivity_datasource=fmt.MaterialDataSource.Custom,
