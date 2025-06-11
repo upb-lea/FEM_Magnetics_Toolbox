@@ -257,10 +257,10 @@ def bobbin_database() -> dict:
     # -----------------------
 
     # bobbin_dict["PQ 16/11.6"] = {
-    #     "bobbin_h": 11.6e-3,
-    #     "bobbin_inner_diameter": 7.5e-3,
-    #     "bobbin_window_h": 6.5e-3,
-    #     "bobbin_window_w": 4.0e-3
+    #     "bobbin_h": None,
+    #     "bobbin_inner_diameter": None,
+    #     "bobbin_window_h": None,
+    #     "bobbin_window_w": None
     # }
     bobbin_dict["PQ 20/16"] = {
         "bobbin_h": 18.3e-3,
@@ -304,45 +304,48 @@ def bobbin_database() -> dict:
         "bobbin_window_h": 35.2e-3,
         "bobbin_window_w": (51.3 - 23.2) / 2 * 1e-3
     }
+    bobbin_dict["PQ 65/60"] = {
+        "bobbin_h": 65.5e-3,
+        "bobbin_inner_diameter": 27.3e-3,
+        "bobbin_window_h": 40.7e-3,
+        "bobbin_window_w": (66.5 - 27.3) / 2 * 1e-3
+    }
 
     # -----------------------
     # PM Bobbins
     # -----------------------
 
-    # bobbin_dict["PM 50/39"] = {
-    #     "bobbin_h": 39 * 1e-3,
-    #     "bobbin_inner_diameter": 21e-3,
-    #     "bobbin_window_h": 26.0e-3,
-    #     "bobbin_window_w": (40 - 21) / 2 * 1e-3,
-    # }
-    # bobbin_dict["PM 62/49"] = {
-    #     "bobbin_h": 49 * 1e-3,
-    #     "bobbin_inner_diameter": 26.0e-3,
-    #     "bobbin_window_h": 33.0e-3,
-    #     "bobbin_window_w": (50 - 26) / 2 * 1e-3,
-    # }
-    # bobbin_dict["PM 74/59"] = {
-    #     "bobbin_h": 59 * 1e-3,
-    #     "bobbin_inner_diameter": 30.0e-3,
-    #     "bobbin_window_h": 41.0e-3,
-    #     "bobbin_window_w": (60 - 30) / 2 * 1e-3,
-    # }
-    # bobbin_dict["PM 87/70"] = {
-    #     "bobbin_h": 70 * 1e-3,
-    #     "bobbin_inner_diameter": 32.0e-3,
-    #     "bobbin_window_h": 48.0e-3,
-    #     "bobbin_window_w": (68 - 32) / 2 * 1e-3,
-    # }
-    # bobbin_dict["PM 114/93"] = {
-    #     "bobbin_h": 93 * 1e-3,
-    #     "bobbin_inner_diameter": 44.0e-3,
-    #     "bobbin_window_h": 64.0e-3,
-    #     "bobbin_window_w": (90 - 44) / 2 * 1e-3,
-    # }
-
+    bobbin_dict["PM 114/93"] = {
+        "bobbin_h": 91 * 1e-3,
+        "bobbin_inner_diameter": 44e-3,
+        "bobbin_window_h": 62.3e-3,
+        "bobbin_window_w": (91 - 44) / 2 * 1e-3,
+     }
+    bobbin_dict["PM 50/39"] = {
+        "bobbin_h": 33.8 * 1e-3,
+        "bobbin_inner_diameter": 20.4e-3,
+        "bobbin_window_h": 25.9e-3,
+        "bobbin_window_w": (38.5 - 20.4) / 2 * 1e-3,
+     }
+    bobbin_dict["PM 62/49"] = {
+        "bobbin_h": 48 * 1e-3,
+        "bobbin_inner_diameter": 25.7e-3,
+        "bobbin_window_h": 33.0e-3,
+        "bobbin_window_w": (48 - 25.7) / 2 * 1e-3,
+    }
+    bobbin_dict["PM 74/59"] = {
+        "bobbin_h": 57.8 * 1e-3,
+        "bobbin_inner_diameter": 30e-3,
+        "bobbin_window_h": 40.3e-3,
+        "bobbin_window_w": (57.3 - 30) / 2 * 1e-3,
+    }
+    bobbin_dict["PM 87/70"] = {
+        "bobbin_h": 68.2 * 1e-3,
+        "bobbin_inner_diameter": 32.5e-3,
+        "bobbin_window_h": 47.2e-3,
+        "bobbin_window_w": (66.2 - 32.5) / 2 * 1e-3,
+    }
     return bobbin_dict
-
-
 
 def litz_database() -> dict:
     """

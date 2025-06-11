@@ -144,7 +144,7 @@ def basic_example_transformer_center_tapped(onelab_folder: str = None, show_visu
         foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalUpward)
 
     insulation.add_turn_insulation([0.25e-5, 0.25e-5, 0.25e-5], add_turn_insulations=False)
-    insulation.add_kapton_insulation(add_kapton_material=False, thickness=1e-4)
+    insulation.add_insulation_between_layers(add_kapton_material=False, thickness=1e-4)
 
     geo.set_insulation(insulation)
     geo.set_winding_windows([winding_window])

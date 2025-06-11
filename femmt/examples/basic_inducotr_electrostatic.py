@@ -78,13 +78,13 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
                                                   bobbin_window_h=bobbin_db["bobbin_window_h"],
                                                   bobbin_h=bobbin_db["bobbin_h"])
     insulation = fmt.Insulation(flag_insulation=True, bobbin_dimensions=bobbin_dimensions)
-    insulation.add_core_insulations(1.5e-3, 1.5e-3, 1e-3, 1e-3)
+    insulation.add_core_insulations(0.2e-3, 0.2e-3, 0.2e-3, 0.2e-3)
     # This is the insulation of the turn itself
     insulation.add_turn_insulation([0.5e-4], add_turn_insulations=True)
     # This is an air between turns if needed
-    insulation.add_winding_insulations([[0.6e-3, 0.1e-3]], per_layer_of_turns=True)
+    insulation.add_winding_insulations([[0.4e-4, 0.6e-3]], per_layer_of_turns=True)
     # Kapton material is added between every layer of turns
-    insulation.add_kapton_insulation(add_kapton_material=True, thickness=0.6e-3)
+    insulation.add_insulation_between_layers(add_kapton_material=True, thickness=0.6e-3)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)

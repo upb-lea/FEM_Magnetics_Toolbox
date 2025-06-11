@@ -751,18 +751,7 @@ class Insulation:
             #self.turn_ins = []
             self.turn_ins = [0.0 for _ in turn_insulation]
 
-
-    # def add_conductor_air_conductor_insulation(self, inner_air_layer_insulation: list[list[float]]):
-    #     """Add different insulations between turns for every layer of turns in every winding.
-    #
-    #     :param inner_air_layer_insulation: List of floats which represent the insulation between turns of the same layer in every winding.
-    #     :type inner_air_layer_insulation: List[List[float]]
-    #     """
-    #
-    #     # self.cond_air_cond = inner_air_layer_insulation
-    #     self.cond_cond = inner_air_layer_insulation
-
-    def add_kapton_insulation(self, add_kapton_material: bool=True, thickness: float = 0.0):
+    def add_insulation_between_layers(self, add_kapton_material: bool=True, thickness: float = 0.0):
         """Add a kapton between layers"""
         if thickness <= 0:
             raise ValueError("Kapton insulation thickness must be greater than zero.")

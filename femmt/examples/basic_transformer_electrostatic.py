@@ -86,7 +86,7 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     insulation.add_winding_insulations([[0.0002, 0.095e-3],
                                         [0.095e-3, 0.0002]], per_layer_of_turns=True)
     insulation.add_turn_insulation([0.25e-5, 0.25e-5], add_turn_insulations=False)
-    insulation.add_kapton_insulation(add_kapton_material=True, thickness=0.5e-3)
+    insulation.add_insulation_between_layers(add_kapton_material=True, thickness=0.5e-3)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)

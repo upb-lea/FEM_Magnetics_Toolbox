@@ -173,7 +173,7 @@ def fixture_inductor_core_material_database(temp_folder: pytest.fixture):
         insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
         insulation.add_winding_insulations([[0.0005]], per_layer_of_turns=False)
         insulation.add_turn_insulation([0.25e-5], add_turn_insulations=False)
-        insulation.add_kapton_insulation(add_kapton_material=False, thickness=0.0005)
+        insulation.add_insulation_between_layers(add_kapton_material=False, thickness=0.0005)
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)
@@ -300,7 +300,7 @@ def fixture_inductor_core_material_database_measurement(temp_folder: pytest.fixt
         insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
         insulation.add_winding_insulations([[0.0005]], per_layer_of_turns=False)
         insulation.add_turn_insulation([0.25e-5], add_turn_insulations=False)
-        insulation.add_kapton_insulation(add_kapton_material=False, thickness=0.0005)
+        insulation.add_insulation_between_layers(add_kapton_material=False, thickness=0.0005)
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)
@@ -423,7 +423,7 @@ def fixture_inductor_core_fixed_loss_angle(temp_folder: pytest.fixture):
         insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
         insulation.add_winding_insulations([[0.0005]], per_layer_of_turns=False)
         insulation.add_turn_insulation([0.25e-5], add_turn_insulations=False)
-        insulation.add_kapton_insulation(add_kapton_material=False, thickness=0.0005)
+        insulation.add_insulation_between_layers(add_kapton_material=False, thickness=0.0005)
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)
@@ -545,7 +545,7 @@ def fixture_inductor_core_fixed_loss_angle_dc(temp_folder: pytest.fixture):
         insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
         insulation.add_winding_insulations([[0.0005]], per_layer_of_turns=False)
         insulation.add_turn_insulation([0.25e-5], add_turn_insulations=False)
-        insulation.add_kapton_insulation(add_kapton_material=False, thickness=0.0005)
+        insulation.add_insulation_between_layers(add_kapton_material=False, thickness=0.0005)
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)
@@ -665,7 +665,7 @@ def fixture_inductor_core_fixed_loss_angle_litz_wire(temp_folder: pytest.fixture
         insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
         insulation.add_winding_insulations([[0.0005]], per_layer_of_turns=False)
         insulation.add_turn_insulation([0.25e-5], add_turn_insulations=False)
-        insulation.add_kapton_insulation(add_kapton_material=False, thickness=0.0005)
+        insulation.add_insulation_between_layers(add_kapton_material=False, thickness=0.0005)
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)
@@ -1037,7 +1037,7 @@ def fixture_transformer_core_fixed_loss_angle(temp_folder: pytest.fixture):
         insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
         insulation.add_winding_insulations([[0.0002, 0.0002], [0.0002, 0.0002]], per_layer_of_turns=False)
         insulation.add_turn_insulation([0.25e-5, 0.25e-5], add_turn_insulations=False)
-        insulation.add_kapton_insulation(add_kapton_material=False, thickness=0.0002)
+        insulation.add_insulation_between_layers(add_kapton_material=False, thickness=0.0002)
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
@@ -1168,7 +1168,7 @@ def fixture_transformer_interleaved_core_fixed_loss_angle(temp_folder: pytest.fi
         insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
         insulation.add_winding_insulations([[0.0002, 0.0005], [0.0005, 0.0002]], per_layer_of_turns=False)
         insulation.add_turn_insulation([0.25e-5, 0.25e-5], add_turn_insulations=False)
-        insulation.add_kapton_insulation(add_kapton_material=False, thickness=0.0002)
+        insulation.add_insulation_between_layers(add_kapton_material=False, thickness=0.0002)
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
@@ -1303,7 +1303,7 @@ def fixture_transformer_integrated_core_fixed_loss_angle(temp_folder: pytest.fix
         insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
         insulation.add_winding_insulations([[0.0002, 0.0005], [0.0005, 0.0002]], per_layer_of_turns=False)
         insulation.add_turn_insulation([0.25e-5, 0.25e-5], add_turn_insulations=False)
-        insulation.add_kapton_insulation(add_kapton_material=False, thickness=0.0002)
+        insulation.add_insulation_between_layers(add_kapton_material=False, thickness=0.0002)
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
@@ -1455,7 +1455,7 @@ def fixture_transformer_stacked_center_tapped(temp_folder: pytest.fixture):
             wrap_para_type=fmt.WrapParaType.FixedThickness,
             foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalUpward)
         insulation.add_turn_insulation([0.25e-5, 0.25e-5], add_turn_insulations=False)
-        insulation.add_kapton_insulation(add_kapton_material=False, thickness=2e-4)
+        insulation.add_insulation_between_layers(add_kapton_material=False, thickness=2e-4)
 
         geo.set_insulation(insulation)
         geo.set_winding_windows([coil_window, transformer_window])
@@ -1600,7 +1600,7 @@ def fixture_transformer_5_windings(temp_folder: pytest.fixture):
              [iso_against, iso_against, iso_self, iso_against, iso_against],
              [iso_against, iso_against, iso_against, iso_against, iso_self]], per_layer_of_turns=False)
         insulation.add_turn_insulation([0.25e-5, 0.25e-5, 0.25e-5, 0.25e-5, 0.25e-5], add_turn_insulations=False)
-        insulation.add_kapton_insulation(add_kapton_material=False, thickness=0.0001)
+        insulation.add_insulation_between_layers(add_kapton_material=False, thickness=0.0001)
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
@@ -1763,7 +1763,7 @@ def fixture_inductor_time_domain(temp_folder: pytest.fixture):
         insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
         insulation.add_winding_insulations([[0.0005]], per_layer_of_turns=False)
         insulation.add_turn_insulation([0.25e-5, 0.25e-5], add_turn_insulations=False)
-        insulation.add_kapton_insulation(add_kapton_material=False, thickness=0.0005)
+        insulation.add_insulation_between_layers(add_kapton_material=False, thickness=0.0005)
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
@@ -1852,7 +1852,7 @@ def fixture_transformer_time_domain(temp_folder: pytest.fixture):
         insulation.add_winding_insulations([[0.0002, 0.001],
                                             [0.001, 0.0002]], per_layer_of_turns=False)
         insulation.add_turn_insulation([0.25e-5, 0.25e-5], add_turn_insulations=False)
-        insulation.add_kapton_insulation(add_kapton_material=False, thickness=0.0002)
+        insulation.add_insulation_between_layers(add_kapton_material=False, thickness=0.0002)
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
@@ -1947,7 +1947,7 @@ def fixture_transformer_3_windings_time_domain(temp_folder: pytest.fixture):
                                             [0.0004, 0.0002, 0.0004],
                                             [0.0004, 0.0004, 0.0002]], per_layer_of_turns=False)
         insulation.add_turn_insulation([0.25e-5, 0.25e-5, 0.25e-5], add_turn_insulations=False)
-        insulation.add_kapton_insulation(add_kapton_material=False, thickness=0.0002)
+        insulation.add_insulation_between_layers(add_kapton_material=False, thickness=0.0002)
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
