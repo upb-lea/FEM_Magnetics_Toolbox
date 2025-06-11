@@ -2078,6 +2078,7 @@ def test_inductor_core_fixed_loss_angle(fixture_inductor_core_fixed_loss_angle: 
                                       "thermal_inductor_core_fixed_loss_angle.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log)
 
+
 def test_inductor_core_fixed_loss_angle_dc(fixture_inductor_core_fixed_loss_angle_dc: pytest.fixture):
     """
     Integration test to validate the magnetoquasistatic simulation and the thermal simulation.
@@ -2346,6 +2347,7 @@ def test_transformer_5_windings(fixture_transformer_5_windings: pytest.fixture):
     # fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
     #                                   "thermal_transformer_5_windings.json")
     # compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=2)
+
 
 def test_simulation_inductor_time_domain(fixture_inductor_time_domain: pytest.fixture):
     """
@@ -2669,6 +2671,7 @@ def test_basic_example_transformer_6_windings(temp_folder: pytest.fixture):
                                                                                      show_visual_outputs=False,
                                                                                      is_test=True)
 
+
 def test_basic_inductor_time_domain(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
@@ -2680,6 +2683,7 @@ def test_basic_inductor_time_domain(temp_folder: pytest.fixture):
     femmt.examples.experimental_inductor_time_domain.basic_example_inductor_time_domain(onelab_folder=onelab_folder,
                                                                                         show_visual_outputs=False,
                                                                                         is_test=True)
+
 
 def test_basic_transformer_time_domain(temp_folder: pytest.fixture):
     """
@@ -2693,6 +2697,7 @@ def test_basic_transformer_time_domain(temp_folder: pytest.fixture):
                                                                                               show_visual_outputs=False,
                                                                                               is_test=True)
 
+
 def test_basic_transformer_3_windings_time_domain(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
@@ -2704,6 +2709,8 @@ def test_basic_transformer_3_windings_time_domain(temp_folder: pytest.fixture):
     femmt.examples.experimental_transformer_three_winding_time_domain.basic_example_transformer_three_windings_time_domain(onelab_folder=onelab_folder,
                                                                                                                            show_visual_outputs=False,
                                                                                                                            is_test=True)
+
+
 def test_advanced_example_inductor_sweep(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
@@ -2729,6 +2736,7 @@ def test_advanced_example_inductor_air_gap_sweep(temp_folder: pytest.fixture):
                                                                        show_visual_outputs=False,
                                                                        is_test=True)
 
+
 def test_transformer_component_study(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
@@ -2741,6 +2749,7 @@ def test_transformer_component_study(temp_folder: pytest.fixture):
                                                                                            show_visual_outputs=False,
                                                                                            is_test=True)
 
+
 def test_inductor_excitation_sweep(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
@@ -2752,6 +2761,8 @@ def test_inductor_excitation_sweep(temp_folder: pytest.fixture):
     femmt.examples.basic_inductor_excitation_sweep.basic_example_inductor_excitation_sweep(onelab_folder=onelab_folder,
                                                                                            show_visual_outputs=False,
                                                                                            is_test=True)
+
+
 def test_transformer_excitation_sweep(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
@@ -2763,6 +2774,7 @@ def test_transformer_excitation_sweep(temp_folder: pytest.fixture):
     femmt.examples.basic_transformer_excitation_sweep.basic_example_transformer_excitation_sweep(onelab_folder=onelab_folder,
                                                                                                  show_visual_outputs=False,
                                                                                                  is_test=True)
+
 
 def test_split_windings(temp_folder: pytest.fixture):
     """
