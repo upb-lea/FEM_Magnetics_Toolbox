@@ -605,34 +605,6 @@ PostProcessing {
            In DomainS ; Jacobian Vol ; Integration II ; } } }
 
 
-
-
-
-      // ------------------------------------------------------------------------------------------------
-      // Steinmetz Core Loss
-
-      // for piecewise linear currents
-      // iGSE Integral explicitely solved
-      // needs the result of Magb at peak current to evaluate the peak flux density
-      // (Norm[{d a}]*2) is delta_B
-
-      If(Flag_Generalized_Steinmetz_loss)
-        { Name piGSE ; Value { Integral { [ Freq * ki * (Norm[{d a}]*2)^(beta-alpha) * (
-                                        ((Norm[{d a}]*2 / t_rise )^alpha) * t_rise +
-                                        ((Norm[{d a}]*2 / t_fall )^alpha) * t_fall
-                                        // 10 abschnitte reinbauen
-                                        // python überprüfung + vorfaktoren zu NULL
-                                   ) ] ; In Core ; Jacobian Vol ; Integration II ;} } }
-      EndIf
-
-      If(Flag_Steinmetz_loss)
-        { Name pSE ; Value { Integral { [ CoefGeo * ki * Freq^alpha * (Norm[{d a}])^beta
-                                     ] ; In Core ; Jacobian Vol ; Integration II ;} } }
-
-        { Name pSE_density ; Value { Integral { [ CoefGeo* ki * Freq^alpha * (Norm[{d a}])^beta
-                                     ] ; In Core ; Jacobian Vol ; Integration II ;} } }
-      EndIf
-
       // hysteresis losses need to be studied in time domain simulation
       // Hysteresis Losses (According To Complex Core Parameters)
       // not true in time_domain
