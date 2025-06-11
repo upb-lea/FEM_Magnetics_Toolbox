@@ -115,7 +115,7 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
                     permeability_datasource=fmt.MaterialDataSource.Custom,
                     permittivity_datasource=fmt.MaterialDataSource.Custom,
-                    detailed_core_model=True)
+                    detailed_core_model=False)
     geo.set_core(core)
 
     # 3. set air gap parameters
