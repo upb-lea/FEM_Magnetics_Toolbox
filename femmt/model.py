@@ -10,6 +10,8 @@ import numpy as np
 from typing import Optional, Union, Dict, Any
 
 # Local libraries
+from materialdatabase import Material, MeasurementSetup
+
 import femmt.functions as ff
 from femmt.functions_model import *
 import femmt.functions_reluctance as fr
