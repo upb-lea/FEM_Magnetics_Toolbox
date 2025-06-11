@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 # 3rd party libraries
 import numpy as np
+from typing import Optional, Union, Dict, Any
 
 # Local libraries
 import femmt.functions as ff
@@ -16,7 +17,6 @@ from femmt.enumerations import *
 from femmt.constants import *
 from femmt.functions_drawing import *
 import materialdatabase as mdb
-
 
 class Conductor:
     """
@@ -181,44 +181,69 @@ class Conductor:
 
 
 class CoreGeometry:
-    def __init__(self, core_type, core_dimensions, detailed_core_model):
-        self.core_type = core_type
-        self.correct_outer_leg = detailed_core_model
-        self.core_inner_diameter = core_dimensions.core_inner_diameter
-        self.window_w = core_dimensions.window_w
-        self.core_thickness = self.core_inner_diameter / 4
-        self.r_inner = self.window_w + self.core_inner_diameter / 2
+    """Describes the geometry of a magnetic core including window sizes and outer dimensions.
+
+    Supports both single and stacked core configurations, with optional detailed modeling of the outer leg shape.
+    """
+
+    def __init__(self, core_type: CoreType, core_dimensions: object, detailed_core_model: bool):
+        """Initialize a CoreGeometry object from dimensions and core configuration.
+
+        :param core_type: The type of the core (e.g., single or stacked).
+        :type core_type: CoreType
+        :param core_dimensions: An object containing core dimension attributes.
+        :type core_dimensions: object
+        :param detailed_core_model: Whether a detailed geometric model should be used.
+        :type detailed_core_model: bool
+        """
+        self.core_type: CoreType = core_type
+        self.correct_outer_leg: bool = detailed_core_model
+
+        self.core_inner_diameter: float = core_dimensions.core_inner_diameter
+        self.window_w: float = core_dimensions.window_w
+        self.core_thickness: float = self.core_inner_diameter / 4
+        self.r_inner: float = self.window_w + self.core_inner_diameter / 2
 
         if self.core_type == CoreType.Single:
-            self.window_h = core_dimensions.window_h
-            self.number_core_windows = 2
-            self.core_h = self.window_h + 2 * self.core_thickness
-            self.core_h_center_leg = self.core_h
+            self.window_h: float = core_dimensions.window_h
+            self.number_core_windows: int = 2
+            self.core_h: float = self.window_h + 2 * self.core_thickness
+            self.core_h_center_leg: float = self.core_h
 
         elif self.core_type == CoreType.Stacked:
-            self.window_h_bot = core_dimensions.window_h_bot
-            self.window_h_top = core_dimensions.window_h_top
-            self.core_h = self.window_h_bot + 2 * self.core_thickness
-            self.number_core_windows = 4
+            self.window_h_bot: float = core_dimensions.window_h_bot
+            self.window_h_top: float = core_dimensions.window_h_top
+            self.core_h: float = self.window_h_bot + 2 * self.core_thickness
+            self.number_core_windows: int = 4
 
         if detailed_core_model:
-            self.core_h_center_leg = core_dimensions.core_h
-            self.r_outer = fr.calculate_r_outer(self.core_inner_diameter, self.window_w)
-            width_meas = 23e-3
-            h_meas = 5.2e-3
+            self.core_h_center_leg: float = core_dimensions.core_h
+            self.r_outer: float = fr.calculate_r_outer(self.core_inner_diameter, self.window_w)
+
+            # Empirical correction based on core measurements
+            width_meas = 23e-3  # [m]
+            h_meas = 5.2e-3     # [m]
             alpha = np.arcsin((width_meas / 2) / (self.core_inner_diameter / 2 + self.window_w))
             h_outer = (h_meas * 4 * alpha * (self.core_inner_diameter / 2 + self.window_w)) / (
-                    2 * np.pi * (self.core_inner_diameter / 2 + self.window_w))
-            self.core_h = self.window_h + 2 * h_outer
+                2 * np.pi * (self.core_inner_diameter / 2 + self.window_w))
+            self.core_h: float = self.window_w + 2 * h_outer
         else:
-            self.r_outer = fr.calculate_r_outer(self.core_inner_diameter, self.window_w)
+            self.r_outer: float = fr.calculate_r_outer(self.core_inner_diameter, self.window_w)
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Union[float, CoreType, bool]]:
+        """Return a dictionary representation of the core geometry.
+
+        Useful for serialization or configuration export.
+
+        :return: Dictionary with core geometry parameters.
+        :rtype: dict
+        """
         base = {
             "core_type": self.core_type,
             "core_inner_diameter": self.core_inner_diameter,
             "correct_outer_leg": self.correct_outer_leg,
         }
+
         if self.core_type == CoreType.Single:
             base.update({
                 "window_w": self.window_w,
@@ -231,27 +256,66 @@ class CoreGeometry:
                 "window_h_bot": self.window_h_bot,
                 "window_h_top": self.window_h_top
             })
+
         return base
 
-
 class CoreMaterial:
+    """Encapsulate a magnetic core's material properties for simulation.
+
+    This includes magnetic permeability, electric permittivity, conductivity, and core loss modeling. The data can be sourced from measurements, manufacturer datasheets, or set manually.
+    """
+
     def __init__(self,
-                 material,
-                 temperature,
-                 loss_approach,
-                 mu_r_abs,
-                 permeability_datasource,
-                 permeability_datatype,
-                 permeability_measurement_setup,
-                 phi_mu_deg,
-                 non_linear,
-                 permittivity_datasource,
-                 permittivity_datatype,
-                 permittivity_measurement_setup,
-                 sigma,
-                 mdb_verbosity):
+                 material: Union[str, Material],
+                 temperature: Optional[float],
+                 loss_approach: LossApproach,
+                 mu_r_abs: float,
+                 permeability_datasource: Union[str, MaterialDataSource],
+                 permeability_datatype: Union[str, MeasurementDataType],
+                 permeability_measurement_setup: Union[str, MeasurementSetup],
+                 phi_mu_deg: Optional[float],
+                 non_linear: bool,
+                 permittivity_datasource: Union[str, MaterialDataSource],
+                 permittivity_datatype: Union[str, MeasurementDataType],
+                 permittivity_measurement_setup: Union[str, MeasurementSetup],
+                 sigma: Optional[complex],
+                 mdb_verbosity: Optional[Any]):
+        """Create a CoreMaterial object describing electromagnetic and loss properties.
+
+        The class uses material database queries and supports both predefined and custom material configurations.
+
+        :param material: The name of the core material or a Material object.
+        :type material: str or Material
+        :param temperature: Operating temperature in degrees Celsius.
+        :type temperature: float
+        :param loss_approach: The loss calculation method.
+        :type loss_approach: LossApproach
+        :param mu_r_abs: Relative permeability for custom materials.
+        :type mu_r_abs: float
+        :param permeability_datasource: Source of permeability data.
+        :type permeability_datasource: str or MaterialDataSource
+        :param permeability_datatype: Type of permeability measurement data.
+        :type permeability_datatype: str or MeasurementDataType
+        :param permeability_measurement_setup: Setup used for permeability measurements.
+        :type permeability_measurement_setup: str or MeasurementSetup
+        :param phi_mu_deg: Loss angle in degrees for complex permeability.
+        :type phi_mu_deg: float or None
+        :param non_linear: Whether the material is magnetically non-linear.
+        :type non_linear: bool
+        :param permittivity_datasource: Source of permittivity data.
+        :type permittivity_datasource: str or MaterialDataSource
+        :param permittivity_datatype: Type of permittivity measurement data.
+        :type permittivity_datatype: str or MeasurementDataType
+        :param permittivity_measurement_setup: Setup used for permittivity measurements.
+        :type permittivity_measurement_setup: str or MeasurementSetup
+        :param sigma: Electrical conductivity (only used for custom materials).
+        :type sigma: complex or None
+        :param mdb_verbosity: Verbosity level for the material database.
+        :type mdb_verbosity: Any
+        """
         self.material_database = mdb.MaterialDatabase()
-        self.file_path_to_solver_folder = None
+        self.file_path_to_solver_folder: Optional[str] = None
+
         self.temperature = temperature
         self.loss_approach = loss_approach
         self.non_linear = non_linear
@@ -276,17 +340,30 @@ class CoreMaterial:
         if self.permittivity["datasource"] == MaterialDataSource.Custom:
             self.sigma = sigma
         else:
-            self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material, attribute="resistivity")
+            self.sigma = 1 / self.material_database.get_material_attribute(
+                material_name=self.material,
+                attribute="resistivity"
+            )
 
         if self.permeability["datasource"] == MaterialDataSource.Custom:
             self.permeability_type = PermeabilityType.FixedLossAngle if phi_mu_deg else PermeabilityType.RealValue
         else:
             self.permeability_type = PermeabilityType.FromData
-            self.mu_r_abs = self.material_database.get_material_attribute(material_name=self.material, attribute="initial_permeability")
+            self.mu_r_abs = self.material_database.get_material_attribute(
+                material_name=self.material,
+                attribute="initial_permeability"
+            )
 
-        self.complex_permittivity = None
+        self.complex_permittivity: Optional[complex] = None
 
     def update_permittivity(self, frequency: float) -> None:
+        """Update permittivity and calculate equivalent conductivity at a given frequency.
+
+        Uses measurement data if available. Updates internal complex permittivity and conductivity.
+
+        :param frequency: Frequency in Hz.
+        :type frequency: float
+        """
         if self.permittivity["datasource"] == MaterialDataSource.Measurement:
             epsilon_r, phi_epsilon_deg = self.material_database.get_permittivity(
                 temperature=self.temperature,
@@ -296,16 +373,33 @@ class CoreMaterial:
                 measurement_setup=self.permittivity["measurement_setup"],
                 datatype=self.permittivity["datatype"]
             )
-            self.complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(phi_epsilon_deg)),
-                                                                         np.sin(np.deg2rad(phi_epsilon_deg)))
-            self.sigma = 2 * np.pi * frequency * complex(self.complex_permittivity.imag,
-                                                         self.complex_permittivity.real)
+
+            self.complex_permittivity = epsilon_0 * epsilon_r * complex(
+                np.cos(np.deg2rad(phi_epsilon_deg)),
+                np.sin(np.deg2rad(phi_epsilon_deg))
+            )
+
+            self.sigma = 2 * np.pi * frequency * complex(
+                self.complex_permittivity.imag,
+                self.complex_permittivity.real
+            )
 
         elif self.permittivity["datasource"] == MaterialDataSource.ManufacturerDatasheet:
-            self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material,
-                                                                           attribute="resistivity")
+            self.sigma = 1 / self.material_database.get_material_attribute(
+                material_name=self.material,
+                attribute="resistivity"
+            )
 
-    def update_core_material_pro_file(self, frequency: int, folder: str, plot_interpolation=False):
+    def update_core_material_pro_file(self, frequency: int, folder: str, plot_interpolation: bool = False) -> None:
+        """Export permeability data to a .pro file for solver compatibility.
+
+        :param frequency: Operating frequency in Hz.
+        :type frequency: int
+        :param folder: Directory path where the .pro file will be saved.
+        :type folder: str
+        :param plot_interpolation: If True, plots interpolation of data.
+        :type plot_interpolation: bool
+        """
         self.material_database.permeability_data_to_pro_file(
             temperature=self.temperature,
             frequency=frequency,
@@ -317,13 +411,20 @@ class CoreMaterial:
             plot_interpolation=plot_interpolation
         )
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
+        """Return a dictionary representation of the core material.
+
+        Useful for serialization or logging.
+
+        :return: Dictionary of core material parameters.
+        :rtype: dict
+        """
         return {
             "material": self.material,
             "loss_approach": self.loss_approach.name,
             "mu_r_abs": self.mu_r_abs,
             "phi_mu_deg": self.phi_mu_deg,
-            "sigma": [self.sigma.real, self.sigma.imag],
+            "sigma": [self.sigma.real, self.sigma.imag] if self.sigma else None,
             "non_linear": self.non_linear,
             "temperature": self.temperature,
             "permeability_datasource": self.permeability["datasource"],
@@ -334,46 +435,126 @@ class CoreMaterial:
             "permittivity_datatype": self.permittivity["datatype"]
         }
 
-
 class Core:
+    """Combines geometry and material properties of a magnetic core.
+
+    This class acts as a wrapper around both the physical geometry (`CoreGeometry`) and
+    material properties (`CoreMaterial`) of the magnetic core. Useful for simulations and
+    solver interfacing.
+
+    """
+
     def __init__(self,
                  core_type: CoreType = CoreType.Single,
-                 core_dimensions=None,
+                 core_dimensions: Optional[object] = None,
                  detailed_core_model: bool = False,
 
                  material: str = "custom",
-                 temperature: float = None,
+                 temperature: Optional[float] = None,
                  loss_approach: LossApproach = LossApproach.LossAngle,
                  mu_r_abs: float = 3000,
 
-                 permeability_datasource: MaterialDataSource = None,
-                 permeability_datatype: MeasurementDataType = None,
-                 permeability_measurement_setup: str = None,
-                 phi_mu_deg: float = None,
+                 permeability_datasource: Optional[MaterialDataSource] = None,
+                 permeability_datatype: Optional[MeasurementDataType] = None,
+                 permeability_measurement_setup: Optional[str] = None,
+                 phi_mu_deg: Optional[float] = None,
                  non_linear: bool = False,
 
-                 permittivity_datasource: str = None,
-                 permittivity_datatype: str = None,
-                 permittivity_measurement_setup: str = None,
-                 sigma: complex = None,
+                 permittivity_datasource: Optional[str] = None,
+                 permittivity_datatype: Optional[str] = None,
+                 permittivity_measurement_setup: Optional[str] = None,
+                 sigma: Optional[complex] = None,
 
                  mdb_verbosity: Verbosity = Verbosity.Silent):
+        """
+        Initialize a Core object with its geometry and material definitions.
 
-        self.geometry = CoreGeometry(core_type, core_dimensions, detailed_core_model)
-        self.material = CoreMaterial(material, temperature, loss_approach, mu_r_abs,
-                                     permeability_datasource, permeability_datatype, permeability_measurement_setup,
-                                     phi_mu_deg, non_linear, permittivity_datasource, permittivity_datatype,
-                                     permittivity_measurement_setup, sigma, mdb_verbosity)
+        :param core_type: Core configuration (Single or Stacked).
+        :type core_type: CoreType
+        :param core_dimensions: Object containing core dimensions like window size, diameters.
+        :type core_dimensions: object
+        :param detailed_core_model: Whether to model outer leg curvature and center leg in detail.
+        :type detailed_core_model: bool
 
-    def update_permittivity(self, frequency: float):
+        :param material: Material name or 'custom' if manually defined.
+        :type material: str
+        :param temperature: Operating temperature in degrees Celsius.
+        :type temperature: float, optional
+        :param loss_approach: Loss modeling strategy (e.g., LossAngle).
+        :type loss_approach: LossApproach
+        :param mu_r_abs: Initial relative permeability (used if no material data is provided).
+        :type mu_r_abs: float
+
+        :param permeability_datasource: Data source for permeability (e.g., Measurement, Manufacturer).
+        :type permeability_datasource: MaterialDataSource
+        :param permeability_datatype: Type of permeability data (e.g., Complex, Real).
+        :type permeability_datatype: MeasurementDataType
+        :param permeability_measurement_setup: Setup used for measurement.
+        :type permeability_measurement_setup: str
+        :param phi_mu_deg: Loss angle in degrees (used if FixedLossAngle is selected).
+        :type phi_mu_deg: float, optional
+        :param non_linear: Whether the material should be modeled as non-linear.
+        :type non_linear: bool
+
+        :param permittivity_datasource: Data source for permittivity.
+        :type permittivity_datasource: str
+        :param permittivity_datatype: Type of permittivity data.
+        :type permittivity_datatype: str
+        :param permittivity_measurement_setup: Measurement setup for permittivity.
+        :type permittivity_measurement_setup: str
+        :param sigma: Electrical conductivity (used if custom permittivity).
+        :type sigma: complex, optional
+
+        :param mdb_verbosity: Verbosity level of material database logging.
+        :type mdb_verbosity: Verbosity
+        """
+        self.geometry: CoreGeometry = CoreGeometry(core_type, core_dimensions, detailed_core_model)
+        self.material: CoreMaterial = CoreMaterial(
+            material=material,
+            temperature=temperature,
+            loss_approach=loss_approach,
+            mu_r_abs=mu_r_abs,
+            permeability_datasource=permeability_datasource,
+            permeability_datatype=permeability_datatype,
+            permeability_measurement_setup=permeability_measurement_setup,
+            phi_mu_deg=phi_mu_deg,
+            non_linear=non_linear,
+            permittivity_datasource=permittivity_datasource,
+            permittivity_datatype=permittivity_datatype,
+            permittivity_measurement_setup=permittivity_measurement_setup,
+            sigma=sigma,
+            mdb_verbosity=mdb_verbosity
+        )
+
+    def update_permittivity(self, frequency: float) -> None:
+        """Update permittivity based on a given frequency.
+
+        Used when frequency-dependent permittivity modeling is required.
+
+        :param frequency: Frequency in Hz.
+        :type frequency: float
+        """
         self.material.update_permittivity(frequency)
 
-    def update_core_material_pro_file(self, frequency: int, folder: str, plot_interpolation=False):
+    def update_core_material_pro_file(self, frequency: int, folder: str, plot_interpolation: bool = False) -> None:
+        """Generate or update permeability profile files used by the solver.
+
+        :param frequency: Frequency for profile generation in Hz.
+        :type frequency: int
+        :param folder: Directory where the profile should be saved.
+        :type folder: str
+        :param plot_interpolation: Whether to plot interpolation used for file generation.
+        :type plot_interpolation: bool
+        """
         self.material.update_core_material_pro_file(frequency, folder, plot_interpolation)
 
-    def to_dict(self):
-        return {**self.geometry.to_dict(), **self.material.to_dict()}
+    def to_dict(self) -> Dict[str, Union[str, float, bool]]:
+        """Return combined dictionary of core geometry and material properties.
 
+        :return: Combined dictionary for serialization.
+        :rtype: dict
+        """
+        return {**self.geometry.to_dict(), **self.material.to_dict()}
 
 class AirGaps:
     """
