@@ -17,7 +17,6 @@ from femmt.enumerations import *
 from femmt.constants import *
 from femmt.functions_drawing import *
 import materialdatabase as mdb
-from materialdatabase import Material, MeasurementSetup
 
 
 class Conductor:

@@ -1,5 +1,6 @@
 """Enumeration for FEMMT."""
 from enum import IntEnum, Enum
+from materialdatabase import Material, MeasurementSetup
 
 class Verbosity(IntEnum):
     """State of verbosity."""
