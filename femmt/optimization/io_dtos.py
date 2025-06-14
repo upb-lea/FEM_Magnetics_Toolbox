@@ -7,6 +7,7 @@ from magnethub.loss import LossModel
 
 # own libraries
 from materialdatabase.meta.data_classes import MaterialCurve
+from materialdatabase.meta.data_enums import MeasurementSetup
 from femmt.enumerations import *
 from femmt.optimization.ito_dtos import WorkingDirectories
 
