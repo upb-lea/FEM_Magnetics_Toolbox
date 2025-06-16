@@ -270,10 +270,12 @@ class LinearCoreMaterial:
     """
 
     def __init__(self,
+                 mdb_verbosity: Any,
                  mu_r_abs: float,
-                 phi_mu_deg: Optional[float],
-                 sigma: Optional[complex],
-                 mdb_verbosity: Optional[Any]):
+                 phi_mu_deg: float = 0,
+                 sigma: float = 0,
+                 eps_r_abs: float = 0,
+                 phi_eps_deg: float = 0):
         """Create a CoreMaterial object describing electromagnetic and loss properties.
 
         The class uses material database queries and supports both predefined and custom material configurations.
@@ -294,9 +296,9 @@ class LinearCoreMaterial:
         self.mu_r_abs = mu_r_abs
         self.phi_mu_deg = phi_mu_deg
         self.sigma = sigma
+        self.eps_r_abs = eps_r_abs
+        self.phi_eps_deg = phi_eps_deg
         self.mdb_verbosity = mdb_verbosity
-
-        self.complex_permittivity: Optional[complex] = None
 
         self.permeability_type = PermeabilityType.FixedLossAngle
         self.permeability = {
@@ -323,6 +325,8 @@ class LinearCoreMaterial:
             "mu_r_abs": self.mu_r_abs,
             "phi_mu_deg": self.phi_mu_deg,
             "sigma": self.sigma,
+            "eps_r_abs": self.eps_r_abs,
+            "phi_eps_deg": self.phi_eps_deg
         }
 
 
