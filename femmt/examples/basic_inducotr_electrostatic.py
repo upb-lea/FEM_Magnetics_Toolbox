@@ -84,7 +84,7 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
     # This is an air between turns if needed
     insulation.add_winding_insulations([[0.4e-4, 0.6e-3]], per_layer_of_turns=True)
     # Kapton material is added between every layer of turns
-    insulation.add_insulation_between_layers(add_kapton_material=True, thickness=0.6e-3)
+    insulation.add_insulation_between_layers(add_insulation_material=True, thickness=0.6e-3)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)

@@ -1236,7 +1236,8 @@ class MagneticComponent:
         """
         Run the electrostatic simulation.
 
-        - Excitation of the electrostatic problem using voltage or charge source.
+        - Excitation of the electrostatic problem using voltage applied for each turn as [[V_turn_1, V_turn_2], [V_turn_3, V_turn_4]] or charge applied to each
+        turn as [[Q_turn_1, Q_turn_2], [Q_turn_3, Q_turn_4]].
 
         :param voltage: Values to apply to each turn in each winding as voltages. Example: [[V_turn_1, V_turn_2], [V_turn_3, V_turn_4]]
         :type voltage: List[List[float]]
@@ -1244,8 +1245,6 @@ class MagneticComponent:
         :type charge: List[List[float]]
         :param core_voltage: excite the core with a voltage
         :type core_voltage: float
-        :param ground_core: If True, ground the core. Defaults to False.
-        :type ground_core: bool
         :param ground_outer_boundary: If True, ground the outer boundary. Defaults to False.
         :type ground_outer_boundary: bool
         :param plot_interpolation: If True, plot the interpolation between the provided values for the material.

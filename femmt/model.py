@@ -667,19 +667,15 @@ class Insulation:
     In general, it is not necessary to add an insulation object at all when no insulation is needed.
     """
 
-    cond_cond: list[list[
-        float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
-    core_cond: list[
-        float]  # list with size 4x1, with respectively isolation of cond_n -> [top_core, bot_core, left_core, right_core]
-    turn_ins: list[
-        float]
-    cond_air_cond: list[list[
-        float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
+    cond_cond: list[list[float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
+    core_cond: list[float]  # list with size 4x1, with respectively isolation of cond_n -> [top_core, bot_core, left_core, right_core]
+    turn_ins: list[float]   # list of turn insulation of every winding -> [turn_ins_of_winding_1, turn_ins_of_winding_2, ...]
+    cond_air_cond: list[list[float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
     bobbin_dimensions: None
-    kapton: float
+    thickness_of_insulation: float
     consistent_ins: bool = True
     add_kapton_material: bool = True
-    draw_kapton: bool = True
+    draw_insulation_between_layers: bool = True
     flag_insulation: bool = True
     add_turn_insulations: bool = True
     max_aspect_ratio: float
@@ -704,7 +700,6 @@ class Insulation:
             self.bobbin_h = bobbin_dimensions.bobbin_h
 
 
-
     def set_flag_insulation(self, flag: bool):  # to differentiate between the simulation with and without insulation
         """
         Set the self.flag_insulation key.
@@ -721,7 +716,7 @@ class Insulation:
         :param inner_winding_insulation: List of floats which represent the insulations between turns of the same winding. This does not correspond to
         the order conductors are added to the winding! Instead, the winding number is important. The conductors are sorted by ascending winding number.
         The lowest winding number therefore is combined with index 0. The second lowest with index 1 and so on.
-        :type inner_winding_insulation: List[List[float]]
+        :type inner_winding_insulation: list[list[float]]
         :param per_layer_of_turns: If it is enabled, the insulation will be added between turns for every layer in every winding.
         :type per_layer_of_turns: bool.
         """
@@ -739,7 +734,7 @@ class Insulation:
         """Add insulation for turns in every winding.
 
         :param turn_insulation: List of floats which represent the insulation around every winding.
-        :type turn_insulation: List[List[float]]
+        :type turn_insulation: list[list[float]]
         :param add_turn_insulations: bool to draw the insulation around turns
         :type add_turn_insulations: bool
         """
@@ -751,16 +746,23 @@ class Insulation:
             #self.turn_ins = []
             self.turn_ins = [0.0 for _ in turn_insulation]
 
-    def add_insulation_between_layers(self, add_kapton_material: bool=True, thickness: float = 0.0):
-        """Add a kapton between layers"""
+    def add_insulation_between_layers(self, add_insulation_material: bool=True, thickness: float = 0.0):
+        """
+        Add an insulation (thickness_of_insulation or tape insulation) between layers.
+
+        :param add_insulation_material: show the drawing of the insulation between the layers of turns. If false, it is now drawn and it is an air by default
+        :type add_insulation_material: bool
+        :param thickness: the thickness of the insulation between the layers of turns
+        :type thickness: float
+        """
         if thickness <= 0:
-            raise ValueError("Kapton insulation thickness must be greater than zero.")
+            raise ValueError("insulation thickness must be greater than zero.")
         else:
-            self.kapton = thickness
-        if add_kapton_material:
-            self.draw_kapton = True
+            self.thickness_of_insulation = thickness
+        if add_insulation_material:
+            self.draw_insulation_between_layers = True
         else:
-            self.draw_kapton = False
+            self.draw_insulation_between_layers = False
 
     def add_core_insulations(self, top_core: float, bot_core: float, left_core: float, right_core: float):
         """Add insulations between the core and the winding window. Creating those will draw real rectangles in the model.
