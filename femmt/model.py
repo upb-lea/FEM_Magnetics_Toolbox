@@ -272,18 +272,19 @@ class CoreMaterial:
     def __init__(self,
                  material: Union[str, Material],
                  temperature: Optional[float],
-                 loss_approach: LossApproach,
-                 mu_r_abs: float,
                  permeability_datasource: Union[str, MaterialDataSource],
                  permeability_datatype: Union[str, MeasurementDataType],
                  permeability_measurement_setup: Union[str, MeasurementSetup],
-                 phi_mu_deg: Optional[float],
-                 non_linear: bool,
                  permittivity_datasource: Union[str, MaterialDataSource],
                  permittivity_datatype: Union[str, MeasurementDataType],
                  permittivity_measurement_setup: Union[str, MeasurementSetup],
-                 sigma: Optional[complex],
-                 mdb_verbosity: Optional[Any]):
+                 mdb_verbosity: Optional[Any],
+                 loss_approach: LossApproach = LossApproach.LossAngle,
+                 mu_r_abs: float = 3000,
+                 phi_mu_deg: Optional[float] = None,
+                 non_linear: bool = None,
+                 sigma: Optional[complex] = None
+                 ):
         """Create a CoreMaterial object describing electromagnetic and loss properties.
 
         The class uses material database queries and supports both predefined and custom material configurations.
@@ -452,27 +453,10 @@ class Core:
     """
 
     def __init__(self,
+                 material: CoreMaterial,
                  core_type: CoreType = CoreType.Single,
                  core_dimensions: Optional[object] = None,
-                 detailed_core_model: bool = False,
-
-                 material: str = "custom",
-                 temperature: Optional[float] = None,
-                 loss_approach: LossApproach = LossApproach.LossAngle,
-                 mu_r_abs: float = 3000,
-
-                 permeability_datasource: Optional[MaterialDataSource] = None,
-                 permeability_datatype: Optional[MeasurementDataType] = None,
-                 permeability_measurement_setup: Optional[str] = None,
-                 phi_mu_deg: Optional[float] = None,
-                 non_linear: bool = False,
-
-                 permittivity_datasource: Optional[str] = None,
-                 permittivity_datatype: Optional[str] = None,
-                 permittivity_measurement_setup: Optional[str] = None,
-                 sigma: Optional[complex] = None,
-
-                 mdb_verbosity: Verbosity = Verbosity.Silent):
+                 detailed_core_model: bool = False):
         """
         Initialize a Core object with its geometry and material definitions.
 
@@ -485,53 +469,9 @@ class Core:
 
         :param material: Material name or 'custom' if manually defined.
         :type material: str
-        :param temperature: Operating temperature in degrees Celsius.
-        :type temperature: float, optional
-        :param loss_approach: Loss modeling strategy (e.g., LossAngle).
-        :type loss_approach: LossApproach
-        :param mu_r_abs: Initial relative permeability (used if no material data is provided).
-        :type mu_r_abs: float
-
-        :param permeability_datasource: Data source for permeability (e.g., Measurement, Manufacturer).
-        :type permeability_datasource: MaterialDataSource
-        :param permeability_datatype: Type of permeability data (e.g., Complex, Real).
-        :type permeability_datatype: MeasurementDataType
-        :param permeability_measurement_setup: Setup used for measurement.
-        :type permeability_measurement_setup: str
-        :param phi_mu_deg: Loss angle in degrees (used if FixedLossAngle is selected).
-        :type phi_mu_deg: float, optional
-        :param non_linear: Whether the material should be modeled as non-linear.
-        :type non_linear: bool
-
-        :param permittivity_datasource: Data source for permittivity.
-        :type permittivity_datasource: str
-        :param permittivity_datatype: Type of permittivity data.
-        :type permittivity_datatype: str
-        :param permittivity_measurement_setup: Measurement setup for permittivity.
-        :type permittivity_measurement_setup: str
-        :param sigma: Electrical conductivity (used if custom permittivity).
-        :type sigma: complex, optional
-
-        :param mdb_verbosity: Verbosity level of material database logging.
-        :type mdb_verbosity: Verbosity
         """
         self.geometry: CoreGeometry = CoreGeometry(core_type, core_dimensions, detailed_core_model)
-        self.material: CoreMaterial = CoreMaterial(
-            material=material,
-            temperature=temperature,
-            loss_approach=loss_approach,
-            mu_r_abs=mu_r_abs,
-            permeability_datasource=permeability_datasource,
-            permeability_datatype=permeability_datatype,
-            permeability_measurement_setup=permeability_measurement_setup,
-            phi_mu_deg=phi_mu_deg,
-            non_linear=non_linear,
-            permittivity_datasource=permittivity_datasource,
-            permittivity_datatype=permittivity_datatype,
-            permittivity_measurement_setup=permittivity_measurement_setup,
-            sigma=sigma,
-            mdb_verbosity=mdb_verbosity
-        )
+        self.material = material
 
     def update_permittivity(self, frequency: float) -> None:
         """Update permittivity based on a given frequency.
