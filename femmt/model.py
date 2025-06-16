@@ -262,7 +262,42 @@ class CoreGeometry:
         return base
 
 
-class CoreMaterial:
+class LinearCoreMaterial:
+    """Encapsulate a magnetic core's material properties for simulation.
+
+    This includes magnetic permeability, electric permittivity, conductivity, and core loss modeling.
+    The data can be sourced from measurements, manufacturer datasheets, or set manually.
+    """
+
+    def __init__(self,
+                 mu_r_abs: float,
+                 phi_mu_deg: Optional[float],
+                 sigma: Optional[complex],
+                 mdb_verbosity: Optional[Any]):
+        """Create a CoreMaterial object describing electromagnetic and loss properties.
+
+        The class uses material database queries and supports both predefined and custom material configurations.
+
+        :param mu_r_abs: Relative permeability for custom materials.
+        :type mu_r_abs: float
+        :param phi_mu_deg: Loss angle in degrees for complex permeability.
+        :type phi_mu_deg: float or None
+        :param sigma: Electrical conductivity (only used for custom materials).
+        :type sigma: complex or None
+        :param mdb_verbosity: Verbosity level for the material database.
+        :type mdb_verbosity: Any
+        """
+        self.file_path_to_solver_folder: Optional[str] = None
+
+        self.initial_permeability = mu_r_abs
+        self.phi_mu_deg = phi_mu_deg
+        self.sigma = sigma
+        self.mdb_verbosity = mdb_verbosity
+
+        self.complex_permittivity: Optional[complex] = None
+
+
+class RealCoreMaterial:
     """Encapsulate a magnetic core's material properties for simulation.
 
     This includes magnetic permeability, electric permittivity, conductivity, and core loss modeling.
@@ -278,12 +313,7 @@ class CoreMaterial:
                  permittivity_datasource: Union[str, MaterialDataSource],
                  permittivity_datatype: Union[str, MeasurementDataType],
                  permittivity_measurement_setup: Union[str, MeasurementSetup],
-                 mdb_verbosity: Optional[Any],
-                 loss_approach: LossApproach = LossApproach.LossAngle,
-                 mu_r_abs: float = 3000,
-                 phi_mu_deg: Optional[float] = None,
-                 non_linear: bool = None,
-                 sigma: Optional[complex] = None
+                 mdb_verbosity: Optional[Any]
                  ):
         """Create a CoreMaterial object describing electromagnetic and loss properties.
 
@@ -318,15 +348,24 @@ class CoreMaterial:
         :param mdb_verbosity: Verbosity level for the material database.
         :type mdb_verbosity: Any
         """
+        self.mdb_verbosity = mdb_verbosity
+
         self.material_database = mdb.MaterialDatabase()
         self.file_path_to_solver_folder: Optional[str] = None
 
         self.temperature = temperature
-        self.loss_approach = loss_approach
-        self.non_linear = non_linear
-        self.mu_r_abs = mu_r_abs
-        self.phi_mu_deg = phi_mu_deg
-        self.mdb_verbosity = mdb_verbosity
+        self.loss_approach = LossApproach.LossAngle
+        # self.non_linear = non_linear
+        # self.mu_r_abs = mu_r_abs
+        # self.phi_mu_deg = phi_mu_deg
+        # if self.permittivity["datasource"] == MaterialDataSource.Custom:
+        #     self.sigma = sigma
+        # else:
+        #     self.sigma = 1 / self.material_database.get_material_attribute(
+        #         material_name=self.material,
+        #         attribute="resistivity"
+        #     )
+        # self.permeability_type = PermeabilityType.FixedLossAngle if phi_mu_deg else PermeabilityType.RealValue
 
         self.material = Material(material) if material != 'custom' else material
 
@@ -344,22 +383,11 @@ class CoreMaterial:
             "datatype": MeasurementDataType(permittivity_datatype) if isinstance(permittivity_datatype, str) else permittivity_datatype,
         }
 
-        if self.permittivity["datasource"] == MaterialDataSource.Custom:
-            self.sigma = sigma
-        else:
-            self.sigma = 1 / self.material_database.get_material_attribute(
-                material_name=self.material,
-                attribute="resistivity"
-            )
-
-        if self.permeability["datasource"] == MaterialDataSource.Custom:
-            self.permeability_type = PermeabilityType.FixedLossAngle if phi_mu_deg else PermeabilityType.RealValue
-        else:
-            self.permeability_type = PermeabilityType.FromData
-            self.mu_r_abs = self.material_database.get_material_attribute(
-                material_name=self.material,
-                attribute="initial_permeability"
-            )
+        self.permeability_type = PermeabilityType.FromData
+        self.mu_r_abs = self.material_database.get_material_attribute(
+            material_name=self.material,
+            attribute="initial_permeability"
+        )
 
         self.complex_permittivity: Optional[complex] = None
 
@@ -429,10 +457,6 @@ class CoreMaterial:
         return {
             "material": self.material,
             "loss_approach": self.loss_approach.name,
-            "mu_r_abs": self.mu_r_abs,
-            "phi_mu_deg": self.phi_mu_deg,
-            "sigma": [self.sigma.real, self.sigma.imag] if self.sigma else None,
-            "non_linear": self.non_linear,
             "temperature": self.temperature,
             "permeability_datasource": self.permeability["datasource"],
             "permeability_measurement_setup": self.permeability["measurement_setup"],
@@ -453,7 +477,7 @@ class Core:
     """
 
     def __init__(self,
-                 material: CoreMaterial,
+                 material: RealCoreMaterial | LinearCoreMaterial,
                  core_type: CoreType = CoreType.Single,
                  core_dimensions: Optional[object] = None,
                  detailed_core_model: bool = False):

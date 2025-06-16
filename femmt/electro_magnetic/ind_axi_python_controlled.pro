@@ -112,21 +112,11 @@ Group{
   DomainCC          += Region[{DomainS}] ;
    //  the linear and non linear domains to air and all windings
 
-  If(Flag_NL)
-    Domain_Lin      = Region[{Air}];
-    For n In {1:n_windings}
-        Domain_Lin += Region[{Winding~{n}, StrandedWinding~{n}}];
-    EndFor
-    Domain_Lin_NoJs = Region[{Air}];
-    Domain_NonLin   = Region[{Core}];
-  Else
-    Domain_Lin      = Region[{Air, Core}];
-    For n In {1:n_windings}
-        Domain_Lin += Region[{Winding~{n}, StrandedWinding~{n}}];
-    EndFor
-    Domain_Lin_NoJs = Region[{Air, Core}];
-    Domain_NonLin   = Region[{}];
-  EndIf
+  Domain_Lin      = Region[{Air, Core}];
+  For n In {1:n_windings}
+    Domain_Lin += Region[{Winding~{n}, StrandedWinding~{n}}];
+  EndFor
+  Domain_Lin_NoJs = Region[{Air, Core}];
   // Initialize the main domain to the core and core-shell domains
   Domain = Region[{DomainC, DomainCC}] ;
 
@@ -229,30 +219,15 @@ Function {
   // Liste von Lukas hinterlegen
   //mu_imag[ #{Core} ] = mu0 * f_mu_imag[$1, $2];
 
-  If(!Flag_NL)
-    If(Flag_Fixed_Loss_Angle)
-        mu[#{Core}]   = Complex[mu0*mur_real, -mu0*mur_imag] ;
-        nu[#{Core}]   = 1/mu[$1, $2] ;
-    ElseIf(Flag_Permeability_From_Data)
-        mu[#{Core}]   = Complex[mu0*f_mu_real[$1], -mu0*f_mu_imag[$1]] ;
-        nu[#{Core}]   = 1/mu[$1, $2] ;
-    Else
-        mu[#{Core}]   = mu0*mur ;
-        nu[#{Core}]   = 1/mu[$1, $2] ;
-    EndIf
-
+  If(Flag_Fixed_Loss_Angle)
+      mu[#{Core}]   = Complex[mu0*mur_real, -mu0*mur_imag] ;
+      nu[#{Core}]   = 1/mu[$1, $2] ;
+  ElseIf(Flag_Permeability_From_Data)
+      mu[#{Core}]   = Complex[mu0*f_mu_real[$1], -mu0*f_mu_imag[$1]] ;
+      nu[#{Core}]   = 1/mu[$1, $2] ;
   Else
-    //nu[ #{Core} ] = nu_3kW[$1] ;
-    //h[ #{Core} ]  = h_3kW[$1];
-    //dhdb_NL[ #{Core} ]= dhdb_3kW_NL[$1] ;
-    //dhdb[ #{Core} ]   = dhdb_3kW[$1] ;
-
-    //nu[ #{Core} ] = nu_N95[$1] ;
-    nu[ #{Core} ] = nu~{Core_Material}[$1] ;
-    h[ #{Core} ]  = h~{Core_Material}[$1];
-    //dhdb_NL[ #{Core} ]= dhdb_95_NL[$1] ;
-    dhdb_NL[ #{Core} ]= dhdb_95100_NL[$1] ;
-    dhdb[ #{Core} ]   = dhdb~{Core_Material}[$1] ;
+      mu[#{Core}]   = mu0*mur ;
+      nu[#{Core}]   = 1/mu[$1, $2] ;
   EndIf
 
   // Excitation Current

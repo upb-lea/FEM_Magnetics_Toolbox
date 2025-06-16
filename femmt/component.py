@@ -3216,36 +3216,24 @@ class MagneticComponent:
         # Material Properties
 
         # Core Material
-        # if self.frequency == 0:
-        if self.core.material.non_linear:
-            text_file.write("Flag_NL = 1;\n")
-            text_file.write(
-                f"Core_Material = {self.core.material};\n")  # relative permeability is defined at simulation runtime
-            # text_file.write(f"Flag_NL = 0;\n")
+        text_file.write(f"mur = {self.core.material.mu_r_abs};\n")  # mur is predefined to a fixed value
+        if self.core.material.permeability_type == PermeabilityType.FromData:
+            text_file.write("Flag_Permeability_From_Data = 1;\n")  # mur is predefined to a fixed value
         else:
-            text_file.write("Flag_NL = 0;\n")
-            text_file.write(f"mur = {self.core.material.mu_r_abs};\n")  # mur is predefined to a fixed value
-            if self.core.material.permeability_type == PermeabilityType.FromData:
-                text_file.write("Flag_Permeability_From_Data = 1;\n")  # mur is predefined to a fixed value
-            else:
-                text_file.write("Flag_Permeability_From_Data = 0;\n")  # mur is predefined to a fixed value
-            if self.core.material.permeability_type == PermeabilityType.FixedLossAngle:
-                # loss angle for complex representation of hysteresis loss
-                text_file.write(f"phi_mu_deg = {self.core.material.phi_mu_deg};\n")
-                # Real part of complex permeability
-                text_file.write(f"mur_real = {self.core.material.mu_r_abs * np.cos(np.deg2rad(self.core.material.phi_mu_deg))};\n")
-                # Imaginary part of complex permeability
-                text_file.write(
-                    f"mur_imag = {self.core.material.mu_r_abs * np.sin(np.deg2rad(self.core.material.phi_mu_deg))};\n")
-                # loss angle for complex representation of hysteresis loss
-                text_file.write("Flag_Fixed_Loss_Angle = 1;\n")
-            else:
-                text_file.write(
-                    "Flag_Fixed_Loss_Angle = 0;\n")  # loss angle for complex representation of hysteresis loss
-
-        # if self.frequency != 0:
-        #    text_file.write(f"Flag_NL = 0;\n")
-        #    text_file.write(f"mur = {self.core.mu_rel};\n")
+            text_file.write("Flag_Permeability_From_Data = 0;\n")  # mur is predefined to a fixed value
+        if self.core.material.permeability_type == PermeabilityType.FixedLossAngle:
+            # loss angle for complex representation of hysteresis loss
+            text_file.write(f"phi_mu_deg = {self.core.material.phi_mu_deg};\n")
+            # Real part of complex permeability
+            text_file.write(f"mur_real = {self.core.material.mu_r_abs * np.cos(np.deg2rad(self.core.material.phi_mu_deg))};\n")
+            # Imaginary part of complex permeability
+            text_file.write(
+                f"mur_imag = {self.core.material.mu_r_abs * np.sin(np.deg2rad(self.core.material.phi_mu_deg))};\n")
+            # loss angle for complex representation of hysteresis loss
+            text_file.write("Flag_Fixed_Loss_Angle = 1;\n")
+        else:
+            text_file.write(
+                "Flag_Fixed_Loss_Angle = 0;\n")  # loss angle for complex representation of hysteresis loss
 
         text_file.close()
 
