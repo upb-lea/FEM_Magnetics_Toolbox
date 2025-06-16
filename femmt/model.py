@@ -289,12 +289,41 @@ class LinearCoreMaterial:
         """
         self.file_path_to_solver_folder: Optional[str] = None
 
-        self.initial_permeability = mu_r_abs
+        self.material = 'custom'
+
+        self.mu_r_abs = mu_r_abs
         self.phi_mu_deg = phi_mu_deg
         self.sigma = sigma
         self.mdb_verbosity = mdb_verbosity
 
         self.complex_permittivity: Optional[complex] = None
+
+        self.permeability_type = PermeabilityType.FixedLossAngle
+        self.permeability = {
+            "datasource": MaterialDataSource.Custom,
+            "measurement_setup": None,
+            "datatype": None,
+        }
+
+        self.permittivity = {
+            "datasource": MaterialDataSource.Custom,
+            "measurement_setup": None,
+            "datatype": None,
+        }
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Return a dictionary representation of the core material.
+
+        Useful for serialization or logging.
+
+        :return: Dictionary of core material parameters.
+        :rtype: dict
+        """
+        return {
+            "mu_r_abs": self.mu_r_abs,
+            "phi_mu_deg": self.phi_mu_deg,
+            "sigma": self.sigma,
+        }
 
 
 class RealCoreMaterial:
