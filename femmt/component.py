@@ -618,7 +618,7 @@ class MagneticComponent:
 
                 ff.check_mqs_condition(radius=self.core.geometry.core_inner_diameter / 2, frequency=self.frequency,
                                        complex_permeability=self.get_single_complex_permeability(),
-                                       complex_permittivity=complex_permittivity, conductivity=self.core.material.sigma,
+                                       complex_permittivity=complex_permittivity, conductivity=self.core.material.dc_conductivity,
                                        relative_margin_to_first_resonance=0.5)
 
             else:
@@ -627,7 +627,7 @@ class MagneticComponent:
                                        complex_permittivity=epsilon_0 * self.core.material.eps_r_abs *
                                                             complex(np.cos(np.deg2rad(self.core.material.phi_eps_deg)),
                                                                     -np.sin(np.deg2rad(self.core.material.phi_eps_deg))),
-                                       conductivity=self.core.material.sigma,
+                                       conductivity=self.core.material.dc_conductivity,
                                        relative_margin_to_first_resonance=0.5)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
@@ -3112,15 +3112,12 @@ class MagneticComponent:
         text_file.write(f"delta = {self.delta};\n")
 
         # Complex (equivalent) conductivity
-        complex_permittivity = epsilon_0 * self.core.material.eps_r_abs * \
-                               complex(np.cos(np.deg2rad(self.core.material.phi_eps_deg)),
-                                       -np.sin(np.deg2rad(self.core.material.phi_eps_deg)))
-        self.complex_conductance = self.core.material.sigma + \
-                              complex(0, 1) * 2 * np.pi * self.frequency * complex_permittivity
-        if self.complex_conductance != 0 and self.complex_conductance is not None:
+        self.core.material.complex_conductance = self.core.material.dc_conductivity + \
+                                   complex(0, 1) * 2 * np.pi * self.frequency * self.core.material.complex_permittivity
+        if self.core.material.complex_conductance != 0 and self.core.material.complex_conductance is not None:
             text_file.write("Flag_Conducting_Core = 1;\n")
-            text_file.write(f"sigma_core = {self.complex_conductance.real};\n")
-            text_file.write(f"sigma_core_imag = {self.complex_conductance.imag};\n")
+            text_file.write(f"sigma_core = {self.core.material.complex_conductance.real};\n")
+            text_file.write(f"sigma_core_imag = {self.core.material.complex_conductance.imag};\n")
         else:
             text_file.write("Flag_Conducting_Core = 0;\n")
 
@@ -3960,8 +3957,8 @@ class MagneticComponent:
 
             # Frequency/Temperature in operation point
             material_dict[f"T_{self.core.material.temperature}__f_{self.frequency}"] = {
-                "sigma_core_real": self.complex_conductance.real,
-                "sigma_core_imag": self.complex_conductance.imag,
+                "sigma_core_real": self.core.material.complex_conductance.real,
+                "sigma_core_imag": self.core.material.complex_conductance.imag,
                 "magnetic_flux_density": magnetic_flux_density,
                 "permeability_real": permeability_real,
                 "permeability_imag": permeability_imag
@@ -4549,15 +4546,15 @@ class MagneticComponent:
 
         # == Materials ==
 
-        logger.info(f"{self.core.material.permeability_type=}, {self.complex_conductance.real=}")
+        logger.info(f"{self.core.material.permeability_type=}, {self.core.material.complex_conductance.real=}")
         if self.core.material.permeability_type == PermeabilityType.FixedLossAngle:
-            femm.mi_addmaterial('Ferrite', self.core.material.mu_r_abs, self.core.material.mu_r_abs, 0, 0, self.complex_conductance.real / 1e6, 0, 0, 1,
+            femm.mi_addmaterial('Ferrite', self.core.material.mu_r_abs, self.core.material.mu_r_abs, 0, 0, self.core.material.complex_conductance.real / 1e6, 0, 0, 1,
                                 0, self.core.material.phi_mu_deg, self.core.material.phi_mu_deg)
         elif self.core.material.permeability_type == PermeabilityType.RealValue:
-            femm.mi_addmaterial('Ferrite', self.core.material.mu_r_abs, self.core.material.mu_r_abs, 0, 0, self.complex_conductance.real / 1e6, 0, 0, 1,
+            femm.mi_addmaterial('Ferrite', self.core.material.mu_r_abs, self.core.material.mu_r_abs, 0, 0, self.core.material.complex_conductance.real / 1e6, 0, 0, 1,
                                 0, self.core.material.phi_mu_deg, self.core.material.phi_mu_deg)
         else:
-            femm.mi_addmaterial('Ferrite', self.core.material.mu_r_abs, self.core.material.mu_r_abs, 0, 0, self.complex_conductance.real / 1e6, 0, 0, 1,
+            femm.mi_addmaterial('Ferrite', self.core.material.mu_r_abs, self.core.material.mu_r_abs, 0, 0, self.core.material.complex_conductance.real / 1e6, 0, 0, 1,
                                 0, 0, 0)
         femm.mi_addmaterial('Air', 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0)
 

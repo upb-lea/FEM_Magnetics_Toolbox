@@ -273,7 +273,7 @@ class LinearCoreMaterial:
                  mdb_verbosity: Any,
                  mu_r_abs: float,
                  phi_mu_deg: float = 0,
-                 sigma: float = 0,
+                 dc_conductivity: float = 0,
                  eps_r_abs: float = 0,
                  phi_eps_deg: float = 0):
         """Create a CoreMaterial object describing electromagnetic and loss properties.
@@ -284,21 +284,24 @@ class LinearCoreMaterial:
         :type mu_r_abs: float
         :param phi_mu_deg: Loss angle in degrees for complex permeability.
         :type phi_mu_deg: float or None
-        :param sigma: Electrical conductivity (only used for custom materials).
-        :type sigma: complex or None
+        :param dc_conductivity: Electrical conductivity (only used for custom materials).
+        :type dc_conductivity: complex or None
         :param mdb_verbosity: Verbosity level for the material database.
         :type mdb_verbosity: Any
         """
+        self.mdb_verbosity = mdb_verbosity
         self.file_path_to_solver_folder: Optional[str] = None
-
         self.material = 'custom'
 
         self.mu_r_abs = mu_r_abs
         self.phi_mu_deg = phi_mu_deg
-        self.sigma = sigma
+        self.dc_conductivity = dc_conductivity
         self.eps_r_abs = eps_r_abs
         self.phi_eps_deg = phi_eps_deg
-        self.mdb_verbosity = mdb_verbosity
+        self.complex_permittivity = epsilon_0 * self.eps_r_abs * complex(
+            np.cos(np.deg2rad(self.phi_eps_deg)),
+            -np.sin(np.deg2rad(self.phi_eps_deg))
+        )
 
         self.permeability_type = PermeabilityType.FixedLossAngle
         self.permeability = {
@@ -324,7 +327,7 @@ class LinearCoreMaterial:
         return {
             "mu_r_abs": self.mu_r_abs,
             "phi_mu_deg": self.phi_mu_deg,
-            "sigma": self.sigma,
+            "dc_conductivity": self.dc_conductivity,
             "eps_r_abs": self.eps_r_abs,
             "phi_eps_deg": self.phi_eps_deg
         }
@@ -381,6 +384,7 @@ class RealCoreMaterial:
         :param mdb_verbosity: Verbosity level for the material database.
         :type mdb_verbosity: Any
         """
+        self.dc_conductivity = None
         self.mdb_verbosity = mdb_verbosity
 
         self.material_database = mdb.MaterialDatabase()
@@ -388,17 +392,6 @@ class RealCoreMaterial:
 
         self.temperature = temperature
         self.loss_approach = LossApproach.LossAngle
-        # self.non_linear = non_linear
-        # self.mu_r_abs = mu_r_abs
-        # self.phi_mu_deg = phi_mu_deg
-        # if self.permittivity["datasource"] == MaterialDataSource.Custom:
-        #     self.sigma = sigma
-        # else:
-        #     self.sigma = 1 / self.material_database.get_material_attribute(
-        #         material_name=self.material,
-        #         attribute="resistivity"
-        #     )
-        # self.permeability_type = PermeabilityType.FixedLossAngle if phi_mu_deg else PermeabilityType.RealValue
 
         self.material = Material(material) if material != 'custom' else material
 
@@ -444,16 +437,13 @@ class RealCoreMaterial:
 
             self.complex_permittivity = epsilon_0 * epsilon_r * complex(
                 np.cos(np.deg2rad(phi_epsilon_deg)),
-                np.sin(np.deg2rad(phi_epsilon_deg))
+                -np.sin(np.deg2rad(phi_epsilon_deg))
             )
 
-            self.sigma = 2 * np.pi * frequency * complex(
-                self.complex_permittivity.imag,
-                self.complex_permittivity.real
-            )
-
+            self.dc_conductivity = 0
+            
         elif self.permittivity["datasource"] == MaterialDataSource.ManufacturerDatasheet:
-            self.sigma = 1 / self.material_database.get_material_attribute(
+            self.dc_conductivity = 1 / self.material_database.get_material_attribute(
                 material_name=self.material,
                 attribute="resistivity"
             )
