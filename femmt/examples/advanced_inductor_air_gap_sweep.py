@@ -70,7 +70,7 @@ def basic_example_sweep(onelab_folder: str | None = None, show_visual_outputs: b
         winding_window = fmt.WindingWindow(core, insulation)
         complete = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
-        conductor = fmt.Conductor(0, fmt.Conductivity.Copper)
+        conductor = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
         conductor.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6, 
                                            fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
         complete.set_winding(conductor, 9, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)

@@ -136,10 +136,10 @@ def basic_example_transformer_stacked(onelab_folder: str = None, show_visual_out
     vww_bot = winding_window_bot.split_window(fmt.WindingWindowSplit.NoSplit)
 
     # 6. set conductor parameters
-    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
     winding1.set_litz_round_conductor(None, 100, 70e-6, 0.5, fmt.ConductorArrangement.Square)
 
-    winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
     winding2.set_solid_round_conductor(1e-3, fmt.ConductorArrangement.Square)
     # winding2.set_litz_round_conductor(None, 120, 70e-6, 0.5, fmt.ConductorArrangement.Square)
 

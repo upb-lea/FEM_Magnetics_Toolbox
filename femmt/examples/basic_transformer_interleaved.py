@@ -134,10 +134,10 @@ def basic_example_transformer_interleaved(onelab_folder: str = None, show_visual
     vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
     # 6. create conductors and set parameters
-    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
     winding1.set_solid_round_conductor(0.0011, None)
 
-    winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
     winding2.set_solid_round_conductor(0.0011, None)
 
     # 7. add conductor to vww and add winding window to MagneticComponent

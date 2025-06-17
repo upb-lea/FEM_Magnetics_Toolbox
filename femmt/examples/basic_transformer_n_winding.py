@@ -144,7 +144,7 @@ def basic_example_transformer_n_winding(onelab_folder: str = None, show_visual_o
     cells = winding_window.NCellsSplit(0, [1 / 6, 2 / 6, 3 / 6, 4 / 6, 5 / 6])
     # 6. create conductors and set parameters
 
-    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
     winding1.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
 
     # winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
@@ -153,48 +153,48 @@ def basic_example_transformer_n_winding(onelab_folder: str = None, show_visual_o
     # winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
     # winding2.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
 
-    winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
     winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
     # winding3 = fmt.Conductor(2, fmt.Conductivity.Copper)
     # winding3.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
 
-    winding3 = fmt.Conductor(2, fmt.Conductivity.Copper)
+    winding3 = fmt.Conductor(2, fmt.ConductorMaterial.Copper)
     winding3.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
-    winding4 = fmt.Conductor(3, fmt.Conductivity.Copper)
+    winding4 = fmt.Conductor(3, fmt.ConductorMaterial.Copper)
     winding4.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
     # winding4 = fmt.Conductor(3, fmt.Conductivity.Copper)
     # winding4.set_litz_round_conductor(0.0011, 50, 0.000011, None, fmt.ConductorArrangement.Square)
 
-    winding5 = fmt.Conductor(4, fmt.Conductivity.Copper)
+    winding5 = fmt.Conductor(4, fmt.ConductorMaterial.Copper)
     winding5.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
-    winding6 = fmt.Conductor(5, fmt.Conductivity.Copper)
+    winding6 = fmt.Conductor(5, fmt.ConductorMaterial.Copper)
     winding6.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
-    winding7 = fmt.Conductor(6, fmt.Conductivity.Copper)
+    winding7 = fmt.Conductor(6, fmt.ConductorMaterial.Copper)
     winding7.set_litz_round_conductor(0.0011, 5, 0.00011, None, fmt.ConductorArrangement.Square)
 
-    winding7 = fmt.Conductor(6, fmt.Conductivity.Copper)
+    winding7 = fmt.Conductor(6, fmt.ConductorMaterial.Copper)
     winding7.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
-    winding8 = fmt.Conductor(7, fmt.Conductivity.Copper)
+    winding8 = fmt.Conductor(7, fmt.ConductorMaterial.Copper)
     winding8.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
     # winding8 = fmt.Conductor(7, fmt.Conductivity.Copper)
     # winding8.set_litz_round_conductor(0.0011, 50, 0.000011, None, fmt.ConductorArrangement.Square)
 
-    winding9 = fmt.Conductor(8, fmt.Conductivity.Copper)
+    winding9 = fmt.Conductor(8, fmt.ConductorMaterial.Copper)
     winding9.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
-    winding10 = fmt.Conductor(9, fmt.Conductivity.Copper)
+    winding10 = fmt.Conductor(9, fmt.ConductorMaterial.Copper)
     winding10.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
-    winding11 = fmt.Conductor(10, fmt.Conductivity.Copper)
+    winding11 = fmt.Conductor(10, fmt.ConductorMaterial.Copper)
     winding11.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
-    winding12 = fmt.Conductor(11, fmt.Conductivity.Copper)
+    winding12 = fmt.Conductor(11, fmt.ConductorMaterial.Copper)
     winding12.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
     # 5. create winding window and virtual winding windows (vww)

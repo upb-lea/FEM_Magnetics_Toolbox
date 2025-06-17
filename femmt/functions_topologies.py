@@ -284,16 +284,16 @@ def set_center_tapped_windings(core: Core,
                                                           primary_to_secondary=iso_primary_to_secondary)
 
     def define_windings(winding_temperature: float):
-        winding1 = Conductor(0, Conductivity.Copper, winding_material_temperature=winding_temperature)
+        winding1 = Conductor(0, Conductivity.Copper, temperature=winding_temperature)
         winding1.set_litz_round_conductor(primary_radius, primary_number_strands, primary_strand_radius, None,
                                           conductor_arrangement=ConductorArrangement.SquareFullWidth)
         # winding1.set_solid_round_conductor(primary_radius, conductor_arrangement=ConductorArrangement.SquareFullWidth)
 
-        winding2 = Conductor(1, Conductivity.Copper, winding_material_temperature=winding_temperature)
+        winding2 = Conductor(1, Conductivity.Copper, temperature=winding_temperature)
         winding2.set_rectangular_conductor(thickness=secondary_thickness_foil)
         winding2.parallel = True
 
-        winding3 = Conductor(2, Conductivity.Copper, winding_material_temperature=winding_temperature)
+        winding3 = Conductor(2, Conductivity.Copper, temperature=winding_temperature)
         winding3.set_rectangular_conductor(thickness=secondary_thickness_foil)
         winding3.parallel = True
         return winding1, winding2, winding3

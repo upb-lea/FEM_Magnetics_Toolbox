@@ -72,11 +72,11 @@ def basic_example_transformer_three_windings_time_domain(onelab_folder: str = No
     top_left = winding_window.combine_vww(top_left, bot_left)
 
     # 6. create conductors and set parameters
-    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
     winding1.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
-    winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
     winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
-    winding3 = fmt.Conductor(2, fmt.Conductivity.Copper)
+    winding3 = fmt.Conductor(2, fmt.ConductorMaterial.Copper)
     winding3.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent

@@ -138,7 +138,7 @@ def basic_example_inductor_foil_vertical(onelab_folder: str = None, show_visual_
     winding_window = fmt.WindingWindow(core, insulation)
     vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
-    winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
+    winding = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=25)
     winding.set_rectangular_conductor(thickness=1e-3)
 
     vww.set_winding(winding, 5, fmt.WindingScheme.FoilVertical, fmt.Align.ToEdges, wrap_para_type=wrap_para_type,

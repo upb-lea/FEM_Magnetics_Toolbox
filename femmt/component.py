@@ -25,7 +25,7 @@ import numpy as np
 import femmt.functions as ff
 from femmt.constants import *
 from femmt.mesh import Mesh
-from femmt.model import VirtualWindingWindow, WindingWindow, Core, Insulation, StrayPath, AirGaps, Conductor
+from femmt.model import VirtualWindingWindow, WindingWindow, Core, Insulation, StrayPath, AirGaps, Conductor, LinearCoreMaterial, ImportedCoreMaterial
 from femmt.enumerations import *
 from femmt.data import FileData, MeshData
 from femmt.drawing import TwoDaxiSymmetric
@@ -3111,15 +3111,6 @@ class MagneticComponent:
         text_file.write("Freq = %s;\n" % self.frequency)
         text_file.write(f"delta = {self.delta};\n")
 
-        # Complex (equivalent) conductivity
-        self.core.material.complex_conductance = self.core.material.dc_conductivity + \
-                                   complex(0, 1) * 2 * np.pi * self.frequency * self.core.material.complex_permittivity
-        if self.core.material.complex_conductance != 0 and self.core.material.complex_conductance is not None:
-            text_file.write("Flag_Conducting_Core = 1;\n")
-            text_file.write(f"sigma_core = {self.core.material.complex_conductance.real};\n")
-            text_file.write(f"sigma_core_imag = {self.core.material.complex_conductance.imag};\n")
-        else:
-            text_file.write("Flag_Conducting_Core = 0;\n")
 
         # time domain parameters
         if self.simulation_type == SimulationType.TimeDomain:
@@ -3208,14 +3199,10 @@ class MagneticComponent:
             # Conductor Material
             text_file.write(f"sigma_winding_{winding_number + 1} = {self.windings[winding_number].cond_sigma};\n")
 
-        # -- Materials --
-
         # Nature Constants
         text_file.write("mu0 = 4.e-7 * Pi;\n")
         text_file.write("nu0 = 1 / mu0;\n")
         text_file.write(f"e0 = {epsilon_0};\n")
-
-        # Material Properties
 
         # Core Material
         text_file.write(f"mur = {self.core.material.mu_r_abs};\n")  # mur is predefined to a fixed value
@@ -3224,8 +3211,6 @@ class MagneticComponent:
         else:
             text_file.write("Flag_Permeability_From_Data = 0;\n")  # mur is predefined to a fixed value
         if self.core.material.permeability_type == PermeabilityType.FixedLossAngle:
-            # loss angle for complex representation of hysteresis loss
-            text_file.write(f"phi_mu_deg = {self.core.material.phi_mu_deg};\n")
             # Real part of complex permeability
             text_file.write(f"mur_real = {self.core.material.mu_r_abs * np.cos(np.deg2rad(self.core.material.phi_mu_deg))};\n")
             # Imaginary part of complex permeability
@@ -3236,6 +3221,16 @@ class MagneticComponent:
         else:
             text_file.write(
                 "Flag_Fixed_Loss_Angle = 0;\n")  # loss angle for complex representation of hysteresis loss
+
+        # Complex (equivalent) conductivity
+        self.core.material.complex_conductance = self.core.material.dc_conductivity + \
+                                   complex(0, 1) * 2 * np.pi * self.frequency * self.core.material.complex_permittivity
+        if self.core.material.complex_conductance != 0 and self.core.material.complex_conductance is not None:
+            text_file.write("Flag_Conducting_Core = 1;\n")
+            text_file.write(f"sigma_core_real = {self.core.material.complex_conductance.real};\n")
+            text_file.write(f"sigma_core_imag = {self.core.material.complex_conductance.imag};\n")
+        else:
+            text_file.write("Flag_Conducting_Core = 0;\n")
 
         text_file.close()
 
@@ -5261,28 +5256,27 @@ class MagneticComponent:
             else:
                 raise ValueError("unknown core_type for decoding from result_log.")
 
-            if isinstance(settings["core"]["sigma"], list):
-                # in case of sigma is a complex number, it is given as a list and needs to translated to complex.
-                settings["core"]["sigma"] = complex(settings["core"]["sigma"][0], settings["core"]["sigma"][1])
+            if settings["core"]["material_model_type"] == CoreMaterialType.Linear:
+                core_material = LinearCoreMaterial(mu_r_abs=settings["core"]["mu_r_abs"],
+                                                   phi_mu_deg=settings["core"]["phi_mu_deg"],
+                                                   dc_conductivity=settings["core"]["dc_conductivity"],
+                                                   eps_r_abs=settings["core"]["eps_r_abs"],
+                                                   phi_eps_deg=settings["core"]["phi_eps_deg"])
 
-            if settings["core"]["material"] != 'custom':
-                # a custom core does not need a material, measurement_setup and _datatype
-                settings["core"]["material"] = Material(settings["core"]["material"])
-                settings["core"]["permeability_measurement_setup"] = \
-                    MeasurementSetup(settings["core"]["permeability_measurement_setup"])
-                settings["core"]["permeability_datatype"] = \
-                    MeasurementDataType(settings["core"]["permeability_datatype"])
-                settings["core"]["permittivity_measurement_setup"] = \
-                    MeasurementSetup(settings["core"]["permittivity_measurement_setup"])
-                settings["core"]["permittivity_datatype"] = \
-                    MeasurementDataType(settings["core"]["permittivity_datatype"])
+            elif settings["core"]["material_model_type"] == CoreMaterialType.Imported:
+                core_material = ImportedCoreMaterial(material=settings["core"]["material"],
+                                                     temperature=settings["core"]["temperature"],
+                                                     permeability_datasource=settings["core"]["permeability_datasource"],
+                                                     permeability_datatype=settings["core"]["permeability_datatype"],
+                                                     permeability_measurement_setup=settings["core"]["permeability_measurement_setup"],
+                                                     permittivity_datasource=settings["core"]["permittivity_datasource"],
+                                                     permittivity_datatype=settings["core"]["permittivity_datatype"],
+                                                     permittivity_measurement_setup=settings["core"]["permittivity_measurement_setup"])
 
-            settings["core"]["permeability_datasource"] = \
-                MaterialDataSource(settings["core"]["permeability_datasource"])
-            settings["core"]["permittivity_datasource"] = \
-                MaterialDataSource(settings["core"]["permittivity_datasource"])
-
-            core = Core(core_dimensions=core_dimensions, **settings["core"])
+            core = Core(core_type=settings["core"]["core_type"],
+                        core_dimensions=core_dimensions,
+                        material=core_material,
+                        detailed_core_model=settings["core"]["correct_outer_leg"])
             geo.set_core(core)
 
             if "air_gaps" in settings:
@@ -5311,7 +5305,9 @@ class MagneticComponent:
                     conductors = []
                     for winding in vww["windings"]:
                         winding_number = winding["winding_number"]
-                        conductor = Conductor(winding["winding_number"], Conductivity[winding["conductivity"]])
+                        conductor = Conductor(winding["winding_number"],
+                                              material=ConductorMaterial[winding["material"]],
+                                              temperature=winding["temperature"])
                         conductor_type = ConductorType[winding["conductor_type"]]
                         if conductor_type == ConductorType.RectangularSolid:
                             conductor.set_rectangular_conductor(winding["thickness"])
@@ -5337,7 +5333,20 @@ class MagneticComponent:
                         winding_scheme = WindingScheme[vww["winding_scheme"]] if vww["winding_scheme"] \
                             is not None else None
                         wrap_para_type = WrapParaType[vww["wrap_para"]] if vww["wrap_para"] is not None else None
-                        new_vww.set_winding(conductors[0], turns[winding_number], winding_scheme, wrap_para_type)
+                        alignment = Align[vww["alignment"]] if vww["alignment"] is not None else None
+                        placing_strategy = ConductorDistribution[vww["placing_strategy"]] if vww["placing_strategy"] is not None else None
+                        zigzag = vww["zigzag"] if vww["zigzag"] is not None else None
+                        foil_vertical_placing_strategy = FoilVerticalDistribution[vww["foil_vertical_placing_strategy"]] if vww["foil_vertical_placing_strategy"] is not None else None
+                        foil_horizontal_placing_strategy = FoilHorizontalDistribution[vww["foil_horizontal_placing_strategy"]] if vww["foil_horizontal_placing_strategy"] is not None else None
+                        new_vww.set_winding(conductor=conductors[0],
+                                            turns=turns[winding_number],
+                                            winding_scheme=winding_scheme,
+                                            alignment=alignment,
+                                            placing_strategy=placing_strategy,
+                                            zigzag=zigzag,
+                                            wrap_para_type=wrap_para_type,
+                                            foil_vertical_placing_strategy=foil_vertical_placing_strategy,
+                                            foil_horizontal_placing_strategy=foil_horizontal_placing_strategy)
                         logger.info(turns[0])
                     elif winding_type == WindingType.TwoInterleaved:
                         new_vww.set_interleaved_winding(conductors[0], turns[0], conductors[1], turns[1],

@@ -300,7 +300,7 @@ class WrapParaType(IntEnum):
     """
 
 
-class Conductivity(IntEnum):
+class ConductorMaterial(IntEnum):
     """Sets the conductivity of the conductor."""
 
     Copper = 1

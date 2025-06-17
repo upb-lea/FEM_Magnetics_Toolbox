@@ -85,7 +85,7 @@ def run_transformer_vvw_split_examples(num_windings: int, onelab_folder: str = N
 
         windings = []
         for i in range(num_windings):
-            winding = fmt.Conductor(i, fmt.Conductivity.Copper)
+            winding = fmt.Conductor(i, fmt.ConductorMaterial.Copper)
             winding.set_litz_round_conductor(0.85e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
             windings.append(winding)
 

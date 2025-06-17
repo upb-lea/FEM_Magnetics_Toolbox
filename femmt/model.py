@@ -43,14 +43,15 @@ class Conductor:
     n_layers: int
     a_cell: float
     cond_sigma: float
+    temperature: float
 
     conductor_is_set: bool
 
     # Not used in femmt_classes. Only needed for to_dict()
-    conductivity: Conductivity | None = None
+    conductivity: ConductorMaterial | None = None
 
-    def __init__(self, winding_number: int, conductivity: Conductivity, parallel: bool = False,
-                 winding_material_temperature: float = 100):
+    def __init__(self, winding_number: int, material: ConductorMaterial, parallel: bool = False,
+                 temperature: float = 100):
         """Create a conductor object.
 
         The winding_number sets the order of the conductors. Every conductor needs to have a unique winding number.
@@ -58,10 +59,10 @@ class Conductor:
 
         :param winding_number: Unique number for the winding
         :type winding_number: int
-        :param conductivity: Sets the conductivity for the conductor
-        :type conductivity: float
-        :param winding_material_temperature: temperature of winding material, default set to 100 °C
-        :type winding_material_temperature: float
+        :param material: Sets the conductivity for the conductor
+        :type material: float
+        :param temperature: temperature of winding material, default set to 100 °C
+        :type temperature: float
         :param parallel: Set to True to introduce parallel conductors. Default set to False
         :type parallel: bool
         """
@@ -69,15 +70,16 @@ class Conductor:
             raise Exception("Winding index cannot be negative.")
 
         self.winding_number = winding_number
-        self.conductivity = conductivity
+        self.conductivity = material
         self.conductor_is_set = False
         self.parallel = parallel
+        self.temperature = temperature
 
         dict_material_database = ff.wire_material_database()
-        if conductivity.name in dict_material_database:
-            self.cond_sigma = ff.conductivity_temperature(conductivity.name, winding_material_temperature)
+        if material.name in dict_material_database:
+            self.cond_sigma = ff.conductivity_temperature(material.name, temperature)
         else:
-            raise Exception(f"Material {conductivity.name} not found in database")
+            raise Exception(f"Material {material.name} not found in database")
 
     def set_rectangular_conductor(self, thickness: float = None):
         """
@@ -172,7 +174,8 @@ class Conductor:
         """Transfer object parameters to a dictionary. Important method to create the final result-log."""
         return {
             "winding_number": self.winding_number,
-            "conductivity": self.conductivity.name,
+            "temperature": self.temperature,
+            "material": self.conductivity.name,
             "conductor_type": self.conductor_type.name,
             "thickness": self.thickness,
             "conductor_radius": self.conductor_radius,
@@ -270,12 +273,12 @@ class LinearCoreMaterial:
     """
 
     def __init__(self,
-                 mdb_verbosity: Any,
                  mu_r_abs: float,
                  phi_mu_deg: float = 0,
                  dc_conductivity: float = 0,
                  eps_r_abs: float = 0,
-                 phi_eps_deg: float = 0):
+                 phi_eps_deg: float = 0,
+                 mdb_verbosity: Any = Verbosity.Silent):
         """Create a CoreMaterial object describing electromagnetic and loss properties.
 
         The class uses material database queries and supports both predefined and custom material configurations.
@@ -345,7 +348,6 @@ class ImportedCoreMaterial:
     """
 
     def __init__(self,
-                 mdb_verbosity: Optional[Any],
                  material: Union[str, Material],
                  temperature: Optional[float],
                  permeability_datasource: Union[str, MaterialDataSource],
@@ -353,8 +355,9 @@ class ImportedCoreMaterial:
                  permeability_datatype: Union[str, MeasurementDataType] = None,
                  permittivity_datatype: Union[str, MeasurementDataType] = None,
                  permeability_measurement_setup: Union[str, MeasurementSetup] = None,
-                 permittivity_measurement_setup: Union[str, MeasurementSetup] = None
-                 ):
+                 permittivity_measurement_setup: Union[str, MeasurementSetup] = None,
+                 mdb_verbosity: Any = Verbosity.Silent):
+
         """Create a CoreMaterial object describing electromagnetic and loss properties.
 
         The class uses material database queries and supports both predefined and custom material configurations.
@@ -831,6 +834,11 @@ class VirtualWindingWindow:
         :param right_bound: Right bound
         :type right_bound: float
         """
+        self.zigzag = None
+        self.foil_horizontal_placing_strategy = None
+        self.foil_vertical_placing_strategy = None
+        self.placing_strategy = None
+        self.alignment = None
         self.bot_bound = bot_bound
         self.top_bound = top_bound
         self.left_bound = left_bound
@@ -973,6 +981,11 @@ class VirtualWindingWindow:
                 "right_bound": self.right_bound,
                 "winding_type": self.winding_type.name,
                 "winding_scheme": self.winding_scheme.name if self.winding_scheme is not None else None,
+                "alignment": self.alignment.name,
+                "zigzag": self.zigzag,
+                "foil_horizontal_placing_strategy": self.foil_horizontal_placing_strategy.name,
+                "foil_vertical_placing_strategy": self.foil_vertical_placing_strategy.name,
+                "placing_strategy": self.placing_strategy.name,
                 "wrap_para": self.wrap_para.name if self.wrap_para is not None else None,
                 "windings": [winding.to_dict() for winding in self.windings],
                 "turns": self.turns,
@@ -986,6 +999,11 @@ class VirtualWindingWindow:
                 "left_bound": self.left_bound,
                 "right_bound": self.right_bound,
                 "winding_type": self.winding_type.name,
+                "alignment": self.alignment.name if self.alignment is not None else None,
+                "zigzag": self.zigzag,
+                "foil_horizontal_placing_strategy": self.foil_horizontal_placing_strategy.name if self.foil_horizontal_placing_strategy is not None else None,
+                "foil_vertical_placing_strategy": self.foil_vertical_placing_strategy.name if self.foil_vertical_placing_strategy is not None else None,
+                "placing_strategy": self.placing_strategy.name if self.placing_strategy is not None else None,
                 "winding_scheme": self.winding_scheme.name if self.winding_scheme is not None else None,
                 "wrap_para": self.wrap_para.name if self.wrap_para is not None else None,
                 "windings": [winding.to_dict() for winding in self.windings],

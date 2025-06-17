@@ -147,19 +147,19 @@ def basic_example_transformer_5_windings(onelab_folder: str = None, show_visual_
                                                        vertical_split_factors=[None, [0.5, 0.85], None])
 
     # 6. create windings and assign conductors
-    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
     winding1.set_litz_round_conductor(0.85e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
 
-    winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
     winding2.set_litz_round_conductor(1.0e-3 / 2, 60, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
 
-    winding3 = fmt.Conductor(2, fmt.Conductivity.Copper)
+    winding3 = fmt.Conductor(2, fmt.ConductorMaterial.Copper)
     winding3.set_litz_round_conductor(0.75e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
 
-    winding4 = fmt.Conductor(3, fmt.Conductivity.Copper)
+    winding4 = fmt.Conductor(3, fmt.ConductorMaterial.Copper)
     winding4.set_litz_round_conductor(0.95e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
 
-    winding5 = fmt.Conductor(4, fmt.Conductivity.Copper)
+    winding5 = fmt.Conductor(4, fmt.ConductorMaterial.Copper)
     winding5.set_litz_round_conductor(0.75e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
 
     # 7. assign windings to virtual winding windows (cells)
