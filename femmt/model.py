@@ -345,15 +345,15 @@ class ImportedCoreMaterial:
     """
 
     def __init__(self,
+                 mdb_verbosity: Optional[Any],
                  material: Union[str, Material],
                  temperature: Optional[float],
                  permeability_datasource: Union[str, MaterialDataSource],
-                 permeability_datatype: Union[str, MeasurementDataType],
-                 permeability_measurement_setup: Union[str, MeasurementSetup],
                  permittivity_datasource: Union[str, MaterialDataSource],
-                 permittivity_datatype: Union[str, MeasurementDataType],
-                 permittivity_measurement_setup: Union[str, MeasurementSetup],
-                 mdb_verbosity: Optional[Any]
+                 permeability_datatype: Union[str, MeasurementDataType] = None,
+                 permittivity_datatype: Union[str, MeasurementDataType] = None,
+                 permeability_measurement_setup: Union[str, MeasurementSetup] = None,
+                 permittivity_measurement_setup: Union[str, MeasurementSetup] = None
                  ):
         """Create a CoreMaterial object describing electromagnetic and loss properties.
 
@@ -363,32 +363,21 @@ class ImportedCoreMaterial:
         :type material: str or Material
         :param temperature: Operating temperature in degrees Celsius.
         :type temperature: float
-        :param loss_approach: The loss calculation method.
-        :type loss_approach: LossApproach
-        :param mu_r_abs: Relative permeability for custom materials.
-        :type mu_r_abs: float
         :param permeability_datasource: Source of permeability data.
         :type permeability_datasource: str or MaterialDataSource
         :param permeability_datatype: Type of permeability measurement data.
         :type permeability_datatype: str or MeasurementDataType
         :param permeability_measurement_setup: Setup used for permeability measurements.
         :type permeability_measurement_setup: str or MeasurementSetup
-        :param phi_mu_deg: Loss angle in degrees for complex permeability.
-        :type phi_mu_deg: float or None
-        :param non_linear: Whether the material is magnetically non-linear.
-        :type non_linear: bool
         :param permittivity_datasource: Source of permittivity data.
         :type permittivity_datasource: str or MaterialDataSource
         :param permittivity_datatype: Type of permittivity measurement data.
         :type permittivity_datatype: str or MeasurementDataType
         :param permittivity_measurement_setup: Setup used for permittivity measurements.
         :type permittivity_measurement_setup: str or MeasurementSetup
-        :param sigma: Electrical conductivity (only used for custom materials).
-        :type sigma: complex or None
         :param mdb_verbosity: Verbosity level for the material database.
         :type mdb_verbosity: Any
         """
-        self.dc_conductivity = None
         self.mdb_verbosity = mdb_verbosity
 
         self.material_database = mdb.MaterialDatabase()
@@ -420,7 +409,13 @@ class ImportedCoreMaterial:
             attribute="initial_permeability"
         )
 
-        self.complex_permittivity: Optional[complex] = None
+        self.dc_conductivity = 0
+        self.eps_r_abs = 0
+        self.phi_eps_deg = 0
+        self.complex_permittivity = epsilon_0 * self.eps_r_abs * complex(
+            np.cos(np.deg2rad(self.phi_eps_deg)),
+            -np.sin(np.deg2rad(self.phi_eps_deg))
+        )
 
     def update_permittivity(self, frequency: float) -> None:
         """Update permittivity and calculate equivalent conductivity at a given frequency.

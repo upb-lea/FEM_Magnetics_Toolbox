@@ -158,10 +158,17 @@ def fixture_inductor_core_material_database(temp_folder: pytest.fixture):
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
 
-        core = fmt.Core(core_type=fmt.CoreType.Single,
-                        core_dimensions=core_dimensions, material=mdb.Material.N95, temperature=25,
-                        permeability_datasource=fmt.MaterialDataSource.ManufacturerDatasheet,
-                        permittivity_datasource=fmt.MaterialDataSource.ManufacturerDatasheet)
+        core_material = fmt.ImportedCoreMaterial(material=fmt.Material.N95,
+                                                 temperature=25,
+                                                 permeability_datasource=fmt.MaterialDataSource.ManufacturerDatasheet,
+                                                 permittivity_datasource=fmt.MaterialDataSource.ManufacturerDatasheet,
+                                                 mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
+                        core_dimensions=core_dimensions,
+                        detailed_core_model=False)
+
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
