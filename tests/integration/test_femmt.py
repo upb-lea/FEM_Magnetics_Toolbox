@@ -279,14 +279,21 @@ def fixture_inductor_core_material_database_measurement(temp_folder: pytest.fixt
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
 
-        core = fmt.Core(core_type=fmt.CoreType.Single,
-                        core_dimensions=core_dimensions, material=mdb.Material.N95, temperature=25,
-                        permeability_datasource=fmt.MaterialDataSource.Measurement,
-                        permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                        permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
-                        permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                        permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                        permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK)
+        core_material = fmt.RealCoreMaterial(material=fmt.Material.N95,
+                                             temperature=25,
+                                             permeability_datasource=fmt.MaterialDataSource.Measurement,
+                                             permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                                             permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
+                                             permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                                             permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                                             permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK,
+                                             mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
+                        core_dimensions=core_dimensions,
+                        detailed_core_model=False)
+
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
@@ -404,10 +411,18 @@ def fixture_inductor_core_fixed_loss_angle(temp_folder: pytest.fixture):
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
 
-        core = fmt.Core(core_type=fmt.CoreType.Single,
+        core_material = fmt.LinearCoreMaterial(mu_r_abs=3000,
+                                               phi_mu_deg=10,
+                                               dc_conductivity=0.5,
+                                               eps_r_abs=0,
+                                               phi_eps_deg=0,
+                                               mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
                         core_dimensions=core_dimensions,
-                        mu_r_abs=3000, phi_mu_deg=10, sigma=0.5, permeability_datasource=fmt.MaterialDataSource.Custom,
-                        permittivity_datasource=fmt.MaterialDataSource.Custom)
+                        detailed_core_model=False)
+
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
