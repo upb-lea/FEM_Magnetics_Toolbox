@@ -82,7 +82,7 @@
   },
   "simulation_settings": {
     "simulation_name": null,
-    "date": "2025-06-17 09:25:51",
+    "date": "2025-06-17 13:18:55",
     "component_type": "Inductor",
     "working_directory": "C:\\Users\\tpiepe\\Repositories\\FEM_Magnetics_Toolbox\\tests\\integration\\temp",
     "core": {
@@ -116,12 +116,18 @@
             "left_bound": 0.01145,
             "right_bound": 0.0175,
             "winding_type": "Single",
+            "alignment": "ToEdges",
+            "zigzag": false,
+            "foil_horizontal_placing_strategy": null,
+            "foil_vertical_placing_strategy": null,
+            "placing_strategy": "VerticalUpward_HorizontalRightward",
             "winding_scheme": null,
             "wrap_para": null,
             "windings": [
               {
                 "winding_number": 0,
-                "conductivity": "Copper",
+                "temperature": 25,
+                "material": "Copper",
                 "conductor_type": "RoundSolid",
                 "thickness": null,
                 "conductor_radius": 0.0013,

@@ -109,10 +109,19 @@ def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, s
 
     core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=0.02, window_w=0.015, window_h_top=0.005,
                                                      window_h_bot=0.017)
-    core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12,
-                    sigma=1.2,
-                    permeability_datasource=fmt.MaterialDataSource.Custom,
-                    permittivity_datasource=fmt.MaterialDataSource.Custom)
+
+    core_material = fmt.LinearCoreMaterial(mu_r_abs=3100,
+                                           phi_mu_deg=12,
+                                           dc_conductivity=1.2,
+                                           eps_r_abs=0,
+                                           phi_eps_deg=0,
+                                           mdb_verbosity=fmt.Verbosity.Silent)
+
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Stacked,
+                    core_dimensions=core_dimensions,
+                    detailed_core_model=False)
+
     geo.set_core(core)
 
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Stacked, core)
