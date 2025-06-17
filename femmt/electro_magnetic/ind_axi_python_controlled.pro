@@ -198,7 +198,7 @@ Function {
   EndFor
 
   If(Flag_Conducting_Core)
-    sigma[#{Core}] = Complex[sigma_core, sigma_core_imag];
+    sigma[#{Core}] = Complex[sigma_core_real, sigma_core_imag];
     sigma[#{Air}] = 0.;
   EndIf
   If(!Flag_Conducting_Core)
@@ -216,8 +216,6 @@ Function {
 
   // Hysteresis Loss
   // Imaginary Part Of Permeability
-  // Liste von Lukas hinterlegen
-  //mu_imag[ #{Core} ] = mu0 * f_mu_imag[$1, $2];
 
   If(Flag_Fixed_Loss_Angle)
       mu[#{Core}]   = Complex[mu0*mur_real, -mu0*mur_imag] ;
