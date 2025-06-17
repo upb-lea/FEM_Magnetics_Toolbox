@@ -113,14 +113,21 @@ def basic_example_transformer_6_windings(onelab_folder: str = None, show_visual_
     # 2. set core parameters
     core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=16.1e-3, window_w=(22.5 - 12) / 2 * 1e-3,
                                                     core_inner_diameter=12e-3, core_h=22e-3)
-    core = fmt.Core(core_dimensions=core_dimensions, material=fmt.Material.N95, temperature=60,
-                    # permeability_datasource="manufacturer_datasheet",
-                    permeability_datasource=fmt.MaterialDataSource.Measurement,
-                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                    permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
-                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                    permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK)
+
+    core_material = fmt.ImportedCoreMaterial(material=fmt.Material.N95,
+                                             temperature=60,
+                                             permeability_datasource=fmt.MaterialDataSource.Measurement,
+                                             permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                                             permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
+                                             permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                                             permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                                             permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK,
+                                             mdb_verbosity=fmt.Verbosity.Silent)
+
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Single,
+                    core_dimensions=core_dimensions,
+                    detailed_core_model=False)
     geo.set_core(core)
 
     # 3. set air gap parameters

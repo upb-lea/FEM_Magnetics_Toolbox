@@ -40,17 +40,19 @@ def basic_example_transformer_three_windings_time_domain(onelab_folder: str = No
 
     # 2. set core parameters
     core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.06, window_w=0.03, core_inner_diameter=0.015, core_h=0.08)
-    # core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
-    #                 permeability_datasource=fmt.MaterialDataSource.Custom,
-    #                 permittivity_datasource=fmt.MaterialDataSource.Custom)
-    core = fmt.Core(core_type=fmt.CoreType.Single,
+
+    core_material = fmt.LinearCoreMaterial(mu_r_abs=3100,
+                                           phi_mu_deg=0,
+                                           dc_conductivity=1,
+                                           eps_r_abs=0,
+                                           phi_eps_deg=0,
+                                           mdb_verbosity=fmt.Verbosity.Silent)
+
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
-                    material=mdb.Material.N49, temperature=45,
-                    permeability_datasource=fmt.MaterialDataSource.Custom,
-                    mu_r_abs=3000, phi_mu_deg=0,
-                    permittivity_datasource=fmt.MaterialDataSource.Custom,
-                    mdb_verbosity=fmt.Verbosity.Silent,
-                    sigma=1)
+                    detailed_core_model=False)
+
     geo.set_core(core)
 
     # 3. set air gap parameters

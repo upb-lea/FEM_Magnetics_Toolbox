@@ -118,17 +118,20 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
                                                     window_h=core_db["window_h"],
                                                     core_h=core_db["core_h"])
 
-    core = fmt.Core(core_type=fmt.CoreType.Single,
+    core_material = fmt.ImportedCoreMaterial(material=fmt.Material.N49,
+                                             temperature=45,
+                                             permeability_datasource=fmt.MaterialDataSource.Measurement,
+                                             permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                                             permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
+                                             permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                                             permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                                             permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK,
+                                             mdb_verbosity=fmt.Verbosity.Silent)
+
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
-                    detailed_core_model=False,
-                    material=fmt.Material.N49, temperature=45,
-                    # permeability_datasource="manufacturer_datasheet",
-                    permeability_datasource=fmt.MaterialDataSource.Measurement,
-                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                    permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
-                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                    permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+                    detailed_core_model=False)
 
     geo.set_core(core)
 

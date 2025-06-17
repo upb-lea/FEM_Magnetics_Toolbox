@@ -24,9 +24,16 @@ def create_parallel_example_transformer() -> fmt.MagneticComponent:
     """Create an example model which is used for the parallel execution example. This does implement a simple transformer."""
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory, onelab_verbosity=fmt.Verbosity.ToFile)
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295, core_h=0.015/2)
-    core = fmt.Core(core_dimensions=core_dimensions, non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10,
-                    permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom,
-                    mdb_verbosity=fmt.Verbosity.Silent)
+    core_material = fmt.LinearCoreMaterial(mu_r_abs=3200,
+                                           phi_mu_deg=10,
+                                           dc_conductivity=1,
+                                           eps_r_abs=0,
+                                           phi_eps_deg=0,
+                                           mdb_verbosity=fmt.Verbosity.Silent)
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Single,
+                    core_dimensions=core_dimensions,
+                    detailed_core_model=False)
     geo.set_core(core)
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)

@@ -58,15 +58,20 @@ def basic_example_inductor_excitation_sweep(onelab_folder: str = None, show_visu
                                                     window_h=core_db["window_h"],
                                                     core_h=core_db["core_h"])
 
-    core = fmt.Core(core_type=fmt.CoreType.Single,
+    core_material = fmt.ImportedCoreMaterial(material=fmt.Material.N95,
+                                             temperature=25,
+                                             permeability_datasource=fmt.MaterialDataSource.Measurement,
+                                             permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                                             permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
+                                             permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                                             permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                                             permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK,
+                                             mdb_verbosity=fmt.Verbosity.Silent)
+
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
-                    material="N95", temperature=25,
-                    permeability_datasource=fmt.MaterialDataSource.Measurement,
-                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                    permeability_measurement_setup="LEA_LK",
-                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                    permittivity_measurement_setup="LEA_LK")
+                    detailed_core_model=False)
 
     geo.set_core(core)
 

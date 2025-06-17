@@ -111,10 +111,19 @@ def basic_example_transformer_stacked(onelab_folder: str = None, show_visual_out
     # 2. set core parameters
     core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=0.02, window_w=0.02, window_h_top=0.01,
                                                      window_h_bot=0.03)
-    core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12,
-                    sigma=0.6,
-                    permeability_datasource=fmt.MaterialDataSource.Custom,
-                    permittivity_datasource=fmt.MaterialDataSource.Custom)
+
+    core_material = fmt.LinearCoreMaterial(mu_r_abs=3100,
+                                           phi_mu_deg=12,
+                                           dc_conductivity=1.2,
+                                           eps_r_abs=0,
+                                           phi_eps_deg=0,
+                                           mdb_verbosity=fmt.Verbosity.Silent)
+
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Stacked,
+                    core_dimensions=core_dimensions,
+                    detailed_core_model=False)
+
     geo.set_core(core)
 
     # 3. set air gap parameters

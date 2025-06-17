@@ -111,9 +111,19 @@ def basic_example_transformer_integrated(onelab_folder: str = None, show_visual_
     # 2. set core parameters
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.02, window_w=0.011, window_h=0.03,
                                                     core_h=0.08)
-    core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=0.6,
-                    permeability_datasource=fmt.MaterialDataSource.Custom,
-                    permittivity_datasource=fmt.MaterialDataSource.Custom)
+
+    core_material = fmt.LinearCoreMaterial(mu_r_abs=3100,
+                                           phi_mu_deg=12,
+                                           dc_conductivity=1.2,
+                                           eps_r_abs=0,
+                                           phi_eps_deg=0,
+                                           mdb_verbosity=fmt.Verbosity.Silent)
+
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Single,
+                    core_dimensions=core_dimensions,
+                    detailed_core_model=False)
+
     geo.set_core(core)
 
     # 2.1 set stray path parameters

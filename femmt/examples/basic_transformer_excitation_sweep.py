@@ -55,10 +55,18 @@ def basic_example_transformer_excitation_sweep(onelab_folder: str = None, show_v
                                                     window_h=0.0295,
                                                     core_h=0.035)
 
-    core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
-                    permeability_datasource=fmt.MaterialDataSource.Custom,
-                    permittivity_datasource=fmt.MaterialDataSource.Custom,
-                    mu_r_abs=3100, phi_mu_deg=12, sigma=1.2)
+    core_material = fmt.LinearCoreMaterial(mu_r_abs=3100,
+                                           phi_mu_deg=12,
+                                           dc_conductivity=1.2,
+                                           eps_r_abs=0,
+                                           phi_eps_deg=0,
+                                           mdb_verbosity=fmt.Verbosity.Silent)
+
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Single,
+                    core_dimensions=core_dimensions,
+                    detailed_core_model=False)
+
     geo.set_core(core)
 
     # 3. set air gap parameters

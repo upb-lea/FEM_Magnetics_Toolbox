@@ -111,9 +111,19 @@ def basic_example_transformer_n_winding(onelab_folder: str = None, show_visual_o
 
     # 2. set core parameters
     core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.12, window_w=0.09, core_inner_diameter=0.050, core_h=0.2)
-    core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
-                    permeability_datasource=fmt.MaterialDataSource.Custom,
-                    permittivity_datasource=fmt.MaterialDataSource.Custom)
+
+    core_material = fmt.LinearCoreMaterial(mu_r_abs=3100,
+                                           phi_mu_deg=12,
+                                           dc_conductivity=1.2,
+                                           eps_r_abs=0,
+                                           phi_eps_deg=0,
+                                           mdb_verbosity=fmt.Verbosity.Silent)
+
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Single,
+                    core_dimensions=core_dimensions,
+                    detailed_core_model=False)
+
     geo.set_core(core)
 
     # 3. set air gap parameters
