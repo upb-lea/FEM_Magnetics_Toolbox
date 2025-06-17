@@ -2115,7 +2115,7 @@ def test_inductor_core_material_database(fixture_inductor_core_material_database
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "inductor_core_material_database.json")
+                                      "log_inductor_core_material_database.json")
     print(test_result_log)
     print(fixture_result_log)
     compare_result_logs(test_result_log, fixture_result_log)
@@ -2152,7 +2152,7 @@ def test_inductor_core_material_database_measurement(fixture_inductor_core_mater
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "inductor_core_material_measurement.json")
+                                      "log_inductor_core_material_measurement.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
@@ -2181,7 +2181,7 @@ def test_inductor_core_fixed_loss_angle(fixture_inductor_core_fixed_loss_angle: 
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "inductor_core_fixed_loss_angle.json")
+                                      "log_inductor_core_fixed_loss_angle.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
@@ -2211,7 +2211,7 @@ def test_inductor_core_fixed_loss_angle_dc(fixture_inductor_core_fixed_loss_angl
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "inductor_core_fixed_loss_angle_dc.json")
+                                      "log_inductor_core_fixed_loss_angle_dc.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
@@ -2240,7 +2240,7 @@ def test_inductor_core_fixed_loss_angle_litz_wire(fixture_inductor_core_fixed_lo
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "inductor_core_fixed_loss_angle_litz_wire.json")
+                                      "log_inductor_core_fixed_loss_angle_litz_wire.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=3)
 
     # check thermal simulation results
@@ -2269,7 +2269,7 @@ def test_inductor_core_fixed_loss_angle_foil_vertical(fixture_inductor_core_fixe
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "inductor_core_fixed_loss_angle_foil_vertical.json")
+                                      "log_inductor_core_fixed_loss_angle_foil_vertical.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
@@ -2300,7 +2300,7 @@ def test_inductor_core_fixed_loss_angle_foil_horizontal(
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "inductor_core_fixed_loss_angle_foil_horizontal.json")
+                                      "log_inductor_core_fixed_loss_angle_foil_horizontal.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
@@ -2329,7 +2329,7 @@ def test_transformer_core_fixed_loss_angle(fixture_transformer_core_fixed_loss_a
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "transformer_core_fixed_loss_angle.json")
+                                      "log_transformer_core_fixed_loss_angle.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
@@ -2358,7 +2358,7 @@ def test_transformer_interleaved_core_fixed_loss_angle(fixture_transformer_inter
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "transformer_interleaved_core_fixed_loss_angle.json")
+                                      "log_transformer_interleaved_core_fixed_loss_angle.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
@@ -2387,7 +2387,7 @@ def test_transformer_integrated_core_fixed_loss_angle(fixture_transformer_integr
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "transformer_integrated_core_fixed_loss_angle.json")
+                                      "log_transformer_integrated_core_fixed_loss_angle.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
@@ -2416,7 +2416,7 @@ def test_transformer_stacked_center_tapped(fixture_transformer_stacked_center_ta
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "transformer_stacked_center_tapped.json")
+                                      "log_transformer_stacked_center_tapped.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
     # check thermal simulation results
@@ -2451,7 +2451,7 @@ def test_transformer_5_windings(fixture_transformer_5_windings: pytest.fixture):
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "transformer_5_windings.json")
+                                      "log_transformer_5_windings.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
     # check thermal simulation results
@@ -2480,7 +2480,7 @@ def test_simulation_inductor_time_domain(fixture_inductor_time_domain: pytest.fi
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "inductor_time_domain.json")
+                                      "log_inductor_time_domain.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
 
@@ -2503,7 +2503,7 @@ def test_transformer_time_domain(fixture_transformer_time_domain: pytest.fixture
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "transformer_time_domain.json")
+                                      "log_transformer_time_domain.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
 
@@ -2526,7 +2526,7 @@ def test_transformer_3_windings_time_domain(fixture_transformer_3_windings_time_
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "transformer_3_windings_time_domain.json")
+                                      "log_transformer_3_windings_time_domain.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
 
