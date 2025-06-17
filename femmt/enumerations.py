@@ -68,7 +68,6 @@ class CoreType(IntEnum):
     Single = 1  # one axisymmetric core
     Stacked = 2  # one and a half cores
 
-
 class AirGapMethod(IntEnum):
     """Sets the method how the air gap position (vertical) is set.
 
@@ -346,3 +345,9 @@ class MeasurementDataType(str, Enum):
     ComplexPermeability = "complex_permeability"
     ComplexPermittivity = "complex_permittivity"
     Steinmetz = "Steinmetz"
+
+class CoreMaterialType(str, Enum):
+    """Sets the core material type for the whole simulation. Needs to be given to the MagneticComponent on creation."""
+
+    Linear = "linear"
+    Imported = "imported"

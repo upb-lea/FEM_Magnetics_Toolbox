@@ -263,7 +263,7 @@ class CoreGeometry:
 
 
 class LinearCoreMaterial:
-    """Encapsulate a magnetic core's material properties for simulation.
+    """Encapsulate a magnetic core's material properties based on linear assumptions for simulation.
 
     This includes magnetic permeability, electric permittivity, conductivity, and core loss modeling.
     The data can be sourced from measurements, manufacturer datasheets, or set manually.
@@ -292,6 +292,8 @@ class LinearCoreMaterial:
         self.mdb_verbosity = mdb_verbosity
         self.file_path_to_solver_folder: Optional[str] = None
         self.material = 'custom'
+        self.model_type = CoreMaterialType.Linear
+        self.loss_approach = LossApproach.LossAngle
 
         self.mu_r_abs = mu_r_abs
         self.phi_mu_deg = phi_mu_deg
@@ -325,6 +327,8 @@ class LinearCoreMaterial:
         :rtype: dict
         """
         return {
+            "material_model_type": self.model_type,
+            "loss_approach": self.loss_approach.name,
             "mu_r_abs": self.mu_r_abs,
             "phi_mu_deg": self.phi_mu_deg,
             "dc_conductivity": self.dc_conductivity,
@@ -333,8 +337,8 @@ class LinearCoreMaterial:
         }
 
 
-class RealCoreMaterial:
-    """Encapsulate a magnetic core's material properties for simulation.
+class ImportedCoreMaterial:
+    """Encapsulate a magnetic core's material properties based on imported data for simulation.
 
     This includes magnetic permeability, electric permittivity, conductivity, and core loss modeling.
     The data can be sourced from measurements, manufacturer datasheets, or set manually.
@@ -389,6 +393,7 @@ class RealCoreMaterial:
 
         self.material_database = mdb.MaterialDatabase()
         self.file_path_to_solver_folder: Optional[str] = None
+        self.model_type = CoreMaterialType.Imported
 
         self.temperature = temperature
         self.loss_approach = LossApproach.LossAngle
@@ -478,8 +483,9 @@ class RealCoreMaterial:
         :rtype: dict
         """
         return {
-            "material": self.material,
+            "material_model_type": self.model_type,
             "loss_approach": self.loss_approach.name,
+            "material": self.material,
             "temperature": self.temperature,
             "permeability_datasource": self.permeability["datasource"],
             "permeability_measurement_setup": self.permeability["measurement_setup"],
@@ -500,7 +506,7 @@ class Core:
     """
 
     def __init__(self,
-                 material: RealCoreMaterial | LinearCoreMaterial,
+                 material: ImportedCoreMaterial | LinearCoreMaterial,
                  core_type: CoreType = CoreType.Single,
                  core_dimensions: Optional[object] = None,
                  detailed_core_model: bool = False):

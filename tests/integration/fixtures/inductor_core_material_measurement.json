@@ -82,7 +82,7 @@
   },
   "simulation_settings": {
     "simulation_name": null,
-    "date": "2025-06-17 08:50:38",
+    "date": "2025-06-17 09:25:51",
     "component_type": "Inductor",
     "working_directory": "C:\\Users\\tpiepe\\Repositories\\FEM_Magnetics_Toolbox\\tests\\integration\\temp",
     "core": {
@@ -92,8 +92,9 @@
       "window_w": 0.01105,
       "window_h": 0.0295,
       "core_h": 0.03695,
-      "material": "N95",
+      "material_model_type": "imported",
       "loss_approach": "LossAngle",
+      "material": "N95",
       "temperature": 25,
       "permeability_datasource": "measurements",
       "permeability_measurement_setup": "LEA_LK",
