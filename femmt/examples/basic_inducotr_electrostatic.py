@@ -99,13 +99,13 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
     winding.set_solid_round_conductor(conductor_radius=1.1506e-3, conductor_arrangement=fmt.ConductorArrangement.Square)
     winding.parallel = False  # set True to make the windings parallel, currently only for solid conductors
     # 7. add conductor to vww and add winding window to MagneticComponent
-    vww.set_winding(winding, 14, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.VerticalUpward_HorizontalRightward,
+    vww.set_winding(winding, 7, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.VerticalUpward_HorizontalRightward,
                     zigzag=True)
     geo.set_winding_windows([winding_window])
     # 8. create the model
     geo.create_model(freq=inductor_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False, skin_mesh_factor=0.5)
     # 8. run electrostatic simulation
-    num_turns_w1 = 14
+    num_turns_w1 = 7
     # Create a linear voltage distribution along winding 1 from V_A to V_B ( the first turn to the last turn)
     V_A = 1
     V_B = 0
@@ -116,8 +116,8 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
     geo.electrostatic_simulation(voltage=[voltages_winding_1], ground_outer_boundary=False, core_voltage=0,
                                  show_fem_simulation_results=show_visual_outputs, save_to_excel=False)
     # Run simulation in FEMM
-    geo.femm_reference_electrostatic(voltages=[voltages_winding_1], ground_core=True, ground_outer_boundary=True,
-                                     non_visualize=0, save_to_excel=False, compare_excel_files_to_femmt=False, mesh_size_conductor=0.0)
+    # geo.femm_reference_electrostatic(voltages=[voltages_winding_1], ground_core=True, ground_outer_boundary=True,
+    #                                  non_visualize=0, save_to_excel=False, compare_excel_files_to_femmt=False, mesh_size_conductor=0.0)
 
 
 if __name__ == "__main__":
