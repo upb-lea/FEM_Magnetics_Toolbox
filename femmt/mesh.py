@@ -1434,11 +1434,13 @@ class Mesh:
                 self.ps_insulation_cond = []
                 #
                 # # Add insulation planes to the physical group
-                tags = []
-                for num in range(len(self.windings)):
-                    tags.extend(self.plane_surface_iso_cond[num])
-                # # Create a physical group for all insulation planes
-                self.ps_insulation_cond = gmsh.model.geo.addPhysicalGroup(2, tags, tag=self.PN_Insulation_Cond)
+                # tags = []
+                # for num in range(len(self.windings)):
+                #     tags.extend(self.plane_surface_iso_cond[num])
+                for winding_number in range(len(self.windings)):
+                    tags = self.plane_surface_iso_cond[winding_number]
+                    # # Create a physical group for all insulation planes
+                    self.ps_insulation_cond = gmsh.model.geo.addPhysicalGroup(2, tags, tag=self.PN_Insulation_Cond + 1000 * winding_number)
 
 
         set_physical_surface_cond_insulation()

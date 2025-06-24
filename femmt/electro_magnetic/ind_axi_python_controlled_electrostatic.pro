@@ -24,7 +24,7 @@ AIR_EXT                 = 110001;
 AIR_COND                = 1000000;
 Bobbin_Insulation       = 110010;
 Layer_Insulation        = 110050;
-Cond_Insulation         = 2000000;
+//Cond_Insulation         = 2000000;
 CORE_PN                 = 120000;
 ExtGmsh                 = ".pos";
 po = "Output 2D/";
@@ -34,6 +34,11 @@ po = "Output 2D/";
 For n In {1:n_windings}
        iCOND~{n} = 130000 + 1000*(n-1);
        istrandedCOND~{n} = 150000 + 1000*(n-1);
+EndFor
+
+//physical numbers of conductor insulation in n winding
+For n In {1:n_windings}
+       Cond_Insulation~{n} = 2000000 + 1000*(n-1);
 EndFor
 
 // ----------------------
@@ -81,7 +86,10 @@ Group {
     DomainCC += Region[{Bobbin_Insulation}];
     DomainCC += Region[{Layer_Insulation}];
     // DomainCC += Region[{ConductorInsulation}];
-    DomainCC += Region[{Cond_Insulation}];
+    For n In {1:n_windings}
+        DomainCC += Region[{Cond_Insulation~{n}}];  // Initialize a region for the winding
+    EndFor
+    //DomainCC += Region[{Cond_Insulation}];
 
     // Add the Core region to the appropriate domain region
     /*If (Flag_ground_OutBoundary)
@@ -173,14 +181,15 @@ Function {
   // Materials
   er_air = 1;
   er_core = 100000;
-  er_bobbin = 5.5;
-  er_cond_insulation = 3;
-  er_layer_insulation = 3.5;
+  //er_cond_insulation = 3;
+  For n In {1:n_windings}
+      epsilon[#{Cond_Insulation~{n}}] = e0 * er_turns_insulation~{n};
+  EndFor
   epsilon[#{Air}] = e0 * er_air;
   epsilon[#{Core}] = e0 * er_core;
   epsilon[#{Bobbin_Insulation}] = e0 * er_bobbin;
   epsilon[#{Layer_Insulation}] = e0 * er_layer_insulation;
-  epsilon[#{Cond_Insulation}] = e0 * er_cond_insulation;
+  //epsilon[#{Cond_Insulation}] = e0 * er_cond_insulation;
   // The winding permittivity is set to 1, but it does not play any role in the simulation.
   For winding_number In {1:n_windings}
       er_winding~{winding_number} = 1;

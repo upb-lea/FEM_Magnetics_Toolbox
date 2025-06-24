@@ -671,6 +671,9 @@ class Insulation:
     core_cond: list[float]  # list with size 4x1, with respectively isolation of cond_n -> [top_core, bot_core, left_core, right_core]
     turn_ins: list[float]   # list of turn insulation of every winding -> [turn_ins_of_winding_1, turn_ins_of_winding_2, ...]
     cond_air_cond: list[list[float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
+    er_turn_insulation: list[float]
+    er_layer_insulation: float = None
+    er_bobbin: float = None
     bobbin_dimensions: None
     thickness_of_insulation: float
     consistent_ins: bool = True
@@ -730,23 +733,32 @@ class Insulation:
         else:
             self.consistent_ins = True
 
-    def add_turn_insulation(self, turn_insulation: list[float], add_turn_insulations: bool = False):
+    def add_turn_insulation(self, insulation_thickness: list[float], dielectric_constant: list[float] = None, add_turn_insulations: bool = False):
         """Add insulation for turns in every winding.
 
-        :param turn_insulation: List of floats which represent the insulation around every winding.
-        :type turn_insulation: list[list[float]]
+        :param insulation_thickness: List of floats which represent the insulation around every winding.
+        :type insulation_thickness: list[[float]]
+        :param dielectric_constant: relative permittivity of the insulation of the winding
+        :type dielectric_constant list[[float]]
         :param add_turn_insulations: bool to draw the insulation around turns
         :type add_turn_insulations: bool
         """
         self.add_turn_insulations = add_turn_insulations
+        # self.er_turn_insulation = dielectric_constant
+
+        if dielectric_constant is not None:
+            self.er_turn_insulation = dielectric_constant
+        else:
+            self.er_turn_insulation = [1.0 for _ in insulation_thickness]
 
         if add_turn_insulations:
-            self.turn_ins = turn_insulation
+            self.turn_ins = insulation_thickness
         else:
             #self.turn_ins = []
-            self.turn_ins = [0.0 for _ in turn_insulation]
+            self.turn_ins = [0.0 for _ in insulation_thickness]
 
-    def add_insulation_between_layers(self, add_insulation_material: bool=True, thickness: float = 0.0):
+
+    def add_insulation_between_layers(self, add_insulation_material: bool = True, thickness: float = 0.0, dielectric_constant: float = None):
         """
         Add an insulation (thickness_of_insulation or tape insulation) between layers.
 
@@ -754,17 +766,22 @@ class Insulation:
         :type add_insulation_material: bool
         :param thickness: the thickness of the insulation between the layers of turns
         :type thickness: float
+        :param dielectric_constant: relative permittivity of the insulation between the layers
+        :type dielectric_constant: float
         """
         if thickness <= 0:
             raise ValueError("insulation thickness must be greater than zero.")
         else:
             self.thickness_of_insulation = thickness
+
+        self.er_layer_insulation = dielectric_constant if dielectric_constant is not None else 1.0
+
         if add_insulation_material:
             self.draw_insulation_between_layers = True
         else:
             self.draw_insulation_between_layers = False
 
-    def add_core_insulations(self, top_core: float, bot_core: float, left_core: float, right_core: float):
+    def add_core_insulations(self, top_core: float, bot_core: float, left_core: float, right_core: float, dielectric_constant: float = None):
         """Add insulations between the core and the winding window. Creating those will draw real rectangles in the model.
 
         :param top_core: Insulation between winding window and top core
@@ -775,6 +792,8 @@ class Insulation:
         :type left_core: float
         :param right_core: Insulation between winding window and right core
         :type right_core: float
+        :param dielectric_constant: relative permittivity of the core insulation
+        :type dielectric_constant: float
         """
         if top_core is None:
             top_core = 0
@@ -785,6 +804,7 @@ class Insulation:
         if right_core is None:
             right_core = 0
 
+        self.er_bobbin = dielectric_constant if dielectric_constant is not None else 1.0
         self.core_cond = [top_core, bot_core, left_core, right_core]
         self.core_cond = [top_core, bot_core, left_core, right_core]
 

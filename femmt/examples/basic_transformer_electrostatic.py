@@ -82,11 +82,17 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
                                                   bobbin_window_h=bobbin_db["bobbin_window_h"],
                                                   bobbin_h=bobbin_db["bobbin_h"])
     insulation = fmt.Insulation(flag_insulation=True, bobbin_dimensions=bobbin_dimensions)
-    insulation.add_core_insulations(1.55e-3, 1.55e-3, 0.9e-3, 1.5e-4)
+    bobbin_material = fmt.insulation_materials_database()["core_insulation"]["bobbins"]["Thermoset"]["Phenolic"]
+    insulation.add_core_insulations(1.55e-3, 1.55e-3, 0.9e-3, 1.5e-4,
+                                    dielectric_constant=bobbin_material["dielectric_constant"])
     insulation.add_winding_insulations([[0.0002, 0.095e-3],
                                         [0.095e-3, 0.0002]], per_layer_of_turns=True)
-    insulation.add_turn_insulation([0.25e-5, 0.25e-5], add_turn_insulations=False)
-    insulation.add_insulation_between_layers(add_insulation_material=True, thickness=0.5e-3)
+    turn_insulation_material = fmt.insulation_materials_database()["wire_insulation"]["plastic_insulation"]["Plenum Polyvinyl Chloride (Plenum PVC)"]
+    insulation.add_turn_insulation([0.25e-5, 0.25e-5],
+                                   dielectric_constant=[turn_insulation_material["dielectric_constant"], turn_insulation_material["dielectric_constant"]],
+                                   add_turn_insulations=False)
+    layer_insulation = fmt.insulation_materials_database()["film_insulation"]["Kapton"]
+    insulation.add_insulation_between_layers(add_insulation_material=True, thickness=0.5e-3, dielectric_constant=layer_insulation["dielectric_constant"])
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -144,7 +150,7 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
         V_A - (V_A - V_B) * i / (num_turns_w1 - 1)
         for i in range(num_turns_w1)
     ]
-    voltages_winding_2 = [0] * num_turns_w2
+    voltages_winding_2 = [1] * num_turns_w2
 
     # --------------------------------------------------------------------------------------
     # # Simulation 2 (V_A, V_B, V_C, V_D = 0, 0, 1 , 0) --- (V_1, V_2, V_3, V_4 = 0, 1, 0, 0)

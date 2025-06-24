@@ -3831,6 +3831,9 @@ class MagneticComponent:
                 text_file.write(f"NbrCond_{winding_number + 1} = {turns};\n")
                 text_file.write(f"AreaCell_{winding_number + 1} = {self.windings[winding_number].a_cell};\n")
 
+            # relative permittivity
+            text_file.write(f"er_turns_insulation_{winding_number + 1} = {self.insulation.er_turn_insulation[winding_number]};\n")
+
             # For stranded Conductors:
             # text_file.write(f"NbrstrandedCond = {self.turns};\n")  # redundant
             if self.windings[winding_number].conductor_type == ConductorType.RoundLitz:
@@ -3912,6 +3915,8 @@ class MagneticComponent:
         text_file.write("mu0 = 4.e-7 * Pi;\n")
         text_file.write("nu0 = 1 / mu0;\n")
         text_file.write(f"e0 = {epsilon_0};\n")
+        text_file.write(f"er_layer_insulation = {self.insulation.er_layer_insulation};\n")
+        text_file.write(f"er_bobbin = {self.insulation.er_bobbin};\n")
 
         # Material Properties
 

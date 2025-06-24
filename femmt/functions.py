@@ -347,6 +347,280 @@ def bobbin_database() -> dict:
     }
     return bobbin_dict
 
+def insulation_materials_database() -> dict:
+    """
+    Return insulation properties for different type of materials
+
+    :return: Dict including insulation parameters
+    :rtype: dict
+    """
+    # To see the shape and the properties of these materials of the wire insulation, review this website:
+    # https://www.awcwire.com/customersupport/techinfo/insulation-materials?srsltid=AfmBOoqXkVrB6ITF-R9nL_UlgGVpzX2xB2ENjMNQQHmczLRcf0-y6YwG
+
+    insulation_materials = {
+        # wire_insulation materials
+        "wire_insulation": {
+            # Plastic materials
+            "plastic_insulation": {
+                # PVC
+                # 1.a PVC (pure)
+                "Polyvinyl Chloride (PVC)": {"dielectric_constant": 4.0,
+                                                       "thermal_conductivity": None,
+                                                       "max_temperature": None},
+                # """Reference: Huang, J., Zhang, X., Liu, R., Ding, Y., & Guo, D. (2023). Polyvinyl chloride-based dielectric elastomer with high permittivity and
+                #     # low viscoelasticity for actuation and sensing. Nature communications, 14(1), 1483."""
+
+                # 1.b Semi-Rigid PVC (SR-PVC). it is from 2.7 to 6.5
+                "Semi-Rigid PVC (SR-PVC)": {"dielectric_constant": 3.6,
+                                                       "thermal_conductivity": None,
+                                                       "max_temperature": None},
+                # 1.c Plenum Polyvinyl Chloride (Plenum PVC)
+                "Plenum Polyvinyl Chloride (Plenum PVC)": {"dielectric_constant": 3.5,
+                                                     "thermal_conductivity": None,
+                                                     "max_temperature": None},
+                #     """Reference: https://www.anixter.com/content/dam/Anixter/Guide/7H0011X0_W&C_Tech_Handbook_Sec_03.pdf"""
+
+                # 2. Polyethylene (PE): it ranges from 2.7 to 2.8 (30% glass fiber)
+                "Polyethylene (PE)": {"dielectric_constant": 2.7,
+                                                    "thermal_conductivity": None,
+                                                    "max_temperature": None},
+                # """Reference: https://passive-components.eu/what-is-dielectric-constant-of-plastic-materials/"""
+                #     """Reference:
+                #      https://www.awcwire.com/customersupport/techinfo/insulation-materials#:~:text=Semi%2DRigid%20PVC%20(SR%2DPVC)%20is%20mainly%20used,
+                #      degrees%20Celsius%2C%20300%20volts)."""
+
+                # 3.Polypropylene (PP) 10-20 glass fiber 2.2 - 2.3
+                "Polypropylene (PP)": {"dielectric_constant": 2.3,
+                                               "thermal_conductivity": None,
+                                               "max_temperature": None},
+                # """Reference:
+                #          https://www.awcwire.com/customersupport/techinfo/insulation-materials#:~:text=Semi%2DRigid%20PVC%20(SR%2DPVC)%20is%20mainly%20used,
+                #          degrees%20Celsius%2C%20300%20volts)."""
+
+                # 4.Polyurethane (PUR): the permittivity differs from 1.065 to 3.35 based on the density (kg/m^3). (need to be reviewed)
+                "Polyurethane (PUR)": {"dielectric_constant": 3.35,
+                                               "thermal_conductivity": None,
+                                               "max_temperature": None},
+                # """Reference: Beverte, I. (2025). Investigation of the Partial Permittivity of Rigid Polyurethane Foams by a Circular One-Side-Access Capacitive Sensor.
+                #      Polymers, 17(5), 602."""
+                #     """https://www.anixter.com/content/dam/Anixter/Guide/7H0011X0_W&C_Tech_Handbook_Sec_03.pdf"""
+
+                # 5. Chlorinated Polyethylene (CPE)
+                "Chlorinated Polyethylene (CPE)": {"dielectric_constant": 2.3,
+                                               "thermal_conductivity": None,
+                                               "max_temperature": None},
+                # """https://www.anixter.com/content/dam/Anixter/Guide/7H0011X0_W&C_Tech_Handbook_Sec_03.pdf"""
+
+                # 6. Nylon : 3.2 - 5
+                "Nylon": {"dielectric_constant": 5,
+                                       "thermal_conductivity": None,
+                                       "max_temperature": None},
+                #     """https://www.anixter.com/content/dam/Anixter/Guide/7H0011X0_W&C_Tech_Handbook_Sec_03.pdf"""
+            },
+            # Rubber Materials
+            "rubber_insulation": {
+                # 1. Thermoplastic Rubber (TPR) 3.30 - 5.10. It can be called Thermoplastic Elastomer (TPE)
+                "Thermoplastic Rubber(TPR)": {"dielectric_constant": 5.10,
+                                               "thermal_conductivity": None,
+                                               "max_temperature": None},
+                #     """Reference: https://www.matweb.com/search/datasheet.aspx?matguid=0619837e5f584a1f8c5e6f692952898a"""
+
+                # 2. Neoprene (Polychloroprene): 4-6.7
+                "Neoprene (Polychloroprene)": {"dielectric_constant": 6.7,
+                                               "thermal_conductivity": None,
+                                               "max_temperature": None},
+                #     """Reference: https://hep.physics.illinois.edu/home/serrede/p435/lecture_notes/dielectric_constants.pdf"""
+
+                # 3. Styrene-Butadiene Rubber (SBR): 2.5 - 3
+                "Styrene-Butadiene Rubber (SBR)": {"dielectric_constant": 3.0,
+                                                   "thermal_conductivity": None,
+                                                   "max_temperature": None},
+                # """Reference: https://www.azom.com/properties.aspx?ArticleID=1844"""
+
+                # 4. Silicone: 2.9 - 4
+                "Silicone": {"dielectric_constant": 4.0,
+                               "loss_tangent": None,
+                               "thermal_conductivity": None,
+                               "max_temperature": None},
+                # """Reference: https://en.wikipedia.org/wiki/Relative_permittivity"""
+
+                # 5. Fiberglass 3.0 - 4.0
+                "Fiberglass": {"dielectric_constant": 4.0,
+                                 "thermal_conductivity": None,
+                                 "max_temperature": None},
+                #     """Reference: https://passive-components.eu/what-is-dielectric-constant-of-plastic-materials/"""
+
+                # 6. Ethylene Propylene Rubber (EPR): 2.4 and  can reach 4
+                "Ethylene Propylene Rubber (EPR)": {"dielectric_constant": 2.4,
+                                                   "thermal_conductivity": None,
+                                                   "max_temperature": None},
+                # """Reference: https://passive-components.eu/what-is-dielectric-constant-of-plastic-materials/"""
+
+                # 7. Rubber ( refers to natural rubber and SBR compounds.)
+                # 7.a: natural rubber: 2.7 – 4.0 (low freq); 2.4–2.7 (GHz range)
+                "Natural Rubber": {"dielectric_constant": 2.7,
+                                        "loss_tangent": None,
+                                        "thermal_conductivity": None,
+                                        "max_temperature": None},
+                # """Reference: Al-Hartomy, O. A., Al-Ghamdi, A., Dishovsky, N., Shtarkova, R., Iliev, V., Mutlay, I., & El-Tantawy, F. (2012).
+                #    Dielectric and microwave properties of natural rubber based nanocomposites containing graphene."""
+
+                # 7.b: SBR: 2.5 to 3 (low freq); up to 6.6 (Ghz freq)
+                "Rubber (SBR)": {"dielectric_constant": 3,
+                                           "thermal_conductivity": None,
+                                           "max_temperature": None},
+                # """Reference: Gunasekaran,S.,Natarajan, R. K., Kala, A., & Jagannathan, R. (2008).
+                # Dielectric studies of some rubber materials at microwave frequencies."""
+
+                # 8. Chlorosulfonated Polyethylene (CSPE): Measured dielectric constant: 8-10
+                "Chlorosulfonated Polyethylene (CSPE)": {"dielectric_constant": 8.5,
+                                                            "thermal_conductivity": None,
+                                                            "max_temperature": None},
+                # """Reference: Ganguly, S., & Das, N. C. (2015). Chlorosulphonated polyethylene and its composites for electronic applications.
+                #  In Flexible and stretchable electronic composites (pp. 229-259). Cham: Springer International Publishing."""
+
+                # 9. Chlorosulfonated Polyethylene (CSPE): Measured dielectric constant: 8-10
+                "Chlorosulfonated Polyethylene (CSPE)": {"dielectric_constant": 8.5,
+                                                                 "thermal_conductivity": None,
+                                                                 "max_temperature": None},
+                # """Reference: Ganguly, S., & Das, N. C. (2015). Chlorosulphonated polyethylene and its composites for electronic applications.
+                #  In Flexible and stretchable electronic composites (pp. 229-259). Cham: Springer International Publishing."""
+            },
+            # Fluoropolymer Insulation Types
+            "fluoropolymer_insulation": {
+                # 1. Perfluoroalkoxy (PFA):  dielectric constant: 2.06 to 2.10:
+                "Perfluoroalkoxy (PFA)": {"dielectric_constant": 2.06,
+                                         "thermal_conductivity": None,
+                                         "max_temperature": None},
+                # """Reference: https://adtech.co.uk/application/files/1816/0500/0871/Adtech_PFA_General_Properties_2020.pdf"""
+                # """Reference: https://www.fluorotherm.com/technical-information/materials-overview/pfa-properties/"""
+
+                # 2. Polytetrafluoroethylene (PTFE):  dielectric constant: 2.12 to 2.01
+                "Polytetrafluoroethylene (PTFE)": {"dielectric_constant": 2.12,
+                                                         "thermal_conductivity": None,
+                                                         "max_temperature": None},
+                # """Reference: Li, L., Bowler, N., Kessler, M. R., & Yoon, S. H. (2010). Dielectric response of PTFE and ETFE wiring insulation to thermal exposure.
+                #  IEEE Transactions on Dielectrics and Electrical Insulation, 17(4), 1234-1241."""
+
+                # 3. Fluorinated Ethylene Propylene (FEP):  dielectric constant is about 2.2
+                "Fluorinated Ethylene Propylene (FEP)": {"dielectric_constant": 2.2,
+                                                          "thermal_conductivity": None,
+                                                          "max_temperature": None},
+                # """Reference: Lv, X., Yv, J., Wang, X., & Huang, P. (2022). Flexible low dielectric polyimide/fluorinated ethylene propylene composite films for
+                #  flexible integrated circuits. Polymer Science, Series B, 64(2), 219-228.."""
+
+                # 4. Ethylene Tetrafluoroethylene (ETFE) :  dielectric constant is about 2.2 to 2.6
+                "Ethylene Tetrafluoroethylene (ETFE)": {"dielectric_constant": 2.6,
+                                                                        "thermal_conductivity": None,
+                                                                        "max_temperature": None},
+                # """Reference: Wang, M., He, Y., Yang, X., Hou, X., Li, W., Tan, S., & Zhang, Z. (2024). Optimizing thermal and dielectric properties of
+                #  ethylene-tetrafluoroethylene (ETFE)/h-BN composites via interface engineering: activation of C–F bonds on ETFE for surface grafting.
+                #   Journal of Materials Chemistry A, 12(45), 31424-31431."""
+
+                # 5. Ethylenechlorotrifluoroethylene (ECTFE) :  dielectric constant is 2.5
+                # Note 4. and 5. have approximately the same properties
+                "Ethylenechlorotrifluoroethylene (ECTFE)": {"dielectric_constant": 2.5,
+                                                           "thermal_conductivity": None,
+                                                           "max_temperature": None},
+                # """Reference: https://www.polyfluor.nl/assets/files/datasheet-ectfe-uk.pdf"""
+
+                # 6. Polyvinylidene Fluoride (PVDF) :  dielectric constant is 8.5 at 1MHz
+                "Polyvinylidene Fluoride (PVDF)": {"dielectric_constant": 8.5,
+                                                   "thermal_conductivity": None,
+                                                   "max_temperature": None},
+                # """Reference: https://www.ipolymer.com/pdf/PVDF.pdf"""
+
+                # 7.Thermoplastic Elastomers (TPE) :  dielectric constant is 3.3 to 5.1
+                "Thermoplastic Elastomers (TPE)": {"dielectric_constant": 4.5,
+                                                  "thermal_conductivity": None,
+                                                  "max_temperature": None},
+                # """https://www.matweb.com/search/datasheet.aspx?matguid=0619837e5f584a1f8c5e6f692952898a&"""
+
+            }
+        },
+
+        # Bobbin materials is based on these references:
+        # 1. https://www.cosmocorp.com/docs/en/cosmo-bcat-en-mdres.pdf
+        # 2. https://pearl-hifi.com/06_Lit_Archive/06_Mchy_Methods_Catalogues/Coil_Winding/Transformer_Bobbin_and_Core_Selection.pdf
+
+        "core_insulation": {
+            "bobbins": {
+                "Thermoplastic": {
+                    "Polyamide (Nylon 66)": {
+                        "dielectric_constant": 3.8,
+                        "thermal_conductivity": 0.25,
+                        "max_temperature": 130
+                    },
+                    "Polybutylene Terephthalate (PBT)": {
+                        "dielectric_constant": 3.7,
+                        "thermal_conductivity": 0.25,
+                        "max_temperature": 155
+                    },
+                    "Polyphenylene Sulfide (PPS)": {
+                        "dielectric_constant": 3.8,
+                        "thermal_conductivity": 0.30,
+                        "max_temperature": 200
+                    },
+                    "Liquid Crystal Polymer (LCP)": {
+                        "dielectric_constant": 3.6,
+                        "thermal_conductivity": 0.50,
+                        "max_temperature": 240
+                    },
+                    "Polyethylene Terephthalate (PET)": {
+                        "dielectric_constant": 3.6,
+                        "thermal_conductivity": 0.15,
+                        "max_temperature": 150
+                    }
+                },
+                "Thermoset": {
+                    "Diallyl Phthalate (DAP)": {
+                        "dielectric_constant": 4.4,
+                        "thermal_conductivity": 0.20,
+                        "max_temperature": 200
+                    },
+                    "Phenolic": {
+                        "dielectric_constant": 4.5,
+                        "thermal_conductivity": 0.20,
+                        "max_temperature": 220
+                    }
+                }
+            }
+        },
+
+        # The kapton has different types, but the dielectric constant is approximately around 3.4-3.5
+        # Reference: https://www.dupont.com/content/dam/electronics/amer/us/en/electronics/public/documents/en/EI-10167-Kapton-General-Specifications.pdf
+        "film_insulation": {
+            "Kapton": {
+                "dielectric_constant": 3.5,
+                "thermal_conductivity": None,
+                "max_temperature": None,
+            },
+            "Nomex 410": {
+                "dielectric_constant": 1.6,
+                "thermal_conductivity": None,
+                "max_temperature": None,
+            },
+            "Mylar": {
+                "dielectric_constant": 3.2,
+                "thermal_conductivity": None,
+                "max_temperature": None,
+            },
+            "PET / bOPET": {
+                "dielectric_constant": 3.3,
+                "thermal_conductivity": None,
+                "max_temperature": None,
+            },
+            "PVC Tape": {
+                "dielectric_constant": 4.0,
+                "max_temperature": None,
+                "thermal_conductivity": None
+            }
+        }
+    }
+
+    return insulation_materials
+
+
 def litz_database() -> dict:
     """
     Return litz parameters for defined litz wires.

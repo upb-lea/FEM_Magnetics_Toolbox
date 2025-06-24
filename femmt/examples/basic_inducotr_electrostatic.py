@@ -78,13 +78,16 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
                                                   bobbin_window_h=bobbin_db["bobbin_window_h"],
                                                   bobbin_h=bobbin_db["bobbin_h"])
     insulation = fmt.Insulation(flag_insulation=True, bobbin_dimensions=bobbin_dimensions)
-    insulation.add_core_insulations(0.2e-3, 0.2e-3, 0.2e-3, 0.2e-3)
+    bobbin_material = fmt.insulation_materials_database()["core_insulation"]["bobbins"]["Thermoset"]["Phenolic"]
+    insulation.add_core_insulations(0.2e-3, 0.2e-3, 0.2e-3, 0.2e-3, dielectric_constant=bobbin_material["dielectric_constant"])
     # This is the insulation of the turn itself
-    insulation.add_turn_insulation([0.5e-4], add_turn_insulations=True)
+    turn_insulation_material = fmt.insulation_materials_database()["wire_insulation"]["plastic_insulation"]["Plenum Polyvinyl Chloride (Plenum PVC)"]
+    insulation.add_turn_insulation([0.2e-3], dielectric_constant=[turn_insulation_material["dielectric_constant"]], add_turn_insulations=True)
     # This is an air between turns if needed
-    insulation.add_winding_insulations([[0.4e-4, 0.6e-3]], per_layer_of_turns=True)
+    insulation.add_winding_insulations([[1e-3, 1e-3]], per_layer_of_turns=True)
     # Kapton material is added between every layer of turns
-    insulation.add_insulation_between_layers(add_insulation_material=True, thickness=0.6e-3)
+    layer_insulation = fmt.insulation_materials_database()["film_insulation"]["Kapton"]
+    insulation.add_insulation_between_layers(add_insulation_material=True, thickness=0.6e-3, dielectric_constant=layer_insulation["dielectric_constant"])
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
