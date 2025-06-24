@@ -1,5 +1,6 @@
 """Contains different functions, used by the whole FEMMT functions."""
 # Python standard libraries
+# Python standard libraries
 import json
 import pkg_resources
 import subprocess
@@ -241,6 +242,383 @@ def core_database() -> dict:
         "window_w": (67.1 - 31.7) / 2 * 1e-3,
     }
     return core_dict
+
+def bobbin_database() -> dict:
+    """
+    Return a dictionary containing bobbin dimensions for various core structures.
+
+    :return: Dictionary containing bobbin dimensions from Datasheet.
+    :rtype: Dict
+    """
+    bobbin_dict = {}
+
+    # -----------------------
+    # PQ Bobbins
+    # -----------------------
+
+    # bobbin_dict["PQ 16/11.6"] = {
+    #     "bobbin_h": None,
+    #     "bobbin_inner_diameter": None,
+    #     "bobbin_window_h": None,
+    #     "bobbin_window_w": None
+    # }
+    bobbin_dict["PQ 20/16"] = {
+        "bobbin_h": 18.3e-3,
+        "bobbin_inner_diameter": 10.95e-3,
+        "bobbin_window_h": 9.8e-3,
+        "bobbin_window_w": (23.3 - 9.15) / 2 * 1e-3
+    }
+    bobbin_dict["PQ 20/20"] = {
+        "bobbin_h": 22.3e-3,
+        "bobbin_inner_diameter": 10.9e-3,
+        "bobbin_window_h": 13.9e-3,
+        "bobbin_window_w": (23.3 - 9.2) / 2 * 1e-3
+    }
+    bobbin_dict["PQ 26/25"] = {
+        "bobbin_h": 29.3e-3,
+        "bobbin_inner_diameter": 14.2e-3,
+        "bobbin_window_h": 15.5e-3,
+        "bobbin_window_w": (26.5 - 14.2) / 2 * 1e-3
+    }
+    bobbin_dict["PQ 32/20"] = {
+        "bobbin_h": 18.8e-3,
+        "bobbin_inner_diameter": 16.2e-3,
+        "bobbin_window_h": 10.7e-3,
+        "bobbin_window_w": (32.3 - 16.2) / 2 * 1e-3,
+    }
+    bobbin_dict["PQ 32/30"] = {
+        "bobbin_h": 32.8e-3,
+        "bobbin_inner_diameter": 15.9e-3,
+        "bobbin_window_h": 20.7e-3,
+        "bobbin_window_w": (26.4 -15.9) / 2 * 1e-3
+    }
+    bobbin_dict["PQ 40/40"] = {
+        "bobbin_h": 45.3e-3,
+        "bobbin_inner_diameter": 15.55e-3,
+        "bobbin_window_h": 28.75e-3,
+        "bobbin_window_w": (40.3 - 15.55) / 2 * 1e-3
+    }
+    bobbin_dict["PQ 50/50"] = {
+        "bobbin_h": 51.5e-3,
+        "bobbin_inner_diameter": 23.2e-3,
+        "bobbin_window_h": 35.2e-3,
+        "bobbin_window_w": (51.3 - 23.2) / 2 * 1e-3
+    }
+    bobbin_dict["PQ 65/60"] = {
+        "bobbin_h": 65.5e-3,
+        "bobbin_inner_diameter": 27.3e-3,
+        "bobbin_window_h": 40.7e-3,
+        "bobbin_window_w": (66.5 - 27.3) / 2 * 1e-3
+    }
+
+    # -----------------------
+    # PM Bobbins
+    # -----------------------
+
+    bobbin_dict["PM 114/93"] = {
+        "bobbin_h": 91 * 1e-3,
+        "bobbin_inner_diameter": 44e-3,
+        "bobbin_window_h": 62.3e-3,
+        "bobbin_window_w": (91 - 44) / 2 * 1e-3,
+     }
+    bobbin_dict["PM 50/39"] = {
+        "bobbin_h": 33.8 * 1e-3,
+        "bobbin_inner_diameter": 20.4e-3,
+        "bobbin_window_h": 25.9e-3,
+        "bobbin_window_w": (38.5 - 20.4) / 2 * 1e-3,
+     }
+    bobbin_dict["PM 62/49"] = {
+        "bobbin_h": 48 * 1e-3,
+        "bobbin_inner_diameter": 25.7e-3,
+        "bobbin_window_h": 33.0e-3,
+        "bobbin_window_w": (48 - 25.7) / 2 * 1e-3,
+    }
+    bobbin_dict["PM 74/59"] = {
+        "bobbin_h": 57.8 * 1e-3,
+        "bobbin_inner_diameter": 30e-3,
+        "bobbin_window_h": 40.3e-3,
+        "bobbin_window_w": (57.3 - 30) / 2 * 1e-3,
+    }
+    bobbin_dict["PM 87/70"] = {
+        "bobbin_h": 68.2 * 1e-3,
+        "bobbin_inner_diameter": 32.5e-3,
+        "bobbin_window_h": 47.2e-3,
+        "bobbin_window_w": (66.2 - 32.5) / 2 * 1e-3,
+    }
+    return bobbin_dict
+
+def insulation_materials_database() -> dict:
+    """
+    Return insulation properties for different type of materials
+
+    :return: Dict including insulation parameters
+    :rtype: dict
+    """
+    # To see the shape and the properties of these materials of the wire insulation, review this website:
+    # https://www.awcwire.com/customersupport/techinfo/insulation-materials?srsltid=AfmBOoqXkVrB6ITF-R9nL_UlgGVpzX2xB2ENjMNQQHmczLRcf0-y6YwG
+
+    insulation_materials = {
+        # wire_insulation materials
+        "wire_insulation": {
+            # Plastic materials
+            "plastic_insulation": {
+                # PVC
+                # 1.a PVC (pure)
+                "Polyvinyl Chloride (PVC)": {"dielectric_constant": 4.0,
+                                                       "thermal_conductivity": None,
+                                                       "max_temperature": None},
+                # """Reference: Huang, J., Zhang, X., Liu, R., Ding, Y., & Guo, D. (2023). Polyvinyl chloride-based dielectric elastomer with high permittivity and
+                #     # low viscoelasticity for actuation and sensing. Nature communications, 14(1), 1483."""
+
+                # 1.b Semi-Rigid PVC (SR-PVC). it is from 2.7 to 6.5
+                "Semi-Rigid PVC (SR-PVC)": {"dielectric_constant": 3.6,
+                                                       "thermal_conductivity": None,
+                                                       "max_temperature": None},
+                # 1.c Plenum Polyvinyl Chloride (Plenum PVC)
+                "Plenum Polyvinyl Chloride (Plenum PVC)": {"dielectric_constant": 3.5,
+                                                     "thermal_conductivity": None,
+                                                     "max_temperature": None},
+                #     """Reference: https://www.anixter.com/content/dam/Anixter/Guide/7H0011X0_W&C_Tech_Handbook_Sec_03.pdf"""
+
+                # 2. Polyethylene (PE): it ranges from 2.7 to 2.8 (30% glass fiber)
+                "Polyethylene (PE)": {"dielectric_constant": 2.7,
+                                                    "thermal_conductivity": None,
+                                                    "max_temperature": None},
+                # """Reference: https://passive-components.eu/what-is-dielectric-constant-of-plastic-materials/"""
+                #     """Reference:
+                #      https://www.awcwire.com/customersupport/techinfo/insulation-materials#:~:text=Semi%2DRigid%20PVC%20(SR%2DPVC)%20is%20mainly%20used,
+                #      degrees%20Celsius%2C%20300%20volts)."""
+
+                # 3.Polypropylene (PP) 10-20 glass fiber 2.2 - 2.3
+                "Polypropylene (PP)": {"dielectric_constant": 2.3,
+                                               "thermal_conductivity": None,
+                                               "max_temperature": None},
+                # """Reference:
+                #          https://www.awcwire.com/customersupport/techinfo/insulation-materials#:~:text=Semi%2DRigid%20PVC%20(SR%2DPVC)%20is%20mainly%20used,
+                #          degrees%20Celsius%2C%20300%20volts)."""
+
+                # 4.Polyurethane (PUR): the permittivity differs from 1.065 to 3.35 based on the density (kg/m^3). (need to be reviewed)
+                "Polyurethane (PUR)": {"dielectric_constant": 3.35,
+                                               "thermal_conductivity": None,
+                                               "max_temperature": None},
+                # """Reference: Beverte, I. (2025). Investigation of the Partial Permittivity of Rigid Polyurethane Foams by a Circular One-Side-Access Capacitive Sensor.
+                #      Polymers, 17(5), 602."""
+                #     """https://www.anixter.com/content/dam/Anixter/Guide/7H0011X0_W&C_Tech_Handbook_Sec_03.pdf"""
+
+                # 5. Chlorinated Polyethylene (CPE)
+                "Chlorinated Polyethylene (CPE)": {"dielectric_constant": 2.3,
+                                               "thermal_conductivity": None,
+                                               "max_temperature": None},
+                # """https://www.anixter.com/content/dam/Anixter/Guide/7H0011X0_W&C_Tech_Handbook_Sec_03.pdf"""
+
+                # 6. Nylon : 3.2 - 5
+                "Nylon": {"dielectric_constant": 5,
+                                       "thermal_conductivity": None,
+                                       "max_temperature": None},
+                #     """https://www.anixter.com/content/dam/Anixter/Guide/7H0011X0_W&C_Tech_Handbook_Sec_03.pdf"""
+            },
+            # Rubber Materials
+            "rubber_insulation": {
+                # 1. Thermoplastic Rubber (TPR) 3.30 - 5.10. It can be called Thermoplastic Elastomer (TPE)
+                "Thermoplastic Rubber(TPR)": {"dielectric_constant": 5.10,
+                                               "thermal_conductivity": None,
+                                               "max_temperature": None},
+                #     """Reference: https://www.matweb.com/search/datasheet.aspx?matguid=0619837e5f584a1f8c5e6f692952898a"""
+
+                # 2. Neoprene (Polychloroprene): 4-6.7
+                "Neoprene (Polychloroprene)": {"dielectric_constant": 6.7,
+                                               "thermal_conductivity": None,
+                                               "max_temperature": None},
+                #     """Reference: https://hep.physics.illinois.edu/home/serrede/p435/lecture_notes/dielectric_constants.pdf"""
+
+                # 3. Styrene-Butadiene Rubber (SBR): 2.5 - 3
+                "Styrene-Butadiene Rubber (SBR)": {"dielectric_constant": 3.0,
+                                                   "thermal_conductivity": None,
+                                                   "max_temperature": None},
+                # """Reference: https://www.azom.com/properties.aspx?ArticleID=1844"""
+
+                # 4. Silicone: 2.9 - 4
+                "Silicone": {"dielectric_constant": 4.0,
+                               "loss_tangent": None,
+                               "thermal_conductivity": None,
+                               "max_temperature": None},
+                # """Reference: https://en.wikipedia.org/wiki/Relative_permittivity"""
+
+                # 5. Fiberglass 3.0 - 4.0
+                "Fiberglass": {"dielectric_constant": 4.0,
+                                 "thermal_conductivity": None,
+                                 "max_temperature": None},
+                #     """Reference: https://passive-components.eu/what-is-dielectric-constant-of-plastic-materials/"""
+
+                # 6. Ethylene Propylene Rubber (EPR): 2.4 and  can reach 4
+                "Ethylene Propylene Rubber (EPR)": {"dielectric_constant": 2.4,
+                                                   "thermal_conductivity": None,
+                                                   "max_temperature": None},
+                # """Reference: https://passive-components.eu/what-is-dielectric-constant-of-plastic-materials/"""
+
+                # 7. Rubber ( refers to natural rubber and SBR compounds.)
+                # 7.a: natural rubber: 2.7 – 4.0 (low freq); 2.4–2.7 (GHz range)
+                "Natural Rubber": {"dielectric_constant": 2.7,
+                                        "loss_tangent": None,
+                                        "thermal_conductivity": None,
+                                        "max_temperature": None},
+                # """Reference: Al-Hartomy, O. A., Al-Ghamdi, A., Dishovsky, N., Shtarkova, R., Iliev, V., Mutlay, I., & El-Tantawy, F. (2012).
+                #    Dielectric and microwave properties of natural rubber based nanocomposites containing graphene."""
+
+                # 7.b: SBR: 2.5 to 3 (low freq); up to 6.6 (Ghz freq)
+                "Rubber (SBR)": {"dielectric_constant": 3,
+                                           "thermal_conductivity": None,
+                                           "max_temperature": None},
+                # """Reference: Gunasekaran,S.,Natarajan, R. K., Kala, A., & Jagannathan, R. (2008).
+                # Dielectric studies of some rubber materials at microwave frequencies."""
+
+                # 8. Chlorosulfonated Polyethylene (CSPE): Measured dielectric constant: 8-10
+                "Chlorosulfonated Polyethylene (CSPE)": {"dielectric_constant": 8.5,
+                                                            "thermal_conductivity": None,
+                                                            "max_temperature": None},
+                # """Reference: Ganguly, S., & Das, N. C. (2015). Chlorosulphonated polyethylene and its composites for electronic applications.
+                #  In Flexible and stretchable electronic composites (pp. 229-259). Cham: Springer International Publishing."""
+
+                # 9. Chlorosulfonated Polyethylene (CSPE): Measured dielectric constant: 8-10
+                "Chlorosulfonated Polyethylene (CSPE)": {"dielectric_constant": 8.5,
+                                                                 "thermal_conductivity": None,
+                                                                 "max_temperature": None},
+                # """Reference: Ganguly, S., & Das, N. C. (2015). Chlorosulphonated polyethylene and its composites for electronic applications.
+                #  In Flexible and stretchable electronic composites (pp. 229-259). Cham: Springer International Publishing."""
+            },
+            # Fluoropolymer Insulation Types
+            "fluoropolymer_insulation": {
+                # 1. Perfluoroalkoxy (PFA):  dielectric constant: 2.06 to 2.10:
+                "Perfluoroalkoxy (PFA)": {"dielectric_constant": 2.06,
+                                         "thermal_conductivity": None,
+                                         "max_temperature": None},
+                # """Reference: https://adtech.co.uk/application/files/1816/0500/0871/Adtech_PFA_General_Properties_2020.pdf"""
+                # """Reference: https://www.fluorotherm.com/technical-information/materials-overview/pfa-properties/"""
+
+                # 2. Polytetrafluoroethylene (PTFE):  dielectric constant: 2.12 to 2.01
+                "Polytetrafluoroethylene (PTFE)": {"dielectric_constant": 2.12,
+                                                         "thermal_conductivity": None,
+                                                         "max_temperature": None},
+                # """Reference: Li, L., Bowler, N., Kessler, M. R., & Yoon, S. H. (2010). Dielectric response of PTFE and ETFE wiring insulation to thermal exposure.
+                #  IEEE Transactions on Dielectrics and Electrical Insulation, 17(4), 1234-1241."""
+
+                # 3. Fluorinated Ethylene Propylene (FEP):  dielectric constant is about 2.2
+                "Fluorinated Ethylene Propylene (FEP)": {"dielectric_constant": 2.2,
+                                                          "thermal_conductivity": None,
+                                                          "max_temperature": None},
+                # """Reference: Lv, X., Yv, J., Wang, X., & Huang, P. (2022). Flexible low dielectric polyimide/fluorinated ethylene propylene composite films for
+                #  flexible integrated circuits. Polymer Science, Series B, 64(2), 219-228.."""
+
+                # 4. Ethylene Tetrafluoroethylene (ETFE) :  dielectric constant is about 2.2 to 2.6
+                "Ethylene Tetrafluoroethylene (ETFE)": {"dielectric_constant": 2.6,
+                                                                        "thermal_conductivity": None,
+                                                                        "max_temperature": None},
+                # """Reference: Wang, M., He, Y., Yang, X., Hou, X., Li, W., Tan, S., & Zhang, Z. (2024). Optimizing thermal and dielectric properties of
+                #  ethylene-tetrafluoroethylene (ETFE)/h-BN composites via interface engineering: activation of C–F bonds on ETFE for surface grafting.
+                #   Journal of Materials Chemistry A, 12(45), 31424-31431."""
+
+                # 5. Ethylenechlorotrifluoroethylene (ECTFE) :  dielectric constant is 2.5
+                # Note 4. and 5. have approximately the same properties
+                "Ethylenechlorotrifluoroethylene (ECTFE)": {"dielectric_constant": 2.5,
+                                                           "thermal_conductivity": None,
+                                                           "max_temperature": None},
+                # """Reference: https://www.polyfluor.nl/assets/files/datasheet-ectfe-uk.pdf"""
+
+                # 6. Polyvinylidene Fluoride (PVDF) :  dielectric constant is 8.5 at 1MHz
+                "Polyvinylidene Fluoride (PVDF)": {"dielectric_constant": 8.5,
+                                                   "thermal_conductivity": None,
+                                                   "max_temperature": None},
+                # """Reference: https://www.ipolymer.com/pdf/PVDF.pdf"""
+
+                # 7.Thermoplastic Elastomers (TPE) :  dielectric constant is 3.3 to 5.1
+                "Thermoplastic Elastomers (TPE)": {"dielectric_constant": 4.5,
+                                                  "thermal_conductivity": None,
+                                                  "max_temperature": None},
+                # """https://www.matweb.com/search/datasheet.aspx?matguid=0619837e5f584a1f8c5e6f692952898a&"""
+
+            }
+        },
+
+        # Bobbin materials is based on these references:
+        # 1. https://www.cosmocorp.com/docs/en/cosmo-bcat-en-mdres.pdf
+        # 2. https://pearl-hifi.com/06_Lit_Archive/06_Mchy_Methods_Catalogues/Coil_Winding/Transformer_Bobbin_and_Core_Selection.pdf
+
+        "core_insulation": {
+            "bobbins": {
+                "Thermoplastic": {
+                    "Polyamide (Nylon 66)": {
+                        "dielectric_constant": 3.8,
+                        "thermal_conductivity": 0.25,
+                        "max_temperature": 130
+                    },
+                    "Polybutylene Terephthalate (PBT)": {
+                        "dielectric_constant": 3.7,
+                        "thermal_conductivity": 0.25,
+                        "max_temperature": 155
+                    },
+                    "Polyphenylene Sulfide (PPS)": {
+                        "dielectric_constant": 3.8,
+                        "thermal_conductivity": 0.30,
+                        "max_temperature": 200
+                    },
+                    "Liquid Crystal Polymer (LCP)": {
+                        "dielectric_constant": 3.6,
+                        "thermal_conductivity": 0.50,
+                        "max_temperature": 240
+                    },
+                    "Polyethylene Terephthalate (PET)": {
+                        "dielectric_constant": 3.6,
+                        "thermal_conductivity": 0.15,
+                        "max_temperature": 150
+                    }
+                },
+                "Thermoset": {
+                    "Diallyl Phthalate (DAP)": {
+                        "dielectric_constant": 4.4,
+                        "thermal_conductivity": 0.20,
+                        "max_temperature": 200
+                    },
+                    "Phenolic": {
+                        "dielectric_constant": 4.5,
+                        "thermal_conductivity": 0.20,
+                        "max_temperature": 220
+                    }
+                }
+            }
+        },
+
+        # The kapton has different types, but the dielectric constant is approximately around 3.4-3.5
+        # Reference: https://www.dupont.com/content/dam/electronics/amer/us/en/electronics/public/documents/en/EI-10167-Kapton-General-Specifications.pdf
+        "film_insulation": {
+            "Kapton": {
+                "dielectric_constant": 3.5,
+                "thermal_conductivity": None,
+                "max_temperature": None,
+            },
+            "Nomex 410": {
+                "dielectric_constant": 1.6,
+                "thermal_conductivity": None,
+                "max_temperature": None,
+            },
+            "Mylar": {
+                "dielectric_constant": 3.2,
+                "thermal_conductivity": None,
+                "max_temperature": None,
+            },
+            "PET / bOPET": {
+                "dielectric_constant": 3.3,
+                "thermal_conductivity": None,
+                "max_temperature": None,
+            },
+            "PVC Tape": {
+                "dielectric_constant": 4.0,
+                "max_temperature": None,
+                "thermal_conductivity": None
+            }
+        }
+    }
+
+    return insulation_materials
 
 
 def litz_database() -> dict:
@@ -1811,6 +2189,411 @@ def hysteresis_current_excitation(input_time_current_vectors: list[list[list[flo
         hyst_phases_deg.append(
             fr.phases_deg_from_time_current(time_current_vector[0], time_current_vector[1])[0])
     return hyst_frequency, hyst_current_amplitudes, hyst_phases_deg
+
+def close_excel_file_if_open(filepath):
+    """
+    Close the specified Excel file if it is currently open.
+
+    :param filepath: The path to the Excel file to close.
+    :type filepath: str
+    """
+    # Get the absolute path
+    filepath = os.path.abspath(filepath)
+
+    try:
+        excel = win32com.client.Dispatch("Excel.Application")
+        for workbook in excel.Workbooks:
+            if workbook.FullName.lower() == filepath.lower():
+                workbook.Close(SaveChanges=False)
+                return
+        excel.Quit()
+    except Exception as e:
+        print(f"Unable to close Excel. Error: {e}")
+
+def json_to_excel(json_file_path, output_excel_path):
+    """
+    Extract data from the electrostatic simulation and write it into a log file.
+
+    :param json_file_path: file path in .json form to compare.
+    :type json_file_path: str.
+    :param output_excel_path: where you save the .xlsx file.
+    :type output_excel_path: str.
+    """
+    # Trying to close the Excel file if it's open
+    close_excel_file_if_open(output_excel_path)
+    # Load the JSON data from the file
+    with open(json_file_path, 'r') as json_file:
+        data = json.load(json_file)
+
+    # Prepare the different data sections
+    charges_data = []
+    energy_data = []
+    average_voltages_data = []
+    capacitances_within_data = []
+    capacitances_between_data = []
+    capacitances_between_turns_core_data = []
+
+    # Extract charges
+    charge_value = data.get("charges", None)
+    if charge_value is not None:
+        charges_data.append({"Charge Type": "Total Charge", "Value (Coulombs)": charge_value})
+
+    # Extract energy
+    for key, value in data.get("energy", {}).items():
+        energy_data.append({"Energy Type": key, "Value (Joules)": value})
+
+    # Extract average voltages
+    for region, voltage in data.get("average_voltages", {}).items():
+        average_voltages_data.append({"Region": region, "Average Voltage (V)": voltage})
+
+    # Extract capacitance within windings
+    for winding, turns in data.get("capacitances", {}).get("within_winding", {}).items():
+        for turn, connections in turns.items():
+            for target_turn, capacitance_value in connections.items():
+                capacitances_within_data.append({
+                    "Winding": winding,
+                    "Turn": turn,
+                    "To Turn": target_turn,
+                    "Capacitance (F)": capacitance_value
+                })
+
+    # Extract capacitance between windings
+    for winding1, windings in data.get("capacitances", {}).get("between_windings", {}).items():
+        for winding2, turns in windings.items():
+            for turn1, connections in turns.items():
+                for turn2, capacitance_value in connections.items():
+                    capacitances_between_data.append({
+                        "Winding 1": winding1,
+                        "Turn 1": turn1,
+                        "Winding 2": winding2,
+                        "Turn 2": turn2,
+                        "Capacitance (F)": capacitance_value
+                    })
+    # Extract capacitance between turns and core
+    for winding, turns in data.get("capacitances", {}).get("between_turns_core", {}).items():
+        for turn, capacitance_value in turns.items():
+            capacitances_between_turns_core_data.append({
+                "Winding": winding,
+                "Turn": turn,
+                "Capacitance to Core (F)": capacitance_value
+            })
+
+    # Create DataFrames for each section
+    charges_df = pd.DataFrame(charges_data)
+    energy_df = pd.DataFrame(energy_data)
+    average_voltages_df = pd.DataFrame(average_voltages_data)
+    capacitances_within_df = pd.DataFrame(capacitances_within_data)
+    capacitances_between_df = pd.DataFrame(capacitances_between_data)
+    capacitances_between_turns_core_df = pd.DataFrame(capacitances_between_turns_core_data)
+
+    # Write to Excel file with multiple sheets
+    with pd.ExcelWriter(output_excel_path) as writer:
+        if not charges_df.empty:
+            charges_df.to_excel(writer, sheet_name='Charges', index=False)
+            worksheet = writer.sheets['Charges']
+            worksheet.set_column('A:B', 30)
+        if not energy_df.empty:
+            energy_df.to_excel(writer, sheet_name='Energy', index=False)
+            worksheet = writer.sheets['Energy']
+            worksheet.set_column('A:B', 30)
+        if not average_voltages_df.empty:
+            average_voltages_df.to_excel(writer, sheet_name='Average_Voltages', index=False)
+            worksheet = writer.sheets['Average_Voltages']
+            worksheet.set_column('A:E', 30)
+        if not capacitances_within_df.empty:
+            capacitances_within_df.to_excel(writer, sheet_name='Capacitances_Within', index=False)
+            worksheet = writer.sheets['Capacitances_Within']
+            worksheet.set_column('A:D', 30)
+        if not capacitances_between_df.empty:
+            capacitances_between_df.to_excel(writer, sheet_name='Capacitances_Between', index=False)
+            worksheet = writer.sheets['Capacitances_Between']
+            worksheet.set_column('A:E', 30)
+        if not capacitances_between_turns_core_df.empty:
+            capacitances_between_turns_core_df.to_excel(writer, sheet_name='Turns_Core', index=False)
+            worksheet = writer.sheets['Turns_Core']
+            worksheet.set_column('A:C', 30)
+
+def compare_excel_files(femmt_excel_path, femm_excel_path, comparison_output_path):
+    """
+    Compare two Excel files (FEMMT and FEMM) and generate a new Excel file with comparison results.
+
+    This function loads two Excel files, one generated by FEMMT and the other by FEMM, compares the data across
+    all common sheets, and calculates the differences between corresponding values. The results include:
+    - Absolute Difference
+    - Relative Error
+    - Relative Error Percentage
+
+    The comparison is saved into a new Excel file, with each comparison in a separate sheet named after
+    the original sheet with the "_Comparison" suffix.
+
+    :param femmt_excel_path: Path to the Excel file generated by FEMMT.
+    :type femmt_excel_path: str
+    :param femm_excel_path: Path to the Excel file generated by FEMM.
+    :type femm_excel_path: str
+    :param comparison_output_path: Path to save the resulting comparison Excel file.
+    :type comparison_output_path: str
+    """
+    # Trying to close the Excel file if it's open
+    close_excel_file_if_open(comparison_output_path)
+    # Load both Excel files, get all sheets
+    femmt_sheets = pd.read_excel(femmt_excel_path, sheet_name=None)
+    femm_sheets = pd.read_excel(femm_excel_path, sheet_name=None)
+
+    # Define sheets to compare
+    sheets_to_compare = femmt_sheets.keys()
+
+    # Create an Excel writer for the output
+    with pd.ExcelWriter(comparison_output_path, engine='xlsxwriter') as writer:
+        # Iterate through each sheet to compare
+        for sheet_name in sheets_to_compare:
+            if sheet_name in femm_sheets:
+                # Load DataFrames for the current sheet
+                femmt_df = femmt_sheets[sheet_name]
+                femm_df = femm_sheets[sheet_name]
+                # Rename columns (FEMMT and FEMM)
+                femmt_df.columns = [f"{col}_FEMMT" for col in femmt_df.columns]
+                femm_df.columns = [f"{col}_FEMM" for col in femm_df.columns]
+
+                # Concatenate both DataFrames side by side
+                comparison_df = pd.concat([femmt_df, femm_df], axis=1)
+
+                # Calculating difference, relative error, and relative error in percentage for columns
+                for femmt_col, femm_col in zip(femmt_df.columns, femm_df.columns):
+                    col_name = femmt_col.replace("_FEMMT", "")
+                    if np.issubdtype(comparison_df[femmt_col].dtype, np.number) and np.issubdtype(comparison_df[femm_col].dtype, np.number):
+                        comparison_df[f"{col_name}_Difference"] = comparison_df[femmt_col] - comparison_df[femm_col]
+                        comparison_df[f"{col_name}_Relative_Error"] = comparison_df[f"{col_name}_Difference"] / comparison_df[femmt_col].replace(0, np.nan)
+                        comparison_df[f"{col_name}_Error_Percent"] = comparison_df[f"{col_name}_Relative_Error"] * 100
+
+                # Writing to the Excel output file
+                comparison_df.to_excel(writer, sheet_name=f"{sheet_name}_Comparison", index=False)
+                worksheet = writer.sheets[f"{sheet_name}_Comparison"]
+                worksheet.set_column('A:Z', 35)
+
+def load_voltage_and_calculate_magnitude(file_path: str):
+    """
+    Load the voltage values from the given file, calculate the magnitude for each complex voltage value.
+
+    :param file_path: Path to the voltage result file.
+    :type file_path: str
+    :return: List of voltage magnitudes for each turn.
+    :rtype: list
+    """
+    magnitudes = []
+
+    with open(file_path, 'r') as file:
+        for line in file:
+            if line.startswith("# U on"):
+                # Skip the line with labels
+                continue
+
+            # Split the line and ignore the first zero value
+            values = line.split()[1:]
+
+            # Separate real and imaginary parts
+            real_parts = values[0::2]
+            imag_parts = values[1::2]
+
+            # Convert real and imaginary parts to float and calculate magnitudes
+            for real, imag in zip(real_parts, imag_parts):
+                real = float(real)
+                imag = float(imag)
+                magnitude = np.sqrt(real**2 + imag**2)
+                magnitudes.append(magnitude)
+
+    return magnitudes
+
+def load_voltage_winding_and_calculate_magnitude(file_path: str):
+    """
+    Load the voltage values from the given file, calculate magnitude for each winding.
+
+    :param file_path: Path to the voltage result file.
+    :type file_path: str
+    :return: Average voltage magnitude for the winding.
+    :rtype: float
+    """
+    total_real = 0.0
+    total_imag = 0.0
+    count = 0
+
+    with open(file_path, 'r') as file:
+        for line in file:
+            if line.startswith("# U on"):
+                # Skip the line with labels
+                continue
+
+            # Split the line and ignore the first zero value
+            values = line.split()[1:]
+
+            # Separate real and imaginary parts
+            real_parts = values[0::2]
+            imag_parts = values[1::2]
+
+            # Convert real and imaginary parts to float and sum them
+            for real, imag in zip(real_parts, imag_parts):
+                total_real += float(real)
+                total_imag += float(imag)
+                count += 1
+
+    # Calculate magnitude
+    magnitude = np.sqrt(total_real**2 + total_imag**2)
+
+    return magnitude
+
+def load_charges_and_sum_them(file_path: str):
+    """
+        Load the voltage values from the given file, calculate magnitude for each winding.
+
+        :param file_path: Path to the voltage result file.
+        :type file_path: str
+        :return: Average voltage magnitude for the winding.
+        :rtype: float
+    """
+    total_charge = 0.0
+
+    with open(file_path, 'r') as file:
+        for line in file:
+            if line.startswith("# Q on"):
+                # Skip the line with labels
+                continue
+
+            # Split the line and ignore the first zero value
+            values = line.split()[1:]
+
+            # Convert real and imaginary parts to float and sum them
+            for value in values:
+                total_charge += float(value)
+
+    return total_charge
+
+
+def load_charges_and_sum(file_path: str):
+    """
+    Load the charges values from the given file, sum them for each winding.
+    It is needed as the total charges can not be printed for the whole winding from pro files.
+
+
+    :param file_path: Path to the charge result file.
+    :type file_path: str
+    :return: charges for the winding.
+    :rtype: float
+    """
+
+    total_charge = 0.0
+
+    with open(file_path, 'r') as file:
+        for line_index, line in enumerate(file, start=1):
+            if line.startswith("# Q on"):
+                # Skip the header line
+                continue
+
+            # Only process every third line starting from line 3
+            if (line_index - 3) % 3 == 0:
+                # Split the line and ignore the first zero value
+                values = line.split()[1:]
+
+                # Sum up all the charges on this line
+                for value in values:
+                    total_charge += float(value)
+
+    return total_charge
+
+def calculate_self_capacitances(capacitance_matrix_nodes):
+    """
+    Calculate the self-capacitances (C_AA, C_BB, etc.) after all simulations are run.
+    """
+    for i, node in enumerate(["A", "B", "C", "D", "E"]):
+        node_key = f"C_{node}{node}"
+        if node == "E":
+            capacitance_matrix_nodes[node_key] = sum(
+                capacitance_matrix_nodes.get(f"C_{node}{other_node}", [0])[-1]
+                for other_node in ["A", "B", "C", "D"]
+            )
+        else:
+            capacitance_matrix_nodes[node_key] = sum(
+                capacitance_matrix_nodes.get(f"C_{node}{other_node}", [0])[-1]
+                for other_node in ["A", "B", "C", "D", "E"] if other_node != node
+            )
+
+def display_capacitance_matrix(capacitance_matrix):
+    # Extract nodes and sort them
+    nodes = sorted(set([key[2] for key in capacitance_matrix.keys()]))  # Extract node labels (A, B, C, D, E)
+    node_indices = {node: index for index, node in enumerate(nodes)}
+
+    # Initialize a matrix with zeros
+    n = len(nodes)
+    matrix = np.zeros((n, n))
+
+    # Fill the matrix using capacitance values
+    for key, value in capacitance_matrix.items():
+        node1, node2 = key[2], key[3]
+        i, j = node_indices[node1], node_indices[node2]
+        matrix[i, j] = value
+
+    # Print matrix in the formatted style
+    print("Capacitance Matrix:")
+    for row in matrix:
+        print(" ".join([f"{elem:.5e}" for elem in row]))
+
+
+def print_capacitance_matrix_from_log(capacitance_log_path):
+    """
+    Display capacitance matrices for all windings from the given log file.
+    """
+    # Load the capacitance log file
+    with open(capacitance_log_path, "r", encoding='utf-8') as infile:
+        log_dict = json.load(infile)
+
+    for winding_key, winding_data in log_dict["electrostatic"].items():
+        # Find the winding capacitance matrix in the log
+        matrix_key = f"Capacitance_matrix_Turns_of_{winding_key.lower()}"
+        if matrix_key in winding_data:
+            winding_matrix = winding_data[matrix_key]
+            # Extract turn numbers and determine the matrix size
+            all_turns = set()
+
+            # Extract turns from self capacitance and mutual capacitance
+            for cap_key in winding_matrix["self_capacitance"].keys():
+                if "Core" not in cap_key:  # Exclude capacitance to core
+                    turn_index = int(cap_key[1])  # Get the turn index (always a single digit here)
+                    all_turns.add(turn_index)
+
+            for cap_key in winding_matrix["mutual_capacitance"].keys():
+                turn_indices = cap_key[1:]  # Extract turn indices (e.g., '12' -> '1' and '2')
+                turn1_index = int(turn_indices[0])
+                turn2_index = int(turn_indices[1])
+                all_turns.update([turn1_index, turn2_index])
+
+            # Sort the turns and determine the size of the matrix
+            turns = sorted(list(all_turns))
+            n = len(turns)
+
+            # Initialize capacitance matrix with NaN to represent missing values
+            capacitance_matrix = np.full((n, n), np.nan)
+
+            # Fill the self-capacitance values
+            for cap_name, value in winding_matrix["self_capacitance"].items():
+                if value not in [float('inf'), float('-inf'), 0]:
+                    turn_index = int(cap_name[1]) - 1  # Convert 1-based index to 0-based
+                    if turn_index < n:  # Avoid index out of bounds
+                        capacitance_matrix[turn_index, turn_index] = value
+
+            # Fill the mutual capacitance values
+            for cap_name, value in winding_matrix["mutual_capacitance"].items():
+                if value not in [float('inf'), float('-inf'), 0]:
+                    turn1_index = int(cap_name[1]) - 1  # Convert to 0-based index
+                    turn2_index = int(cap_name[2]) - 1  # Convert to 0-based index
+                    if turn1_index < n and turn2_index < n:  # Avoid index out of bounds
+                        capacitance_matrix[turn1_index, turn2_index] = value
+                        capacitance_matrix[turn2_index, turn1_index] = value  # Symmetric
+
+            # Print the capacitance matrix in the desired format
+            print(f"\nCapacitance Matrix of turns of {winding_key}:")
+            for i in range(n):
+                row_values = [
+                    f"{capacitance_matrix[i][j]:.5e}" if not np.isnan(capacitance_matrix[i][j]) else "N/A" for j in range(n)
+                ]
+                print(" ".join(row_values))
 
 
 if __name__ == '__main__':

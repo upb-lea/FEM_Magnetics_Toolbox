@@ -131,8 +131,10 @@ def basic_example_transformer_integrated(onelab_folder: str = None, show_visual_
     # 4. set insulations
     insulation = fmt.Insulation(flag_insulation=False)
     insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
+    insulation.add_turn_insulation([0.25e-5, 0.25e-5], add_turn_insulations=False)
     insulation.add_winding_insulations([[0.0002, 0.001],
-                                        [0.001, 0.0002]])
+                                        [0.001, 0.0002]], per_layer_of_turns=False)
+    insulation.add_insulation_between_layers(add_insulation_material=False, thickness=0.1e-3)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
