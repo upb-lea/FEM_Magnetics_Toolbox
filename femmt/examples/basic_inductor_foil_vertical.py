@@ -120,12 +120,12 @@ def basic_example_inductor_foil_vertical(onelab_folder: str = None, show_visual_
                                                     window_h=core_db["window_h"],
                                                     core_h=core_db["core_h"])
 
-    core_material = fmt.LinearCoreMaterial(mu_r_abs=3100,
-                                           phi_mu_deg=12,
-                                           dc_conductivity=0.6,
-                                           eps_r_abs=0,
-                                           phi_eps_deg=0,
-                                           mdb_verbosity=fmt.Verbosity.Silent)
+    core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3100,
+                                                  phi_mu_deg=12,
+                                                  dc_conductivity=0.6,
+                                                  eps_r_abs=0,
+                                                  phi_eps_deg=0,
+                                                  mdb_verbosity=fmt.Verbosity.Silent)
 
     core = fmt.Core(material=core_material,
                     core_type=fmt.CoreType.Single,

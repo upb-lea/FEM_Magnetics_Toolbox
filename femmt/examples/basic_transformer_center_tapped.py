@@ -111,12 +111,12 @@ def basic_example_transformer_center_tapped(onelab_folder: str = None, show_visu
     core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.025, window_w=0.02, core_inner_diameter=0.015,
                                                     core_h=0.05)
 
-    core_material = fmt.LinearCoreMaterial(mu_r_abs=3100,
-                                           phi_mu_deg=12,
-                                           dc_conductivity=1.2,
-                                           eps_r_abs=0,
-                                           phi_eps_deg=0,
-                                           mdb_verbosity=fmt.Verbosity.Silent)
+    core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3100,
+                                                  phi_mu_deg=12,
+                                                  dc_conductivity=1.2,
+                                                  eps_r_abs=0,
+                                                  phi_eps_deg=0,
+                                                  mdb_verbosity=fmt.Verbosity.Silent)
 
     core = fmt.Core(material=core_material,
                     core_type=fmt.CoreType.Single,

@@ -46,12 +46,12 @@ def basic_example_inductor_time_domain(onelab_folder: str = None, show_visual_ou
                                                     window_h=core_db["window_h"],
                                                     core_h=core_db["core_h"])
 
-    core_material = fmt.LinearCoreMaterial(mu_r_abs=3100,
-                                           phi_mu_deg=0,
-                                           dc_conductivity=1,
-                                           eps_r_abs=0,
-                                           phi_eps_deg=0,
-                                           mdb_verbosity=fmt.Verbosity.Silent)
+    core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3100,
+                                                  phi_mu_deg=0,
+                                                  dc_conductivity=1,
+                                                  eps_r_abs=0,
+                                                  phi_eps_deg=0,
+                                                  mdb_verbosity=fmt.Verbosity.Silent)
 
     core = fmt.Core(material=core_material,
                     core_type=fmt.CoreType.Single,

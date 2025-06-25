@@ -158,11 +158,11 @@ def fixture_inductor_core_material_database(temp_folder: pytest.fixture):
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
 
-        core_material = fmt.ImportedCoreMaterial(material=fmt.Material.N95,
-                                                 temperature=25,
-                                                 permeability_datasource=fmt.MaterialDataSource.ManufacturerDatasheet,
-                                                 permittivity_datasource=fmt.MaterialDataSource.ManufacturerDatasheet,
-                                                 mdb_verbosity=fmt.Verbosity.Silent)
+        core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N95,
+                                                        temperature=25,
+                                                        permeability_datasource=fmt.MaterialDataSource.ManufacturerDatasheet,
+                                                        permittivity_datasource=fmt.MaterialDataSource.ManufacturerDatasheet,
+                                                        mdb_verbosity=fmt.Verbosity.Silent)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -286,15 +286,15 @@ def fixture_inductor_core_material_database_measurement(temp_folder: pytest.fixt
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
 
-        core_material = fmt.ImportedCoreMaterial(material=fmt.Material.N95,
-                                                 temperature=25,
-                                                 permeability_datasource=fmt.MaterialDataSource.Measurement,
-                                                 permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                                                 permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
-                                                 permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                                                 permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                                                 permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK,
-                                                 mdb_verbosity=fmt.Verbosity.Silent)
+        core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N95,
+                                                        temperature=25,
+                                                        permeability_datasource=fmt.MaterialDataSource.Measurement,
+                                                        permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                                                        permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
+                                                        permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                                                        permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                                                        permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK,
+                                                        mdb_verbosity=fmt.Verbosity.Silent)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -418,12 +418,12 @@ def fixture_inductor_core_fixed_loss_angle(temp_folder: pytest.fixture):
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
 
-        core_material = fmt.LinearCoreMaterial(mu_r_abs=3000,
-                                               phi_mu_deg=10,
-                                               dc_conductivity=0.5,
-                                               eps_r_abs=0,
-                                               phi_eps_deg=0,
-                                               mdb_verbosity=fmt.Verbosity.Silent)
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3000,
+                                                      phi_mu_deg=10,
+                                                      dc_conductivity=0.5,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -546,12 +546,12 @@ def fixture_inductor_core_fixed_loss_angle_dc(temp_folder: pytest.fixture):
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
 
-        core_material = fmt.LinearCoreMaterial(mu_r_abs=3000,
-                                               phi_mu_deg=10,
-                                               dc_conductivity=0.5,
-                                               eps_r_abs=0,
-                                               phi_eps_deg=0,
-                                               mdb_verbosity=fmt.Verbosity.Silent)
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3000,
+                                                      phi_mu_deg=10,
+                                                      dc_conductivity=0.5,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -673,12 +673,12 @@ def fixture_inductor_core_fixed_loss_angle_litz_wire(temp_folder: pytest.fixture
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
 
-        core_material = fmt.LinearCoreMaterial(mu_r_abs=3000,
-                                               phi_mu_deg=10,
-                                               dc_conductivity=0.5,
-                                               eps_r_abs=0,
-                                               phi_eps_deg=0,
-                                               mdb_verbosity=fmt.Verbosity.Silent)
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3000,
+                                                      phi_mu_deg=10,
+                                                      dc_conductivity=0.5,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -805,12 +805,12 @@ def fixture_inductor_core_fixed_loss_angle_foil_vertical(temp_folder: pytest.fix
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
 
-        core_material = fmt.LinearCoreMaterial(mu_r_abs=3100,
-                                               phi_mu_deg=12,
-                                               dc_conductivity=0.6,
-                                               eps_r_abs=0,
-                                               phi_eps_deg=0,
-                                               mdb_verbosity=fmt.Verbosity.Silent)
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3100,
+                                                      phi_mu_deg=12,
+                                                      dc_conductivity=0.6,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -937,12 +937,12 @@ def fixture_inductor_core_fixed_loss_angle_foil_horizontal(temp_folder: pytest.f
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
 
-        core_material = fmt.LinearCoreMaterial(mu_r_abs=3100,
-                                               phi_mu_deg=12,
-                                               dc_conductivity=0.6,
-                                               eps_r_abs=0,
-                                               phi_eps_deg=0,
-                                               mdb_verbosity=fmt.Verbosity.Silent)
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3100,
+                                                      phi_mu_deg=12,
+                                                      dc_conductivity=0.6,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -1067,12 +1067,12 @@ def fixture_transformer_core_fixed_loss_angle(temp_folder: pytest.fixture):
                                                         window_h=0.0295,
                                                         core_h=0.05)
 
-        core_material = fmt.LinearCoreMaterial(mu_r_abs=3100,
-                                               phi_mu_deg=12,
-                                               dc_conductivity=1.2,
-                                               eps_r_abs=0,
-                                               phi_eps_deg=0,
-                                               mdb_verbosity=fmt.Verbosity.Silent)
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3100,
+                                                      phi_mu_deg=12,
+                                                      dc_conductivity=1.2,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -1204,12 +1204,12 @@ def fixture_transformer_interleaved_core_fixed_loss_angle(temp_folder: pytest.fi
                                                         window_h=0.0295,
                                                         core_h=0.05)
 
-        core_material = fmt.LinearCoreMaterial(mu_r_abs=3000,
-                                               phi_mu_deg=10,
-                                               dc_conductivity=1,
-                                               eps_r_abs=0,
-                                               phi_eps_deg=0,
-                                               mdb_verbosity=fmt.Verbosity.Silent)
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3000,
+                                                      phi_mu_deg=10,
+                                                      dc_conductivity=1,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -1340,12 +1340,12 @@ def fixture_transformer_integrated_core_fixed_loss_angle(temp_folder: pytest.fix
                                                         core_h=0.05)
 
         # 2. set core parameters
-        core_material = fmt.LinearCoreMaterial(mu_r_abs=3100,
-                                               phi_mu_deg=12,
-                                               dc_conductivity=0.6,
-                                               eps_r_abs=0,
-                                               phi_eps_deg=0,
-                                               mdb_verbosity=fmt.Verbosity.Silent)
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3100,
+                                                      phi_mu_deg=12,
+                                                      dc_conductivity=0.6,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -1483,12 +1483,12 @@ def fixture_transformer_stacked_center_tapped(temp_folder: pytest.fixture):
         core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=0.02, window_w=0.015, window_h_top=0.005,
                                                          window_h_bot=0.017)
 
-        core_material = fmt.LinearCoreMaterial(mu_r_abs=3100,
-                                               phi_mu_deg=12,
-                                               dc_conductivity=1.2,
-                                               eps_r_abs=0,
-                                               phi_eps_deg=0,
-                                               mdb_verbosity=fmt.Verbosity.Silent)
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3100,
+                                                      phi_mu_deg=12,
+                                                      dc_conductivity=1.2,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Stacked,
@@ -1645,15 +1645,15 @@ def fixture_transformer_5_windings(temp_folder: pytest.fixture):
         core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=16.1e-3, window_w=(22.5 - 12) / 2 * 1e-3,
                                                         core_inner_diameter=12e-3, core_h=22e-3)
 
-        core_material = fmt.ImportedCoreMaterial(material=fmt.Material.N95,
-                                                 temperature=60,
-                                                 permeability_datasource=fmt.MaterialDataSource.Measurement,
-                                                 permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                                                 permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
-                                                 permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                                                 permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                                                 permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK,
-                                                 mdb_verbosity=fmt.Verbosity.Silent)
+        core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N95,
+                                                        temperature=60,
+                                                        permeability_datasource=fmt.MaterialDataSource.Measurement,
+                                                        permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                                                        permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
+                                                        permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                                                        permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                                                        permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK,
+                                                        mdb_verbosity=fmt.Verbosity.Silent)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -1820,12 +1820,12 @@ def fixture_inductor_time_domain(temp_folder: pytest.fixture):
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
 
-        core_material = fmt.LinearCoreMaterial(mu_r_abs=3000,
-                                               phi_mu_deg=0,
-                                               dc_conductivity=1,
-                                               eps_r_abs=0,
-                                               phi_eps_deg=0,
-                                               mdb_verbosity=fmt.Verbosity.Silent)
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3000,
+                                                      phi_mu_deg=0,
+                                                      dc_conductivity=1,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -1912,12 +1912,12 @@ def fixture_transformer_time_domain(temp_folder: pytest.fixture):
         # 2. set core parameters
         core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295, core_h=0.04)
 
-        core_material = fmt.LinearCoreMaterial(mu_r_abs=3000,
-                                               phi_mu_deg=0,
-                                               dc_conductivity=1,
-                                               eps_r_abs=0,
-                                               phi_eps_deg=0,
-                                               mdb_verbosity=fmt.Verbosity.Silent)
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3000,
+                                                      phi_mu_deg=0,
+                                                      dc_conductivity=1,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -2009,12 +2009,12 @@ def fixture_transformer_3_windings_time_domain(temp_folder: pytest.fixture):
         # 2. set core parameters
         core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.06, window_w=0.03, core_inner_diameter=0.015, core_h=0.08)
 
-        core_material = fmt.LinearCoreMaterial(mu_r_abs=3000,
-                                               phi_mu_deg=0,
-                                               dc_conductivity=1,
-                                               eps_r_abs=0,
-                                               phi_eps_deg=0,
-                                               mdb_verbosity=fmt.Verbosity.Silent)
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3000,
+                                                      phi_mu_deg=0,
+                                                      dc_conductivity=1,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,

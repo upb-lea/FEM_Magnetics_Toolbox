@@ -42,15 +42,15 @@ def advanced_example_inductor_sweep(onelab_folder: str = None, show_visual_outpu
                                                     window_h=core_db["window_h"],
                                                     core_h=core_db["core_h"])
 
-    core_material = fmt.ImportedCoreMaterial(material=fmt.Material.N95,
-                                             temperature=30,
-                                             permeability_datasource=fmt.MaterialDataSource.Measurement,
-                                             permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                                             permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
-                                             permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                                             permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                                             permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK,
-                                             mdb_verbosity=fmt.Verbosity.Silent)
+    core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N95,
+                                                    temperature=30,
+                                                    permeability_datasource=fmt.MaterialDataSource.Measurement,
+                                                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                                                    permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
+                                                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                                                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                                                    permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK,
+                                                    mdb_verbosity=fmt.Verbosity.Silent)
 
     core = fmt.Core(material=core_material,
                     core_type=fmt.CoreType.Single,

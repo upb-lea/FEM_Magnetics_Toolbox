@@ -109,7 +109,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     if onelab_folder is not None:
         geo.file_data.onelab_folder_path = onelab_folder
 
-    inductor_frequency = 270000
+    inductor_frequency = 1_200_000
 
     # 2. set core parameters
     core_db = fmt.core_database()["PQ 40/40"]
@@ -118,15 +118,13 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
                                                     window_h=core_db["window_h"],
                                                     core_h=core_db["core_h"])
 
-    core_material = fmt.ImportedCoreMaterial(material=fmt.Material.N49,
-                                             temperature=45,
-                                             permeability_datasource=fmt.MaterialDataSource.Measurement,
-                                             permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                                             permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
-                                             permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                                             permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                                             permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK,
-                                             mdb_verbosity=fmt.Verbosity.Silent)
+    core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
+                                                    temperature=45,
+                                                    permeability_datasource=fmt.MaterialDataSource.Measurement,
+                                                    permeability_measurement_setup=fmt.MeasurementSetup.TDK_MDT,
+                                                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                                                    permittivity_measurement_setup=fmt.MeasurementSetup.LEA_MTB,
+                                                    mdb_verbosity=fmt.Verbosity.Silent)
 
     core = fmt.Core(material=core_material,
                     core_type=fmt.CoreType.Single,
@@ -180,8 +178,8 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # 9. start simulation
 
     # 7. prepare and start thermal simulation
-    example_thermal_simulation(show_visual_outputs, flag_insulation=True)
+    # example_thermal_simulation(show_visual_outputs, flag_insulation=True)
 
 
 if __name__ == "__main__":
-    basic_example_inductor(show_visual_outputs=True)
+    basic_example_inductor(show_visual_outputs=False)

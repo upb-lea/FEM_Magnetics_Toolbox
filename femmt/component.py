@@ -25,7 +25,7 @@ import numpy as np
 import femmt.functions as ff
 from femmt.constants import *
 from femmt.mesh import Mesh
-from femmt.model import VirtualWindingWindow, WindingWindow, Core, Insulation, StrayPath, AirGaps, Conductor, LinearCoreMaterial, ImportedCoreMaterial
+from femmt.model import VirtualWindingWindow, WindingWindow, Core, Insulation, StrayPath, AirGaps, Conductor, LinearComplexCoreMaterial, ImportedComplexCoreMaterial
 from femmt.enumerations import *
 from femmt.data import FileData, MeshData
 from femmt.drawing import TwoDaxiSymmetric
@@ -599,36 +599,37 @@ class MagneticComponent:
         Loads the permittivity from the material database (measurement or datasheet) and calculates the
         resonance ratio = diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance
         """
-        if self.frequency != 0:
-            if self.core.material.permittivity["datasource"] == "measurements" or self.core.material.permittivity[
-                    "datasource"] == "datasheet":
-                epsilon_r, epsilon_phi_deg = mdb.MaterialDatabase(self.verbosity == Verbosity.Silent).get_permittivity(
-                    temperature=self.core.material.temperature, frequency=self.frequency,
-                    material_name=self.core.material.material,
-                    datasource=self.core.material.permittivity["datasource"],
-                    datatype=self.core.material.permittivity["datatype"],
-                    measurement_setup=self.core.material.permittivity["measurement_setup"],
-                    interpolation_type="linear")
-
-                complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(epsilon_phi_deg)),
-                                                                       -np.sin(np.deg2rad(epsilon_phi_deg)))
-                logger.info(f"{complex_permittivity=}\n"
-                            f"{epsilon_r=}\n"
-                            f"{epsilon_phi_deg=}")
-
-                ff.check_mqs_condition(radius=self.core.geometry.core_inner_diameter / 2, frequency=self.frequency,
-                                       complex_permeability=self.get_single_complex_permeability(),
-                                       complex_permittivity=complex_permittivity, conductivity=self.core.material.dc_conductivity,
-                                       relative_margin_to_first_resonance=0.5)
-
-            else:
-                ff.check_mqs_condition(radius=self.core.geometry.core_inner_diameter / 2, frequency=self.frequency,
-                                       complex_permeability=self.get_single_complex_permeability(),
-                                       complex_permittivity=epsilon_0 * self.core.material.eps_r_abs *
-                                                            complex(np.cos(np.deg2rad(self.core.material.phi_eps_deg)),
-                                                                    -np.sin(np.deg2rad(self.core.material.phi_eps_deg))),
-                                       conductivity=self.core.material.dc_conductivity,
-                                       relative_margin_to_first_resonance=0.5)
+        print("check_model_mqs_condition not implemented")
+        # if self.frequency != 0:
+        #     if self.core.material.permittivity["datasource"] == "measurements" or self.core.material.permittivity[
+        #             "datasource"] == "datasheet":
+        #         epsilon_r, epsilon_phi_deg = mdb.MaterialDatabase(self.verbosity == Verbosity.Silent).get_permittivity(
+        #             temperature=self.core.material.temperature, frequency=self.frequency,
+        #             material_name=self.core.material.material,
+        #             datasource=self.core.material.permittivity["datasource"],
+        #             datatype=self.core.material.permittivity["datatype"],
+        #             measurement_setup=self.core.material.permittivity["measurement_setup"],
+        #             interpolation_type="linear")
+        #
+        #         complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(epsilon_phi_deg)),
+        #                                                                -np.sin(np.deg2rad(epsilon_phi_deg)))
+        #         logger.info(f"{complex_permittivity=}\n"
+        #                     f"{epsilon_r=}\n"
+        #                     f"{epsilon_phi_deg=}")
+        #
+        #         ff.check_mqs_condition(radius=self.core.geometry.core_inner_diameter / 2, frequency=self.frequency,
+        #                                complex_permeability=self.get_single_complex_permeability(),
+        #                                complex_permittivity=complex_permittivity, conductivity=self.core.material.dc_conductivity,
+        #                                relative_margin_to_first_resonance=0.5)
+        #
+        #     else:
+        #         ff.check_mqs_condition(radius=self.core.geometry.core_inner_diameter / 2, frequency=self.frequency,
+        #                                complex_permeability=self.get_single_complex_permeability(),
+        #                                complex_permittivity=epsilon_0 * self.core.material.eps_r_abs *
+        #                                                     complex(np.cos(np.deg2rad(self.core.material.phi_eps_deg)),
+        #                                                             -np.sin(np.deg2rad(self.core.material.phi_eps_deg))),
+        #                                conductivity=self.core.material.dc_conductivity,
+        #                                relative_margin_to_first_resonance=0.5)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Miscellaneous
@@ -916,8 +917,8 @@ class MagneticComponent:
                           "Returns '0' in log-file: Core cost will also result to 0.",
                           stacklevel=2)
         else:
-            volumetric_mass_density = self.core.material.material_database.get_material_attribute(
-                material_name=self.core.material.material, attribute="volumetric_mass_density")
+            volumetric_mass_density = self.core.material.database.get_material_attribute(
+                material=self.core.material.material, attribute="volumetric_mass_density")
         return self.calculate_core_volume() * volumetric_mass_density
 
     def get_wire_distances(self) -> list[list[float]]:
@@ -1058,11 +1059,12 @@ class MagneticComponent:
 
         # -- Excitation --
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
-        if self.core.material.permeability["datasource"] != MaterialDataSource.Custom:
-            self.core.material.update_core_material_pro_file(frequency, self.file_data.electro_magnetic_folder_path,
-                                                             plot_interpolation)  # frequency update to core class
-        if self.core.material.permittivity["datasource"] != MaterialDataSource.Custom:
+        if isinstance(self.core.material, ImportedComplexCoreMaterial):
+            self.core.material.update_core_material_pro_file(frequency,
+                                                             self.file_data.electro_magnetic_folder_path,
+                                                             plot_interpolation=plot_interpolation)
             self.core.material.update_permittivity(frequency)
+
         # Has the user provided a list of phase angles?
         phase_deg_list = phase_deg_list or []
         # phase_deg_list = np.asarray(phase_deg_list)
@@ -1157,9 +1159,9 @@ class MagneticComponent:
         # -- Excitation --
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
         if self.core.material.permeability["datasource"] != MaterialDataSource.Custom:
-            self.core.material.update_core_material_pro_file(self.frequency,
-                                                             self.file_data.electro_magnetic_folder_path,
-                                                             plot_interpolation)  # frequency update to core class
+            self.core.material.update_core_material_pro_file(frequency=self.frequency,
+                                                             folder=self.file_data.electro_magnetic_folder_path,
+                                                             plot_interpolation=plot_interpolation)  # frequency update to core class
         if self.core.material.permittivity["datasource"] != MaterialDataSource.Custom:
             self.core.material.update_permittivity(self.frequency)
         # time simulation parameters
@@ -2591,8 +2593,8 @@ class MagneticComponent:
             b_field = total_flux / core_cross_sectional_area
 
             # Get saturation flux density from material database
-            database = mdb.MaterialDatabase()
-            saturation_flux_density = database.get_saturation_flux_density(self.core.material.material)
+            saturation_flux_density = self.core.material.database.get_material_attribute(material=self.core.material.material,
+                                                                                         attribute="saturation_flux_density")
 
             # # Check for saturation and raise error if B-field exceeds threshold
             if abs(b_field) > saturation_threshold * saturation_flux_density:
@@ -5257,21 +5259,21 @@ class MagneticComponent:
                 raise ValueError("unknown core_type for decoding from result_log.")
 
             if settings["core"]["material_model_type"] == CoreMaterialType.Linear:
-                core_material = LinearCoreMaterial(mu_r_abs=settings["core"]["mu_r_abs"],
-                                                   phi_mu_deg=settings["core"]["phi_mu_deg"],
-                                                   dc_conductivity=settings["core"]["dc_conductivity"],
-                                                   eps_r_abs=settings["core"]["eps_r_abs"],
-                                                   phi_eps_deg=settings["core"]["phi_eps_deg"])
+                core_material = LinearComplexCoreMaterial(mu_r_abs=settings["core"]["mu_r_abs"],
+                                                          phi_mu_deg=settings["core"]["phi_mu_deg"],
+                                                          dc_conductivity=settings["core"]["dc_conductivity"],
+                                                          eps_r_abs=settings["core"]["eps_r_abs"],
+                                                          phi_eps_deg=settings["core"]["phi_eps_deg"])
 
             elif settings["core"]["material_model_type"] == CoreMaterialType.Imported:
-                core_material = ImportedCoreMaterial(material=settings["core"]["material"],
-                                                     temperature=settings["core"]["temperature"],
-                                                     permeability_datasource=settings["core"]["permeability_datasource"],
-                                                     permeability_datatype=settings["core"]["permeability_datatype"],
-                                                     permeability_measurement_setup=settings["core"]["permeability_measurement_setup"],
-                                                     permittivity_datasource=settings["core"]["permittivity_datasource"],
-                                                     permittivity_datatype=settings["core"]["permittivity_datatype"],
-                                                     permittivity_measurement_setup=settings["core"]["permittivity_measurement_setup"])
+                core_material = ImportedComplexCoreMaterial(material=settings["core"]["material"],
+                                                            temperature=settings["core"]["temperature"],
+                                                            permeability_datasource=settings["core"]["permeability_datasource"],
+                                                            permeability_datatype=settings["core"]["permeability_datatype"],
+                                                            permeability_measurement_setup=settings["core"]["permeability_measurement_setup"],
+                                                            permittivity_datasource=settings["core"]["permittivity_datasource"],
+                                                            permittivity_datatype=settings["core"]["permittivity_datatype"],
+                                                            permittivity_measurement_setup=settings["core"]["permittivity_measurement_setup"])
 
             core = Core(core_type=settings["core"]["core_type"],
                         core_dimensions=core_dimensions,

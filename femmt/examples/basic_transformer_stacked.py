@@ -112,12 +112,12 @@ def basic_example_transformer_stacked(onelab_folder: str = None, show_visual_out
     core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=0.02, window_w=0.02, window_h_top=0.01,
                                                      window_h_bot=0.03)
 
-    core_material = fmt.LinearCoreMaterial(mu_r_abs=3100,
-                                           phi_mu_deg=12,
-                                           dc_conductivity=1.2,
-                                           eps_r_abs=0,
-                                           phi_eps_deg=0,
-                                           mdb_verbosity=fmt.Verbosity.Silent)
+    core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3100,
+                                                  phi_mu_deg=12,
+                                                  dc_conductivity=1.2,
+                                                  eps_r_abs=0,
+                                                  phi_eps_deg=0,
+                                                  mdb_verbosity=fmt.Verbosity.Silent)
 
     core = fmt.Core(material=core_material,
                     core_type=fmt.CoreType.Stacked,

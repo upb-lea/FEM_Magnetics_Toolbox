@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 # 3rd party libraries
 import numpy as np
+import numpy.typing as npt
 from typing import Optional, Union, Dict, Any
 
 # Local libraries
@@ -265,7 +266,7 @@ class CoreGeometry:
         return base
 
 
-class LinearCoreMaterial:
+class LinearComplexCoreMaterial:
     """Encapsulate a magnetic core's material properties based on linear assumptions for simulation.
 
     This includes magnetic permeability, electric permittivity, conductivity, and core loss modeling.
@@ -340,7 +341,7 @@ class LinearCoreMaterial:
         }
 
 
-class ImportedCoreMaterial:
+class ImportedComplexCoreMaterial:
     """Encapsulate a magnetic core's material properties based on imported data for simulation.
 
     This includes magnetic permeability, electric permittivity, conductivity, and core loss modeling.
@@ -352,12 +353,9 @@ class ImportedCoreMaterial:
                  temperature: Optional[float],
                  permeability_datasource: Union[str, MaterialDataSource],
                  permittivity_datasource: Union[str, MaterialDataSource],
-                 permeability_datatype: Union[str, MeasurementDataType] = None,
-                 permittivity_datatype: Union[str, MeasurementDataType] = None,
                  permeability_measurement_setup: Union[str, MeasurementSetup] = None,
                  permittivity_measurement_setup: Union[str, MeasurementSetup] = None,
                  mdb_verbosity: Any = Verbosity.Silent):
-
         """Create a CoreMaterial object describing electromagnetic and loss properties.
 
         The class uses material database queries and supports both predefined and custom material configurations.
@@ -368,14 +366,10 @@ class ImportedCoreMaterial:
         :type temperature: float
         :param permeability_datasource: Source of permeability data.
         :type permeability_datasource: str or MaterialDataSource
-        :param permeability_datatype: Type of permeability measurement data.
-        :type permeability_datatype: str or MeasurementDataType
         :param permeability_measurement_setup: Setup used for permeability measurements.
         :type permeability_measurement_setup: str or MeasurementSetup
         :param permittivity_datasource: Source of permittivity data.
         :type permittivity_datasource: str or MaterialDataSource
-        :param permittivity_datatype: Type of permittivity measurement data.
-        :type permittivity_datatype: str or MeasurementDataType
         :param permittivity_measurement_setup: Setup used for permittivity measurements.
         :type permittivity_measurement_setup: str or MeasurementSetup
         :param mdb_verbosity: Verbosity level for the material database.
@@ -383,34 +377,44 @@ class ImportedCoreMaterial:
         """
         self.mdb_verbosity = mdb_verbosity
 
-        self.material_database = mdb.MaterialDatabase()
+        # core material database
+        self.database = mdb.Data()
+
+        # path, where the material data is handed over to the FEM simulation as a .pro-file
         self.file_path_to_solver_folder: Optional[str] = None
-        self.model_type = CoreMaterialType.Imported
 
+        # global core temperature
         self.temperature = temperature
-        self.loss_approach = LossApproach.LossAngle
 
-        self.material = Material(material) if material != 'custom' else material
+        # name of the material
+        self.material = Material(material)
 
-        self.permeability = {
-            "datasource": MaterialDataSource(permeability_datasource) if isinstance(permeability_datasource, str) else permeability_datasource,
-            "measurement_setup": MeasurementSetup(permeability_measurement_setup) if isinstance(permeability_measurement_setup,
-                                                                                                str) else permeability_measurement_setup,
-            "datatype": MeasurementDataType(permeability_datatype) if isinstance(permeability_datatype, str) else permeability_datatype,
-        }
+        # permeability meta information
+        self.model_type = CoreMaterialType.Imported
+        self.magnetic_loss_approach = LossApproach.LossAngle
+        self.permeability_type = PermeabilityType.FromData
+        self.permeability_datasource = permeability_datasource  # FEMMT distinguishes MaterialDataSource(s) (MDB not)
 
+        # ComplexPermeability class which is imported from the material database
+        self.permeability = self.database.get_complex_permeability(material=material, measurement_setup=permeability_measurement_setup)
+        self.permeability.fit_losses(mdb.FitFunction.enhancedSteinmetz)
+        if self.permeability.measurement_setup == MeasurementSetup.TDK_MDT:
+            self.permeability.fit_permeability_magnitude(mdb.FitFunction.mu_abs_Tb)
+        else:
+            self.permeability.fit_permeability_magnitude(mdb.FitFunction.mu_abs_fTb)
+
+        # (constant and lossless) initial permeability is used for reluctance calculations
+        self.mu_r_abs = self.database.get_material_attribute(
+            material=self.material,
+            attribute="initial_permeability"
+        )
+
+        self.permittivity_datasource = permittivity_datasource  # FEMMT distinguishes MaterialDataSource(s) (MDB not)
         self.permittivity = {
             "datasource": MaterialDataSource(permittivity_datasource) if isinstance(permittivity_datasource, str) else permittivity_datasource,
             "measurement_setup": MeasurementSetup(permittivity_measurement_setup) if isinstance(permittivity_measurement_setup,
                                                                                                 str) else permittivity_measurement_setup,
-            "datatype": MeasurementDataType(permittivity_datatype) if isinstance(permittivity_datatype, str) else permittivity_datatype,
         }
-
-        self.permeability_type = PermeabilityType.FromData
-        self.mu_r_abs = self.material_database.get_material_attribute(
-            material_name=self.material,
-            attribute="initial_permeability"
-        )
 
         self.dc_conductivity = 0
         self.eps_r_abs = 0
@@ -428,32 +432,37 @@ class ImportedCoreMaterial:
         :param frequency: Frequency in Hz.
         :type frequency: float
         """
-        if self.permittivity["datasource"] == MaterialDataSource.Measurement:
-            epsilon_r, phi_epsilon_deg = self.material_database.get_permittivity(
-                temperature=self.temperature,
-                frequency=frequency,
-                material_name=self.material,
-                datasource=self.permittivity["datasource"],
-                measurement_setup=self.permittivity["measurement_setup"],
-                datatype=self.permittivity["datatype"]
-            )
+        # if self.permittivity["datasource"] == MaterialDataSource.Measurement:
+        #     epsilon_r, phi_epsilon_deg = self.material_database.get_permittivity(
+        #         temperature=self.temperature,
+        #         frequency=frequency,
+        #         material=self.material,
+        #         datasource=self.permittivity["datasource"],
+        #         measurement_setup=self.permittivity["measurement_setup"],
+        #         datatype=self.permittivity["datatype"]
+        #     )
+        #
+        #     self.complex_permittivity = epsilon_0 * epsilon_r * complex(
+        #         np.cos(np.deg2rad(phi_epsilon_deg)),
+        #         -np.sin(np.deg2rad(phi_epsilon_deg))
+        #     )
+        #
+        #     self.dc_conductivity = 0
+        #
+        # elif self.permittivity["datasource"] == MaterialDataSource.ManufacturerDatasheet:
+        #     self.dc_conductivity = 1 / self.material_database.get_material_attribute(
+        #         material=self.material,
+        #         attribute="resistivity"
+        #     )
+        print("upadate the permittivity")
 
-            self.complex_permittivity = epsilon_0 * epsilon_r * complex(
-                np.cos(np.deg2rad(phi_epsilon_deg)),
-                -np.sin(np.deg2rad(phi_epsilon_deg))
-            )
-
-            self.dc_conductivity = 0
-            
-        elif self.permittivity["datasource"] == MaterialDataSource.ManufacturerDatasheet:
-            self.dc_conductivity = 1 / self.material_database.get_material_attribute(
-                material_name=self.material,
-                attribute="resistivity"
-            )
-
-    def update_core_material_pro_file(self, frequency: int, folder: str, plot_interpolation: bool = False) -> None:
+    def update_core_material_pro_file(self, frequency: int,
+                                      folder: str,
+                                      b_ref_vec: npt.NDArray[np.float64] = np.linspace(0, 0.4, 100),
+                                      plot_interpolation: bool = False) -> None:
         """Export permeability data to a .pro file for solver compatibility.
 
+        :param b_ref_vec:
         :param frequency: Operating frequency in Hz.
         :type frequency: int
         :param folder: Directory path where the .pro file will be saved.
@@ -461,16 +470,17 @@ class ImportedCoreMaterial:
         :param plot_interpolation: If True, plots interpolation of data.
         :type plot_interpolation: bool
         """
-        self.material_database.permeability_data_to_pro_file(
-            temperature=self.temperature,
-            frequency=frequency,
-            material_name=self.material,
-            datasource=self.permeability["datasource"],
-            datatype=self.permeability["datatype"],
-            measurement_setup=self.permeability["measurement_setup"],
-            parent_directory=folder,
-            plot_interpolation=plot_interpolation
-        )
+        mu_r_real_vec, mu_r_imag_vec = mdb.fit_material_permeability_and_losses(pv_fit_function=self.permeability.loss_fit_function,
+                                                                                params_pv=self.permeability.params_pv,
+                                                                                mu_a_fit_function=self.permeability.mu_a_fit_function,
+                                                                                params_mu_abs=self.permeability.params_mu_abs,
+                                                                                f_op=frequency,
+                                                                                T_op=self.temperature,
+                                                                                b_vals=b_ref_vec)
+        write_permeability_pro_file(parent_directory=folder,
+                                    b_ref_vec=np.array(b_ref_vec).tolist(),
+                                    mu_r_real_vec=np.array(mu_r_real_vec).tolist(),
+                                    mu_r_imag_vec=np.array(mu_r_imag_vec).tolist())
 
     def to_dict(self) -> Dict[str, Any]:
         """Return a dictionary representation of the core material.
@@ -482,15 +492,15 @@ class ImportedCoreMaterial:
         """
         return {
             "material_model_type": self.model_type,
-            "loss_approach": self.loss_approach.name,
+            "loss_approach": self.magnetic_loss_approach.name,
             "material": self.material,
             "temperature": self.temperature,
-            "permeability_datasource": self.permeability["datasource"],
-            "permeability_measurement_setup": self.permeability["measurement_setup"],
-            "permeability_datatype": self.permeability["datatype"],
-            "permittivity_datasource": self.permittivity["datasource"],
+            "permeability_datasource": self.permeability_datasource,
+            "permeability_measurement_setup": self.permeability.measurement_setup,
+            "permeability_datatype": MeasurementDataType.ComplexPermeability,
+            "permittivity_datasource": self.permittivity_datasource,
             "permittivity_measurement_setup": self.permittivity["measurement_setup"],
-            "permittivity_datatype": self.permittivity["datatype"]
+            "permittivity_datatype": MeasurementDataType.ComplexPermittivity
         }
 
 
@@ -504,7 +514,7 @@ class Core:
     """
 
     def __init__(self,
-                 material: ImportedCoreMaterial | LinearCoreMaterial,
+                 material: ImportedComplexCoreMaterial | LinearComplexCoreMaterial,
                  core_type: CoreType = CoreType.Single,
                  core_dimensions: Optional[object] = None,
                  detailed_core_model: bool = False):
@@ -534,7 +544,7 @@ class Core:
         """
         self.material.update_permittivity(frequency)
 
-    def update_core_material_pro_file(self, frequency: int, folder: str, plot_interpolation: bool = False) -> None:
+    def update_core_material_pro_file(self, plot_interpolation: bool = False) -> None:
         """Generate or update permeability profile files used by the solver.
 
         :param frequency: Frequency for profile generation in Hz.
@@ -544,7 +554,9 @@ class Core:
         :param plot_interpolation: Whether to plot interpolation used for file generation.
         :type plot_interpolation: bool
         """
-        self.material.update_core_material_pro_file(frequency, folder, plot_interpolation)
+        self.core.material.update_core_material_pro_file(frequency=self.frequency,
+                                                         folder=self.file_data.electro_magnetic_folder_path,
+                                                         plot_interpolation=plot_interpolation)
 
     def to_dict(self) -> Dict[str, Union[str, float, bool]]:
         """Return combined dictionary of core geometry and material properties.
