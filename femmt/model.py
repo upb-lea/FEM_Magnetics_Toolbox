@@ -470,10 +470,10 @@ class ImportedComplexCoreMaterial:
         :param plot_interpolation: If True, plots interpolation of data.
         :type plot_interpolation: bool
         """
-        mu_r_real_vec, mu_r_imag_vec = mdb.fit_material_permeability_and_losses(pv_fit_function=self.permeability.loss_fit_function,
+        mu_r_real_vec, mu_r_imag_vec = mdb.fit_material_permeability_and_losses(pv_fit_function=self.permeability.pv_fit_function,
                                                                                 params_pv=self.permeability.params_pv,
                                                                                 mu_a_fit_function=self.permeability.mu_a_fit_function,
-                                                                                params_mu_abs=self.permeability.params_mu_abs,
+                                                                                params_mu_abs=self.permeability.params_mu_a,
                                                                                 f_op=frequency,
                                                                                 T_op=self.temperature,
                                                                                 b_vals=b_ref_vec)
