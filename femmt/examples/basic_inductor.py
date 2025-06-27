@@ -109,7 +109,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     if onelab_folder is not None:
         geo.file_data.onelab_folder_path = onelab_folder
 
-    inductor_frequency = 1_200_000
+    inductor_frequency = 270_000
 
     # 2. set core parameters
     core_db = fmt.core_database()["PQ 40/40"]
@@ -182,4 +182,4 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
 
 
 if __name__ == "__main__":
-    basic_example_inductor(show_visual_outputs=False)
+    basic_example_inductor(show_visual_outputs=True)

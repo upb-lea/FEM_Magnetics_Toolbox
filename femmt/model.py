@@ -396,12 +396,11 @@ class ImportedComplexCoreMaterial:
         self.permeability_datasource = permeability_datasource  # FEMMT distinguishes MaterialDataSource(s) (MDB not)
 
         # ComplexPermeability class which is imported from the material database
-        self.permeability = self.database.get_complex_permeability(material=material, measurement_setup=permeability_measurement_setup)
-        self.permeability.fit_losses(mdb.FitFunction.enhancedSteinmetz)
-        if self.permeability.measurement_setup == MeasurementSetup.TDK_MDT:
-            self.permeability.fit_permeability_magnitude(mdb.FitFunction.mu_abs_Tb)
-        else:
-            self.permeability.fit_permeability_magnitude(mdb.FitFunction.mu_abs_fTb)
+        self.permeability = self.database.get_complex_permeability(material=material,
+                                                                   measurement_setup=permeability_measurement_setup,
+                                                                   pv_fit_function=mdb.FitFunction.enhancedSteinmetz)
+        self.permeability.fit_losses()
+        self.permeability.fit_permeability_magnitude()
 
         # (constant and lossless) initial permeability is used for reluctance calculations
         self.mu_r_abs = self.database.get_material_attribute(
@@ -458,7 +457,7 @@ class ImportedComplexCoreMaterial:
 
     def update_core_material_pro_file(self, frequency: int,
                                       folder: str,
-                                      b_ref_vec: npt.NDArray[np.float64] = np.linspace(0, 0.4, 100),
+                                      b_ref_vec: npt.NDArray[np.float64] = np.linspace(0, 0.3, 100),
                                       plot_interpolation: bool = False) -> None:
         """Export permeability data to a .pro file for solver compatibility.
 
@@ -470,13 +469,12 @@ class ImportedComplexCoreMaterial:
         :param plot_interpolation: If True, plots interpolation of data.
         :type plot_interpolation: bool
         """
-        mu_r_real_vec, mu_r_imag_vec = mdb.fit_material_permeability_and_losses(pv_fit_function=self.permeability.pv_fit_function,
-                                                                                params_pv=self.permeability.params_pv,
-                                                                                mu_a_fit_function=self.permeability.mu_a_fit_function,
-                                                                                params_mu_abs=self.permeability.params_mu_a,
-                                                                                f_op=frequency,
-                                                                                T_op=self.temperature,
-                                                                                b_vals=b_ref_vec)
+        mu_r_real_vec, mu_r_imag_vec = self.permeability.fit_real_and_imaginary_part_at_f_and_T(
+            f_op=frequency,
+            T_op=self.temperature,
+            b_vals=b_ref_vec
+        )
+
         write_permeability_pro_file(parent_directory=folder,
                                     b_ref_vec=np.array(b_ref_vec).tolist(),
                                     mu_r_real_vec=np.array(mu_r_real_vec).tolist(),
