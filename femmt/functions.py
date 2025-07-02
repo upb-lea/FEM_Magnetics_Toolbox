@@ -2210,14 +2210,15 @@ def close_excel_file_if_open(filepath):
     except Exception as e:
         print(f"Unable to close Excel. Error: {e}")
 
-def json_to_excel(json_file_path, output_excel_path):
+def json_to_excel(json_file_path: str, output_excel_path: str) -> None:
     """
     Extract data from the electrostatic simulation and write it into a log file.
 
-    :param json_file_path: file path in .json form to compare.
-    :type json_file_path: str.
-    :param output_excel_path: where you save the .xlsx file.
-    :type output_excel_path: str.
+    :param json_file_path: Path to the JSON input file containing simulation results.
+    :type json_file_path: str
+    :param output_excel_path: Path where the Excel (.xlsx) file will be saved.
+    :type output_excel_path: str
+    :rtype: None
     """
     # Trying to close the Excel file if it's open
     close_excel_file_if_open(output_excel_path)
@@ -2313,7 +2314,7 @@ def json_to_excel(json_file_path, output_excel_path):
             worksheet = writer.sheets['Turns_Core']
             worksheet.set_column('A:C', 30)
 
-def compare_excel_files(femmt_excel_path, femm_excel_path, comparison_output_path):
+def compare_excel_files(femmt_excel_path: str, femm_excel_path: str, comparison_output_path: str) -> None:
     """
     Compare two Excel files (FEMMT and FEMM) and generate a new Excel file with comparison results.
 
@@ -2369,232 +2370,6 @@ def compare_excel_files(femmt_excel_path, femm_excel_path, comparison_output_pat
                 comparison_df.to_excel(writer, sheet_name=f"{sheet_name}_Comparison", index=False)
                 worksheet = writer.sheets[f"{sheet_name}_Comparison"]
                 worksheet.set_column('A:Z', 35)
-
-def load_voltage_and_calculate_magnitude(file_path: str):
-    """
-    Load the voltage values from the given file, calculate the magnitude for each complex voltage value.
-
-    :param file_path: Path to the voltage result file.
-    :type file_path: str
-    :return: List of voltage magnitudes for each turn.
-    :rtype: list
-    """
-    magnitudes = []
-
-    with open(file_path, 'r') as file:
-        for line in file:
-            if line.startswith("# U on"):
-                # Skip the line with labels
-                continue
-
-            # Split the line and ignore the first zero value
-            values = line.split()[1:]
-
-            # Separate real and imaginary parts
-            real_parts = values[0::2]
-            imag_parts = values[1::2]
-
-            # Convert real and imaginary parts to float and calculate magnitudes
-            for real, imag in zip(real_parts, imag_parts):
-                real = float(real)
-                imag = float(imag)
-                magnitude = np.sqrt(real**2 + imag**2)
-                magnitudes.append(magnitude)
-
-    return magnitudes
-
-def load_voltage_winding_and_calculate_magnitude(file_path: str):
-    """
-    Load the voltage values from the given file, calculate magnitude for each winding.
-
-    :param file_path: Path to the voltage result file.
-    :type file_path: str
-    :return: Average voltage magnitude for the winding.
-    :rtype: float
-    """
-    total_real = 0.0
-    total_imag = 0.0
-    count = 0
-
-    with open(file_path, 'r') as file:
-        for line in file:
-            if line.startswith("# U on"):
-                # Skip the line with labels
-                continue
-
-            # Split the line and ignore the first zero value
-            values = line.split()[1:]
-
-            # Separate real and imaginary parts
-            real_parts = values[0::2]
-            imag_parts = values[1::2]
-
-            # Convert real and imaginary parts to float and sum them
-            for real, imag in zip(real_parts, imag_parts):
-                total_real += float(real)
-                total_imag += float(imag)
-                count += 1
-
-    # Calculate magnitude
-    magnitude = np.sqrt(total_real**2 + total_imag**2)
-
-    return magnitude
-
-def load_charges_and_sum_them(file_path: str):
-    """
-        Load the voltage values from the given file, calculate magnitude for each winding.
-
-        :param file_path: Path to the voltage result file.
-        :type file_path: str
-        :return: Average voltage magnitude for the winding.
-        :rtype: float
-    """
-    total_charge = 0.0
-
-    with open(file_path, 'r') as file:
-        for line in file:
-            if line.startswith("# Q on"):
-                # Skip the line with labels
-                continue
-
-            # Split the line and ignore the first zero value
-            values = line.split()[1:]
-
-            # Convert real and imaginary parts to float and sum them
-            for value in values:
-                total_charge += float(value)
-
-    return total_charge
-
-
-def load_charges_and_sum(file_path: str):
-    """
-    Load the charges values from the given file, sum them for each winding.
-    It is needed as the total charges can not be printed for the whole winding from pro files.
-
-
-    :param file_path: Path to the charge result file.
-    :type file_path: str
-    :return: charges for the winding.
-    :rtype: float
-    """
-
-    total_charge = 0.0
-
-    with open(file_path, 'r') as file:
-        for line_index, line in enumerate(file, start=1):
-            if line.startswith("# Q on"):
-                # Skip the header line
-                continue
-
-            # Only process every third line starting from line 3
-            if (line_index - 3) % 3 == 0:
-                # Split the line and ignore the first zero value
-                values = line.split()[1:]
-
-                # Sum up all the charges on this line
-                for value in values:
-                    total_charge += float(value)
-
-    return total_charge
-
-def calculate_self_capacitances(capacitance_matrix_nodes):
-    """
-    Calculate the self-capacitances (C_AA, C_BB, etc.) after all simulations are run.
-    """
-    for i, node in enumerate(["A", "B", "C", "D", "E"]):
-        node_key = f"C_{node}{node}"
-        if node == "E":
-            capacitance_matrix_nodes[node_key] = sum(
-                capacitance_matrix_nodes.get(f"C_{node}{other_node}", [0])[-1]
-                for other_node in ["A", "B", "C", "D"]
-            )
-        else:
-            capacitance_matrix_nodes[node_key] = sum(
-                capacitance_matrix_nodes.get(f"C_{node}{other_node}", [0])[-1]
-                for other_node in ["A", "B", "C", "D", "E"] if other_node != node
-            )
-
-def display_capacitance_matrix(capacitance_matrix):
-    # Extract nodes and sort them
-    nodes = sorted(set([key[2] for key in capacitance_matrix.keys()]))  # Extract node labels (A, B, C, D, E)
-    node_indices = {node: index for index, node in enumerate(nodes)}
-
-    # Initialize a matrix with zeros
-    n = len(nodes)
-    matrix = np.zeros((n, n))
-
-    # Fill the matrix using capacitance values
-    for key, value in capacitance_matrix.items():
-        node1, node2 = key[2], key[3]
-        i, j = node_indices[node1], node_indices[node2]
-        matrix[i, j] = value
-
-    # Print matrix in the formatted style
-    print("Capacitance Matrix:")
-    for row in matrix:
-        print(" ".join([f"{elem:.5e}" for elem in row]))
-
-
-def print_capacitance_matrix_from_log(capacitance_log_path):
-    """
-    Display capacitance matrices for all windings from the given log file.
-    """
-    # Load the capacitance log file
-    with open(capacitance_log_path, "r", encoding='utf-8') as infile:
-        log_dict = json.load(infile)
-
-    for winding_key, winding_data in log_dict["electrostatic"].items():
-        # Find the winding capacitance matrix in the log
-        matrix_key = f"Capacitance_matrix_Turns_of_{winding_key.lower()}"
-        if matrix_key in winding_data:
-            winding_matrix = winding_data[matrix_key]
-            # Extract turn numbers and determine the matrix size
-            all_turns = set()
-
-            # Extract turns from self capacitance and mutual capacitance
-            for cap_key in winding_matrix["self_capacitance"].keys():
-                if "Core" not in cap_key:  # Exclude capacitance to core
-                    turn_index = int(cap_key[1])  # Get the turn index (always a single digit here)
-                    all_turns.add(turn_index)
-
-            for cap_key in winding_matrix["mutual_capacitance"].keys():
-                turn_indices = cap_key[1:]  # Extract turn indices (e.g., '12' -> '1' and '2')
-                turn1_index = int(turn_indices[0])
-                turn2_index = int(turn_indices[1])
-                all_turns.update([turn1_index, turn2_index])
-
-            # Sort the turns and determine the size of the matrix
-            turns = sorted(list(all_turns))
-            n = len(turns)
-
-            # Initialize capacitance matrix with NaN to represent missing values
-            capacitance_matrix = np.full((n, n), np.nan)
-
-            # Fill the self-capacitance values
-            for cap_name, value in winding_matrix["self_capacitance"].items():
-                if value not in [float('inf'), float('-inf'), 0]:
-                    turn_index = int(cap_name[1]) - 1  # Convert 1-based index to 0-based
-                    if turn_index < n:  # Avoid index out of bounds
-                        capacitance_matrix[turn_index, turn_index] = value
-
-            # Fill the mutual capacitance values
-            for cap_name, value in winding_matrix["mutual_capacitance"].items():
-                if value not in [float('inf'), float('-inf'), 0]:
-                    turn1_index = int(cap_name[1]) - 1  # Convert to 0-based index
-                    turn2_index = int(cap_name[2]) - 1  # Convert to 0-based index
-                    if turn1_index < n and turn2_index < n:  # Avoid index out of bounds
-                        capacitance_matrix[turn1_index, turn2_index] = value
-                        capacitance_matrix[turn2_index, turn1_index] = value  # Symmetric
-
-            # Print the capacitance matrix in the desired format
-            print(f"\nCapacitance Matrix of turns of {winding_key}:")
-            for i in range(n):
-                row_values = [
-                    f"{capacitance_matrix[i][j]:.5e}" if not np.isnan(capacitance_matrix[i][j]) else "N/A" for j in range(n)
-                ]
-                print(" ".join(row_values))
-
 
 if __name__ == '__main__':
     pass

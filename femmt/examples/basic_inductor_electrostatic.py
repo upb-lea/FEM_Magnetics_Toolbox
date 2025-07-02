@@ -113,11 +113,11 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
         V_A - (V_A - V_B) * i / (num_turns_w1 - 1)
         for i in range(num_turns_w1)
     ]
-    geo.electrostatic_simulation(voltage=[voltages_winding_1], ground_outer_boundary=False, core_voltage=0,
-                                 show_fem_simulation_results=show_visual_outputs, save_to_excel=False)
+    geo.electrostatic_simulation(voltage=[voltages_winding_1], ground_outer_boundary=True, core_voltage=0,
+                                 show_fem_simulation_results=show_visual_outputs, save_to_excel_file=False)
     # Run simulation in FEMM
     # geo.femm_reference_electrostatic(voltages=[voltages_winding_1], ground_core=True, ground_outer_boundary=True,
-    #                                  non_visualize=0, save_to_excel=False, compare_excel_files_to_femmt=False, mesh_size_conductor=0.0)
+    #                                  non_visualize=0, save_to_excel_file=False, compare_femmt_to_femm=False, mesh_size_conductor=0.0)
 
 
 if __name__ == "__main__":

@@ -1023,29 +1023,26 @@ class TwoDaxiSymmetric:
 
                                             i += 1
 
-                                        # Insert Kapton insulation after each layer
-                                        # self.insert_kapton_layer_vertical(x + winding.conductor_radius + self.insulation.cond_cond[num][num] , top_bound, bot_bound, left_bound, right_bound)
-                                        # self.insert_kapton_layer_vertical(x_l, top_bound,
-                                        #                                   bot_bound, left_bound, right_bound)
+                                        # Insert insulation after each layer
                                         mesh_to_conductor = min(self.mesh_data.c_conductor)
                                         if rightward_movement:
-                                            kapton_points = [
+                                            layer_insulation_points = [
                                                 [x_l + insulation_delta, top_bound, 0, mesh_to_conductor],
                                                 [x_l + self.insulation.thickness_of_insulation - insulation_delta, top_bound, 0, mesh_to_conductor],
                                                 [x_l + self.insulation.thickness_of_insulation - insulation_delta, bot_bound, 0, mesh_to_conductor],
                                                 [x_l + insulation_delta, bot_bound, 0, mesh_to_conductor]
                                             ]
                                         else:
-                                            kapton_points = [
+                                            layer_insulation_points = [
                                                 [x_l - insulation_delta, top_bound, 0, mesh_to_conductor],
                                                 [x_l - self.insulation.thickness_of_insulation + insulation_delta, top_bound, 0, mesh_to_conductor],
                                                 [x_l - self.insulation.thickness_of_insulation + insulation_delta, bot_bound, 0, mesh_to_conductor],
                                                 [x_l - insulation_delta, bot_bound, 0, mesh_to_conductor]
                                             ]
-                                        # Add the points to the Kapton insulation data structure
+                                        # Add the points to the layer insulation data structure
                                         #if self.insulation.thickness_of_insulation > 0 :
                                         if self.insulation.draw_insulation_between_layers:
-                                            self.p_iso_layer.append(kapton_points)
+                                            self.p_iso_layer.append(layer_insulation_points)
                                         if not zigzag:
                                             # Start the next column with the same starting point (consistent direction)
                                             y = start_y
@@ -1101,25 +1098,24 @@ class TwoDaxiSymmetric:
                                                 else:
                                                     x += step_x - winding_insulation
                                             i += 1
-                                        # Insert Kapton insulation after each layer
-                                        # self.insert_kapton_layer_horizontal(y, left_bound, right_bound)
+                                        # Insert layer insulation after each layer
                                         if upward_movement:
-                                            kapton_points = [
+                                            layer_insulation_points = [
                                                 [left_bound, y_l + insulation_delta, 0, self.mesh_data.c_window],
                                                 [left_bound, y_l + self.insulation.thickness_of_insulation - insulation_delta, 0, self.mesh_data.c_window],
                                                 [right_bound, y_l + self.insulation.thickness_of_insulation - insulation_delta, 0, self.mesh_data.c_window],
                                                 [right_bound, y_l + insulation_delta, 0, self.mesh_data.c_window]
                                             ]
                                         else:
-                                            kapton_points = [
+                                            layer_insulation_points = [
                                                 [left_bound, y_l - insulation_delta, 0, self.mesh_data.c_window],
                                                 [left_bound, y_l - self.insulation.thickness_of_insulation + insulation_delta, 0, self.mesh_data.c_window],
                                                 [right_bound, y_l - self.insulation.thickness_of_insulation + insulation_delta, 0, self.mesh_data.c_window],
                                                 [right_bound, y_l - insulation_delta, 0, self.mesh_data.c_window]
                                             ]
-                                        # Add the points to the Kapton insulation data structure
+                                        # Add the points to the layer insulation data structure
                                         if self.insulation.draw_insulation_between_layers:
-                                            self.p_iso_layer.append(kapton_points)
+                                            self.p_iso_layer.append(layer_insulation_points)
                                         if not zigzag:
                                             # Start the next raw with the same starting point (consistent direction)
                                             x = start_x
@@ -1232,14 +1228,14 @@ class TwoDaxiSymmetric:
                                             else:
                                                 y += winding.conductor_radius * 2 + 2 * self.insulation.cond_cond[num][num] + winding_insulation
                                             # from bottom to top
-                                        kapton_points = [
+                                        layer_insulation_points = [
                                             [start_x_layer + insulation_delta, top_bound, 0, mesh_to_conductor],
                                             [start_x_layer + self.insulation.thickness_of_insulation - insulation_delta, top_bound, 0, mesh_to_conductor],
                                             [start_x_layer + self.insulation.thickness_of_insulation - insulation_delta, bot_bound, 0, mesh_to_conductor],
                                             [start_x_layer + insulation_delta, bot_bound, 0, mesh_to_conductor]
                                         ]
                                         if self.insulation.draw_insulation_between_layers:
-                                            self.p_iso_layer.append(kapton_points)
+                                            self.p_iso_layer.append(layer_insulation_points)
                                         x += 2 * np.cos(np.pi / 6) * (winding.conductor_radius + self.insulation.turn_ins[num][num] / 2 + self.insulation.thickness_of_insulation)
                                         # x += np.cos(np.pi / 6) * (2 * winding.conductor_radius + 2 * self.insulation.cond_cond[num][num]) + self.insulation.thickness_of_insulation
                                         start_x_layer += step_x_layer
@@ -1317,15 +1313,15 @@ class TwoDaxiSymmetric:
                                             else:
                                                 x += winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num][num] + winding_insulation
 
-                                        # Insert Kapton insulation after each layer
-                                        kapton_points = [
+                                        # Insert layer insulation after each layer
+                                        layer_insulation_points = [
                                             [left_bound, start_y_layer + insulation_delta, 0, mesh_to_conductor],
                                             [left_bound, start_y_layer + self.insulation.thickness_of_insulation - insulation_delta, 0, mesh_to_conductor],
                                             [right_bound, start_y_layer + self.insulation.thickness_of_insulation - insulation_delta, 0, mesh_to_conductor],
                                             [right_bound, start_y_layer + insulation_delta, 0, mesh_to_conductor]
                                         ]
                                         if self.insulation.draw_insulation_between_layers:
-                                            self.p_iso_layer.append(kapton_points)
+                                            self.p_iso_layer.append(layer_insulation_points)
 
                                         y += 2 * np.cos(np.pi / 6) * (winding.conductor_radius + self.insulation.turn_ins[num][num] / 2 + self.insulation.thickness_of_insulation)
                                         start_y_layer += step_y_layer
@@ -1948,52 +1944,6 @@ class TwoDaxiSymmetric:
                     # TODO Own handler for warnings?
                     print("No insulations for winding type {vww.winding_type.name}")
             """
-
-    def insert_kapton_layer_vertical(self, x_position, top_bound, bot_bound, left_bound, right_bound):
-        """
-        Insert a vertical Kapton insulation layer between layers.
-
-        :param x_position: x-coordinate where the Kapton layer is centered.
-        :param top_bound: The top boundary of the window.
-        :param bot_bound: The bottom boundary of the window.
-        """
-        kapton_thickness = self.insulation.thickness_of_insulation  # Thickness of the Kapton insulation
-        # define a delta insulation
-        insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
-        mesh_density_to_winding = min(self.mesh_data.c_conductor)
-
-        # self.p_iso_layer= []
-        # Define points for the vertical Kapton insulation rectangle
-        kapton_points = [
-            [x_position + insulation_delta, top_bound, 0, self.mesh_data.c_window],
-            [x_position + kapton_thickness - insulation_delta, top_bound, 0, self.mesh_data.c_window],
-            [x_position + kapton_thickness - insulation_delta, bot_bound, 0, self.mesh_data.c_window],
-            [x_position + insulation_delta , bot_bound, 0, self.mesh_data.c_window]
-        ]
-
-        # Add the points to the Kapton insulation data structure
-        self.p_iso_layer.append(kapton_points)
-
-    def insert_kapton_layer_horizontal(self, y_position, left_bound, right_bound):
-        """
-        Insert a horizontal Kapton insulation layer between layers.
-
-        :param x_position: x-coordinate where the Kapton layer is centered.
-        :param left_bound: The left boundary of the window.
-        :param right_bound: The right boundary of the window.
-        """
-        kapton_thickness = self.insulation.thickness_of_insulation  # Thickness of the Kapton insulation
-
-        # Define points for the vertical Kapton insulation rectangle
-        kapton_points = [
-            [left_bound, y_position - kapton_thickness / 2, 0, self.mesh_data.c_window],
-            [left_bound, y_position + kapton_thickness / 2, 0, self.mesh_data.c_window],
-            [right_bound, y_position + kapton_thickness / 2, 0, self.mesh_data.c_window],
-            [right_bound, y_position - kapton_thickness / 2, 0, self.mesh_data.c_window]
-        ]
-
-        # Add the points to the Kapton insulation data structure
-        self.p_iso_layer.append(kapton_points)
 
     def draw_insulation_conductor(self):
         """

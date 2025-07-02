@@ -87,11 +87,11 @@ def basic_example_inductor_foil_vertical_electrostatic(onelab_folder: str = None
     # 8. run electrostatic simulation
 
     geo.electrostatic_simulation(voltage=[[1, 0.5, 0]], ground_outer_boundary=False, core_voltage=0,
-                                 show_fem_simulation_results=show_visual_outputs, save_to_excel=False)
+                                 show_fem_simulation_results=show_visual_outputs, save_to_excel_file=False)
     # Call the electrostatic FEMM simulation function
     # voltages = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]
     # geo.femm_reference_electrostatic(voltages=[[5, 0]], ground_core=True, ground_outer_boundary=False,
-    #                                  non_visualize=0, save_to_excel=True, compare_excel_files_to_femmt=True, mesh_size_conductor=0.0)
+    #                                  non_visualize=0, save_to_excel_file=True, compare_femmt_to_femm=True, mesh_size_conductor=0.0)
 
 
 if __name__ == "__main__":

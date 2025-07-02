@@ -666,7 +666,7 @@ class Insulation:
 
     In general, it is not necessary to add an insulation object at all when no insulation is needed.
     """
-
+    conductor_type: ConductorType # it is needed here tempoarily
     cond_cond: list[list[float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
     core_cond: list[float]  # list with size 4x1, with respectively isolation of cond_n -> [top_core, bot_core, left_core, right_core]
     turn_ins: list[float]   # list of turn insulation of every winding -> [turn_ins_of_winding_1, turn_ins_of_winding_2, ...]
@@ -677,7 +677,6 @@ class Insulation:
     bobbin_dimensions: None
     thickness_of_insulation: float
     consistent_ins: bool = True
-    add_kapton_material: bool = True
     draw_insulation_between_layers: bool = True
     flag_insulation: bool = True
     add_turn_insulations: bool = True
@@ -762,7 +761,7 @@ class Insulation:
         """
         Add an insulation (thickness_of_insulation or tape insulation) between layers.
 
-        :param add_insulation_material: show the drawing of the insulation between the layers of turns. If false, it is now drawn and it is an air by default
+        :param add_insulation_material: show the drawing of the insulation between the layers of turns. If false, it is not drawn and it is an air by default
         :type add_insulation_material: bool
         :param thickness: the thickness of the insulation between the layers of turns
         :type thickness: float

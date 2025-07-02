@@ -233,11 +233,11 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     # voltages_winding_1 = [1] * num_turns_w1
     # voltages_winding_2 = [2] * num_turns_w2
 
-    geo.electrostatic_simulation( voltage=[voltages_winding_1, voltages_winding_2], core_voltage=0, ground_outer_boundary=False,
-                                 show_fem_simulation_results=show_visual_outputs, save_to_excel=False)
+    geo.electrostatic_simulation(voltage=[voltages_winding_1, voltages_winding_2], core_voltage=0, ground_outer_boundary=False,
+                                 show_fem_simulation_results=show_visual_outputs, save_to_excel_file=False)
     # geo.get_total_charges()
-    # geo.femm_reference_electrostatic(voltages=[voltages_winding_1, voltages_winding_2], ground_core=True, ground_outer_boundary=True, non_visualize=0, save_to_excel=False,
-    #                                  compare_excel_files_to_femmt=False)
+    # geo.femm_reference_electrostatic(voltages=[voltages_winding_1, voltages_winding_2], ground_core=True, ground_outer_boundary=True, non_visualize=0, save_to_excel_file=False,
+    #                                  compare_femmt_to_femm=False)
 
 if __name__ == "__main__":
     basic_example_transformer_electrostatic(show_visual_outputs=True)

@@ -22,7 +22,7 @@ import femmt.examples.basic_transformer_6_windings
 import femmt.examples.experimental_inductor_time_domain
 import femmt.examples.experimental_transformer_time_domain
 import femmt.examples.experimental_transformer_three_winding_time_domain
-import femmt.examples.basic_inducotr_electrostatic
+import femmt.examples.basic_inductor_electrostatic
 import femmt.examples.basic_transformer_electrostatic
 import femmt.examples.advanced_inductor_air_gap_sweep
 import femmt.examples.component_study.transformer_component_study
@@ -2098,7 +2098,7 @@ def fixture_inductor_electrostatic(temp_folder: pytest.fixture):
             for i in range(num_turns_w1)
         ]
         geo.electrostatic_simulation(voltage=[voltages_winding_1], ground_outer_boundary=False, core_voltage=0,
-                                     show_fem_simulation_results=False, save_to_excel=False)
+                                     show_fem_simulation_results=False, save_to_excel_file=False)
 
     except Exception as e:
         print("An error occurred while creating the femmt mesh files:", e)
@@ -2211,7 +2211,7 @@ def fixture_transformer_electrostatic(temp_folder: pytest.fixture):
         voltages_winding_2 = [1] * num_turns_w2
 
         geo.electrostatic_simulation(voltage=[voltages_winding_1, voltages_winding_2], core_voltage=0, ground_outer_boundary=False,
-                                    show_fem_simulation_results=False, save_to_excel=False)
+                                     show_fem_simulation_results=False, save_to_excel_file=False)
 
     except Exception as e:
         print("An error occurred while creating the femmt mesh files:", e)
@@ -2992,7 +2992,7 @@ def test_basic_inductor_electrostatic(temp_folder: pytest.fixture):
     :type temp_folder: pytest.fixture
     """
     temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_inducotr_electrostatic.basic_example_inductor_electrostatic(onelab_folder=onelab_folder,
+    femmt.examples.basic_inductor_electrostatic.basic_example_inductor_electrostatic(onelab_folder=onelab_folder,
                                                                                      show_visual_outputs=False,
                                                                                      is_test=True)
 
