@@ -666,7 +666,8 @@ class Insulation:
 
     In general, it is not necessary to add an insulation object at all when no insulation is needed.
     """
-    conductor_type: ConductorType # it is needed here tempoarily
+
+    conductor_type: ConductorType  # it is needed here tempoarily
     cond_cond: list[list[float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
     core_cond: list[float]  # list with size 4x1, with respectively isolation of cond_n -> [top_core, bot_core, left_core, right_core]
     turn_ins: list[float]   # list of turn insulation of every winding -> [turn_ins_of_winding_1, turn_ins_of_winding_2, ...]
@@ -682,7 +683,7 @@ class Insulation:
     add_turn_insulations: bool = True
     max_aspect_ratio: float
 
-    def __init__(self, max_aspect_ratio: float = 10, flag_insulation: bool = True, bobbin_dimensions = None):
+    def __init__(self, max_aspect_ratio: float = 10, flag_insulation: bool = True, bobbin_dimensions: None = None):
         """Create an insulation object.
 
         Sets an insulation_delta value. In order to simplify the drawing of the isolations between core and winding window the isolation rectangles
@@ -700,7 +701,6 @@ class Insulation:
             self.bobbin_window_w = bobbin_dimensions.bobbin_window_w
             self.bobbin_window_h = bobbin_dimensions.bobbin_window_h
             self.bobbin_h = bobbin_dimensions.bobbin_h
-
 
     def set_flag_insulation(self, flag: bool):  # to differentiate between the simulation with and without insulation
         """
@@ -753,9 +753,8 @@ class Insulation:
         if add_turn_insulations:
             self.turn_ins = insulation_thickness
         else:
-            #self.turn_ins = []
+            # self.turn_ins = []
             self.turn_ins = [0.0 for _ in insulation_thickness]
-
 
     def add_insulation_between_layers(self, add_insulation_material: bool = True, thickness: float = 0.0, dielectric_constant: float = None):
         """
@@ -1105,7 +1104,6 @@ class WindingWindow:
                 self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[1] + insulation_delta_top_bot
                 self.max_top_bound = core.window_h / 2 - insulations.core_cond[0] - insulation_delta_top_bot
                 self.max_left_bound = (core.core_inner_diameter / 2 + insulations.core_cond[2] + insulation_delta_left + 1.5e-5)
-                                       #+ 1.5e-3)
                 self.max_right_bound = core.r_inner - insulations.core_cond[3]
             else:
                 self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[1]

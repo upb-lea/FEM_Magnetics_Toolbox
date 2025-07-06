@@ -290,7 +290,7 @@ def bobbin_database() -> dict:
         "bobbin_h": 32.8e-3,
         "bobbin_inner_diameter": 15.9e-3,
         "bobbin_window_h": 20.7e-3,
-        "bobbin_window_w": (26.4 -15.9) / 2 * 1e-3
+        "bobbin_window_w": (26.4 - 15.9) / 2 * 1e-3
     }
     bobbin_dict["PQ 40/40"] = {
         "bobbin_h": 45.3e-3,
@@ -320,13 +320,13 @@ def bobbin_database() -> dict:
         "bobbin_inner_diameter": 44e-3,
         "bobbin_window_h": 62.3e-3,
         "bobbin_window_w": (91 - 44) / 2 * 1e-3,
-     }
+    }
     bobbin_dict["PM 50/39"] = {
         "bobbin_h": 33.8 * 1e-3,
         "bobbin_inner_diameter": 20.4e-3,
         "bobbin_window_h": 25.9e-3,
         "bobbin_window_w": (38.5 - 20.4) / 2 * 1e-3,
-     }
+    }
     bobbin_dict["PM 62/49"] = {
         "bobbin_h": 48 * 1e-3,
         "bobbin_inner_diameter": 25.7e-3,
@@ -349,7 +349,7 @@ def bobbin_database() -> dict:
 
 def insulation_materials_database() -> dict:
     """
-    Return insulation properties for different type of materials
+    Return insulation properties for different type of materials.
 
     :return: Dict including insulation parameters
     :rtype: dict
@@ -364,176 +364,122 @@ def insulation_materials_database() -> dict:
             "plastic_insulation": {
                 # PVC
                 # 1.a PVC (pure)
-                "Polyvinyl Chloride (PVC)": {"dielectric_constant": 4.0,
-                                                       "thermal_conductivity": None,
-                                                       "max_temperature": None},
-                # """Reference: Huang, J., Zhang, X., Liu, R., Ding, Y., & Guo, D. (2023). Polyvinyl chloride-based dielectric elastomer with high permittivity and
-                #     # low viscoelasticity for actuation and sensing. Nature communications, 14(1), 1483."""
+                "Polyvinyl Chloride (PVC)": {"dielectric_constant": 4.0, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: Huang, J., Zhang, X., Liu, R., Ding, Y., & Guo, D. (2023). Polyvinyl chloride-based dielectric elastomer with high permittivity
+                # and low viscoelasticity for actuation and sensing. Nature communications, 14(1), 1483."""
 
                 # 1.b Semi-Rigid PVC (SR-PVC). it is from 2.7 to 6.5
-                "Semi-Rigid PVC (SR-PVC)": {"dielectric_constant": 3.6,
-                                                       "thermal_conductivity": None,
-                                                       "max_temperature": None},
+                "Semi-Rigid PVC (SR-PVC)": {"dielectric_constant": 3.6, "thermal_conductivity": None, "max_temperature": None},
                 # 1.c Plenum Polyvinyl Chloride (Plenum PVC)
-                "Plenum Polyvinyl Chloride (Plenum PVC)": {"dielectric_constant": 3.5,
-                                                     "thermal_conductivity": None,
-                                                     "max_temperature": None},
-                #     """Reference: https://www.anixter.com/content/dam/Anixter/Guide/7H0011X0_W&C_Tech_Handbook_Sec_03.pdf"""
+                "Plenum Polyvinyl Chloride (Plenum PVC)": {"dielectric_constant": 3.5, "thermal_conductivity": None, "max_temperature": None},
+                #  """Reference: https://www.anixter.com/content/dam/Anixter/Guide/7H0011X0_W&C_Tech_Handbook_Sec_03.pdf"""
 
                 # 2. Polyethylene (PE): it ranges from 2.7 to 2.8 (30% glass fiber)
-                "Polyethylene (PE)": {"dielectric_constant": 2.7,
-                                                    "thermal_conductivity": None,
-                                                    "max_temperature": None},
+                "Polyethylene (PE)": {"dielectric_constant": 2.7, "thermal_conductivity": None, "max_temperature": None},
                 # """Reference: https://passive-components.eu/what-is-dielectric-constant-of-plastic-materials/"""
                 #     """Reference:
                 #      https://www.awcwire.com/customersupport/techinfo/insulation-materials#:~:text=Semi%2DRigid%20PVC%20(SR%2DPVC)%20is%20mainly%20used,
                 #      degrees%20Celsius%2C%20300%20volts)."""
 
                 # 3.Polypropylene (PP) 10-20 glass fiber 2.2 - 2.3
-                "Polypropylene (PP)": {"dielectric_constant": 2.3,
-                                               "thermal_conductivity": None,
-                                               "max_temperature": None},
+                "Polypropylene (PP)": {"dielectric_constant": 2.3, "thermal_conductivity": None, "max_temperature": None},
                 # """Reference:
                 #          https://www.awcwire.com/customersupport/techinfo/insulation-materials#:~:text=Semi%2DRigid%20PVC%20(SR%2DPVC)%20is%20mainly%20used,
                 #          degrees%20Celsius%2C%20300%20volts)."""
 
                 # 4.Polyurethane (PUR): the permittivity differs from 1.065 to 3.35 based on the density (kg/m^3). (need to be reviewed)
-                "Polyurethane (PUR)": {"dielectric_constant": 3.35,
-                                               "thermal_conductivity": None,
-                                               "max_temperature": None},
-                # """Reference: Beverte, I. (2025). Investigation of the Partial Permittivity of Rigid Polyurethane Foams by a Circular One-Side-Access Capacitive Sensor.
-                #      Polymers, 17(5), 602."""
-                #     """https://www.anixter.com/content/dam/Anixter/Guide/7H0011X0_W&C_Tech_Handbook_Sec_03.pdf"""
+                "Polyurethane (PUR)": {"dielectric_constant": 3.35, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: Beverte, I. (2025).
+                # Investigation of the Partial Permittivity of Rigid Polyurethane Foams by a Circular One-Side-Access Capacitive Sensor.
+                # Polymers, 17(5), 602."""
+                # """https://www.anixter.com/content/dam/Anixter/Guide/7H0011X0_W&C_Tech_Handbook_Sec_03.pdf"""
 
                 # 5. Chlorinated Polyethylene (CPE)
-                "Chlorinated Polyethylene (CPE)": {"dielectric_constant": 2.3,
-                                               "thermal_conductivity": None,
-                                               "max_temperature": None},
+                "Chlorinated Polyethylene (CPE)": {"dielectric_constant": 2.3, "thermal_conductivity": None, "max_temperature": None},
                 # """https://www.anixter.com/content/dam/Anixter/Guide/7H0011X0_W&C_Tech_Handbook_Sec_03.pdf"""
 
                 # 6. Nylon : 3.2 - 5
-                "Nylon": {"dielectric_constant": 5,
-                                       "thermal_conductivity": None,
-                                       "max_temperature": None},
-                #     """https://www.anixter.com/content/dam/Anixter/Guide/7H0011X0_W&C_Tech_Handbook_Sec_03.pdf"""
+                "Nylon": {"dielectric_constant": 5, "thermal_conductivity": None, "max_temperature": None},
+                # """https://www.anixter.com/content/dam/Anixter/Guide/7H0011X0_W&C_Tech_Handbook_Sec_03.pdf"""
             },
             # Rubber Materials
             "rubber_insulation": {
                 # 1. Thermoplastic Rubber (TPR) 3.30 - 5.10. It can be called Thermoplastic Elastomer (TPE)
-                "Thermoplastic Rubber(TPR)": {"dielectric_constant": 5.10,
-                                               "thermal_conductivity": None,
-                                               "max_temperature": None},
-                #     """Reference: https://www.matweb.com/search/datasheet.aspx?matguid=0619837e5f584a1f8c5e6f692952898a"""
+                "Thermoplastic Rubber(TPR)": {"dielectric_constant": 5.10, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: https://www.matweb.com/search/datasheet.aspx?matguid=0619837e5f584a1f8c5e6f692952898a"""
 
                 # 2. Neoprene (Polychloroprene): 4-6.7
-                "Neoprene (Polychloroprene)": {"dielectric_constant": 6.7,
-                                               "thermal_conductivity": None,
-                                               "max_temperature": None},
-                #     """Reference: https://hep.physics.illinois.edu/home/serrede/p435/lecture_notes/dielectric_constants.pdf"""
+                "Neoprene (Polychloroprene)": {"dielectric_constant": 6.7, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: https://hep.physics.illinois.edu/home/serrede/p435/lecture_notes/dielectric_constants.pdf"""
 
                 # 3. Styrene-Butadiene Rubber (SBR): 2.5 - 3
-                "Styrene-Butadiene Rubber (SBR)": {"dielectric_constant": 3.0,
-                                                   "thermal_conductivity": None,
-                                                   "max_temperature": None},
+                "Styrene-Butadiene Rubber (SBR)": {"dielectric_constant": 3.0, "thermal_conductivity": None, "max_temperature": None},
                 # """Reference: https://www.azom.com/properties.aspx?ArticleID=1844"""
 
                 # 4. Silicone: 2.9 - 4
-                "Silicone": {"dielectric_constant": 4.0,
-                               "loss_tangent": None,
-                               "thermal_conductivity": None,
-                               "max_temperature": None},
+                "Silicone": {"dielectric_constant": 4.0, "thermal_conductivity": None, "max_temperature": None},
                 # """Reference: https://en.wikipedia.org/wiki/Relative_permittivity"""
 
                 # 5. Fiberglass 3.0 - 4.0
-                "Fiberglass": {"dielectric_constant": 4.0,
-                                 "thermal_conductivity": None,
-                                 "max_temperature": None},
-                #     """Reference: https://passive-components.eu/what-is-dielectric-constant-of-plastic-materials/"""
+                "Fiberglass": {"dielectric_constant": 4.0, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: https://passive-components.eu/what-is-dielectric-constant-of-plastic-materials/"""
 
                 # 6. Ethylene Propylene Rubber (EPR): 2.4 and  can reach 4
-                "Ethylene Propylene Rubber (EPR)": {"dielectric_constant": 2.4,
-                                                   "thermal_conductivity": None,
-                                                   "max_temperature": None},
+                "Ethylene Propylene Rubber (EPR)": {"dielectric_constant": 2.4, "thermal_conductivity": None, "max_temperature": None},
                 # """Reference: https://passive-components.eu/what-is-dielectric-constant-of-plastic-materials/"""
 
                 # 7. Rubber ( refers to natural rubber and SBR compounds.)
                 # 7.a: natural rubber: 2.7 – 4.0 (low freq); 2.4–2.7 (GHz range)
-                "Natural Rubber": {"dielectric_constant": 2.7,
-                                        "loss_tangent": None,
-                                        "thermal_conductivity": None,
-                                        "max_temperature": None},
+                "Natural Rubber": {"dielectric_constant": 2.7, "thermal_conductivity": None, "max_temperature": None},
                 # """Reference: Al-Hartomy, O. A., Al-Ghamdi, A., Dishovsky, N., Shtarkova, R., Iliev, V., Mutlay, I., & El-Tantawy, F. (2012).
                 #    Dielectric and microwave properties of natural rubber based nanocomposites containing graphene."""
 
                 # 7.b: SBR: 2.5 to 3 (low freq); up to 6.6 (Ghz freq)
-                "Rubber (SBR)": {"dielectric_constant": 3,
-                                           "thermal_conductivity": None,
-                                           "max_temperature": None},
+                "Rubber (SBR)": {"dielectric_constant": 3, "thermal_conductivity": None, "max_temperature": None},
                 # """Reference: Gunasekaran,S.,Natarajan, R. K., Kala, A., & Jagannathan, R. (2008).
                 # Dielectric studies of some rubber materials at microwave frequencies."""
 
                 # 8. Chlorosulfonated Polyethylene (CSPE): Measured dielectric constant: 8-10
-                "Chlorosulfonated Polyethylene (CSPE)": {"dielectric_constant": 8.5,
-                                                            "thermal_conductivity": None,
-                                                            "max_temperature": None},
+                "Chlorosulfonated Polyethylene (CSPE)": {"dielectric_constant": 8.5, "thermal_conductivity": None, "max_temperature": None},
                 # """Reference: Ganguly, S., & Das, N. C. (2015). Chlorosulphonated polyethylene and its composites for electronic applications.
-                #  In Flexible and stretchable electronic composites (pp. 229-259). Cham: Springer International Publishing."""
-
-                # 9. Chlorosulfonated Polyethylene (CSPE): Measured dielectric constant: 8-10
-                "Chlorosulfonated Polyethylene (CSPE)": {"dielectric_constant": 8.5,
-                                                                 "thermal_conductivity": None,
-                                                                 "max_temperature": None},
-                # """Reference: Ganguly, S., & Das, N. C. (2015). Chlorosulphonated polyethylene and its composites for electronic applications.
-                #  In Flexible and stretchable electronic composites (pp. 229-259). Cham: Springer International Publishing."""
+                # In Flexible and stretchable electronic composites (pp. 229-259). Cham: Springer International Publishing."""
             },
             # Fluoropolymer Insulation Types
             "fluoropolymer_insulation": {
                 # 1. Perfluoroalkoxy (PFA):  dielectric constant: 2.06 to 2.10:
-                "Perfluoroalkoxy (PFA)": {"dielectric_constant": 2.06,
-                                         "thermal_conductivity": None,
-                                         "max_temperature": None},
+                "Perfluoroalkoxy (PFA)": {"dielectric_constant": 2.06, "thermal_conductivity": None, "max_temperature": None},
                 # """Reference: https://adtech.co.uk/application/files/1816/0500/0871/Adtech_PFA_General_Properties_2020.pdf"""
                 # """Reference: https://www.fluorotherm.com/technical-information/materials-overview/pfa-properties/"""
 
                 # 2. Polytetrafluoroethylene (PTFE):  dielectric constant: 2.12 to 2.01
-                "Polytetrafluoroethylene (PTFE)": {"dielectric_constant": 2.12,
-                                                         "thermal_conductivity": None,
-                                                         "max_temperature": None},
-                # """Reference: Li, L., Bowler, N., Kessler, M. R., & Yoon, S. H. (2010). Dielectric response of PTFE and ETFE wiring insulation to thermal exposure.
+                "Polytetrafluoroethylene (PTFE)": {"dielectric_constant": 2.12, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: Li, L., Bowler, N., Kessler, M. R., & Yoon, S. H. (2010).
+                #  Dielectric response of PTFE and ETFE wiring insulation to thermal exposure.
                 #  IEEE Transactions on Dielectrics and Electrical Insulation, 17(4), 1234-1241."""
 
                 # 3. Fluorinated Ethylene Propylene (FEP):  dielectric constant is about 2.2
-                "Fluorinated Ethylene Propylene (FEP)": {"dielectric_constant": 2.2,
-                                                          "thermal_conductivity": None,
-                                                          "max_temperature": None},
-                # """Reference: Lv, X., Yv, J., Wang, X., & Huang, P. (2022). Flexible low dielectric polyimide/fluorinated ethylene propylene composite films for
-                #  flexible integrated circuits. Polymer Science, Series B, 64(2), 219-228.."""
+                "Fluorinated Ethylene Propylene (FEP)": {"dielectric_constant": 2.2, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: Lv, X., Yv, J., Wang, X., & Huang, P. (2022).
+                # Flexible low dielectric polyimide/fluorinated ethylene propylene composite films for
+                # flexible integrated circuits. Polymer Science, Series B, 64(2), 219-228.."""
 
                 # 4. Ethylene Tetrafluoroethylene (ETFE) :  dielectric constant is about 2.2 to 2.6
-                "Ethylene Tetrafluoroethylene (ETFE)": {"dielectric_constant": 2.6,
-                                                                        "thermal_conductivity": None,
-                                                                        "max_temperature": None},
+                "Ethylene Tetrafluoroethylene (ETFE)": {"dielectric_constant": 2.6, "thermal_conductivity": None, "max_temperature": None},
                 # """Reference: Wang, M., He, Y., Yang, X., Hou, X., Li, W., Tan, S., & Zhang, Z. (2024). Optimizing thermal and dielectric properties of
-                #  ethylene-tetrafluoroethylene (ETFE)/h-BN composites via interface engineering: activation of C–F bonds on ETFE for surface grafting.
-                #   Journal of Materials Chemistry A, 12(45), 31424-31431."""
+                # ethylene-tetrafluoroethylene (ETFE)/h-BN composites via interface engineering: activation of C–F bonds on ETFE for surface grafting.
+                # Journal of Materials Chemistry A, 12(45), 31424-31431."""
 
                 # 5. Ethylenechlorotrifluoroethylene (ECTFE) :  dielectric constant is 2.5
                 # Note 4. and 5. have approximately the same properties
-                "Ethylenechlorotrifluoroethylene (ECTFE)": {"dielectric_constant": 2.5,
-                                                           "thermal_conductivity": None,
-                                                           "max_temperature": None},
+                "Ethylenechlorotrifluoroethylene (ECTFE)": {"dielectric_constant": 2.5, "thermal_conductivity": None, "max_temperature": None},
                 # """Reference: https://www.polyfluor.nl/assets/files/datasheet-ectfe-uk.pdf"""
 
                 # 6. Polyvinylidene Fluoride (PVDF) :  dielectric constant is 8.5 at 1MHz
-                "Polyvinylidene Fluoride (PVDF)": {"dielectric_constant": 8.5,
-                                                   "thermal_conductivity": None,
-                                                   "max_temperature": None},
+                "Polyvinylidene Fluoride (PVDF)": {"dielectric_constant": 8.5, "thermal_conductivity": None, "max_temperature": None},
                 # """Reference: https://www.ipolymer.com/pdf/PVDF.pdf"""
 
                 # 7.Thermoplastic Elastomers (TPE) :  dielectric constant is 3.3 to 5.1
-                "Thermoplastic Elastomers (TPE)": {"dielectric_constant": 4.5,
-                                                  "thermal_conductivity": None,
-                                                  "max_temperature": None},
+                "Thermoplastic Elastomers (TPE)": {"dielectric_constant": 4.5, "thermal_conductivity": None, "max_temperature": None},
                 # """https://www.matweb.com/search/datasheet.aspx?matguid=0619837e5f584a1f8c5e6f692952898a&"""
 
             }
@@ -2190,10 +2136,12 @@ def hysteresis_current_excitation(input_time_current_vectors: list[list[list[flo
             fr.phases_deg_from_time_current(time_current_vector[0], time_current_vector[1])[0])
     return hyst_frequency, hyst_current_amplitudes, hyst_phases_deg
 
-def get_defined_potentials(component_type: str)-> list[list[float]]:
+def get_defined_potentials(component_type: str) -> list[list[float]]:
     """
-    The definition of the different potentials is needed to save the energies with every simulation based on the number of the capacitors
-    in the equivalent circuit and to calculate the voltage matrix.
+    Define of  different potentials to be applied in the simulation.
+
+     It is needed to save the energies with every simulation based on the number of the capacitors in the equivalent
+     circuit and to calculate the voltage matrix.
 
     :param component_type : the type of the component to be solved
     :type component_type: str
@@ -2203,22 +2151,24 @@ def get_defined_potentials(component_type: str)-> list[list[float]]:
                 [1, 1, 0],  # Scenario 2
                 [1, 0, 1]]  # Scenario 3
     if component_type == 'transformer':
-            return [[1, 0, 0, 0],  # Simulation 1
-                    [0, 0, 1, 0],  # Simulation 2
-                    [0, 0, 1, 1],  # Simulation 3
-                    [1, 1, 1, 1],  # Simulation 4
-                    [1, 0, 1, 0],  # Simulation 5
-                    [1, 0, 1, 1],  # Simulation 6
-                    [2, 1, 1, 1],  # Simulation 7
-                    [0, 0, 2, 1],  # Simulation 8
-                    [1, 1, 2, 1],  # Simulation 9
-                    [1, 1, 2, 2]]  # Simulation 10
+        return [[1, 0, 0, 0],  # Simulation 1
+                [0, 0, 1, 0],  # Simulation 2
+                [0, 0, 1, 1],  # Simulation 3
+                [1, 1, 1, 1],  # Simulation 4
+                [1, 0, 1, 0],  # Simulation 5
+                [1, 0, 1, 1],  # Simulation 6
+                [2, 1, 1, 1],  # Simulation 7
+                [0, 0, 2, 1],  # Simulation 8
+                [1, 1, 2, 1],  # Simulation 9
+                [1, 1, 2, 2]]  # Simulation 10
     else:
         raise ValueError(f"Unknown component_type: {component_type}")
 
-def generate_voltage_matrix(component_type: str, potentials:list[list[float]], flip_the_sec_terminal: bool = False)-> np.ndarray:
-    """
-    Generate the voltage matrix from the potentials W = 0.5 (M^2) * C. M represents the voltage matrix derived from the appleid potentials.
+def generate_voltage_matrix(component_type: str, potentials: list[list[float]], flip_the_sec_terminal: bool = False) -> np.ndarray:
+    r"""
+    Generate the voltage matrix from the potentials.
+
+    W = 0.5 (M^2) * C. M represents the voltage matrix derived from the applied potentials.
     Equivalent circuit of inductor:
     A--.------.---A
            |      |
@@ -2248,17 +2198,17 @@ def generate_voltage_matrix(component_type: str, potentials:list[list[float]], f
     :type component_type: str
     :param potentials: list of potentials
     :type potentials: list[list[float]]
-    :type flip_the_sec_terminal: flip the sec voltage. v2 will be negative.
+    :param flip_the_sec_terminal: flip the sec voltage. v2 will be negative.
+    :type flip_the_sec_terminal: bool
     """
     diffs = []
     for vs in potentials:
         if component_type == 'inductor':
-                # a, b, e are potentials
-                # the voltage matrix is derived from these potentials
-                a, b, e = vs
-                diffs.append([a - b,
-                              a - e,
-                              b - e])
+            a, b, e = vs
+            # Potentials are a, b, e, where the voltage matrix is derived from these potentials.
+            diffs.append([a - b,
+                          a - e,
+                          b - e])
         elif component_type == 'transformer':
             # Core is always grounded
             # a, b, c, d are potentials (terminals). The voltage matrix is derived from these potentials.
@@ -2269,7 +2219,7 @@ def generate_voltage_matrix(component_type: str, potentials:list[list[float]], f
                 diffs.append([a - b,
                               c - d,
                               d - b,
-                              a - b- (d - b) - (c - d),
+                              a - b - (d - b) - (c - d),
                               d - b + c - d,
                               a - b - (d - b),
                               a - b + b - e,
@@ -2299,7 +2249,7 @@ def solve_capacitance(m: np.ndarray, energies: np.ndarray) -> np.ndarray:
     :param m: voltage matrix
     :type: array
     :param energies: energies solved from the simulations
-    :type energies: array
+    :type energies: bytearray
     """
     m_squared = m ** 2
     if np.isclose(np.linalg.det(m_squared), 0):
@@ -2309,6 +2259,7 @@ def solve_capacitance(m: np.ndarray, energies: np.ndarray) -> np.ndarray:
 def distribute_potential_linearly(v_start: float, v_end: float, num_turns: int) -> list[float]:
     """
     Linearly distribute potentials between v_start and v_end over the turns.
+
     :param v_start: the voltage on the first turn
     :type v_start: float
     :param v_end: the voltage on the last turn
@@ -2318,12 +2269,12 @@ def distribute_potential_linearly(v_start: float, v_end: float, num_turns: int) 
     """
     if v_start == v_end or num_turns == 1:
         return [v_start] * num_turns
-    return [v_start + (v_end - v_start) * j / (num_turns - 1)
-        for j in range(num_turns)]
+    return [v_start + (v_end - v_start) * j / (num_turns - 1) for j in range(num_turns)]
 
 def get_open_circuit_capacitance(c_vec: np.ndarray, num_turns_w1: int, num_turns_w2: int) -> float:
     """
     Get the capacitance when the secondary is open.
+
     :param c_vec: the calculated capacitance from the simulation.
     :type c_vec: bytearray
     :param num_turns_w1: number of turns of the first winding
@@ -2334,54 +2285,30 @@ def get_open_circuit_capacitance(c_vec: np.ndarray, num_turns_w1: int, num_turns
     c_1, c_2, c_3, c_4, c_5, c_6, c_7, c_8, c_9, c_10 = c_vec
     n_sym = num_turns_w1 / num_turns_w2
     den = c_3 * c_7 + c_3 * c_8 + c_4 * c_7 + c_3 * c_9 + c_4 * c_8 + c_5 * c_7 + c_3 * c_10 + c_4 * c_9 + \
-          c_5 * c_8 + c_6 * c_7 + c_4 * c_10 + c_5 * c_9 + c_6 * c_8 + c_5 * c_10 + c_6 * c_9 + c_6 * c_10 + \
-          c_7 * c_9 + c_7 * c_10 + c_8 * c_9 + c_8 * c_10
+        c_5 * c_8 + c_6 * c_7 + c_4 * c_10 + c_5 * c_9 + c_6 * c_8 + c_5 * c_10 + c_6 * c_9 + c_6 * c_10 + \
+        c_7 * c_9 + c_7 * c_10 + c_8 * c_9 + c_8 * c_10
 
-    num1 = (c_2 * c_3 * c_7 + c_2 * c_3 * c_8 + c_2 * c_4 * c_7 + c_2 * c_3 * c_9 +
-           c_2 * c_4 * c_8 + c_2 * c_5 * c_7 + c_3 * c_4 * c_7 + c_2 * c_3 * c_10 +
-           c_2 * c_4 * c_9 + c_2 * c_5 * c_8 + c_2 * c_6 * c_7 + c_3 * c_4 * c_8 +
-           c_3 * c_5 * c_7 + c_2 * c_4 * c_10 + c_2 * c_5 * c_9 + c_2 * c_6 * c_8 +
-           c_3 * c_4 * c_9 + c_3 * c_5 * c_8 + c_2 * c_5 * c_10 + c_2 * c_6 * c_9 +
-           c_3 * c_4 * c_10 + c_3 * c_5 * c_9 + c_4 * c_6 * c_7 + c_2 * c_6 * c_10 +
-           c_2 * c_7 * c_9 + c_3 * c_5 * c_10 + c_4 * c_6 * c_8 + c_5 * c_6 * c_7 +
-           c_2 * c_7 * c_10 + c_2 * c_8 * c_9 + c_3 * c_7 * c_9 + c_4 * c_6 * c_9 +
-           c_5 * c_6 * c_8 + c_2 * c_8 * c_10 + c_3 * c_8 * c_9 + c_4 * c_6 * c_10 +
-           c_5 * c_6 * c_9 + c_4 * c_7 * c_10 + c_5 * c_6 * c_10 + c_3 * c_9 * c_10 +
-           c_4 * c_8 * c_10 + c_5 * c_7 * c_10 + c_6 * c_7 * c_9 + c_4 * c_9 * c_10 +
-           c_5 * c_8 * c_10 + c_6 * c_8 * c_9 + c_5 * c_9 * c_10 + c_6 * c_9 * c_10 +
-           c_7 * c_9 * c_10 + c_8 * c_9 * c_10
-           ) * n_sym ** 2
+    num1 = (c_2 * c_3 * c_7 + c_2 * c_3 * c_8 + c_2 * c_4 * c_7 + c_2 * c_3 * c_9 + c_2 * c_4 * c_8 + c_2 * c_5 * c_7 + c_3 * c_4 * c_7 + c_2 * c_3 * c_10 + \
+            c_2 * c_4 * c_9 + c_2 * c_5 * c_8 + c_2 * c_6 * c_7 + c_3 * c_4 * c_8 + c_3 * c_5 * c_7 + c_2 * c_4 * c_10 + c_2 * c_5 * c_9 + c_2 * c_6 * c_8 + \
+            c_3 * c_4 * c_9 + c_3 * c_5 * c_8 + c_2 * c_5 * c_10 + c_2 * c_6 * c_9 + c_3 * c_4 * c_10 + c_3 * c_5 * c_9 + c_4 * c_6 * c_7 + \
+            c_2 * c_6 * c_10 + c_2 * c_7 * c_9 + c_3 * c_5 * c_10 + c_4 * c_6 * c_8 + c_5 * c_6 * c_7 + c_2 * c_7 * c_10 + c_2 * c_8 * c_9 + \
+            c_3 * c_7 * c_9 + c_4 * c_6 * c_9 + c_5 * c_6 * c_8 + c_2 * c_8 * c_10 + c_3 * c_8 * c_9 + c_4 * c_6 * c_10 + c_5 * c_6 * c_9 + \
+            c_4 * c_7 * c_10 + c_5 * c_6 * c_10 + c_3 * c_9 * c_10 + c_4 * c_8 * c_10 + c_5 * c_7 * c_10 + c_6 * c_7 * c_9 + c_4 * c_9 * c_10 + \
+            c_5 * c_8 * c_10 + c_6 * c_8 * c_9 + c_5 * c_9 * c_10 + c_6 * c_9 * c_10 + c_7 * c_9 * c_10 + c_8 * c_9 * c_10) * n_sym ** 2
 
-    num2 = (-2 * c_3 * c_4 * c_7
-           - 2 * c_3 * c_4 * c_8
-           - 2 * c_3 * c_4 * c_9
-           - 2 * c_3 * c_4 * c_10
-           + 2 * c_5 * c_6 * c_7
-           + 2 * c_3 * c_7 * c_9
-           - 2 * c_5 * c_6 * c_8
-           - 2 * c_5 * c_6 * c_9
-           - 2 * c_5 * c_6 * c_10
-           + 2 * c_4 * c_8 * c_10
-           - 2 * c_5 * c_7 * c_10
-           - 2 * c_6 * c_8 * c_9
-           ) * n_sym
+    num2 = (-2 * c_3 * c_4 * c_7 - 2 * c_3 * c_4 * c_8 - 2 * c_3 * c_4 * c_9 - 2 * c_3 * c_4 * c_10 + 2 * c_5 * c_6 * c_7 + 2 * c_3 * c_7 * c_9 - \
+            2 * c_5 * c_6 * c_8 - 2 * c_5 * c_6 * c_9 - 2 * c_5 * c_6 * c_10 + 2 * c_4 * c_8 * c_10 - 2 * c_5 * c_7 * c_10 - 2 * c_6 * c_8 * c_9) * n_sym
 
-    num3 = (c_1 * c_3 * c_7 + c_1 * c_3 * c_8 + c_1 * c_4 * c_7 + c_1 * c_3 * c_9 +
-            c_1 * c_4 * c_8 + c_1 * c_5 * c_7 + c_1 * c_3 * c_10 + c_1 * c_4 * c_9 +
-            c_1 * c_5 * c_8 + c_1 * c_6 * c_7 + c_3 * c_4 * c_7 + c_1 * c_4 * c_10 +
-            c_1 * c_5 * c_9 + c_1 * c_6 * c_8 + c_3 * c_4 * c_8 + c_1 * c_5 * c_10 +
-            c_1 * c_6 * c_9 + c_3 * c_4 * c_9 + c_3 * c_6 * c_7 + c_4 * c_5 * c_7 +
-            c_1 * c_6 * c_10 + c_1 * c_7 * c_9 + c_3 * c_4 * c_10 + c_3 * c_6 * c_8 +
-            c_4 * c_5 * c_8 + c_1 * c_7 * c_10 + c_1 * c_8 * c_9 + c_3 * c_6 * c_9 +
-            c_3 * c_7 * c_8 + c_4 * c_5 * c_9 + c_5 * c_6 * c_7 + c_1 * c_8 * c_10 +
-            c_3 * c_6 * c_10 + c_3 * c_7 * c_9 + c_4 * c_5 * c_10 + c_4 * c_7 * c_8 +
-            c_5 * c_6 * c_8 + c_3 * c_7 * c_10 + c_5 * c_6 * c_9 + c_5 * c_7 * c_8 +
-            c_4 * c_8 * c_9 + c_5 * c_6 * c_10 + c_5 * c_7 * c_9 + c_6 * c_7 * c_8 +
-            c_4 * c_8 * c_10 + c_5 * c_7 * c_10 + c_6 * c_8 * c_9 + c_6 * c_8 * c_10 +
-            c_7 * c_8 * c_9 + c_7 * c_8 * c_10)
+    num3 = (c_1 * c_3 * c_7 + c_1 * c_3 * c_8 + c_1 * c_4 * c_7 + c_1 * c_3 * c_9 + c_1 * c_4 * c_8 + c_1 * c_5 * c_7 + c_1 * c_3 * c_10 + c_1 * c_4 * c_9 + \
+            c_1 * c_5 * c_8 + c_1 * c_6 * c_7 + c_3 * c_4 * c_7 + c_1 * c_4 * c_10 + c_1 * c_5 * c_9 + c_1 * c_6 * c_8 + c_3 * c_4 * c_8 + c_1 * c_5 * c_10 + \
+            c_1 * c_6 * c_9 + c_3 * c_4 * c_9 + c_3 * c_6 * c_7 + c_4 * c_5 * c_7 + c_1 * c_6 * c_10 + c_1 * c_7 * c_9 + c_3 * c_4 * c_10 + c_3 * c_6 * c_8 + \
+            c_4 * c_5 * c_8 + c_1 * c_7 * c_10 + c_1 * c_8 * c_9 + c_3 * c_6 * c_9 + c_3 * c_7 * c_8 + c_4 * c_5 * c_9 + c_5 * c_6 * c_7 + c_1 * c_8 * c_10 + \
+            c_3 * c_6 * c_10 + c_3 * c_7 * c_9 + c_4 * c_5 * c_10 + c_4 * c_7 * c_8 + c_5 * c_6 * c_8 + c_3 * c_7 * c_10 + c_5 * c_6 * c_9 + c_5 * c_7 * c_8 + \
+            c_4 * c_8 * c_9 + c_5 * c_6 * c_10 + c_5 * c_7 * c_9 + c_6 * c_7 * c_8 + c_4 * c_8 * c_10 + c_5 * c_7 * c_10 + c_6 * c_8 * c_9 + \
+            c_6 * c_8 * c_10 + c_7 * c_8 * c_9 + c_7 * c_8 * c_10)
     return (num1 - num2 + num3) / den
 
-def get_short_circuit_capacitance(c_vec: np.ndarray)-> float:
+def get_short_circuit_capacitance(c_vec: np.ndarray) -> float:
     """
     Get the capacitance when the secondary is shorted.
 
@@ -2389,30 +2316,22 @@ def get_short_circuit_capacitance(c_vec: np.ndarray)-> float:
     :type c_vec: bytearray
     """
     c_1, c_2, c_3, c_4, c_5, c_6, c_7, c_8, c_9, c_10 = c_vec
-    c_sim_short = (c_1 + (c_3 * c_4 * c_7 + c_3 * c_4 * c_8 + c_3 * c_4 * c_9 +
-            c_3 * c_6 * c_7 + c_4 * c_5 * c_7 + c_3 * c_4 * c_10 +
-            c_3 * c_6 * c_8 + c_4 * c_5 * c_8 + c_3 * c_6 * c_9 +
-            c_3 * c_7 * c_8 + c_4 * c_5 * c_9 + c_5 * c_6 * c_7 +
-            c_3 * c_6 * c_10 + c_3 * c_7 * c_9 + c_4 * c_5 * c_10 +
-            c_4 * c_7 * c_8 + c_5 * c_6 * c_8 + c_3 * c_7 * c_10 +
-            c_5 * c_6 * c_9 + c_5 * c_7 * c_8 + c_4 * c_8 * c_9 +
-            c_5 * c_6 * c_10 + c_5 * c_7 * c_9 + c_6 * c_7 * c_8 +
-            c_4 * c_8 * c_10 + c_5 * c_7 * c_10 + c_6 * c_8 * c_9 +
-            c_6 * c_8 * c_10 + c_7 * c_8 * c_9 + c_7 * c_8 * c_10)
-            /(c_3 * c_7 + c_3 * c_8 + c_4 * c_7 + c_3 * c_9 + c_4 * c_8 +
-            c_5 * c_7 + c_3 * c_10 + c_4 * c_9 + c_5 * c_8 + c_6 * c_7 +
-            c_4 * c_10 + c_5 * c_9 + c_6 * c_8 + c_5 * c_10 + c_6 * c_9 +
-            c_6 * c_10 + c_7 * c_9 + c_7 * c_10 + c_8 * c_9 + c_8 * c_10)
-    )
-    return  c_sim_short
+    num = c_3 * c_4 * c_7 + c_3 * c_4 * c_8 + c_3 * c_4 * c_9 + c_3 * c_6 * c_7 + c_4 * c_5 * c_7 + c_3 * c_4 * c_10 + \
+        c_3 * c_6 * c_8 + c_4 * c_5 * c_8 + c_3 * c_6 * c_9 + c_3 * c_7 * c_8 + c_4 * c_5 * c_9 + c_5 * c_6 * c_7 + \
+        c_3 * c_6 * c_10 + c_3 * c_7 * c_9 + c_4 * c_5 * c_10 + c_4 * c_7 * c_8 + c_5 * c_6 * c_8 + c_3 * c_7 * c_10 + \
+        c_5 * c_6 * c_9 + c_5 * c_7 * c_8 + c_4 * c_8 * c_9 + c_5 * c_6 * c_10 + c_5 * c_7 * c_9 + c_6 * c_7 * c_8 + \
+        c_4 * c_8 * c_10 + c_5 * c_7 * c_10 + c_6 * c_8 * c_9 + c_6 * c_8 * c_10 + c_7 * c_8 * c_9 + c_7 * c_8 * c_10
+    den = c_3 * c_7 + c_3 * c_8 + c_4 * c_7 + c_3 * c_9 + c_4 * c_8 + c_5 * c_7 + c_3 * c_10 + c_4 * c_9 + c_5 * c_8 + \
+        c_6 * c_7 + c_4 * c_10 + c_5 * c_9 + c_6 * c_8 + c_5 * c_10 + c_6 * c_9 + c_6 * c_10 + c_7 * c_9 + c_7 * c_10 + \
+        c_8 * c_9 + c_8 * c_10
+    c_sim_short = (c_1 + (num / den))
+    return c_sim_short
 
-def compare_and_plot_connection_capacitance_of_transformer(c_vec: np.ndarray,
-                                    measured_capacitance: list[float | None] | None = None,
-                                    show_plot: bool = True):
+def compare_and_plot_connection_capacitance_of_transformer(c_vec: np.ndarray, measured_capacitance: list[float | None] | None = None, show_plot: bool = True):
     """
     Compare the connection capacitance applied in the measurement. The capacitors C1,...C10 can not be compared directly to the measurement results.
-    For every connection, we look to the behavior of the equivalent circuit. For example; AB vs CDE will result in C3 + C4 + C5 + C6 + C7 + C8
 
+    For every connection, we look to the behavior of the equivalent circuit. For example; AB vs CDE will result in C3 + C4 + C5 + C6 + C7 + C8
     :param c_vec: the calculated capacitance from the simulation.
     :type c_vec: bytearray
     :param measured_capacitance: represent the measured capacitance of all the connections
@@ -2503,8 +2422,7 @@ def compare_and_plot_connection_capacitance_of_transformer(c_vec: np.ndarray,
             plt.tight_layout()
             plt.show()
 
-def plot_open_and_short_comparison(c_sim_open: float, c_sim_short: float,
-                              c_meas_open: float | None, c_meas_short: float | None):
+def plot_open_and_short_comparison(c_sim_open: float, c_sim_short: float, c_meas_open: float | None, c_meas_short: float | None):
     """
     Plot horizontal bar comparison for open-circuit capacitance and short-circuit capacitance.
 
@@ -2573,7 +2491,6 @@ def json_to_excel(json_file_path: str, output_excel_path: str) -> None:
     :type json_file_path: str
     :param output_excel_path: Path where the Excel (.xlsx) file will be saved.
     :type output_excel_path: str
-    :rtype: None
     """
     # Trying to close the Excel file if it's open
     close_excel_file_if_open(output_excel_path)
@@ -2725,6 +2642,7 @@ def compare_excel_files(femmt_excel_path: str, femm_excel_path: str, comparison_
                 comparison_df.to_excel(writer, sheet_name=f"{sheet_name}_Comparison", index=False)
                 worksheet = writer.sheets[f"{sheet_name}_Comparison"]
                 worksheet.set_column('A:Z', 35)
+
 
 if __name__ == '__main__':
     pass

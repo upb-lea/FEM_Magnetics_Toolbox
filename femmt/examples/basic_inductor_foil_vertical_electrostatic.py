@@ -12,8 +12,7 @@ import femmt as fmt
 import os
 
 
-def basic_example_inductor_foil_vertical_electrostatic(onelab_folder: str = None, show_visual_outputs: bool = True,
-                                         is_test: bool = False):
+def basic_example_inductor_foil_vertical_electrostatic(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
     """
     Run the example code for the inductor with vertical foil winding.
 

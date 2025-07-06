@@ -52,9 +52,9 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     # geo.set_core(core)
     core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
-                                                   window_w=core_db["window_w"],
-                                                   window_h=core_db["window_h"],
-                                                   core_h=core_db["core_h"])
+                                                    window_w=core_db["window_w"],
+                                                    window_h=core_db["window_h"],
+                                                    core_h=core_db["core_h"])
     core = fmt.Core(core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
                     detailed_core_model=False,
@@ -107,7 +107,7 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     # 6. create conductors and set parameters
     winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
     # winding1.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
-    #winding1.set_solid_round_conductor(0.35e-3, fmt.ConductorArrangement.Square)
+    # winding1.set_solid_round_conductor(0.35e-3, fmt.ConductorArrangement.Square)
     winding1.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
 
     # winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
@@ -129,8 +129,6 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     cells[0].set_winding(winding1, 10, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
     # top.set_winding(winding1, 109, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
     geo.set_winding_windows([winding_window])
-
-
 
     # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=0, pre_visualize_geometry=show_visual_outputs)
@@ -236,8 +234,9 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     geo.electrostatic_simulation(voltage=[voltages_winding_1, voltages_winding_2], core_voltage=0, ground_outer_boundary=False,
                                  show_fem_simulation_results=show_visual_outputs, save_to_excel_file=False)
     # geo.get_total_charges()
-    # geo.femm_reference_electrostatic(voltages=[voltages_winding_1, voltages_winding_2], ground_core=True, ground_outer_boundary=True, non_visualize=0, save_to_excel_file=False,
-    #                                  compare_femmt_to_femm=False)
+    # geo.femm_reference_electrostatic(voltages=[voltages_winding_1, voltages_winding_2], ground_core=True, ground_outer_boundary=True, non_visualize=0,
+    #                                  save_to_excel_file=False, compare_femmt_to_femm=False)
+
 
 if __name__ == "__main__":
     basic_example_transformer_electrostatic(show_visual_outputs=True)

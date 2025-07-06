@@ -3000,7 +3000,8 @@ class MagneticComponent:
     def get_capacitance_of_inductor_component(self, freq_for_mesh: float = 0.0, show_visual_outputs: bool = False, plot_interpolation: bool = False,
                                               show_fem_simulation_results: bool = False, benchmark: bool = False, save_to_excel: bool = False):
         """
-        Function for finding parasitic capacitance of an inductor. A represent the first turn, B represents the last turn. e represents the core.
+        Needed for finding parasitic capacitance of an inductor. A represent the first turn, B represents the last turn. e represents the core.
+
         A--.------.---A
            |      |
            |      |
@@ -3073,14 +3074,24 @@ class MagneticComponent:
         return c_vec
 
     def get_stray_capacitance_of_inductor_component(self, freq_for_mesh: float = 0.0, show_visual_outputs: bool = False, plot_interpolation: bool = False,
-                                                    show_fem_simulation_results: bool = True,
-                                                    benchmark: bool = False,
-                                                    save_to_excel: bool = False):
+                                                    show_fem_simulation_results: bool = True, benchmark: bool = False, save_to_excel: bool = False):
         """
         Compute the stray (parasitic) capacitance of an inductor via a single electrostatic simulation.
-        Assumes a 1V potential applied across the windings. The effect of the core is ignored.
-        """
 
+         Assumes a 1V potential applied across the windings. The effect of the core is ignored.
+         :param freq_for_mesh: the frequency is used here for generating the mesh
+        :type freq_for_mesh: float = 0.0
+        :param show_visual_outputs: show the electrostatic model before simulation
+        :type show_visual_outputs: bool, optional
+        :param plot_interpolation: if True, plot the interpolation between the provided values for the material.
+        :type plot_interpolation: bool
+        :param show_fem_simulation_results: if True, show the simulation results after the simulation has finished
+        :type show_fem_simulation_results: bool
+        :param benchmark: Benchmark simulation (stop time). Defaults to False.
+        :type benchmark: bool
+        :param save_to_excel: save the result to exel file.
+        :type save_to_excel: bool
+        """
         # Define terminal voltages for the simulation
         v_a = 1
         v_b = 0
@@ -3126,10 +3137,11 @@ class MagneticComponent:
         return c_ab_stray
 
     def get_capacitance_of_transformer(self, freq_for_mesh: float = 0.0, c_meas_open: float | None = None,
-                                       c_meas_short: float | None = None, measured_capacitances: tuple | list | None = None, flip_the_sec_terminal: bool = False,
-                                       show_visual_outputs: bool = False, plot_interpolation: bool = False, show_fem_simulation_results: bool = False,
-                                       benchmark: bool = False, save_to_excel: bool = False, show_plot_comparison: bool = True):
-        """
+                                       c_meas_short: float | None = None, measured_capacitances: tuple | list | None = None,
+                                       flip_the_sec_terminal: bool = False, show_visual_outputs: bool = False, plot_interpolation: bool = False,
+                                       show_fem_simulation_results: bool = False, benchmark: bool = False, save_to_excel: bool = False,
+                                       show_plot_comparison: bool = True):
+        r"""
         Get 10 parasitic capacitance of a transformer.
 
         Perform 10 electrostatic simulations and calculate the 10 parasitic capacitance through W = 0.5 CV^2.
@@ -3156,8 +3168,8 @@ class MagneticComponent:
         :type c_meas_short: float
         :param measured_capacitances: measured 10 capacitances provided by the user.
         :type measured_capacitances: float
-        :param flag_cd: flip the terminal C and D of the secondary.
-        :type flag_cd: bool
+        :param flip_the_sec_terminal: flip the terminal C and D of the secondary.
+        :type flip_the_sec_terminal: bool
         :param show_visual_outputs: show the electrostatic model before simulation
         :type show_visual_outputs: bool, optional
         :param plot_interpolation: if True, plot the interpolation between the provided values for the material.
@@ -3657,11 +3669,8 @@ class MagneticComponent:
                 if self.v_core is not None:
                     text_file.write("v_core = {};\n".format(self.v_core))
                     text_file.write("Flag_excite_core = 1;\n")
-                    # text_file.write("Flag_ground_core = 0;\n")
                 else:
-                        text_file.write("Flag_ground_core = 1;\n")
-                        # text_file.write("v_ground_core = 0;\n")
-                        text_file.write("Flag_excite_core = 0;\n")
+                    text_file.write("Flag_excite_core = 0;\n")
 
                 if self.v_ground_out_boundary == 0:
                     text_file.write("Flag_ground_OutBoundary = 1;\n")
@@ -3692,7 +3701,7 @@ class MagneticComponent:
         if self.insulation.er_layer_insulation is not None:
             text_file.write(f"er_layer_insulation = {self.insulation.er_layer_insulation};\n")
         else:
-            text_file.write(f"er_layer_insulation = 1.0;\n")
+            text_file.write("er_layer_insulation = 1.0;\n")
         text_file.write(f"er_bobbin = {self.insulation.er_bobbin};\n")
 
         # Material Properties
@@ -6584,7 +6593,6 @@ class MagneticComponent:
         femm.hi_loadsolution()
         input()  # So the window stays open
         # femm.closefemm()
-
 
     @staticmethod
     def encode_settings(o) -> dict:
