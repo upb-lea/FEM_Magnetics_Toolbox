@@ -1232,7 +1232,7 @@ class MagneticComponent:
                 self.red_freq[num] = 0
 
     def excitation_electrostatic(self, voltage: list[list[float]] = None, core_voltage: float = None, charge: list[list[float]] = None,
-                                ground_outer_boundary: bool = False, plot_interpolation: bool = False):
+                                 ground_outer_boundary: bool = False, plot_interpolation: bool = False):
         """
         Run the electrostatic simulation.
 
@@ -1286,9 +1286,9 @@ class MagneticComponent:
 
         # Print excitation details
         logger.info(f"\n---\n"
-                         f"Excitation: \n"
-                         f"{excitation_type.capitalize()} Excitation\n"
-                         f"Value(s): {value_list}\n")
+                    f"Excitation: \n"
+                    f"{excitation_type.capitalize()} Excitation\n"
+                    f"Value(s): {value_list}\n")
 
         # Set the excitation type (voltage or charge)
         self.flag_excitation_type = excitation_type
@@ -2996,11 +2996,11 @@ class MagneticComponent:
             return inductance_matrix
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-    # Post-Processing --- Capacitance extractio---
+    # Post-Processing --- Capacitance extraction---
     def get_capacitance_of_inductor_component(self, freq_for_mesh: float = 0.0, show_visual_outputs: bool = False, plot_interpolation: bool = False,
                                               show_fem_simulation_results: bool = False, benchmark: bool = False, save_to_excel: bool = False):
         """
-        Function for finding parasitic capacitance of an inductor.
+        Function for finding parasitic capacitance of an inductor. A represent the first turn, B represents the last turn. e represents the core.
         A--.------.---A
            |      |
            |      |
@@ -3026,35 +3026,25 @@ class MagneticComponent:
         :param save_to_excel: save the result to exel file.
         :type save_to_excel: bool
         """
-        # Define 3 simulation potential cases
-        # Format: [V_A, V_B, V_core]
-        potentials = [
-            [1, 0, 0],  # Scenario 1
-            [1, 1, 0],  # Scenario 2
-            [1, 0, 1]  # Scenario 3
-        ]
-        w_e = []  # Electrostatic energies for each case
-        # Set the simulation type to ElectroStatic before running the open-circuit simulations
+        potentials = ff.get_defined_potentials("inductor")
+        m = ff.generate_voltage_matrix("inductor", potentials)  # 3×3 matrix
+
+        # 2️⃣ Run simulations and collect energies
+        energies = []
         self.simulation_type = SimulationType.ElectroStatic
-        for winding_index in range(len(self.windings)):
-            num_turns = ff.get_number_of_turns_of_winding(self.winding_windows, self.windings, winding_index)
 
-        for i, (v_a, v_b, v_core) in enumerate(potentials):
-            # Linearly interpolate voltage from V_A to V_B across all turns
-            # winding_voltages = [v_a - (v_a - v_b) * j / (num_turns - 1) for j in range(num_turns)]
-            if v_a == v_b:
-                winding_voltages = [v_a] * num_turns
-            else:
-                winding_voltages = [v_a - (v_a - v_b) * j / (num_turns - 1) for j in range(num_turns)]
+        num_turns = ff.get_number_of_turns_of_winding(self.winding_windows, self.windings, 0)
 
-            # Build voltage array for simulation
-            voltages = [winding_voltages]
+        for idx, (A, B, E) in enumerate(potentials):
+            voltages = [ff.distribute_potential_linearly(A, B, num_turns)]
+            self.create_model(freq=freq_for_mesh,
+                              pre_visualize_geometry=show_visual_outputs,
+                              save_png=False,
+                              skin_mesh_factor=0.5)
 
-            self.create_model(freq=freq_for_mesh, pre_visualize_geometry=show_visual_outputs, save_png=False, skin_mesh_factor=0.5)
-            # Run electrostatic FEM simulation
             self.electrostatic_simulation(
                 voltage=voltages,
-                core_voltage=v_core,
+                core_voltage=E,
                 ground_outer_boundary=False,
                 plot_interpolation=plot_interpolation,
                 show_fem_simulation_results=show_fem_simulation_results,
@@ -3062,45 +3052,23 @@ class MagneticComponent:
                 save_to_excel_file=save_to_excel
             )
 
-            # Get stored electrostatic energy
-            log_path = self.file_data.electrostatic_results_log_path
-            with open(log_path, "r", encoding='utf-8') as f:
-                log = json.load(f)
-            energy = log["energy"]["stored_component"]
+            with open(self.file_data.electrostatic_results_log_path, "r") as f:
+                energy = json.load(f)["energy"]["stored_component"]
+            logger.info(f" → Stored Electrostatic Energy (case {idx + 1}): {energy:.4e} J")
+            energies.append(energy)
 
-            logger.info(f"  → Stored Electrostatic Energy: {energy:.4e} J")
-            w_e.append(energy)
+        # 3️⃣ Solve for capacitance
+        c_vec = ff.solve_capacitance(m, np.array(energies))
+        logger.info("--- Capacitance Results ---")
+        labels = ["C(A‑B)", "C(A‑0)", "C(B‑0)"]
 
-        # Capacitance system solving
-        m =  np.array([
-                [1, 1, 0],  # Scenario 1
-                [0, 1, 1],  # Scenario 2
-                [1, 0, 1]  # Scenario 3
-            ])
-        m_squared = m ** 2
-        we_vec = np.array(w_e).reshape((3, 1))
+        for lbl, val in zip(labels, c_vec):
+            logger.info(f"{lbl}: {val:.4e} F")
 
-        det = np.linalg.det(m_squared)
-        if np.isclose(det, 0):
-            raise ValueError("Simulation matrix is singular. Cannot compute capacitance.")
-
-        # Compute capacitance vector
-        c_vec = 2 * np.linalg.inv(m_squared) @ we_vec
-        c_vec = c_vec.flatten()
-
-        logger.info("\n--- Capacitance Results ---")
-        for i, label in enumerate(["C(A-B)", "C(A-0)", "C(B-0))"]):
-            logger.info(f"{label}: {c_vec[i]:.4e} F")
-            # Calculate effective C_AB total
-            c_ab = c_vec[0]
-            c_a0 = c_vec[1]
-            c_b0 = c_vec[2]
-
-            # Combine parasitics using parallel-series formula
-            c_ab_total = c_ab + ((c_a0 * c_b0) / (c_a0 + c_b0))
-
-            logger.info(f"\n→ Total C_AB (including parasitics): {c_ab_total:.4e} F")
-            #return c_ab_total
+        # 4️⃣ Compute total C_AB
+        c_ab, c_ae, c_be = c_vec
+        c_ab_stray = c_ab + (c_ae * c_be) / (c_ae + c_be)
+        logger.info(f"→ C_AB (incl. parasitic): {c_ab_stray:.4e} F")
 
         return c_vec
 
@@ -3158,7 +3126,7 @@ class MagneticComponent:
         return c_ab_stray
 
     def get_capacitance_of_transformer(self, freq_for_mesh: float = 0.0, c_meas_open: float | None = None,
-                                       c_meas_short: float | None = None, measured_capacitances: tuple | list | None = None, flag_cd: bool = False,
+                                       c_meas_short: float | None = None, measured_capacitances: tuple | list | None = None, flip_the_sec_terminal: bool = False,
                                        show_visual_outputs: bool = False, plot_interpolation: bool = False, show_fem_simulation_results: bool = False,
                                        benchmark: bool = False, save_to_excel: bool = False, show_plot_comparison: bool = True):
         """
@@ -3203,34 +3171,9 @@ class MagneticComponent:
         :param show_plot_comparison: compare between the simulation and measurement results.
         :type show_plot_comparison: bool
         """
-        # Define 10 simulations potential cases
-        # Format: [V_A, V_B, V_C, V_D]
-        if not flag_cd:
-            potentials = [
-                [1, 0, 0, 0],  # Simulation 1
-                [0, 0, 1, 0],  # Simulation 2
-                [0, 0, 1, 1],  # Simulation 3
-                [1, 1, 1, 1],  # Simulation 4
-                [1, 0, 1, 0],  # Simulation 5
-                [1, 0, 1, 1],  # Simulation 6
-                [2, 1, 1, 1],  # Simulation 7
-                [0, 0, 2, 1],  # Simulation 8
-                [1, 1, 2, 1],  # Simulation 9
-                [1, 1, 2, 2],  # Simulation 10
-            ]
-        else:
-            potentials = [
-                [1, 0, 0, 0],  # Simulation 1
-                [0, 0, 0, 1],  # Simulation 2
-                [0, 0, 1, 1],  # Simulation 3
-                [1, 1, 1, 1],  # Simulation 4
-                [1, 0, 0, 1],  # Simulation 5
-                [1, 0, 1, 1],  # Simulation 6
-                [2, 1, 1, 1],  # Simulation 7
-                [0, 0, 1, 2],  # Simulation 8
-                [1, 1, 1, 2],  # Simulation 9
-                [1, 1, 2, 2],  # Simulation 10
-            ]
+        potentials = ff.get_defined_potentials('transformer')
+        m = ff.generate_voltage_matrix("transformer", potentials, flip_the_sec_terminal)
+
         w_e = []  # Electrostatic energies for each case
         # Set the simulation type to ElectroStatic before running the open-circuit simulations
         self.simulation_type = SimulationType.ElectroStatic
@@ -3238,18 +3181,10 @@ class MagneticComponent:
         num_turns_w1 = ff.get_number_of_turns_of_winding(self.winding_windows, self.windings, 0)
         num_turns_w2 = ff.get_number_of_turns_of_winding(self.winding_windows, self.windings, 1)
         # Run electrostatic simulation
-        for i, (v_a, v_b, v_c, v_d) in enumerate(potentials):
+        for i, (A, B, C, D) in enumerate(potentials):
             # Interpolate voltages across both windings
-            voltages_winding_1 = (
-                [v_a] * num_turns_w1 if v_a == v_b else
-                [v_a - (v_a - v_b) * j / (num_turns_w1 - 1) for j in range(num_turns_w1)]
-            )
-
-            voltages_winding_2 = (
-                [v_c] * num_turns_w2 if v_c == v_d else
-                [v_c - (v_c - v_d) * j / (num_turns_w2 - 1) for j in range(num_turns_w2)]
-            )
-
+            voltages_winding_1 = ff.distribute_potential_linearly(A, B, num_turns_w1)
+            voltages_winding_2 = ff.distribute_potential_linearly(C, D, num_turns_w2)
             # Run electrostatic simulation
             self.create_model(freq=freq_for_mesh, pre_visualize_geometry=show_visual_outputs, save_png=False, skin_mesh_factor=0.5)
             self.electrostatic_simulation(
@@ -3261,7 +3196,6 @@ class MagneticComponent:
                 benchmark=benchmark,
                 save_to_excel_file=save_to_excel
             )
-
             # Read energy log
             log_path = self.file_data.electrostatic_results_log_path
             with open(log_path, "r", encoding="utf-8") as f:
@@ -3271,197 +3205,30 @@ class MagneticComponent:
             logger.info(f"  → Stored Electrostatic Energy (Scenario {i + 1}): {energy:.4e} J")
             w_e.append(energy)
 
-        m = np.array([
-            [1, 0, 0, 1, 0, 1, 1, 0, 0, 0],  # Scenario 1
-            [0, 1, 0, -1, 1, 0, 0, 0, 1, 0],  # Scenario 2
-            [0, 0, 1, -1, 1, -1, 0, 0, 1, 1],  # Scenario 3
-            [0, 0, 0, 0, 0, 0, 1, 1, 1, 1],  # Scenario 4
-            [1, 1, 0, 0, 1, 1, 1, 0, 1, 0],  # Scenario 5
-            [1, 0, 1, 0, 1, 0, 1, 0, 1, 1],  # Scenario 6
-            [1, 0, 0, 1, 0, 1, 2, 1, 1, 1],  # Scenario 7
-            [0, 1, 1, -2, 2, -1, 0, 0, 2, 1],  # Scenario 8
-            [0, 1, 0, -1, 1, 0, 1, 1, 2, 1],  # Scenario 9
-            [0, 0, 1, -1, -1, 1, 1, 1, 2, 2],  # Scenario 10
-        ])
-        # Solve capacitance system
-        m_squared = m ** 2
-        we_vec = np.array(w_e).reshape((10, 1))
-        det = np.linalg.det(m_squared)
-        if np.isclose(det, 0):
-            raise ValueError("Simulation matrix is singular. Cannot compute capacitance matrix.")
-
-        # Solve for capacitance vector
-        c_vec = 2 * np.linalg.inv(m_squared) @ we_vec
-        c_vec = c_vec.flatten()
-
+        c_vec = ff.solve_capacitance(m, np.array(w_e))
         logger.info("\n--- Capacitance Coefficients (Transformer) ---")
         for idx, c_val in enumerate(c_vec):
             logger.info(f"C[{idx + 1}]: {c_val:.4e} F")
 
-        # Unpack C_vec to symbolic names C1...C10
-        C1, C2, C3, C4, C5, C6, C7, C8, C9, C10 = c_vec
-        n_sym = num_turns_w1 / num_turns_w2 # Symbolic multiplier or turns ratio factor if needed
-
-        den = C3 * C7 + C3 * C8 + C4 * C7 + C3 * C9 + C4 * C8 + C5 * C7 + C3 * C10 + C4 * C9 + \
-              C5 * C8 + C6 * C7 + C4 * C10 + C5 * C9 + C6 * C8 + C5 * C10 + C6 * C9 + C6 * C10 + \
-              C7 * C9 + C7 * C10 + C8 * C9 + C8 * C10
-
-        num1 = (C2 * C3 * C7 + C2 * C3 * C8 + C2 * C4 * C7 + C2 * C3 * C9 + C2 * C4 * C8 + C2 * C5 * C7 +
-                C3 * C4 * C7 + C2 * C3 * C10 + C2 * C4 * C9 + C2 * C5 * C8 + C2 * C6 * C7 + C3 * C4 * C8 +
-                C3 * C5 * C7 + C2 * C4 * C10 + C2 * C5 * C9 + C2 * C6 * C8 + C3 * C4 * C9 + C3 * C5 * C8 +
-                C2 * C5 * C10 + C2 * C6 * C9 + C3 * C4 * C10 + C3 * C5 * C9 + C4 * C6 * C7 + C2 * C6 * C10 +
-                C2 * C7 * C9 + C3 * C5 * C10 + C4 * C6 * C8 + C5 * C6 * C7 + C2 * C7 * C10 + C2 * C8 * C9 +
-                C3 * C7 * C9 + C4 * C6 * C9 + C5 * C6 * C8 + C2 * C8 * C10 + C3 * C8 * C9 + C4 * C6 * C10 +
-                C5 * C6 * C9 + C4 * C7 * C10 + C5 * C6 * C10 + C3 * C9 * C10 + C4 * C8 * C10 + C5 * C7 * C10 +
-                C6 * C7 * C9 + C4 * C9 * C10 + C5 * C8 * C10 + C6 * C8 * C9 + C5 * C9 * C10 + C6 * C9 * C10 +
-                C7 * C9 * C10 + C8 * C9 * C10) * n_sym ** 2
-
-        num2 = (-2 * C3 * C4 * C7 - 2 * C3 * C4 * C8 - 2 * C3 * C4 * C9 - 2 * C3 * C4 * C10 + 2 * C5 * C6 * C7 +
-                2 * C3 * C7 * C9 - 2 * C5 * C6 * C8 - 2 * C5 * C6 * C9 - 2 * C5 * C6 * C10 + 2 * C4 * C8 * C10 -
-                2 * C5 * C7 * C10 - 2 * C6 * C8 * C9) * n_sym
-
-        num3 = (C1 * C3 * C7 + C1 * C3 * C8 + C1 * C4 * C7 + C1 * C3 * C9 + C1 * C4 * C8 + C1 * C5 * C7 +
-                C1 * C3 * C10 + C1 * C4 * C9 + C1 * C5 * C8 + C1 * C6 * C7 + C3 * C4 * C7 + C1 * C4 * C10 +
-                C1 * C5 * C9 + C1 * C6 * C8 + C3 * C4 * C8 + C1 * C5 * C10 + C1 * C6 * C9 + C3 * C4 * C9 +
-                C3 * C6 * C7 + C4 * C5 * C7 + C1 * C6 * C10 + C1 * C7 * C9 + C3 * C4 * C10 + C3 * C6 * C8 +
-                C4 * C5 * C8 + C1 * C7 * C10 + C1 * C8 * C9 + C3 * C6 * C9 + C3 * C7 * C8 + C4 * C5 * C9 +
-                C5 * C6 * C7 + C1 * C8 * C10 + C3 * C6 * C10 + C3 * C7 * C9 + C4 * C5 * C10 + C4 * C7 * C8 +
-                C5 * C6 * C8 + C3 * C7 * C10 + C5 * C6 * C9 + C5 * C7 * C8 + C4 * C8 * C9 + C5 * C6 * C10 +
-                C5 * C7 * C9 + C6 * C7 * C8 + C4 * C8 * C10 + C5 * C7 * C10 + C6 * C8 * C9 + C6 * C8 * C10 +
-                C7 * C8 * C9 + C7 * C8 * C10)
-
-        c_sim_open = (num1 - num2 + num3) / den
-        logger.info(f"\n→ Calculated Open Capacitance (C_Meas_open): {c_sim_open:.4e} F")
-
-        c_sim_short = (
-                C1 + (
-                    C3 * C4 * C7 + C3 * C4 * C8 + C3 * C4 * C9 + C3 * C6 * C7 + C4 * C5 * C7 + C3 * C4 * C10 + C3 * C6 * C8 + C4 * C5 * C8 + C3 * C6 * C9 + C3 * C7 * C8 + C4 * C5 * C9 + C5 * C6 * C7 + C3 * C6 * C10 + C3 * C7 * C9
-                    + C4 * C5 * C10 + C4 * C7 * C8 + C5 * C6 * C8 + C3 * C7 * C10 + C5 * C6 * C9 + C5 * C7 * C8 + C4 * C8 * C9 + C5 * C6 * C10 + C5 * C7 * C9 + C6 * C7 * C8 + C4 * C8 * C10 + C5 * C7 * C10 + C6 * C8 * C9
-                    + C6 * C8 * C10 + C7 * C8 * C9 + C7 * C8 * C10) / (
-                            C3 * C7 + C3 * C8 + C4 * C7 + C3 * C9 + C4 * C8 + C5 * C7 + C3 * C10 + C4 * C9 + C5 * C8 + C6 * C7 + C4 * C10 + C5 * C9 + C6 * C8 + C5 * C10
-                            + C6 * C9 + C6 * C10 + C7 * C9 + C7 * C10 + C8 * C9 + C8 * C10)
-        )
-        logger.info(f"\n→ Calculated Open Capacitance (C_Meas_open): {c_sim_short:.4e} F")
         # ------------------------------------------------------------------
         # 0) internal mapping of the 10 connection sums
         # ------------------------------------------------------------------
-        connection_keys = [
-            'C_ABvsCDE', 'C_ABCDvsE', 'C_ABEvsCD', 'C_AvsBCDE', 'C_BvsACDE',
-            'C_CvsABDE', 'C_DvsABCE', 'C_ACvsBDE', 'C_ADvsBCE', 'C_BC_ADE'
-        ]
-
-        connection_sums = {
-            'C_ABvsCDE': lambda C: C[2] + C[3] + C[4] + C[5] + C[6] + C[7],
-            'C_ABCDvsE': lambda C: C[6] + C[7] + C[8] + C[9],
-            'C_ABEvsCD': lambda C: C[2] + C[3] + C[4] + C[5] + C[8] + C[9],
-            'C_AvsBCDE': lambda C: C[0] + C[3] + C[5] + C[6],
-            'C_BvsACDE': lambda C: C[0] + C[2] + C[4] + C[7],
-            'C_CvsABDE': lambda C: C[1] + C[3] + C[4] + C[8],
-            'C_DvsABCE': lambda C: C[1] + C[2] + C[5] + C[9],
-            'C_ACvsBDE': lambda C: C[0] + C[1] + C[4] + C[5] + C[6] + C[8],
-            'C_ADvsBCE': lambda C: C[0] + C[1] + C[2] + C[3] + C[6] + C[9],
-            'C_BC_ADE': lambda C: C[0] + C[1] + C[2] + C[3] + C[7] + C[8],
-        }
-
         if measured_capacitances is not None:
-            if len(measured_capacitances) != 10:
-                raise ValueError("measured_capacitances must be a sequence of 10 numbers (float or None).")
+            ff.compare_and_plot_connection_capacitance_of_transformer(c_vec, measured_capacitance=measured_capacitances, show_plot=show_plot_comparison)
+        # ------------------------------------------------------------------
+        # 1) open circuit capacitance
+        # ------------------------------------------------------------------
+        c_sim_open = ff.get_open_circuit_capacitance(c_vec=c_vec, num_turns_w1=num_turns_w1, num_turns_w2=num_turns_w2)
+        logger.info(f"\n→ Calculated Open Capacitance (C_sim_open): {c_sim_open:.4e} F")
+        # ------------------------------------------------------------------
+        # 2) short circuit capacitance
+        # ------------------------------------------------------------------
+        c_sim_short = ff.get_short_circuit_capacitance(c_vec=c_vec)
+        logger.info(f"\n→ Calculated short Capacitance (C_sim_short): {c_sim_short:.4e} F")
 
-            # build simulated connection sums
-            sim_sums = [connection_sums[k](c_vec) for k in connection_keys]
-
-            logger.info("\n---  Simulated vs Measured Capacitance  (pF) -------------")
-            logger.info(f"{'Connection':<12}{'Measured':>12}{'Simulated':>12}{'Error %':>10}")
-            logger.info("-" * 46)
-
-            # prepare data for optional plot
-            idx_used, meas_pf_used, calc_pf_used, ratio_used = [], [], [], []
-
-            for i, (k, meas, sim) in enumerate(zip(connection_keys,
-                                                   measured_capacitances,
-                                                   sim_sums)):
-                sim_pf = sim * 1e12
-                if meas is None or (isinstance(meas, float) and np.isnan(meas)):
-                    logger.info(f"{k:<12}{'---':>12}{sim_pf:12.2f}{'---':>10}")
-                    # still plot simulated value
-                    idx_used.append(i)
-                    meas_pf_used.append(None)
-                    calc_pf_used.append(sim_pf)
-                    ratio_used.append(None)
-                else:
-                    meas_pf = meas * 1e12
-                    error_percentage = 100 * (sim - meas) / meas
-                    logger.info(f"{k:<12}{meas_pf:12.2f}{sim_pf:12.2f}{error_percentage:10.2f}")
-
-                    idx_used.append(i)
-                    meas_pf_used.append(meas_pf)
-                    calc_pf_used.append(sim_pf)
-                    ratio_used.append(sim_pf / meas_pf)
-
-            # ----- scatter plot --------------------------------
-            if show_plot_comparison:
-
-                idx = np.arange(10)
-                plt.figure(figsize=(14, 6))
-
-                # plot all simulated points
-                plt.scatter(idx, [s for s in calc_pf_used],
-                            label="Simulated", color="C0", marker="o")
-
-                # plot only measured values that exist
-                idx_meas = [i for i, m in zip(idx_used, meas_pf_used) if m is not None]
-                meas_pf_ok = [m for m in meas_pf_used if m is not None]
-                plt.scatter(idx_meas, meas_pf_ok,
-                            label="Measured", color="C3", marker="x")
-
-                # annotate ratio where both values exist
-                for i, sim_pf, ratio in zip(idx_used, calc_pf_used, ratio_used):
-                    if ratio is not None:
-                        plt.text(i, sim_pf, f"{ratio:.2f}×",
-                                 ha="center", va="bottom", fontsize=8)
-
-                label_txt = [k.replace('vs', ' vs ') for k in connection_keys]
-                plt.xticks(idx, label_txt, rotation=45, ha="right")
-                plt.xlabel("Capacitance Connections")
-                plt.ylabel("Capacitance / pF]")
-                plt.title("Simulated vs Measured Capacitance")
-                plt.grid(True, linestyle=":")
-                plt.legend()
-                plt.tight_layout()
-                plt.show()
-
-        # ------------- 2) open / short bar plot -------------------------
+        # comparison
         if show_plot_comparison and (c_meas_open is not None or c_meas_short is not None):
-            labels, sim_bar, meas_bar = [], [], []
-
-            if c_meas_open is not None:
-                labels.append("A‑B  (CD open)")
-                sim_bar.append(c_sim_open * 1e12)
-                meas_bar.append(c_meas_open * 1e12 if c_meas_open is None else c_meas_open * 1e12)
-
-            if c_meas_short is not None:
-                labels.append("A‑B  (CD short)")
-                sim_bar.append(c_sim_short * 1e12)
-                meas_bar.append(c_meas_short * 1e12 if c_meas_short is None else c_meas_short * 1e12)
-
-            if labels:
-                y = np.arange(len(labels))
-                h = 0.3
-                plt.figure(figsize=(10, 3.5))
-                plt.barh(y - h / 2, sim_bar, height=h, color='tab:blue', label="Simulated")
-                plt.barh(y + h / 2, meas_bar, height=h, color='tab:red', label="Measured")
-
-                for i, (s, m) in enumerate(zip(sim_bar, meas_bar)):
-                    if m != 0:
-                        plt.text(s * 1.01, i - h / 2, f"{s / m:.2f}×", va='center', fontsize=9, color='blue')
-
-                plt.yticks(y, labels)
-                plt.xlabel("Capacitance \ pF")
-                plt.grid(axis='x', linestyle='--', alpha=0.6)
-                plt.title("Simulated vs measured open / short capacitance")
-                plt.legend()
-                plt.tight_layout()
-                plt.show()
+            ff.plot_open_and_short_comparison(c_sim_open, c_sim_short, c_meas_open, c_meas_short)
 
         return c_vec
 

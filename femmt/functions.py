@@ -2190,6 +2190,361 @@ def hysteresis_current_excitation(input_time_current_vectors: list[list[list[flo
             fr.phases_deg_from_time_current(time_current_vector[0], time_current_vector[1])[0])
     return hyst_frequency, hyst_current_amplitudes, hyst_phases_deg
 
+def get_defined_potentials(component_type: str)-> list[list[float]]:
+    """
+    The definition of the different potentials is needed to save the energies with every simulation based on the number of the capacitors
+    in the equivalent circuit and to calculate the voltage matrix.
+
+    :param component_type : the type of the component to be solved
+    :type component_type: str
+    """
+    if component_type == 'inductor':
+        return [[1, 0, 0],  # Scenario 1
+                [1, 1, 0],  # Scenario 2
+                [1, 0, 1]]  # Scenario 3
+    if component_type == 'transformer':
+            return [[1, 0, 0, 0],  # Simulation 1
+                    [0, 0, 1, 0],  # Simulation 2
+                    [0, 0, 1, 1],  # Simulation 3
+                    [1, 1, 1, 1],  # Simulation 4
+                    [1, 0, 1, 0],  # Simulation 5
+                    [1, 0, 1, 1],  # Simulation 6
+                    [2, 1, 1, 1],  # Simulation 7
+                    [0, 0, 2, 1],  # Simulation 8
+                    [1, 1, 2, 1],  # Simulation 9
+                    [1, 1, 2, 2]]  # Simulation 10
+    else:
+        raise ValueError(f"Unknown component_type: {component_type}")
+
+def generate_voltage_matrix(component_type: str, potentials:list[list[float]], flip_the_sec_terminal: bool = False)-> np.ndarray:
+    """
+    Generate the voltage matrix from the potentials W = 0.5 (M^2) * C. M represents the voltage matrix derived from the appleid potentials.
+    Equivalent circuit of inductor:
+    A--.------.---A
+           |      |
+           |      |
+    v_1    |      c1
+           |      |
+           |      |
+    B--|------.---B
+       |      |
+    v_2   c2     c3
+       |      |
+    E--.-----.----E
+    Equivalent circuit of transformer:
+    A--.------.-----c4--------.------.------C
+       |      |  \          / |      |
+       |      |    c5   c6    |      |
+    v1 |      c1     \/       c2     |      v2
+       |      |     /    \    |      |
+       |      |  /         \  |      |
+    B--|------.-----c3--------.------|------D
+       |      |       v3      |      |
+       c7     c8 v4          c10    c9
+       |      |               |      |
+    E--.-----.-----------------------.------E
+
+    :param component_type : the type of the component to be solved.
+    :type component_type: str
+    :param potentials: list of potentials
+    :type potentials: list[list[float]]
+    :type flip_the_sec_terminal: flip the sec voltage. v2 will be negative.
+    """
+    diffs = []
+    for vs in potentials:
+        if component_type == 'inductor':
+                # a, b, e are potentials
+                # the voltage matrix is derived from these potentials
+                a, b, e = vs
+                diffs.append([a - b,
+                              a - e,
+                              b - e])
+        elif component_type == 'transformer':
+            # Core is always grounded
+            # a, b, c, d are potentials (terminals). The voltage matrix is derived from these potentials.
+            # see the equivalent circuit of transformer in the description
+            e = 0
+            a, b, c, d = vs
+            if not flip_the_sec_terminal:
+                diffs.append([a - b,
+                              c - d,
+                              d - b,
+                              a - b- (d - b) - (c - d),
+                              d - b + c - d,
+                              a - b - (d - b),
+                              a - b + b - e,
+                              b - e,
+                              c - d + d - b + b - e,
+                              d - b + b - e
+                              ])
+            elif flip_the_sec_terminal:
+                diffs.append([a - b,
+                              d - c,
+                              d - b,
+                              a - b - (d - b) - (d - c),
+                              d - b + d - c,
+                              a - b - (d - b),
+                              a - b + b - e,
+                              b - e,
+                              d - c + d - b + b - e,
+                              d - b + b - e
+                              ])
+
+    return np.array(diffs)
+
+def solve_capacitance(m: np.ndarray, energies: np.ndarray) -> np.ndarray:
+    """
+    solve the capacitance from the voltage matrix and the energy matix saved from the simulation.
+
+    :param m: voltage matrix
+    :type: array
+    :param energies: energies solved from the simulations
+    :type energies: array
+    """
+    m_squared = m ** 2
+    if np.isclose(np.linalg.det(m_squared), 0):
+        raise ValueError("Singular matrix!")
+    return (2 * np.linalg.inv(m_squared) @ energies.reshape(-1, 1)).flatten()
+
+def distribute_potential_linearly(v_start: float, v_end: float, num_turns: int) -> list[float]:
+    """
+    Linearly distribute potentials between v_start and v_end over the turns.
+    :param v_start: the voltage on the first turn
+    :type v_start: float
+    :param v_end: the voltage on the last turn
+    :type v_end: float
+    :param num_turns: number of turns
+    :type num_turns: int
+    """
+    if v_start == v_end or num_turns == 1:
+        return [v_start] * num_turns
+    return [v_start + (v_end - v_start) * j / (num_turns - 1)
+        for j in range(num_turns)]
+
+def get_open_circuit_capacitance(c_vec: np.ndarray, num_turns_w1: int, num_turns_w2: int) -> float:
+    """
+    Get the capacitance when the secondary is open.
+    :param c_vec: the calculated capacitance from the simulation.
+    :type c_vec: bytearray
+    :param num_turns_w1: number of turns of the first winding
+    :type num_turns_w1: int
+    :param num_turns_w2: number of turns of the second winding
+    :type num_turns_w2: int
+    """
+    c_1, c_2, c_3, c_4, c_5, c_6, c_7, c_8, c_9, c_10 = c_vec
+    n_sym = num_turns_w1 / num_turns_w2
+    den = c_3 * c_7 + c_3 * c_8 + c_4 * c_7 + c_3 * c_9 + c_4 * c_8 + c_5 * c_7 + c_3 * c_10 + c_4 * c_9 + \
+          c_5 * c_8 + c_6 * c_7 + c_4 * c_10 + c_5 * c_9 + c_6 * c_8 + c_5 * c_10 + c_6 * c_9 + c_6 * c_10 + \
+          c_7 * c_9 + c_7 * c_10 + c_8 * c_9 + c_8 * c_10
+
+    num1 = (c_2 * c_3 * c_7 + c_2 * c_3 * c_8 + c_2 * c_4 * c_7 + c_2 * c_3 * c_9 +
+           c_2 * c_4 * c_8 + c_2 * c_5 * c_7 + c_3 * c_4 * c_7 + c_2 * c_3 * c_10 +
+           c_2 * c_4 * c_9 + c_2 * c_5 * c_8 + c_2 * c_6 * c_7 + c_3 * c_4 * c_8 +
+           c_3 * c_5 * c_7 + c_2 * c_4 * c_10 + c_2 * c_5 * c_9 + c_2 * c_6 * c_8 +
+           c_3 * c_4 * c_9 + c_3 * c_5 * c_8 + c_2 * c_5 * c_10 + c_2 * c_6 * c_9 +
+           c_3 * c_4 * c_10 + c_3 * c_5 * c_9 + c_4 * c_6 * c_7 + c_2 * c_6 * c_10 +
+           c_2 * c_7 * c_9 + c_3 * c_5 * c_10 + c_4 * c_6 * c_8 + c_5 * c_6 * c_7 +
+           c_2 * c_7 * c_10 + c_2 * c_8 * c_9 + c_3 * c_7 * c_9 + c_4 * c_6 * c_9 +
+           c_5 * c_6 * c_8 + c_2 * c_8 * c_10 + c_3 * c_8 * c_9 + c_4 * c_6 * c_10 +
+           c_5 * c_6 * c_9 + c_4 * c_7 * c_10 + c_5 * c_6 * c_10 + c_3 * c_9 * c_10 +
+           c_4 * c_8 * c_10 + c_5 * c_7 * c_10 + c_6 * c_7 * c_9 + c_4 * c_9 * c_10 +
+           c_5 * c_8 * c_10 + c_6 * c_8 * c_9 + c_5 * c_9 * c_10 + c_6 * c_9 * c_10 +
+           c_7 * c_9 * c_10 + c_8 * c_9 * c_10
+           ) * n_sym ** 2
+
+    num2 = (-2 * c_3 * c_4 * c_7
+           - 2 * c_3 * c_4 * c_8
+           - 2 * c_3 * c_4 * c_9
+           - 2 * c_3 * c_4 * c_10
+           + 2 * c_5 * c_6 * c_7
+           + 2 * c_3 * c_7 * c_9
+           - 2 * c_5 * c_6 * c_8
+           - 2 * c_5 * c_6 * c_9
+           - 2 * c_5 * c_6 * c_10
+           + 2 * c_4 * c_8 * c_10
+           - 2 * c_5 * c_7 * c_10
+           - 2 * c_6 * c_8 * c_9
+           ) * n_sym
+
+    num3 = (c_1 * c_3 * c_7 + c_1 * c_3 * c_8 + c_1 * c_4 * c_7 + c_1 * c_3 * c_9 +
+            c_1 * c_4 * c_8 + c_1 * c_5 * c_7 + c_1 * c_3 * c_10 + c_1 * c_4 * c_9 +
+            c_1 * c_5 * c_8 + c_1 * c_6 * c_7 + c_3 * c_4 * c_7 + c_1 * c_4 * c_10 +
+            c_1 * c_5 * c_9 + c_1 * c_6 * c_8 + c_3 * c_4 * c_8 + c_1 * c_5 * c_10 +
+            c_1 * c_6 * c_9 + c_3 * c_4 * c_9 + c_3 * c_6 * c_7 + c_4 * c_5 * c_7 +
+            c_1 * c_6 * c_10 + c_1 * c_7 * c_9 + c_3 * c_4 * c_10 + c_3 * c_6 * c_8 +
+            c_4 * c_5 * c_8 + c_1 * c_7 * c_10 + c_1 * c_8 * c_9 + c_3 * c_6 * c_9 +
+            c_3 * c_7 * c_8 + c_4 * c_5 * c_9 + c_5 * c_6 * c_7 + c_1 * c_8 * c_10 +
+            c_3 * c_6 * c_10 + c_3 * c_7 * c_9 + c_4 * c_5 * c_10 + c_4 * c_7 * c_8 +
+            c_5 * c_6 * c_8 + c_3 * c_7 * c_10 + c_5 * c_6 * c_9 + c_5 * c_7 * c_8 +
+            c_4 * c_8 * c_9 + c_5 * c_6 * c_10 + c_5 * c_7 * c_9 + c_6 * c_7 * c_8 +
+            c_4 * c_8 * c_10 + c_5 * c_7 * c_10 + c_6 * c_8 * c_9 + c_6 * c_8 * c_10 +
+            c_7 * c_8 * c_9 + c_7 * c_8 * c_10)
+    return (num1 - num2 + num3) / den
+
+def get_short_circuit_capacitance(c_vec: np.ndarray)-> float:
+    """
+    Get the capacitance when the secondary is shorted.
+
+    :param c_vec: the calculated capacitance from the simulation.
+    :type c_vec: bytearray
+    """
+    c_1, c_2, c_3, c_4, c_5, c_6, c_7, c_8, c_9, c_10 = c_vec
+    c_sim_short = (c_1 + (c_3 * c_4 * c_7 + c_3 * c_4 * c_8 + c_3 * c_4 * c_9 +
+            c_3 * c_6 * c_7 + c_4 * c_5 * c_7 + c_3 * c_4 * c_10 +
+            c_3 * c_6 * c_8 + c_4 * c_5 * c_8 + c_3 * c_6 * c_9 +
+            c_3 * c_7 * c_8 + c_4 * c_5 * c_9 + c_5 * c_6 * c_7 +
+            c_3 * c_6 * c_10 + c_3 * c_7 * c_9 + c_4 * c_5 * c_10 +
+            c_4 * c_7 * c_8 + c_5 * c_6 * c_8 + c_3 * c_7 * c_10 +
+            c_5 * c_6 * c_9 + c_5 * c_7 * c_8 + c_4 * c_8 * c_9 +
+            c_5 * c_6 * c_10 + c_5 * c_7 * c_9 + c_6 * c_7 * c_8 +
+            c_4 * c_8 * c_10 + c_5 * c_7 * c_10 + c_6 * c_8 * c_9 +
+            c_6 * c_8 * c_10 + c_7 * c_8 * c_9 + c_7 * c_8 * c_10)
+            /(c_3 * c_7 + c_3 * c_8 + c_4 * c_7 + c_3 * c_9 + c_4 * c_8 +
+            c_5 * c_7 + c_3 * c_10 + c_4 * c_9 + c_5 * c_8 + c_6 * c_7 +
+            c_4 * c_10 + c_5 * c_9 + c_6 * c_8 + c_5 * c_10 + c_6 * c_9 +
+            c_6 * c_10 + c_7 * c_9 + c_7 * c_10 + c_8 * c_9 + c_8 * c_10)
+    )
+    return  c_sim_short
+
+def compare_and_plot_connection_capacitance_of_transformer(c_vec: np.ndarray,
+                                    measured_capacitance: list[float | None] | None = None,
+                                    show_plot: bool = True):
+    """
+    Compare the connection capacitance applied in the measurement. The capacitors C1,...C10 can not be compared directly to the measurement results.
+    For every connection, we look to the behavior of the equivalent circuit. For example; AB vs CDE will result in C3 + C4 + C5 + C6 + C7 + C8
+
+    :param c_vec: the calculated capacitance from the simulation.
+    :type c_vec: bytearray
+    :param measured_capacitance: represent the measured capacitance of all the connections
+    :type measured_capacitance: list[float | None]
+    :param show_plot: to show the comparison between the simulation and measurement results in a figure.
+    :type show_plot: bool
+    """
+    connection_keys = [
+        'C_ABvsCDE', 'C_ABCDvsE', 'C_ABEvsCD', 'C_AvsBCDE', 'C_BvsACDE',
+        'C_CvsABDE', 'C_DvsABCE', 'C_ACvsBDE', 'C_ADvsBCE', 'C_BC_ADE'
+    ]
+    connection_sums = {
+        'C_ABvsCDE': lambda C: C[2] + C[3] + C[4] + C[5] + C[6] + C[7],
+        'C_ABCDvsE': lambda C: C[6] + C[7] + C[8] + C[9],
+        'C_ABEvsCD': lambda C: C[2] + C[3] + C[4] + C[5] + C[8] + C[9],
+        'C_AvsBCDE': lambda C: C[0] + C[3] + C[5] + C[6],
+        'C_BvsACDE': lambda C: C[0] + C[2] + C[4] + C[7],
+        'C_CvsABDE': lambda C: C[1] + C[3] + C[4] + C[8],
+        'C_DvsABCE': lambda C: C[1] + C[2] + C[5] + C[9],
+        'C_ACvsBDE': lambda C: C[0] + C[1] + C[4] + C[5] + C[6] + C[8],
+        'C_ADvsBCE': lambda C: C[0] + C[1] + C[2] + C[3] + C[6] + C[9],
+        'C_BC_ADE': lambda C: C[0] + C[1] + C[2] + C[3] + C[7] + C[8],
+    }
+
+    if measured_capacitance is not None:
+        if len(measured_capacitance) != 10:
+            raise ValueError("measured_capacitances must be a sequence of 10 numbers (float or None).")
+
+        # build simulated connection sums
+        sim_sums = [connection_sums[k](c_vec) for k in connection_keys]
+
+        logger.info("\n---  Simulated vs Measured Capacitance  (pF) -------------")
+        logger.info(f"{'Connection':<12}{'Measured':>12}{'Simulated':>12}{'Error %':>10}")
+        logger.info("-" * 46)
+
+        # prepare data for optional plot
+        idx_used, meas_pf_used, calc_pf_used, ratio_used = [], [], [], []
+
+        for i, (k, meas, sim) in enumerate(zip(connection_keys,
+                                               measured_capacitance,
+                                               sim_sums)):
+            sim_pf = sim * 1e12
+            if meas is None or (isinstance(meas, float) and np.isnan(meas)):
+                logger.info(f"{k:<12}{'---':>12}{sim_pf:12.2f}{'---':>10}")
+                # still plot simulated value
+                idx_used.append(i)
+                meas_pf_used.append(None)
+                calc_pf_used.append(sim_pf)
+                ratio_used.append(None)
+            else:
+                meas_pf = meas * 1e12
+                error_percentage = 100 * (sim - meas) / meas
+                logger.info(f"{k:<12}{meas_pf:12.2f}{sim_pf:12.2f}{error_percentage:10.2f}")
+
+                idx_used.append(i)
+                meas_pf_used.append(meas_pf)
+                calc_pf_used.append(sim_pf)
+                ratio_used.append(sim_pf / meas_pf)
+
+        if show_plot:
+
+            idx = np.arange(10)
+            plt.figure(figsize=(14, 6))
+
+            # plot all simulated points
+            plt.scatter(idx, [s for s in calc_pf_used],
+                        label="Simulated", color="C0", marker="o")
+
+            # plot only measured values that exist
+            idx_meas = [i for i, m in zip(idx_used, meas_pf_used) if m is not None]
+            meas_pf_ok = [m for m in meas_pf_used if m is not None]
+            plt.scatter(idx_meas, meas_pf_ok,
+                        label="Measured", color="C3", marker="x")
+
+            # annotate ratio where both values exist
+            for i, sim_pf, ratio in zip(idx_used, calc_pf_used, ratio_used):
+                if ratio is not None:
+                    plt.text(i, sim_pf, f"{ratio:.2f}×",
+                             ha="center", va="bottom", fontsize=8)
+
+            label_txt = [k.replace('vs', ' vs ') for k in connection_keys]
+            plt.xticks(idx, label_txt, rotation=45, ha="right")
+            plt.xlabel("Capacitance Connections")
+            plt.ylabel("Capacitance / pF]")
+            plt.title("Simulated vs Measured Capacitance")
+            plt.grid(True, linestyle=":")
+            plt.legend()
+            plt.tight_layout()
+            plt.show()
+
+def plot_open_and_short_comparison(c_sim_open: float, c_sim_short: float,
+                              c_meas_open: float | None, c_meas_short: float | None):
+    """
+    Plot horizontal bar comparison for open-circuit capacitance and short-circuit capacitance.
+
+    :param c_sim_open: simulated open‑circuit capacitance (F)
+    :param c_sim_short: simulated short‑circuit capacitance (F)
+    :param c_meas_open: measured open‑circuit capacitance (F) or None
+    :param c_meas_short: measured short‑circuit capacitance (F) or None
+    """
+    labels, sim_bar, meas_bar = [], [], []
+    if c_meas_open is not None:
+        labels.append("A‑B  (CD open)")
+        sim_bar.append(c_sim_open * 1e12)
+        meas_bar.append(c_meas_open * 1e12)
+    if c_meas_short is not None:
+        labels.append("A‑B  (CD short)")
+        sim_bar.append(c_sim_short * 1e12)
+        meas_bar.append(c_meas_short * 1e12)
+
+    if not labels:
+        return  # nothing to plot
+
+    y = np.arange(len(labels))
+    h = 0.3
+    plt.figure(figsize=(10, 3.5))
+    plt.barh(y - h/2, sim_bar, height=h, color='tab:blue', label="Simulated")
+    plt.barh(y + h/2, meas_bar, height=h, color='tab:red', label="Measured")
+
+    for i, (s, m) in enumerate(zip(sim_bar, meas_bar)):
+        if m != 0:
+            plt.text(s * 1.01, i - h/2, f"{s/m:.2f}×", va='center', fontsize=9, color='blue')
+
+    plt.yticks(y, labels)
+    plt.xlabel("Capacitance / pF")
+    plt.grid(axis='x', linestyle='--', alpha=0.6)
+    plt.title("Simulated vs Measured Open / Short Capacitance")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+
 def close_excel_file_if_open(filepath):
     """
     Close the specified Excel file if it is currently open.

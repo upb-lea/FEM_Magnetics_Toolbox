@@ -165,7 +165,7 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     example_thermal_simulation(show_visual_outputs, flag_insulation=True)
     #geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
     # Extract capacitance of transformer component
-    # geo.get_capacitance_of_transformer()
+    geo.get_capacitance_of_transformer()
 
 
 if __name__ == "__main__":
