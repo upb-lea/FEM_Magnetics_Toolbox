@@ -2244,7 +2244,7 @@ def generate_voltage_matrix(component_type: str, potentials: list[list[float]], 
 
 def solve_capacitance(m: np.ndarray, energies: np.ndarray) -> np.ndarray:
     """
-    solve the capacitance from the voltage matrix and the energy matix saved from the simulation.
+    Solve the capacitance from the voltage matrix and the energy matix saved from the simulation.
 
     :param m: voltage matrix
     :type: array
