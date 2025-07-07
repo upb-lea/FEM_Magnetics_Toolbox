@@ -2244,12 +2244,12 @@ def generate_voltage_matrix(component_type: str, potentials: list[list[float]], 
 
 def solve_capacitance(m: np.ndarray, energies: np.ndarray) -> np.ndarray:
     """
-    Solve the capacitance from the voltage matrix and the energy matix saved from the simulation.
+    Solve the capacitance from the voltage matrix and the energy matrix saved from the simulation.
 
     :param m: voltage matrix
     :type: array
     :param energies: energies solved from the simulations
-    :type energies: bytearray
+    :type energies: byte array
     """
     m_squared = m ** 2
     if np.isclose(np.linalg.det(m_squared), 0):
@@ -2276,7 +2276,7 @@ def get_open_circuit_capacitance(c_vec: np.ndarray, num_turns_w1: int, num_turns
     Get the capacitance when the secondary is open.
 
     :param c_vec: the calculated capacitance from the simulation.
-    :type c_vec: bytearray
+    :type c_vec: byte array
     :param num_turns_w1: number of turns of the first winding
     :type num_turns_w1: int
     :param num_turns_w2: number of turns of the second winding
@@ -2313,7 +2313,7 @@ def get_short_circuit_capacitance(c_vec: np.ndarray) -> float:
     Get the capacitance when the secondary is shorted.
 
     :param c_vec: the calculated capacitance from the simulation.
-    :type c_vec: bytearray
+    :type c_vec: byte array
     """
     c_1, c_2, c_3, c_4, c_5, c_6, c_7, c_8, c_9, c_10 = c_vec
     num = c_3 * c_4 * c_7 + c_3 * c_4 * c_8 + c_3 * c_4 * c_9 + c_3 * c_6 * c_7 + c_4 * c_5 * c_7 + c_3 * c_4 * c_10 + \
@@ -2333,7 +2333,7 @@ def compare_and_plot_connection_capacitance_of_transformer(c_vec: np.ndarray, me
 
     For every connection, we look to the behavior of the equivalent circuit. For example; AB vs CDE will result in C3 + C4 + C5 + C6 + C7 + C8
     :param c_vec: the calculated capacitance from the simulation.
-    :type c_vec: bytearray
+    :type c_vec: byte array
     :param measured_capacitance: represent the measured capacitance of all the connections
     :type measured_capacitance: list[float | None]
     :param show_plot: to show the comparison between the simulation and measurement results in a figure.

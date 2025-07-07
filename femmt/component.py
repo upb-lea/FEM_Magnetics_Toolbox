@@ -1589,7 +1589,7 @@ class MagneticComponent:
         :type show_fem_simulation_results: bool
         :param benchmark: Benchmark simulation (stop time). Defaults to False.
         :type benchmark: bool
-        :param save_to_excel_file: Save the log to exel file.
+        :param save_to_excel_file: Save the log to excel file.
         :type save_to_excel_file: bool
         """
         # Check if the voltage list is valid
@@ -3024,7 +3024,7 @@ class MagneticComponent:
         :type show_fem_simulation_results: bool
         :param benchmark: Benchmark simulation (stop time). Defaults to False.
         :type benchmark: bool
-        :param save_to_excel: save the result to exel file.
+        :param save_to_excel: save the result to excel file.
         :type save_to_excel: bool
         """
         potentials = ff.get_defined_potentials("inductor")
@@ -3089,7 +3089,7 @@ class MagneticComponent:
         :type show_fem_simulation_results: bool
         :param benchmark: Benchmark simulation (stop time). Defaults to False.
         :type benchmark: bool
-        :param save_to_excel: save the result to exel file.
+        :param save_to_excel: save the result to excel file.
         :type save_to_excel: bool
         """
         # Define terminal voltages for the simulation
@@ -3178,7 +3178,7 @@ class MagneticComponent:
         :type show_fem_simulation_results: bool
         :param benchmark: Benchmark simulation (stop time). Defaults to False.
         :type benchmark: bool
-        :param save_to_excel: save the result to exel file.
+        :param save_to_excel: save the result to excel file.
         :type save_to_excel: bool
         :param show_plot_comparison: compare between the simulation and measurement results.
         :type show_plot_comparison: bool
@@ -5571,14 +5571,14 @@ class MagneticComponent:
         :type voltages: list[list[float]]
         :param ground_core: Ground core.
         :type ground_core: bool
-        :param ground_outer_boundary: Grounding outerboundary.
+        :param ground_outer_boundary: Grounding outer boundary.
         :type ground_outer_boundary: bool
         :param non_visualize: Flag to control visualization.
         :param mesh_size: Mesh size for general areas.
         :param mesh_size_conductor: Mesh size specifically for conductors.
-        :param save_to_excel_file: Save the log to exel file.
+        :param save_to_excel_file: Save the log to excel file.
         :type save_to_excel_file: bool
-        :param compare_femmt_to_femm: compare file logs between FEMMT and FEMM in exel form.
+        :param compare_femmt_to_femm: compare file logs between FEMMT and FEMM in excel form.
         :type compare_femmt_to_femm: bool
         :
         """
