@@ -144,7 +144,6 @@ class Conductor:
             self.n_strands = int(conductor_radius ** 2 / strand_radius ** 2 * fill_factor)
         elif conductor_radius is None:
             self.conductor_radius = np.sqrt(number_strands * strand_radius ** 2 / fill_factor)
-            print(self.conductor_radius)
         elif fill_factor is None:
             ff_exact = number_strands * strand_radius ** 2 / conductor_radius ** 2
             self.ff = np.around(ff_exact, decimals=2)
@@ -310,9 +309,6 @@ class Core:
             # set r_outer, so cross-section of outer leg has same cross-section as inner leg
             # this is the default-case
             self.r_outer = fr.calculate_r_outer(self.core_inner_diameter, self.window_w)
-
-        # bobbin dimensions
-
         # Material Parameters
         # General
         # Initialize database

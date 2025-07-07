@@ -793,10 +793,10 @@ class Mesh:
         """
         Set the rectangular electrical insulation between conductors and core.
 
-        :param p_iso_core:
+        :param p_iso_core: Insulation points of the bobbin.
         :type p_iso_core: list
 
-        :return:
+        :return: List of curve-loop identifiers for each insulation rectangle.
         :rtype: list
         """
         # Insulations
@@ -827,10 +827,10 @@ class Mesh:
         """
         Set the rectangular electrical insulation between layers.
 
-        :param p_iso_layer:
+        :param p_iso_layer: Points of the insulation between the layers of turns.
         :type p_iso_layer: List
 
-        :return:
+        :return: List of curve-loop.
         :rtype: list
         """
         for iso in self.model.p_iso_layer:
