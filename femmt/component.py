@@ -4378,7 +4378,7 @@ class MagneticComponent:
         log_dict["energy"]["stored_component"] = self.load_result("Energy_Stored_Component", res_type="value", last_n=1)[0]
 
         # Extract capacitance data
-        capacitance_folder = os.path.join(values_folder, "capacitance")
+        capacitance_folder = os.path.join(values_folder, "Capacitance")
         log_dict["capacitances"] = {"within_winding": {}, "between_windings": {}, "between_turns_core": {}}
 
         for winding_number in range(len(self.windings)):
