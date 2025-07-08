@@ -115,7 +115,7 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
                     permeability_datasource=fmt.MaterialDataSource.Custom,
                     permittivity_datasource=fmt.MaterialDataSource.Custom,
-                    detailed_core_model=True)
+                    detailed_core_model=False)
     geo.set_core(core)
 
     # 3. set air gap parameters
@@ -126,8 +126,10 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     # 4. set insulation
     insulation = fmt.Insulation(flag_insulation=True)
     insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
+    insulation.add_turn_insulation([0.25e-5, 0.25e-5], add_turn_insulations=False)
     insulation.add_winding_insulations([[0.0002, 0.001],
-                                        [0.001, 0.0002]])
+                                        [0.001, 0.0002]], per_layer_of_turns=False)
+    insulation.add_insulation_between_layers(add_insulation_material=False, thickness=0.0002)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -159,7 +161,11 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     geo.single_simulation(freq=200000, current=[2, 2], phi_deg=[0, 180],
                           show_fem_simulation_results=show_visual_outputs)
 
+    # thermal simulation
     example_thermal_simulation(show_visual_outputs, flag_insulation=True)
+    # geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
+    # Extract capacitance of transformer component
+    geo.get_capacitance_of_transformer()
 
 
 if __name__ == "__main__":

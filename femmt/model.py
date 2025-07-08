@@ -309,7 +309,6 @@ class Core:
             # set r_outer, so cross-section of outer leg has same cross-section as inner leg
             # this is the default-case
             self.r_outer = fr.calculate_r_outer(self.core_inner_diameter, self.window_w)
-
         # Material Parameters
         # General
         # Initialize database
@@ -664,15 +663,23 @@ class Insulation:
     In general, it is not necessary to add an insulation object at all when no insulation is needed.
     """
 
-    cond_cond: list[list[
-        float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
-    core_cond: list[
-        float]  # list with size 4x1, with respectively isolation of cond_n -> [top_core, bot_core, left_core, right_core]
-
+    conductor_type: ConductorType  # it is needed here tempoarily
+    cond_cond: list[list[float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
+    core_cond: list[float]  # list with size 4x1, with respectively isolation of cond_n -> [top_core, bot_core, left_core, right_core]
+    turn_ins: list[float]   # list of turn insulation of every winding -> [turn_ins_of_winding_1, turn_ins_of_winding_2, ...]
+    cond_air_cond: list[list[float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
+    er_turn_insulation: list[float]
+    er_layer_insulation: float = None
+    er_bobbin: float = None
+    bobbin_dimensions: None
+    thickness_of_insulation: float
+    consistent_ins: bool = True
+    draw_insulation_between_layers: bool = True
     flag_insulation: bool = True
+    add_turn_insulations: bool = True
     max_aspect_ratio: float
 
-    def __init__(self, max_aspect_ratio: float = 10, flag_insulation: bool = True):
+    def __init__(self, max_aspect_ratio: float = 10, flag_insulation: bool = True, bobbin_dimensions: None = None):
         """Create an insulation object.
 
         Sets an insulation_delta value. In order to simplify the drawing of the isolations between core and winding window the isolation rectangles
@@ -683,6 +690,13 @@ class Insulation:
         # If the gaps between insulations and core (or windings) are to big/small just change this value
         self.flag_insulation = flag_insulation
         self.max_aspect_ratio = max_aspect_ratio
+        self.bobbin_dimensions = bobbin_dimensions
+        # As there is a gap between the core and the bobbin, the definition of bobbin parameters is needed in electrostatic simulation
+        if bobbin_dimensions is not None:
+            self.bobbin_inner_diameter = bobbin_dimensions.bobbin_inner_diameter
+            self.bobbin_window_w = bobbin_dimensions.bobbin_window_w
+            self.bobbin_window_h = bobbin_dimensions.bobbin_window_h
+            self.bobbin_h = bobbin_dimensions.bobbin_h
 
     def set_flag_insulation(self, flag: bool):  # to differentiate between the simulation with and without insulation
         """
@@ -693,21 +707,75 @@ class Insulation:
         """
         self.flag_insulation = flag
 
-    def add_winding_insulations(self, inner_winding_insulation: list[list[float]]):
-        """Add insulations between turns of one winding and insulation between virtual winding windows.
+    def add_winding_insulations(self, inner_winding_insulation: list[list[float]], per_layer_of_turns: bool = False):
+        """Add a consistent insulation between turns of one winding and insulation between virtual winding windows.
 
         Insulation between virtual winding windows is not always needed.
         :param inner_winding_insulation: List of floats which represent the insulations between turns of the same winding. This does not correspond to
         the order conductors are added to the winding! Instead, the winding number is important. The conductors are sorted by ascending winding number.
         The lowest winding number therefore is combined with index 0. The second lowest with index 1 and so on.
         :type inner_winding_insulation: list[list[float]]
+        :param per_layer_of_turns: If it is enabled, the insulation will be added between turns for every layer in every winding.
+        :type per_layer_of_turns: bool.
         """
         if inner_winding_insulation == [[]]:
             raise Exception("Inner winding insulations list cannot be empty.")
 
         self.cond_cond = inner_winding_insulation
 
-    def add_core_insulations(self, top_core: float, bot_core: float, left_core: float, right_core: float):
+        if per_layer_of_turns:
+            self.consistent_ins = False
+        else:
+            self.consistent_ins = True
+
+    def add_turn_insulation(self, insulation_thickness: list[float], dielectric_constant: list[float] = None, add_turn_insulations: bool = False):
+        """Add insulation for turns in every winding.
+
+        :param insulation_thickness: List of floats which represent the insulation around every winding.
+        :type insulation_thickness: list[[float]]
+        :param dielectric_constant: relative permittivity of the insulation of the winding
+        :type dielectric_constant list[[float]]
+        :param add_turn_insulations: bool to draw the insulation around turns
+        :type add_turn_insulations: bool
+        """
+        self.add_turn_insulations = add_turn_insulations
+        # self.er_turn_insulation = dielectric_constant
+
+        if dielectric_constant is not None:
+            self.er_turn_insulation = dielectric_constant
+        else:
+            self.er_turn_insulation = [1.0 for _ in insulation_thickness]
+
+        if add_turn_insulations:
+            self.turn_ins = insulation_thickness
+        else:
+            # self.turn_ins = []
+            self.turn_ins = [0.0 for _ in insulation_thickness]
+
+    def add_insulation_between_layers(self, add_insulation_material: bool = True, thickness: float = 0.0, dielectric_constant: float = None):
+        """
+        Add an insulation (thickness_of_insulation or tape insulation) between layers.
+
+        :param add_insulation_material: show the drawing of the insulation between the layers of turns. If false, it is not drawn and it is an air by default
+        :type add_insulation_material: bool
+        :param thickness: the thickness of the insulation between the layers of turns
+        :type thickness: float
+        :param dielectric_constant: relative permittivity of the insulation between the layers
+        :type dielectric_constant: float
+        """
+        if thickness <= 0:
+            raise ValueError("insulation thickness must be greater than zero.")
+        else:
+            self.thickness_of_insulation = thickness
+
+        self.er_layer_insulation = dielectric_constant if dielectric_constant is not None else 1.0
+
+        if add_insulation_material:
+            self.draw_insulation_between_layers = True
+        else:
+            self.draw_insulation_between_layers = False
+
+    def add_core_insulations(self, top_core: float, bot_core: float, left_core: float, right_core: float, dielectric_constant: float = None):
         """Add insulations between the core and the winding window. Creating those will draw real rectangles in the model.
 
         :param top_core: Insulation between winding window and top core
@@ -718,6 +786,8 @@ class Insulation:
         :type left_core: float
         :param right_core: Insulation between winding window and right core
         :type right_core: float
+        :param dielectric_constant: relative permittivity of the core insulation
+        :type dielectric_constant: float
         """
         if top_core is None:
             top_core = 0
@@ -728,6 +798,7 @@ class Insulation:
         if right_core is None:
             right_core = 0
 
+        self.er_bobbin = dielectric_constant if dielectric_constant is not None else 1.0
         self.core_cond = [top_core, bot_core, left_core, right_core]
         self.core_cond = [top_core, bot_core, left_core, right_core]
 
@@ -1013,12 +1084,28 @@ class WindingWindow:
         self.core: Core = core
         self.stray_path: StrayPath = stray_path
         self.air_gaps: AirGaps = air_gaps
+        self.insulations: Insulation = insulations
 
         if self.core.core_type == CoreType.Single:
-            self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[1]
-            self.max_top_bound = core.window_h / 2 - insulations.core_cond[0]
-            self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
-            self.max_right_bound = core.r_inner - insulations.core_cond[3]
+            if self.insulations.bobbin_dimensions:
+                # top - bot
+                bobbin_height = self.insulations.bobbin_window_h
+                insulation_delta_top_bot = (self.core.window_h - bobbin_height) / 2
+                # left
+                bobbin_inner_radius = self.insulations.bobbin_inner_diameter / 2
+                core_inner_radius = self.core.core_inner_diameter / 2
+                insulation_delta_left = bobbin_inner_radius - core_inner_radius
+                # insulation_delta_left = 3e-4
+                # dimensions
+                self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[1] + insulation_delta_top_bot
+                self.max_top_bound = core.window_h / 2 - insulations.core_cond[0] - insulation_delta_top_bot
+                self.max_left_bound = (core.core_inner_diameter / 2 + insulations.core_cond[2] + insulation_delta_left + 1.5e-5)
+                self.max_right_bound = core.r_inner - insulations.core_cond[3]
+            else:
+                self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[1]
+                self.max_top_bound = core.window_h / 2 - insulations.core_cond[0]
+                self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
+                self.max_right_bound = core.r_inner - insulations.core_cond[3]
         elif self.core.core_type == CoreType.Stacked:  # top, bot, left, right
             self.max_bot_bound = -core.window_h_bot / 2 + insulations.core_cond[1]
             self.max_top_bound = core.window_h_bot / 2 + core.window_h_top + core.core_thickness - insulations.core_cond[0]

@@ -62,13 +62,13 @@ class SimulationType(IntEnum):
 
     FreqDomain = 1
     TimeDomain = 2
+    ElectroStatic = 3
 
 class CoreType(IntEnum):
     """Sets the core type for the whole simulation. Needs to be given to the MagneticComponent on creation."""
 
     Single = 1  # one axisymmetric core
     Stacked = 2  # one and a half cores
-
 
 class AirGapMethod(IntEnum):
     """Sets the method how the air gap position (vertical) is set.

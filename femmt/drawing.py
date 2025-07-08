@@ -23,6 +23,7 @@ class TwoDaxiSymmetric:
     stray_path: StrayPath
     insulation: Insulation
     component_type: ComponentType
+    simulation_type: SimulationType
     mesh_data: MeshData
     number_of_windings: int
     verbosity: Verbosity
@@ -39,10 +40,12 @@ class TwoDaxiSymmetric:
 
     def __init__(self, core: Core, mesh_data: MeshData, air_gaps: AirGaps, winding_windows: list[WindingWindow],
                  stray_path: StrayPath, insulation: Insulation, component_type: ComponentType, number_of_windings: int, verbosity: Verbosity):
+
         self.core = core
         self.mesh_data = mesh_data
         self.winding_windows = winding_windows
         self.air_gaps = air_gaps
+        self.simulation_type = SimulationType
         self.component_type = component_type
         self.stray_path = stray_path
         self.insulation = insulation
@@ -60,11 +63,14 @@ class TwoDaxiSymmetric:
             self.p_window_bot = np.zeros((4, 4))  # TODO: just for right side? make it the same as for single core geometry
         self.p_air_gaps = np.zeros((4 * air_gaps.number, 4))
         self.p_conductor = []
+        self.p_iso_conductor = []
         self.p_iso_core = []
         self.p_iso_pri_sec = []
+        self.p_iso_layer = []
 
         for i in range(number_of_windings):
             self.p_conductor.insert(i, [])
+            self.p_iso_conductor.insert(i, [])
 
         self.r_inner = core.r_inner
         self.r_outer = core.r_outer
@@ -919,46 +925,67 @@ class TwoDaxiSymmetric:
                                     ConductorDistribution.VerticalDownward_HorizontalRightward,
                                     ConductorDistribution.HorizontalRightward_VerticalUpward,
                                     ConductorDistribution.HorizontalRightward_VerticalDownward]
-
+                                # define a delta insulation
+                                insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
+                                thickness_of_the_insulation_layer = self.insulation.thickness_of_insulation
                                 # Set the starting position and step size based on initial conditions
                                 if vertical_first:
                                     if upward_movement:
-                                        start_y = bot_bound + winding.conductor_radius  # Start from the bottom
-                                        step_y = winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
+                                        start_y = bot_bound + winding.conductor_radius + self.insulation.turn_ins[num]  # Start from the bottom
+                                        step_y = winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num]
                                     else:
-                                        start_y = top_bound - winding.conductor_radius  # Start from the top
-                                        step_y = -(winding.conductor_radius * 2 + self.insulation.cond_cond[num][num])
+                                        start_y = top_bound - winding.conductor_radius - self.insulation.turn_ins[num]  # Start from the top
+                                        step_y = -(winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num])
 
                                     if rightward_movement:
-                                        start_x = left_bound + winding.conductor_radius  # Moving right after completing a column
-                                        step_x = winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
+                                        # Moving right after completing a column
+                                        start_x = left_bound + winding.conductor_radius + self.insulation.turn_ins[num]
+                                        step_x = winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + thickness_of_the_insulation_layer
+                                        # For insulation between layer
+                                        start_x_layer = left_bound + 2 * winding.conductor_radius + 2 * self.insulation.turn_ins[num]
+                                        step_x_layer = winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + thickness_of_the_insulation_layer
                                     else:
-                                        start_x = right_bound - winding.conductor_radius  # Moving left after completing a column
-                                        step_x = -(winding.conductor_radius * 2 + self.insulation.cond_cond[num][num])
-                                # Determine if the first movement is horizontally (rightward or leftward)
+                                        # Moving left after completing a column
+                                        start_x = right_bound - winding.conductor_radius - self.insulation.turn_ins[num]
+                                        step_x = -(winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + thickness_of_the_insulation_layer)
+                                        # For insulation between layer
+                                        start_x_layer = right_bound - 2 * winding.conductor_radius - 2 * self.insulation.turn_ins[num]
+                                        step_x_layer = -(winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + thickness_of_the_insulation_layer)
+                                        # Determine if the first movement is horizontally (rightward or leftward)
                                 else:
                                     if rightward_movement:
-                                        start_x = left_bound + winding.conductor_radius  # start from the left
-                                        step_x = winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
+                                        start_x = left_bound + winding.conductor_radius + self.insulation.turn_ins[num]  # start from the left
+                                        step_x = winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num]
                                     else:
-                                        start_x = right_bound - winding.conductor_radius  # Start from the right
-                                        step_x = -(winding.conductor_radius * 2 + self.insulation.cond_cond[num][num])
+                                        start_x = right_bound - winding.conductor_radius - self.insulation.turn_ins[num]  # Start from the right
+                                        step_x = -(winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num])
 
                                     if upward_movement:
-                                        start_y = bot_bound + winding.conductor_radius  # Moving top after completing a raw
-                                        step_y = winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
+                                        start_y = bot_bound + winding.conductor_radius + self.insulation.turn_ins[num]   # Moving top after completing a raw
+                                        step_y = winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + thickness_of_the_insulation_layer
+                                        # For insulation between layer
+                                        start_y_layer = bot_bound + 2 * winding.conductor_radius + 2 * self.insulation.turn_ins[num]
+                                        step_y_layer = winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + thickness_of_the_insulation_layer
                                     else:
-                                        start_y = top_bound - winding.conductor_radius  # Moving bottom after completing a raw
-                                        step_y = -(winding.conductor_radius * 2 + self.insulation.cond_cond[num][num])
+                                        start_y = top_bound - winding.conductor_radius - self.insulation.turn_ins[num]  # Moving bottom after completing a raw
+                                        step_y = -(winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + thickness_of_the_insulation_layer)
+                                        # For insulation between layer
+                                        start_y_layer = top_bound - 2 * winding.conductor_radius - 2 * self.insulation.turn_ins[num]
+                                        step_y_layer = -(winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + thickness_of_the_insulation_layer)
 
                                 # Loop and place conductors accordingly
                                 x = start_x
                                 y = start_y
+                                x_l = start_x_layer if vertical_first else None
+                                y_l = start_y_layer if not vertical_first else None
                                 i = 0
+                                counter_layer = 0
                                 # Vertically movement
                                 if vertical_first:
                                     while i < turns and left_bound + winding.conductor_radius <= x <= right_bound - winding.conductor_radius:
                                         while i < turns and bot_bound + winding.conductor_radius <= y <= top_bound - winding.conductor_radius:
+                                            y_last = y
+                                            # drawing conductor
                                             self.p_conductor[num].append(
                                                 [x, y, 0, self.mesh_data.c_center_conductor[num]])
                                             self.p_conductor[num].append(
@@ -969,21 +996,72 @@ class TwoDaxiSymmetric:
                                                 [x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
                                             self.p_conductor[num].append(
                                                 [x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                            y += step_y
+
+                                            # if the number of layer is less than len(insulation.cond_air_cond), then count it as zero
+                                            if counter_layer > len(self.insulation.cond_cond[num]) - 1:
+                                                self.insulation.cond_cond[num].append(insulation_delta)
+
+                                            if self.insulation.consistent_ins is True:
+                                                winding_insulation = self.insulation.cond_cond[num][num]
+                                            else:
+                                                winding_insulation = self.insulation.cond_cond[num][counter_layer]
+                                            # Increment y based on the cond-air-cond insulation and the movement type
+                                            if upward_movement:
+                                                if zigzag:
+                                                    if counter_layer % 2 == 0:  # even.. first layer(0)
+                                                        y += step_y + winding_insulation
+                                                    elif counter_layer % 2 == 1:  # odd.. sec layer(1)
+                                                        y += step_y - winding_insulation
+                                                else:
+                                                    y += step_y + winding_insulation
+                                            else:  # Downward movement
+                                                if zigzag:
+                                                    if counter_layer % 2 == 0:  # even.. first layer(0)
+                                                        y += step_y - winding_insulation
+                                                    elif counter_layer % 2 == 1:  # odd.. sec layer(1)
+                                                        y += step_y + winding_insulation
+                                                else:
+                                                    y += step_y - winding_insulation
+
                                             i += 1
+
+                                        # Insert insulation after each layer
+                                        mesh_to_conductor = min(self.mesh_data.c_conductor)
+                                        if rightward_movement:
+                                            layer_insulation_points = [
+                                                [x_l + insulation_delta, top_bound, 0, mesh_to_conductor],
+                                                [x_l + thickness_of_the_insulation_layer - insulation_delta, top_bound, 0, mesh_to_conductor],
+                                                [x_l + thickness_of_the_insulation_layer - insulation_delta, bot_bound, 0, mesh_to_conductor],
+                                                [x_l + insulation_delta, bot_bound, 0, mesh_to_conductor]
+                                            ]
+                                        else:
+                                            layer_insulation_points = [
+                                                [x_l - insulation_delta, top_bound, 0, mesh_to_conductor],
+                                                [x_l - thickness_of_the_insulation_layer + insulation_delta, top_bound, 0, mesh_to_conductor],
+                                                [x_l - thickness_of_the_insulation_layer + insulation_delta, bot_bound, 0, mesh_to_conductor],
+                                                [x_l - insulation_delta, bot_bound, 0, mesh_to_conductor]
+                                            ]
+                                        # Add the points to the layer insulation data structure
+                                        if self.insulation.draw_insulation_between_layers:
+                                            self.p_iso_layer.append(layer_insulation_points)
                                         if not zigzag:
                                             # Start the next column with the same starting point (consistent direction)
                                             y = start_y
                                         else:
                                             # Alternating between top and bottom for the Zigzag movement
+                                            # step_y *= -1
+                                            # y += step_y
+                                            y = y_last  # **no extra step**
                                             step_y *= -1
-                                            y += step_y
-                                        # Moving one step horizontally (right or left)
+                                        # increment x
                                         x += step_x
+                                        x_l += step_x_layer
+                                        counter_layer += 1
                                 # Horizontally movement
                                 else:
                                     while i < turns and bot_bound + winding.conductor_radius <= y <= top_bound - winding.conductor_radius:
                                         while i < turns and left_bound + winding.conductor_radius <= x <= right_bound - winding.conductor_radius:
+                                            x_last = x
                                             self.p_conductor[num].append(
                                                 [x, y, 0, self.mesh_data.c_center_conductor[num]])
                                             self.p_conductor[num].append(
@@ -994,17 +1072,64 @@ class TwoDaxiSymmetric:
                                                 [x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
                                             self.p_conductor[num].append(
                                                 [x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                            x += step_x
+
+                                            # if the number of layer is less than len(insulation.cond_air_cond), then the air insulation as zero
+                                            if counter_layer > len(self.insulation.cond_cond[num]) - 1:
+                                                self.insulation.cond_cond[num].append(insulation_delta)
+
+                                            if self.insulation.consistent_ins is True:
+                                                winding_insulation = self.insulation.cond_cond[num][num]
+                                            else:
+                                                winding_insulation = self.insulation.cond_cond[num][counter_layer]
+                                            # Increment x based on the cond-air-cond insulation and the movement type
+                                            if rightward_movement:
+                                                if zigzag:
+                                                    if counter_layer % 2 == 0:
+                                                        x += step_x + winding_insulation
+                                                    elif counter_layer % 2 == 1:
+                                                        x += step_x - winding_insulation
+                                                else:
+                                                    x += step_x + winding_insulation
+                                            else:
+                                                if zigzag:
+                                                    if counter_layer % 2 == 0:
+                                                        x += step_x - winding_insulation
+                                                    elif counter_layer % 2 == 1:
+                                                        x += step_x + winding_insulation
+                                                else:
+                                                    x += step_x - winding_insulation
                                             i += 1
+                                        # Insert layer insulation after each layer
+                                        if upward_movement:
+                                            layer_insulation_points = [
+                                                [left_bound, y_l + insulation_delta, 0, self.mesh_data.c_window],
+                                                [left_bound, y_l + thickness_of_the_insulation_layer - insulation_delta, 0, self.mesh_data.c_window],
+                                                [right_bound, y_l + thickness_of_the_insulation_layer - insulation_delta, 0, self.mesh_data.c_window],
+                                                [right_bound, y_l + insulation_delta, 0, self.mesh_data.c_window]
+                                            ]
+                                        else:
+                                            layer_insulation_points = [
+                                                [left_bound, y_l - insulation_delta, 0, self.mesh_data.c_window],
+                                                [left_bound, y_l - thickness_of_the_insulation_layer + insulation_delta, 0, self.mesh_data.c_window],
+                                                [right_bound, y_l - thickness_of_the_insulation_layer + insulation_delta, 0, self.mesh_data.c_window],
+                                                [right_bound, y_l - insulation_delta, 0, self.mesh_data.c_window]
+                                            ]
+                                        # Add the points to the layer insulation data structure
+                                        if self.insulation.draw_insulation_between_layers:
+                                            self.p_iso_layer.append(layer_insulation_points)
                                         if not zigzag:
                                             # Start the next raw with the same starting point (consistent direction)
                                             x = start_x
                                         else:
                                             # Alternating between right and left for the Zigzag movement
+                                            # step_x *= -1
+                                            # x += step_x
+                                            x = x_last  # **no extra step**
                                             step_x *= -1
-                                            x += step_x
                                         # Moving one step vertically (top or bottom)
                                         y += step_y
+                                        y_l += step_y_layer
+                                        counter_layer += 1
 
                                 # Align to edges
                                 if alignment == Align.ToEdges:
@@ -1046,52 +1171,177 @@ class TwoDaxiSymmetric:
                                         self.p_conductor[num][i][0] += adjustment_x
 
                             elif conductor_arrangement == ConductorArrangement.Hexagonal:
-                                y = bot_bound + winding.conductor_radius
-                                x = left_bound + winding.conductor_radius
-                                i = 0
-                                base_line = True
-                                # Case n_conductors higher that "allowed" is missing
-                                while x < right_bound - winding.conductor_radius \
-                                        and i < turns:
-                                    while y < top_bound - winding.conductor_radius and \
-                                            i < turns:
-                                        self.p_conductor[num].append([
-                                            x,
-                                            y,
-                                            0,
-                                            self.mesh_data.c_center_conductor[num]])
-                                        self.p_conductor[num].append([
-                                            x - winding.conductor_radius,
-                                            y,
-                                            0,
-                                            self.mesh_data.c_conductor[num]])
-                                        self.p_conductor[num].append([
-                                            x,
-                                            y + winding.conductor_radius,
-                                            0,
-                                            self.mesh_data.c_conductor[num]])
-                                        self.p_conductor[num].append([
-                                            x + winding.conductor_radius,
-                                            y,
-                                            0,
-                                            self.mesh_data.c_conductor[num]])
-                                        self.p_conductor[num].append([
-                                            x,
-                                            y - winding.conductor_radius,
-                                            0,
-                                            self.mesh_data.c_conductor[num]])
-                                        i += 1
-                                        y += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]  # from bottom to top
-                                    x += 2 * np.cos(np.pi / 6) * (winding.conductor_radius + self.insulation.cond_cond[num][num] / 2)
-                                    # * np.sqrt(2 / 3 * np.pi / np.sqrt(3))  # one step from left to right
-                                    # depending on what line, hexa scheme starts shifted
-                                    # reset y to "new" bottom
-                                    base_line = (not base_line)
-                                    if base_line:
-                                        y = bot_bound + winding.conductor_radius
-                                    else:
-                                        y = bot_bound + 2 * winding.conductor_radius + self.insulation.cond_cond[num][num] / 2
+                                thickness_of_the_insulation_layer = self.insulation.thickness_of_insulation
+                                if placing_strategy == ConductorDistribution.VerticalUpward_HorizontalRightward:
 
+                                    y = bot_bound + winding.conductor_radius + self.insulation.turn_ins[num]
+                                    x = left_bound + winding.conductor_radius + self.insulation.turn_ins[num]
+                                    start_x_layer = left_bound + 2 * winding.conductor_radius + 2 * self.insulation.turn_ins[num]
+                                    step_x_layer = 2 * np.cos(np.pi / 6) * (winding.conductor_radius + self.insulation.turn_ins[num] / 2 + \
+                                                                            thickness_of_the_insulation_layer)
+                                    mesh_to_conductor = min(self.mesh_data.c_conductor)
+                                    insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
+                                    i = 0
+                                    counter_layer = 0
+                                    base_line = True
+                                    # Case n_conductors higher that "allowed" is missing
+                                    while x < right_bound - winding.conductor_radius \
+                                            and i < turns:
+                                        while i < turns and bot_bound + winding.conductor_radius <= y <= top_bound - winding.conductor_radius:
+                                            self.p_conductor[num].append([
+                                                x,
+                                                y,
+                                                0,
+                                                self.mesh_data.c_center_conductor[num]])
+                                            self.p_conductor[num].append([
+                                                x - winding.conductor_radius,
+                                                y,
+                                                0,
+                                                self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append([
+                                                x,
+                                                y + winding.conductor_radius,
+                                                0,
+                                                self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append([
+                                                x + winding.conductor_radius,
+                                                y,
+                                                0,
+                                                self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append([
+                                                x,
+                                                y - winding.conductor_radius,
+                                                0,
+                                                self.mesh_data.c_conductor[num]])
+                                            if counter_layer > len(self.insulation.cond_cond[num]) - 1:
+                                                self.insulation.cond_cond[num].append(insulation_delta)
+                                            i += 1
+
+                                            if self.insulation.consistent_ins is True:
+                                                winding_insulation = self.insulation.cond_cond[num][num]
+                                            else:
+                                                winding_insulation = self.insulation.cond_cond[num][counter_layer]
+
+                                            if zigzag:
+                                                if counter_layer % 2 == 0:
+                                                    y += winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + winding_insulation
+                                                elif counter_layer % 2 == 1:
+                                                    y += -(winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + winding_insulation)
+                                            else:
+                                                y += winding.conductor_radius * 2 + 2 * self.insulation.cond_cond[num][num] + winding_insulation
+                                            # from bottom to top
+                                        layer_insulation_points = [
+                                            [start_x_layer + insulation_delta, top_bound, 0, mesh_to_conductor],
+                                            [start_x_layer + thickness_of_the_insulation_layer - insulation_delta, top_bound, 0, mesh_to_conductor],
+                                            [start_x_layer + thickness_of_the_insulation_layer - insulation_delta, bot_bound, 0, mesh_to_conductor],
+                                            [start_x_layer + insulation_delta, bot_bound, 0, mesh_to_conductor]
+                                        ]
+                                        if self.insulation.draw_insulation_between_layers:
+                                            self.p_iso_layer.append(layer_insulation_points)
+                                        x += 2 * np.cos(np.pi / 6) * (winding.conductor_radius + self.insulation.turn_ins[num] / 2 + \
+                                                                      thickness_of_the_insulation_layer)
+                                        start_x_layer += step_x_layer
+                                        counter_layer += 1
+                                        # * np.sqrt(2 / 3 * np.pi / np.sqrt(3))  # one step from left to right
+                                        # depending on what line, hexa scheme starts shifted
+                                        # reset y to "new" bottom
+                                        base_line = not base_line
+
+                                        if not zigzag:
+                                            if base_line:
+                                                y = bot_bound + winding.conductor_radius + self.insulation.turn_ins[num]
+                                            else:
+                                                y = bot_bound + 2 * winding.conductor_radius + self.insulation.turn_ins[num] / 2
+                                        elif zigzag:
+                                            if base_line:
+                                                y = bot_bound + 4 * winding.conductor_radius + self.insulation.turn_ins[num]
+                                            else:
+                                                y = top_bound - 3 * winding.conductor_radius - self.insulation.turn_ins[num] / 2
+
+                                elif placing_strategy == ConductorDistribution.HorizontalRightward_VerticalUpward:
+
+                                    y = bot_bound + winding.conductor_radius + self.insulation.turn_ins[num][num]
+                                    x = left_bound + winding.conductor_radius + self.insulation.turn_ins[num][num]
+                                    start_y_layer = bot_bound + 2 * winding.conductor_radius + 2 * self.insulation.turn_ins[num]
+                                    step_y_layer = 2 * np.cos(np.pi / 6) * (winding.conductor_radius + self.insulation.turn_ins[num] / 2 + \
+                                                                            thickness_of_the_insulation_layer)
+                                    mesh_to_conductor = min(self.mesh_data.c_conductor)
+                                    insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
+                                    i = 0
+                                    counter_layer = 0
+                                    base_line = True
+
+                                    while y < top_bound - winding.conductor_radius and i < turns:
+
+                                        while i < turns and left_bound + winding.conductor_radius <= x <= right_bound - winding.conductor_radius:
+                                            self.p_conductor[num].append([
+                                                x,
+                                                y,
+                                                0,
+                                                self.mesh_data.c_center_conductor[num]])
+                                            self.p_conductor[num].append([
+                                                x - winding.conductor_radius,
+                                                y,
+                                                0,
+                                                self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append([
+                                                x,
+                                                y + winding.conductor_radius,
+                                                0,
+                                                self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append([
+                                                x + winding.conductor_radius,
+                                                y,
+                                                0,
+                                                self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append([
+                                                x,
+                                                y - winding.conductor_radius,
+                                                0,
+                                                self.mesh_data.c_conductor[num]])
+                                            if counter_layer > len(self.insulation.cond_cond[num]) - 1:
+                                                self.insulation.cond_cond[num].append(insulation_delta)
+
+                                            i += 1
+
+                                            if self.insulation.consistent_ins is True:
+                                                winding_insulation = self.insulation.cond_cond[num][num]
+                                            else:
+                                                winding_insulation = self.insulation.cond_cond[num][counter_layer]
+                                            if zigzag:
+                                                if counter_layer % 2 == 0:
+                                                    x += winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + winding_insulation
+                                                elif counter_layer % 2 == 1:
+                                                    x += -(winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + winding_insulation)
+                                            else:
+                                                x += winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + winding_insulation
+
+                                        # Insert layer insulation after each layer
+                                        layer_insulation_points = [
+                                            [left_bound, start_y_layer + insulation_delta, 0, mesh_to_conductor],
+                                            [left_bound, start_y_layer + thickness_of_the_insulation_layer - insulation_delta, 0, mesh_to_conductor],
+                                            [right_bound, start_y_layer + thickness_of_the_insulation_layer - insulation_delta, 0, mesh_to_conductor],
+                                            [right_bound, start_y_layer + insulation_delta, 0, mesh_to_conductor]
+                                        ]
+                                        if self.insulation.draw_insulation_between_layers:
+                                            self.p_iso_layer.append(layer_insulation_points)
+
+                                        y += 2 * np.cos(np.pi / 6) * (winding.conductor_radius + self.insulation.turn_ins[num] / 2 + \
+                                                                      thickness_of_the_insulation_layer)
+                                        start_y_layer += step_y_layer
+                                        counter_layer += 1
+                                        # Determine x starting point: shifted or not
+                                        base_line = not base_line
+                                        if not zigzag:
+                                            if base_line:
+                                                x = left_bound + winding.conductor_radius + self.insulation.turn_ins[num]
+                                            else:
+                                                x = left_bound + 2 * winding.conductor_radius + self.insulation.turn_ins[num] / 2
+                                        elif zigzag:
+                                            if base_line:
+                                                x = left_bound + winding.conductor_radius + self.insulation.turn_ins[num]
+                                            else:
+                                                x = right_bound - 3 * winding.conductor_radius - self.insulation.turn_ins[num] / 2
                             elif conductor_arrangement == ConductorArrangement.SquareFullWidth:
                                 y = bot_bound + winding.conductor_radius
                                 x = left_bound + winding.conductor_radius
@@ -1348,134 +1598,286 @@ class TwoDaxiSymmetric:
             # Insulation between winding and core
             # Since an aspect ratio is given the insulation delta is calculated using the length of the longest side of the triangle,
             # which is always smaller than c_window.
-            if self.insulation.max_aspect_ratio == 0:
-                # If no aspect ratio is set insulations will not be drawn
-                return
+            if not self.insulation.bobbin_dimensions:
+
+                if self.insulation.max_aspect_ratio == 0:
+                    # If no aspect ratio is set insulations will not be drawn
+                    return
+                else:
+                    insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
+
+                self.p_iso_core = []  # Order: Left, Top, Right, Bot
+                self.p_iso_pri_sec = []
+
+                # Useful points for insulation creation
+                left_x = self.core.core_inner_diameter / 2 + insulation_delta
+                top_y = window_h / 2 - insulation_delta
+                right_x = self.r_inner - insulation_delta
+                bot_y = -window_h / 2 + insulation_delta
+                # # Useful lengths
+                # left_iso_width = iso.core_cond[2] - insulation_delta- insulation_delta
+                # top_iso_height = iso.core_cond[0] - insulation_delta - insulation_delta
+                # right_iso_width = iso.core_cond[3] - insulation_delta - insulation_delta
+                # bot_iso_height = iso.core_cond[1] - insulation_delta - insulation_delta
+
+                # Useful lengths
+                left_iso_width = iso.core_cond[2] - insulation_delta - insulation_delta
+                top_iso_height = iso.core_cond[0] - insulation_delta - insulation_delta
+                right_iso_width = iso.core_cond[3] - insulation_delta - insulation_delta
+                bot_iso_height = iso.core_cond[1] - insulation_delta - insulation_delta
+
+                # Core to Pri insulation
+                iso_core_left = [
+                    [
+                        left_x,
+                        top_y - top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        left_x + left_iso_width,
+                        top_y - top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        left_x + left_iso_width,
+                        bot_y + bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        left_x,
+                        bot_y + bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ]
+                ]
+                iso_core_top = [
+                    [
+                        left_x,
+                        top_y,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x,
+                        top_y,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x,
+                        top_y - top_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        left_x,
+                        top_y - top_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ]
+                ]
+                iso_core_right = [
+                    [
+                        right_x - right_iso_width,
+                        top_y - top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        right_x,
+                        top_y - top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x,
+                        bot_y + bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x - right_iso_width,
+                        bot_y + bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ]
+                ]
+                iso_core_bot = [
+                    [
+                        left_x,
+                        bot_y + bot_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        right_x,
+                        bot_y + bot_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        right_x,
+                        bot_y,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        left_x,
+                        bot_y,
+                        0,
+                        mesh_density_to_core
+                    ]
+                ]
+
+                self.p_iso_core = [iso_core_left, iso_core_top, iso_core_right, iso_core_bot]
             else:
-                insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
 
-            self.p_iso_core = []  # Order: Left, Top, Right, Bot
-            self.p_iso_pri_sec = []
+                if self.insulation.max_aspect_ratio == 0:
+                    # If no aspect ratio is set insulations will not be drawn
+                    return
+                else:
+                    insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
 
-            # Useful points for insulation creation
-            left_x = self.core.core_inner_diameter / 2 + insulation_delta
-            top_y = window_h / 2 - insulation_delta
-            right_x = self.r_inner - insulation_delta
-            bot_y = -window_h / 2 + insulation_delta
+                    # Handle the insulation delta for electrostatic transformer
+                    # top - bot
+                    bobbin_h = self.insulation.bobbin_window_h
+                    insulation_delta_top_bot = (window_h - bobbin_h) / 2
+                    # left
+                    bobbin_inner_radius = self.insulation.bobbin_inner_diameter / 2
+                    core_inner_radius = self.core.core_inner_diameter / 2
+                    insulation_delta_left = bobbin_inner_radius - core_inner_radius
+                    # insulation_delta_left = 3e-4
 
-            # Useful lengths
-            left_iso_width = iso.core_cond[2] - insulation_delta - insulation_delta
-            top_iso_height = iso.core_cond[0] - insulation_delta - insulation_delta
-            right_iso_width = iso.core_cond[3] - insulation_delta - insulation_delta
-            bot_iso_height = iso.core_cond[1] - insulation_delta - insulation_delta
+                self.p_iso_core = []  # Order: Left, Top, Right, Bot
+                self.p_iso_pri_sec = []
 
-            # Core to Pri insulation
-            iso_core_left = [
-                [
-                    left_x,
-                    top_y - top_iso_height - insulation_delta,
-                    0,
-                    mesh_density_to_core
-                ],
-                [
-                    left_x + left_iso_width,
-                    top_y - top_iso_height - insulation_delta,
-                    0,
-                    mesh_density_to_winding
-                ],
-                [
-                    left_x + left_iso_width,
-                    bot_y + bot_iso_height + insulation_delta,
-                    0,
-                    mesh_density_to_winding
-                ],
-                [
-                    left_x,
-                    bot_y + bot_iso_height + insulation_delta,
-                    0,
-                    mesh_density_to_core
+                # Useful points for insulation creation
+                left_x = self.core.core_inner_diameter / 2 + insulation_delta_left
+                top_y = window_h / 2 - insulation_delta_top_bot
+                right_x = self.r_inner - insulation_delta
+                bot_y = -window_h / 2 + insulation_delta_top_bot
+                # # Useful lengths
+                # left_iso_width = iso.core_cond[2] - insulation_delta- insulation_delta
+                # top_iso_height = iso.core_cond[0] - insulation_delta - insulation_delta
+                # right_iso_width = iso.core_cond[3] - insulation_delta - insulation_delta
+                # bot_iso_height = iso.core_cond[1] - insulation_delta - insulation_delta
+
+                # Useful lengths
+                left_iso_width = iso.core_cond[2]
+                top_iso_height = iso.core_cond[0] - insulation_delta - insulation_delta
+                right_iso_width = iso.core_cond[3] - insulation_delta - insulation_delta
+                bot_iso_height = iso.core_cond[1] - insulation_delta - insulation_delta
+
+                # Core to Pri insulation
+                iso_core_left = [
+                    [
+                        left_x,
+                        top_y - top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        left_x + left_iso_width,
+                        top_y - top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        left_x + left_iso_width,
+                        bot_y + bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        left_x,
+                        bot_y + bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ]
                 ]
-            ]
-            iso_core_top = [
-                [
-                    left_x,
-                    top_y,
-                    0,
-                    mesh_density_to_core
-                ],
-                [
-                    right_x,
-                    top_y,
-                    0,
-                    mesh_density_to_core
-                ],
-                [
-                    right_x,
-                    top_y - top_iso_height,
-                    0,
-                    mesh_density_to_winding
-                ],
-                [
-                    left_x,
-                    top_y - top_iso_height,
-                    0,
-                    mesh_density_to_winding
+                iso_core_top = [
+                    [
+                        left_x,
+                        top_y,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x,
+                        top_y,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x,
+                        top_y - top_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        left_x,
+                        top_y - top_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ]
                 ]
-            ]
-            iso_core_right = [
-                [
-                    right_x - right_iso_width,
-                    top_y - top_iso_height - insulation_delta,
-                    0,
-                    mesh_density_to_winding
-                ],
-                [
-                    right_x,
-                    top_y - top_iso_height - insulation_delta,
-                    0,
-                    mesh_density_to_core
-                ],
-                [
-                    right_x,
-                    bot_y + bot_iso_height + insulation_delta,
-                    0,
-                    mesh_density_to_core
-                ],
-                [
-                    right_x - right_iso_width,
-                    bot_y + bot_iso_height + insulation_delta,
-                    0,
-                    mesh_density_to_winding
+                iso_core_right = [
+                    [
+                        right_x - right_iso_width,
+                        top_y - top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        right_x,
+                        top_y - top_iso_height - insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x,
+                        bot_y + bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        right_x - right_iso_width,
+                        bot_y + bot_iso_height + insulation_delta,
+                        0,
+                        mesh_density_to_winding
+                    ]
                 ]
-            ]
-            iso_core_bot = [
-                [
-                    left_x,
-                    bot_y + bot_iso_height,
-                    0,
-                    mesh_density_to_winding
-                ],
-                [
-                    right_x,
-                    bot_y + bot_iso_height,
-                    0,
-                    mesh_density_to_winding
-                ],
-                [
-                    right_x,
-                    bot_y,
-                    0,
-                    mesh_density_to_core
-                ],
-                [
-                    left_x,
-                    bot_y,
-                    0,
-                    mesh_density_to_core
+                iso_core_bot = [
+                    [
+                        left_x,
+                        bot_y + bot_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        right_x,
+                        bot_y + bot_iso_height,
+                        0,
+                        mesh_density_to_winding
+                    ],
+                    [
+                        right_x,
+                        bot_y,
+                        0,
+                        mesh_density_to_core
+                    ],
+                    [
+                        left_x,
+                        bot_y,
+                        0,
+                        mesh_density_to_core
+                    ]
                 ]
-            ]
 
-            self.p_iso_core = [iso_core_left, iso_core_top, iso_core_right, iso_core_bot]
+                self.p_iso_core = [iso_core_left, iso_core_top, iso_core_right, iso_core_bot]
 
             """
             Currently there are only core to vww insulations
@@ -1546,6 +1948,47 @@ class TwoDaxiSymmetric:
                     print("No insulations for winding type {vww.winding_type.name}")
             """
 
+    def draw_insulation_conductor(self):
+        """Draw insulation around each conductor turn."""
+        if not self.insulation.add_turn_insulations:
+            return
+
+        for winding_window in self.winding_windows:
+            for virtual_winding_window in winding_window.virtual_winding_windows:
+                winding = virtual_winding_window.windings[0]
+                conductor_type = winding.conductor_type
+                if conductor_type == ConductorType.RoundSolid or conductor_type == ConductorType.RoundLitz:
+                    for winding_number, conductors in enumerate(self.p_conductor):
+                        # Ensure conductors are treated as a numpy array
+                        if not isinstance(conductors, np.ndarray):
+                            conductors = np.asarray(conductors)
+
+                        insulation_thickness = self.insulation.turn_ins[winding_number]  # Get insulation thickness
+
+                        # Prepare an empty array for storing insulation points
+                        insulation_points = []
+
+                        # Iterate through conductor turns, each defined by 5 points
+                        for i in range(0, conductors.shape[0], 5):
+                            center_x, center_y = conductors[i, :2]  # Get conductor center point
+                            conductor_radius = conductors[i + 3, 0] - center_x  # Calculate current conductor radius
+                            insulation_radius = conductor_radius + insulation_thickness  # Add insulation thickness
+
+                            # Define 5 points for the insulation and add them to the list
+                            insulation_points.extend([
+                                [center_x, center_y, 0, self.mesh_data.c_conductor[winding_number]],  # Center
+                                [center_x - insulation_radius, center_y, 0, self.mesh_data.c_conductor[winding_number]],  # Left
+                                [center_x, center_y + insulation_radius, 0, self.mesh_data.c_conductor[winding_number]],  # Top
+                                [center_x + insulation_radius, center_y, 0, self.mesh_data.c_conductor[winding_number]],  # Right
+                                [center_x, center_y - insulation_radius, 0, self.mesh_data.c_conductor[winding_number]]  # Bottom
+                            ])
+
+                    # Convert collected points to a NumPy array and store it
+                    self.p_iso_conductor[winding_number] = np.array(insulation_points)
+                # TODO Add logic for rectangularsolid.
+
+        logger.info("Insulation around conductors drawn successfully.")
+
     def draw_model(self):
         """Draw the full component.
 
@@ -1563,7 +2006,8 @@ class TwoDaxiSymmetric:
 
         if self.insulation.flag_insulation:  # check flag before drawing insulations
             self.draw_insulations()
-
+        if self.insulation.add_turn_insulations is True:
+            self.draw_insulation_conductor()
         # TODO: Region
         # if self.core.core_type == CoreType.Single:
         #     self.draw_region_single()

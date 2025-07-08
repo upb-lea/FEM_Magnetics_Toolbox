@@ -111,7 +111,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
 
     inductor_frequency = 270000
 
-    # 2. set core parameters
+    # 2.1a set core parameters
     core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
                                                     window_w=core_db["window_w"],
@@ -138,10 +138,22 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0002, 90)
     geo.set_air_gaps(air_gaps)
 
-    # 4. set insulations
+    # 4. set insulation
+    # it is preferred to assign the exact dimensions of the bobbin for running electrostatic simulations or obtaining the capacitance of the inductor component
+    # using the function below
+    # bobbin_db = fmt.bobbin_database()["PQ 40/40"]
+    # bobbin_dimensions = fmt.dtos.BobbinDimensions(bobbin_inner_diameter=bobbin_db["bobbin_inner_diameter"],
+    #                                               bobbin_window_w=bobbin_db["bobbin_window_w"],
+    #                                               bobbin_window_h=bobbin_db["bobbin_window_h"],
+    #                                               bobbin_h=bobbin_db["bobbin_h"])
     insulation = fmt.Insulation(flag_insulation=True)
     insulation.add_core_insulations(0.001, 0.001, 0.003, 0.001)
-    insulation.add_winding_insulations([[0.0005]])
+    insulation.add_winding_insulations([[0.0005, 0.0005]], per_layer_of_turns=False)
+    # When "add_turn_insulation" is false, this function has no effect
+    insulation.add_turn_insulation([0.25e-5], add_turn_insulations=False)
+    # When "add_insulation_material" is false, the material will be air by default. For now this function makes difference when the winding scheme is square and
+    # litz wire.
+    insulation.add_insulation_between_layers(add_insulation_material=False, thickness=0.0005)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -165,8 +177,8 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # 6.a. start simulation
     geo.single_simulation(freq=inductor_frequency, current=[4.5],
                           plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
-
-    # geo.femm_reference(freq=inductor_frequency, current=[4.5], sign=[1], non_visualize=0)
+    # geo.get_inductances(I0=2, op_frequency=20000, skin_mesh_factor=0.5)
+    # geo.femm_reference(freq=inductor_frequency, current=[4.5], sign=[1], non_visualize=0)#
 
     # 6.b. Excitation Sweep Example
     # Perform a sweep using more than one frequency
@@ -178,6 +190,10 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
 
     # 7. prepare and start thermal simulation
     example_thermal_simulation(show_visual_outputs, flag_insulation=True)
+
+    # Extract the capacitance of inductor component
+    geo.get_capacitance_of_inductor_component(show_fem_simulation_results=False)
+    # geo.get_inductor_stray_capacitance(show_visual_outputs=True)
 
 
 if __name__ == "__main__":

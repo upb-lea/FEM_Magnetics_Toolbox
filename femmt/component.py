@@ -136,6 +136,11 @@ class MagneticComponent:
         self.current = []                       # Defined for every conductor
         self.current_density = []               # Defined for every conductor
         self.voltage = []                       # Defined for every conductor
+        self.charge = []
+        self.v_core = None
+        # self.v_ground_core = None
+        self.v_ground_out_boundary = None
+        self.capacitance_matrix_nodes = {}
         self.time = []                          # Defined for time domain simulation
         self.average_currents = []              # Defined for average currents for every winding
         self.rms_currents = []                  # Defined for rms currents for every winding
@@ -433,6 +438,14 @@ class MagneticComponent:
         :param insulation: insulation object
         :type insulation: Insulation
         """
+        if self.simulation_type == SimulationType.ElectroStatic:
+            insulation.bobbin_dimensions = True
+        else:
+            insulation.bobbin_dimensions = False
+
+        if self.simulation_type == SimulationType.ElectroStatic and insulation.bobbin_dimensions is None:
+            raise Exception("bobbin parameters must be set in electrostatic simulations")
+
         if insulation.cond_cond is None or not insulation.cond_cond:
             raise Exception("insulations between the conductors must be set")
 
@@ -1218,12 +1231,111 @@ class MagneticComponent:
             for num in range(len(self.windings)):
                 self.red_freq[num] = 0
 
+    def excitation_electrostatic(self, voltage: list[list[float]] = None, core_voltage: float = None, charge: list[list[float]] = None,
+                                 ground_outer_boundary: bool = False, plot_interpolation: bool = False):
+        """
+        Run the electrostatic simulation.
+
+        - Excitation of the electrostatic problem using voltage applied for each turn as [[V_winding_1_turn_1, V_winding_1_turn_2], [V_winding_2_turn_1,
+         V_winding_2_turn_2],....] or charge applied to each
+        turn as [[Q_winding_1_turn_1, Q_winding_1_turn_2], [Q_winding_2_turn_1, Q_winding_2_turn_2],....].
+
+        :param voltage: Values to apply to each turn in each winding as voltages. Example: [[V_winding_1_turn_1, V_winding_2_turn_2], [V_winding_2_turn_1,
+         V_winding2_turn_42]]
+        :type voltage: list[list[float]]
+        :param charge: Values to apply to each turn in each winding as charges. Example: [[Q_winding_1_turn_1, Q_winding_1_turn_2],
+         [Q_winding_2_turn_1, Q_winding_2_turn_2]]
+        :type charge: list[list[float]]
+        :param core_voltage: excite the core with a voltage
+        :type core_voltage: float
+        :param ground_outer_boundary: If True, ground the outer boundary. Defaults to False.
+        :type ground_outer_boundary: bool
+        :param plot_interpolation: If True, plot the interpolation between the provided values for the material.
+        :type plot_interpolation: bool
+        """
+        # prevent ground the core and induce a voltage to it in the same time
+        # if ground_core and core_voltage is not None:
+        #     raise ValueError("Cannot use 'ground_core=True' and 'core_potential' at the same time. Choose one.")
+
+        # Validate input
+        if voltage is None and charge is None:
+            raise ValueError("Either 'voltage_list' or 'charge_list' must be provided.")
+
+        if voltage is not None and charge is not None:
+            raise ValueError("Only one of 'voltage_list' or 'charge_list' should be provided, not both.")
+
+        # Determine excitation type and values
+        if voltage is not None:
+            excitation_type = 'voltage'
+            value_list = voltage
+        else:
+            excitation_type = 'charge'
+            value_list = charge
+
+        # Validate that value_list contains nested lists with the correct number of turns
+        if not isinstance(value_list, list) or not all(isinstance(inner_list, list) for inner_list in value_list):
+            raise ValueError(
+                f"{excitation_type.capitalize()} list should be a list of lists, where each inner list represents values for each turn in a winding.")
+
+        # Check that no negative voltages are provided if using voltage excitation
+        # if excitation_type == 'voltage':
+        #     for winding_voltages in value_list:
+        #         for voltage in winding_voltages:
+        #             if voltage < 0:
+        #                 raise ValueError("Negative voltages are not allowed in this setup. Please adjust the excitation accordingly.")
+
+        # Print excitation details
+        logger.info(f"\n---\n"
+                    f"Excitation: \n"
+                    f"{excitation_type.capitalize()} Excitation\n"
+                    f"Value(s): {value_list}\n")
+
+        # Set the excitation type (voltage or charge)
+        self.flag_excitation_type = excitation_type
+
+        # Update material permittivity for the electrostatic analysis if not custom defined
+        if self.core.permittivity["datasource"] != MaterialDataSource.Custom:
+            self.core.update_core_material_pro_file(0, self.file_data.electro_magnetic_folder_path,
+                                                    plot_interpolation)  # No frequency is used in electrostatics
+
+        # Apply the excitation to each turn in each winding
+        num_windings = len(self.windings)
+
+        if excitation_type == 'charge':
+            # Initialize charges with zero values
+            self.charge = [[0.0] * len(turns) for turns in value_list]
+            for winding_index in range(num_windings):
+                for turn_index in range(len(value_list[winding_index])):
+                    # Assign charge value to each turn in each winding
+                    self.charge[winding_index][turn_index] = value_list[winding_index][turn_index]
+        else:
+            # Initialize voltages with zero values
+            self.voltage = [[0.0] * len(turns) for turns in value_list]
+            for winding_index in range(num_windings):
+                for turn_index in range(len(value_list[winding_index])):
+                    # Assign voltage value to each turn in each winding
+                    self.voltage[winding_index][turn_index] = value_list[winding_index][turn_index]
+
+        # assign a voltage to the core
+        # self.v_core = core_voltage if core_voltage else None
+        self.v_core = core_voltage if core_voltage is not None else None
+
+        # Set grounding conditions for core and outer boundary
+        # self.v_ground_core = 0 if ground_core else None
+        self.v_ground_out_boundary = 0 if ground_outer_boundary else None
+
+        # Set reduced frequency as 0 for DC-like electrostatic setup
+        self.red_freq = [0 for _ in range(num_windings)]
+
+        logger.info("Electrostatic problem set up for excitation.")
+
     def simulate(self):
         """Initialize the onelab client. Provides the GetDP based solver with the created mesh file."""
         logger.info("\n---\n"
                     "Initialize ONELAB API\n"
                     "Run Simulation\n")
-        self.log_material_properties()
+        if not self.simulation_type == SimulationType.ElectroStatic:
+            self.log_material_properties()
 
         # -- Simulation --
         # create a new onelab client
@@ -1232,10 +1344,10 @@ class MagneticComponent:
         gmsh.clear()
 
         # get model file names with correct path
-
         solver_freq = os.path.join(self.file_data.electro_magnetic_folder_path, "ind_axi_python_controlled.pro")
         solver_time = os.path.join(self.file_data.electro_magnetic_folder_path, "ind_axi_python_controlled_time.pro")
-
+        solver_electrostatic = os.path.join(self.file_data.electro_magnetic_folder_path, "ind_axi_python_controlled_electrostatic.pro")
+        # solver_electrostatic = os.path.join(self.file_data.electro_magnetic_folder_path, "ind_axi_python_controlled_electrostatic_2.pro")
         os.chdir(self.file_data.working_directory)
 
         if self.verbosity == Verbosity.Silent:
@@ -1258,6 +1370,9 @@ class MagneticComponent:
                                             " -solve Analysis -pos Map_local  " + verbose + to_file_str)
             # self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file +
             # " -solve Analysis -v2 " + verbose) # freeing solutions
+        if self.simulation_type == SimulationType.ElectroStatic:
+            self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver_electrostatic + " -msh " + \
+                                            self.file_data.e_m_mesh_file + " -solve EleSta_v -v2 " + verbose + to_file_str)
 
     def write_simulation_parameters_to_pro_files(self):
         """
@@ -1384,8 +1499,7 @@ class MagneticComponent:
                 self.visualize()
         logger.info(f"The electromagnetic results are stored here: {self.file_data.e_m_results_log_path}")
 
-    def time_domain_simulation(self, current_period_vec: list[list[float]], time_period_vec: list[float],
-                               number_of_periods: int,
+    def time_domain_simulation(self, current_period_vec: list[list[float]], time_period_vec: list[float], number_of_periods: int,
                                plot_interpolation: bool = False, show_fem_simulation_results: bool = True,
                                show_rolling_average: bool = True, rolling_avg_window_size: int = 5, benchmark: bool = False):
         """
@@ -1454,6 +1568,86 @@ class MagneticComponent:
                 self.visualize()
             if show_rolling_average:
                 self.get_rolling_average(window_size=rolling_avg_window_size)
+
+    def electrostatic_simulation(self, voltage: list[list[float]] = None, charge: list[list[float]] = None, core_voltage: float = None,
+                                 ground_outer_boundary: bool = False, plot_interpolation: bool = False,
+                                 show_fem_simulation_results: bool = True, benchmark: bool = False, save_to_excel_file: bool = False):
+        """
+        Start an electrostatic ONELAB simulation.
+
+        :param voltage: Voltage is a list of list, indicating a voltage of each turn in every winding.
+        :type voltage: list[list[float]].
+        :param charge: Charge is a list of list, indicating a voltage of each turn in every winding.
+        :type charge: list[list[float]].
+        :param core_voltage: assign a voltage to the core
+        :type core_voltage: float
+        :param ground_outer_boundary: default to false
+        :type ground_outer_boundary: bool
+        :param plot_interpolation: Plot interpolation for the used material between the given data from the material database
+        :type plot_interpolation: bool
+        :param show_fem_simulation_results: Set to True to show the simulation results after the simulation has finished
+        :type show_fem_simulation_results: bool
+        :param benchmark: Benchmark simulation (stop time). Defaults to False.
+        :type benchmark: bool
+        :param save_to_excel_file: Save the log to excel file.
+        :type save_to_excel_file: bool
+        """
+        # Check if the voltage list is valid
+        # Check if the voltage or charge is provided as a single list
+        if isinstance(voltage, list) and all(isinstance(v, (int, float)) for v in voltage):
+            raise ValueError("The 'voltage' parameter should be a list of lists, with each inner list representing voltages for each turn in a winding.")
+
+        if isinstance(charge, list) and all(isinstance(q, (int, float)) for q in charge):
+            raise ValueError("The 'charge' parameter should be a list of lists, with each inner list representing charges for each turn in a winding.")
+
+        if benchmark:
+            start_time = time.time()
+            self.mesh.generate_electro_magnetic_mesh()
+            generate_electro_magnetic_mesh_time = time.time() - start_time
+
+            start_time = time.time()
+            self.excitation_electrostatic(voltage=voltage, charge=charge, core_voltage=core_voltage,
+                                          ground_outer_boundary=ground_outer_boundary, plot_interpolation=plot_interpolation)
+            self.check_create_empty_material_log()
+            self.write_simulation_parameters_to_pro_files()
+            prepare_simulation_time = time.time() - start_time
+
+            start_time = time.time()
+            self.simulate()
+            real_simulation_time = time.time() - start_time
+
+            start_time = time.time()
+            self.calculate_and_write_electrostatic_log()
+            # Convert the log JSON file to Excel
+            if save_to_excel_file:
+                json_file_path = self.file_data.electrostatic_results_log_path
+                output_excel_path = os.path.splitext(json_file_path)[0] + ".xlsx"
+                ff.json_to_excel(json_file_path, output_excel_path)
+                logger.info(f"Data has been successfully written to {output_excel_path}")
+            logging_time = time.time() - start_time
+
+            if show_fem_simulation_results:
+                self.visualize()
+
+            return generate_electro_magnetic_mesh_time, prepare_simulation_time, real_simulation_time, logging_time
+        else:
+            self.mesh.generate_electro_magnetic_mesh()
+            self.excitation_electrostatic(voltage=voltage, charge=charge, core_voltage=core_voltage,
+                                          ground_outer_boundary=ground_outer_boundary, plot_interpolation=plot_interpolation)
+            self.write_simulation_parameters_to_pro_files()
+            self.simulate()
+            self.calculate_and_write_electrostatic_log()
+            # Convert the log JSON file to Excel
+            if save_to_excel_file:
+                json_file_path = self.file_data.electrostatic_results_log_path
+                output_excel_path = os.path.splitext(json_file_path)[0] + ".xlsx"
+                ff.json_to_excel(json_file_path, output_excel_path)
+                logger.info(f"Data has been successfully written to {output_excel_path}")
+
+            if show_fem_simulation_results:
+                self.visualize()
+
+        logger.info(f"The electrostatic results are stored here: {self.file_data.electrostatic_results_log_path}")
 
     def excitation_sweep(self, frequency_list: list, current_list_list: list, phi_deg_list_list: list,
                          show_last_fem_simulation: bool = False,
@@ -2802,7 +2996,254 @@ class MagneticComponent:
             return inductance_matrix
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-    # Post-Processing
+    # Post-Processing --- Capacitance extraction---
+    def get_capacitance_of_inductor_component(self, freq_for_mesh: float = 0.0, show_visual_outputs: bool = False, plot_interpolation: bool = False,
+                                              show_fem_simulation_results: bool = False, benchmark: bool = False, save_to_excel: bool = False):
+        """
+        Needed for finding parasitic capacitance of an inductor. A represent the first turn, B represents the last turn. e represents the core.
+
+        A--.------.---A
+           |      |
+           |      |
+           |      c1
+           |      |
+           |      |
+        B--|------.---B
+           |      |
+           c2     c3
+           |      |
+        E--.-----.----E
+
+        :param freq_for_mesh: the frequency is used here for generating the mesh
+        :type freq_for_mesh: float = 0.0
+        :param show_visual_outputs: show the electrostatic model before simulation
+        :type show_visual_outputs: bool, optional
+        :param plot_interpolation: if True, plot the interpolation between the provided values for the material.
+        :type plot_interpolation: bool
+        :param show_fem_simulation_results: if True, show the simulation results after the simulation has finished
+        :type show_fem_simulation_results: bool
+        :param benchmark: Benchmark simulation (stop time). Defaults to False.
+        :type benchmark: bool
+        :param save_to_excel: save the result to excel file.
+        :type save_to_excel: bool
+        """
+        potentials = ff.get_defined_potentials("inductor")
+        m = ff.generate_voltage_matrix("inductor", potentials)  # 3×3 matrix
+
+        # 2️⃣ Run simulations and collect energies
+        energies = []
+        self.simulation_type = SimulationType.ElectroStatic
+
+        num_turns = ff.get_number_of_turns_of_winding(self.winding_windows, self.windings, 0)
+
+        for idx, (A, B, E) in enumerate(potentials):
+            voltages = [ff.distribute_potential_linearly(A, B, num_turns)]
+            self.create_model(freq=freq_for_mesh,
+                              pre_visualize_geometry=show_visual_outputs,
+                              save_png=False,
+                              skin_mesh_factor=0.5)
+
+            self.electrostatic_simulation(
+                voltage=voltages,
+                core_voltage=E,
+                ground_outer_boundary=False,
+                plot_interpolation=plot_interpolation,
+                show_fem_simulation_results=show_fem_simulation_results,
+                benchmark=benchmark,
+                save_to_excel_file=save_to_excel
+            )
+
+            with open(self.file_data.electrostatic_results_log_path, "r") as f:
+                energy = json.load(f)["energy"]["stored_component"]
+            logger.info(f" → Stored Electrostatic Energy (case {idx + 1}): {energy:.4e} J")
+            energies.append(energy)
+
+        # 3️⃣ Solve for capacitance
+        c_vec = ff.solve_capacitance(m, np.array(energies))
+        logger.info("--- Capacitance Results ---")
+        labels = ["C(A‑B)", "C(A‑0)", "C(B‑0)"]
+
+        for lbl, val in zip(labels, c_vec):
+            logger.info(f"{lbl}: {val:.4e} F")
+
+        # 4️⃣ Compute total C_AB
+        c_ab, c_ae, c_be = c_vec
+        c_ab_stray = c_ab + (c_ae * c_be) / (c_ae + c_be)
+        logger.info(f"→ C_AB (incl. parasitic): {c_ab_stray:.4e} F")
+
+        return c_vec
+
+    def get_stray_capacitance_of_inductor_component(self, freq_for_mesh: float = 0.0, show_visual_outputs: bool = False, plot_interpolation: bool = False,
+                                                    show_fem_simulation_results: bool = True, benchmark: bool = False, save_to_excel: bool = False):
+        """
+        Compute the stray (parasitic) capacitance of an inductor via a single electrostatic simulation.
+
+         Assumes a 1V potential applied across the windings. The effect of the core is ignored.
+         :param freq_for_mesh: the frequency is used here for generating the mesh
+        :type freq_for_mesh: float = 0.0
+        :param show_visual_outputs: show the electrostatic model before simulation
+        :type show_visual_outputs: bool, optional
+        :param plot_interpolation: if True, plot the interpolation between the provided values for the material.
+        :type plot_interpolation: bool
+        :param show_fem_simulation_results: if True, show the simulation results after the simulation has finished
+        :type show_fem_simulation_results: bool
+        :param benchmark: Benchmark simulation (stop time). Defaults to False.
+        :type benchmark: bool
+        :param save_to_excel: save the result to excel file.
+        :type save_to_excel: bool
+        """
+        # Define terminal voltages for the simulation
+        v_a = 1
+        v_b = 0
+
+        # Set the simulation type to ElectroStatic
+        self.simulation_type = SimulationType.ElectroStatic
+
+        # Number of turns (assumes one winding)
+        winding_index = 0
+        num_turns = ff.get_number_of_turns_of_winding(self.winding_windows, self.windings, winding_index)
+
+        # Linear voltage distribution from V_A to V_B across the turns
+        winding_voltages = [v_a - (v_a - v_b) * j / (num_turns - 1) for j in range(num_turns)]
+
+        # Format the voltages for FEMMT
+        voltages = [winding_voltages]
+        self.create_model(freq=freq_for_mesh, pre_visualize_geometry=show_visual_outputs, save_png=False, skin_mesh_factor=0.5)
+        # Run the electrostatic FEM simulation
+        self.electrostatic_simulation(
+            voltage=voltages,
+            core_voltage=None,
+            ground_outer_boundary=False,
+            plot_interpolation=plot_interpolation,
+            show_fem_simulation_results=show_fem_simulation_results,
+            benchmark=benchmark,
+            save_to_excel_file=save_to_excel
+        )
+
+        # Retrieve stored electrostatic energy from the log
+        log_path = self.file_data.electrostatic_results_log_path
+        with open(log_path, "r", encoding='utf-8') as f:
+            log = json.load(f)
+        energy = log["energy"]["stored_component"]
+
+        logger.info(f"  → Stored Electrostatic Energy: {energy:.4e} J")
+
+        # Compute stray capacitance using: C = 2W / (V^2), with V = 1V ⇒ C = 2W
+        c_ab_stray = 2 * energy
+
+        logger.info("\n--- Capacitance Results ---")
+        logger.info(f"→ Total C_AB: {c_ab_stray:.4e} F")
+
+        return c_ab_stray
+
+    def get_capacitance_of_transformer(self, freq_for_mesh: float = 0.0, c_meas_open: float | None = None,
+                                       c_meas_short: float | None = None, measured_capacitances: tuple | list | None = None,
+                                       flip_the_sec_terminal: bool = False, show_visual_outputs: bool = False, plot_interpolation: bool = False,
+                                       show_fem_simulation_results: bool = False, benchmark: bool = False, save_to_excel: bool = False,
+                                       show_plot_comparison: bool = True):
+        r"""
+        Get 10 parasitic capacitance of a transformer.
+
+        Perform 10 electrostatic simulations and calculate the 10 parasitic capacitance through W = 0.5 CV^2.
+
+        A--.------.-----c4--------.------.------C
+           |      |  \          / |      |
+           |      |    c5   c6    |      |
+           |      c1     \/       c2     |
+           |      |     /    \    |      |
+           |      |  /         \  |      |
+        B--|------.-----c3--------.------|------D
+           |      |               |      |
+           c7     c8              c10    c9
+           |      |               |      |
+        E--.-----.-----------------------.------E
+
+        The result can be compared to the results obtain from the measurement.
+
+         :param freq_for_mesh: the frequency is used here for generating the mesh
+        :type freq_for_mesh: float = 0.0
+        :param c_meas_open: measured open-circuit capacitance provided by the user.
+        :type c_meas_open: float
+        :param c_meas_short: measured short-circuit capacitance provided by the user.
+        :type c_meas_short: float
+        :param measured_capacitances: measured 10 capacitances provided by the user.
+        :type measured_capacitances: float
+        :param flip_the_sec_terminal: flip the terminal C and D of the secondary.
+        :type flip_the_sec_terminal: bool
+        :param show_visual_outputs: show the electrostatic model before simulation
+        :type show_visual_outputs: bool, optional
+        :param plot_interpolation: if True, plot the interpolation between the provided values for the material.
+        :type plot_interpolation: bool
+        :param show_fem_simulation_results: if True, show the simulation results after the simulation has finished
+        :type show_fem_simulation_results: bool
+        :param benchmark: Benchmark simulation (stop time). Defaults to False.
+        :type benchmark: bool
+        :param save_to_excel: save the result to excel file.
+        :type save_to_excel: bool
+        :param show_plot_comparison: compare between the simulation and measurement results.
+        :type show_plot_comparison: bool
+        """
+        potentials = ff.get_defined_potentials('transformer')
+        m = ff.generate_voltage_matrix("transformer", potentials, flip_the_sec_terminal)
+
+        w_e = []  # Electrostatic energies for each case
+        # Set the simulation type to ElectroStatic before running the open-circuit simulations
+        self.simulation_type = SimulationType.ElectroStatic
+        # Get number of turns for both windings
+        num_turns_w1 = ff.get_number_of_turns_of_winding(self.winding_windows, self.windings, 0)
+        num_turns_w2 = ff.get_number_of_turns_of_winding(self.winding_windows, self.windings, 1)
+        # Run electrostatic simulation
+        for i, (A, B, C, D) in enumerate(potentials):
+            # Interpolate voltages across both windings
+            voltages_winding_1 = ff.distribute_potential_linearly(A, B, num_turns_w1)
+            voltages_winding_2 = ff.distribute_potential_linearly(C, D, num_turns_w2)
+            # Run electrostatic simulation
+            self.create_model(freq=freq_for_mesh, pre_visualize_geometry=show_visual_outputs, save_png=False, skin_mesh_factor=0.5)
+            self.electrostatic_simulation(
+                voltage=[voltages_winding_1, voltages_winding_2],
+                core_voltage=0,
+                ground_outer_boundary=False,
+                plot_interpolation=plot_interpolation,
+                show_fem_simulation_results=show_fem_simulation_results,
+                benchmark=benchmark,
+                save_to_excel_file=save_to_excel
+            )
+            # Read energy log
+            log_path = self.file_data.electrostatic_results_log_path
+            with open(log_path, "r", encoding="utf-8") as f:
+                log = json.load(f)
+                energy = log["energy"]["stored_component"]
+
+            logger.info(f"  → Stored Electrostatic Energy (Scenario {i + 1}): {energy:.4e} J")
+            w_e.append(energy)
+
+        c_vec = ff.solve_capacitance(m, np.array(w_e))
+        logger.info("\n--- Capacitance Coefficients (Transformer) ---")
+        for idx, c_val in enumerate(c_vec):
+            logger.info(f"C[{idx + 1}]: {c_val:.4e} F")
+
+        # ------------------------------------------------------------------
+        # 0) internal mapping of the 10 connection sums
+        # ------------------------------------------------------------------
+        if measured_capacitances is not None:
+            ff.compare_and_plot_connection_capacitance_of_transformer(c_vec, measured_capacitance=measured_capacitances, show_plot=show_plot_comparison)
+        # ------------------------------------------------------------------
+        # 1) open circuit capacitance
+        # ------------------------------------------------------------------
+        c_sim_open = ff.get_open_circuit_capacitance(c_vec=c_vec, num_turns_w1=num_turns_w1, num_turns_w2=num_turns_w2)
+        logger.info(f"\n→ Calculated Open Capacitance (C_sim_open): {c_sim_open:.4e} F")
+        # ------------------------------------------------------------------
+        # 2) short circuit capacitance
+        # ------------------------------------------------------------------
+        c_sim_short = ff.get_short_circuit_capacitance(c_vec=c_vec)
+        logger.info(f"\n→ Calculated short Capacitance (C_sim_short): {c_sim_short:.4e} F")
+
+        # comparison
+        if show_plot_comparison and (c_meas_open is not None or c_meas_short is not None):
+            ff.plot_open_and_short_comparison(c_sim_open, c_sim_short, c_meas_open, c_meas_short)
+
+        return c_vec
+
     def get_inductances(self, I0: float, op_frequency: float = 0, skin_mesh_factor: float = 1,
                         visualize_last_fem_simulation: bool = False, silent: bool = False, compare_with_inductance_from_reluctance: bool = False):
         """
@@ -3098,44 +3539,53 @@ class MagneticComponent:
             text_file.write("Flag_Time_Domain = 1;\n")
             text_file.write("Flag_Freq_Domain = 0;\n")
             text_file.write("Flag_Static = 0;\n")
+        if self.simulation_type == SimulationType.ElectroStatic:
+            text_file.write("Flag_Static = 1;\n")
+            text_file.write("Flag_Freq_Domain = 0;\n")
+            text_file.write("Flag_Time_Domain = 0;\n")
 
-        # Frequency
-        text_file.write("Freq = %s;\n" % self.frequency)
-        text_file.write(f"delta = {self.delta};\n")
+        # Airgap number
+        if self.simulation_type == SimulationType.ElectroStatic:
+            text_file.write("n_airgaps = {};\n".format(len(self.air_gaps.midpoints)))
 
-        # Core Loss
-        text_file.write(f"Flag_Steinmetz_loss = {self.core.steinmetz_loss};\n")
-        text_file.write(f"Flag_Generalized_Steinmetz_loss = {self.core.generalized_steinmetz_loss};\n")
+            # Frequency
+        if not self.simulation_type == SimulationType.ElectroStatic:
+            text_file.write("Freq = %s;\n" % self.frequency)
+            text_file.write(f"delta = {self.delta};\n")
 
-        if self.core.sigma != 0 and self.core.sigma is not None:
-            text_file.write("Flag_Conducting_Core = 1;\n")
-            if isinstance(self.core.sigma, str):
-                # TODO: Make following definition general
-                # self.core.sigma = 2 * np.pi * self.frequency * epsilon_0 * f_N95_er_imag(f=self.frequency) + 1 / 6
-                self.core.sigma = 1 / 6
-            text_file.write(f"sigma_core = {self.core.sigma.real};\n")
-            text_file.write(f"sigma_core_imag = {self.core.sigma.imag};\n")
-        else:
-            text_file.write("Flag_Conducting_Core = 0;\n")
+            # Core Loss
+            text_file.write(f"Flag_Steinmetz_loss = {self.core.steinmetz_loss};\n")
+            text_file.write(f"Flag_Generalized_Steinmetz_loss = {self.core.generalized_steinmetz_loss};\n")
 
-        if self.core.steinmetz_loss:
-            text_file.write(f"ki = {self.core.ki};\n")
-            text_file.write(f"alpha = {self.core.alpha};\n")
-            text_file.write(f"beta = {self.core.beta};\n")
-        if self.core.generalized_steinmetz_loss:
-            text_file.write(f"t_rise = {self.t_rise};\n")
-            text_file.write(f"t_fall = {self.t_fall};\n")
-            text_file.write(f"f_switch = {self.f_switch};\n")
-        # time domain parameters
-        if self.simulation_type == SimulationType.TimeDomain:
-            text_file.write(f"T = {self.time_period};\n")
-            text_file.write(f"time0 = {self.initial_time};\n")
-            text_file.write(f"timemax = {self.max_time};\n")
-            text_file.write(f"NbStepsPerPeriod = {self.nb_steps_per_period};\n")
-            text_file.write(f"NbSteps = {self.nb_steps};\n")
-            text_file.write(f"delta_t = {self.step_time};\n")
-            time_values_str = ', '.join(map(str, self.time))
-            text_file.write(f"TimeList = {{{time_values_str}}};\n")  # TimeList is interpolated with current lists in the solver
+            if self.core.sigma != 0 and self.core.sigma is not None:
+                text_file.write("Flag_Conducting_Core = 1;\n")
+                if isinstance(self.core.sigma, str):
+                    # TODO: Make following definition general
+                    # self.core.sigma = 2 * np.pi * self.frequency * epsilon_0 * f_N95_er_imag(f=self.frequency) + 1 / 6
+                    self.core.sigma = 1 / 6
+                text_file.write(f"sigma_core = {self.core.sigma.real};\n")
+                text_file.write(f"sigma_core_imag = {self.core.sigma.imag};\n")
+            else:
+                text_file.write("Flag_Conducting_Core = 0;\n")
+
+            if self.core.steinmetz_loss:
+                text_file.write(f"ki = {self.core.ki};\n")
+                text_file.write(f"alpha = {self.core.alpha};\n")
+                text_file.write(f"beta = {self.core.beta};\n")
+            if self.core.generalized_steinmetz_loss:
+                text_file.write(f"t_rise = {self.t_rise};\n")
+                text_file.write(f"t_fall = {self.t_fall};\n")
+                text_file.write(f"f_switch = {self.f_switch};\n")
+            # time domain parameters
+            if self.simulation_type == SimulationType.TimeDomain:
+                text_file.write(f"T = {self.time_period};\n")
+                text_file.write(f"time0 = {self.initial_time};\n")
+                text_file.write(f"timemax = {self.max_time};\n")
+                text_file.write(f"NbStepsPerPeriod = {self.nb_steps_per_period};\n")
+                text_file.write(f"NbSteps = {self.nb_steps};\n")
+                text_file.write(f"delta_t = {self.step_time};\n")
+                time_values_str = ', '.join(map(str, self.time))
+                text_file.write(f"TimeList = {{{time_values_str}}};\n")  # TimeList is interpolated with current lists in the solver
 
         # Conductor specific definitions
         for winding_number in range(len(self.windings)):
@@ -3162,6 +3612,13 @@ class MagneticComponent:
             else:
                 text_file.write(f"NbrCond_{winding_number + 1} = {turns};\n")
                 text_file.write(f"AreaCell_{winding_number + 1} = {self.windings[winding_number].a_cell};\n")
+
+            # relative permittivity
+            # Turn insulation is not implemented yet for RectangularSolid
+            if self.windings[winding_number].conductor_type == ConductorType.RectangularSolid:
+                text_file.write(f"er_turns_insulation_{winding_number + 1} = 1.0;\n")
+            else:
+                text_file.write(f"er_turns_insulation_{winding_number + 1} = {self.insulation.er_turn_insulation[winding_number]};\n")
 
             # For stranded Conductors:
             # text_file.write(f"NbrstrandedCond = {self.turns};\n")  # redundant
@@ -3195,9 +3652,31 @@ class MagneticComponent:
                 text_file.write(f"Val_EE_{winding_number + 1} = {self.current_density[winding_number]};\n")
                 raise NotImplementedError
 
-            if self.flag_excitation_type == 'voltage':
-                text_file.write(f"Val_EE_{winding_number + 1} = {self.voltage[winding_number]};\n")
-                raise NotImplementedError
+            if self.simulation_type == SimulationType.ElectroStatic:
+                if self.voltage is not None:
+                    text_file.write("Flag_voltage = 1;\n")
+                    text_file.write("Flag_charge = 0;\n")
+                    turns = self.voltage[winding_number]
+                    for turn_index, voltage_value in enumerate(turns):
+                        text_file.write(f"Voltage_{winding_number + 1}_{turn_index + 1} = {voltage_value};\n")
+                elif self.charge is not None:
+                    text_file.write("Flag_charge = 1;\n")
+                    text_file.write("Flag_voltage = 0;\n")
+                    turns = self.charge[winding_number]
+                    for turn_index, charge_value in enumerate(turns):
+                        text_file.write(f"Charge_{winding_number + 1}_{turn_index + 1} = {charge_value};\n")
+
+                if self.v_core is not None:
+                    text_file.write("v_core = {};\n".format(self.v_core))
+                    text_file.write("Flag_excite_core = 1;\n")
+                else:
+                    text_file.write("Flag_excite_core = 0;\n")
+
+                if self.v_ground_out_boundary == 0:
+                    text_file.write("Flag_ground_OutBoundary = 1;\n")
+                    text_file.write("v_ground_OutBoundary = 0;\n")
+                else:
+                    text_file.write("Flag_ground_OutBoundary = 0;\n")
 
             logger.info(f"Cell surface area: {self.windings[winding_number].a_cell} \n"
                         f"Reduced frequency: {self.red_freq[winding_number]}")
@@ -3219,6 +3698,11 @@ class MagneticComponent:
         text_file.write("mu0 = 4.e-7 * Pi;\n")
         text_file.write("nu0 = 1 / mu0;\n")
         text_file.write(f"e0 = {epsilon_0};\n")
+        if self.insulation.er_layer_insulation is not None:
+            text_file.write(f"er_layer_insulation = {self.insulation.er_layer_insulation};\n")
+        else:
+            text_file.write("er_layer_insulation = 1.0;\n")
+        text_file.write(f"er_bobbin = {self.insulation.er_bobbin};\n")
 
         # Material Properties
 
@@ -3271,9 +3755,28 @@ class MagneticComponent:
         text_file.write(f"DirResVals = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/\";\n")
         text_file.write(
             f"DirResValsCore = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/core_parts/\";\n")
+        text_file.write(
+            f"DirResValsCapacitance = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Capacitance/\";\n")
         for i in range(1, len(self.windings) + 1):
             text_file.write(
                 f"DirResValsWinding_{i} = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Winding_{i}/\";\n")
+            text_file.write(
+                f"DirResValsCharge_{i} = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Winding_{i}/Charges/\";\n"
+            )
+            text_file.write(
+                f"DirResValsVoltage_{i} = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Winding_{i}/Voltages/\";\n"
+            )
+            text_file.write(
+                f"DirResValsCapacitanceFromQV_{i} = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Winding_{i}/Capacitance_From_QV/\";\n"
+            )
+            turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                      winding_number=i - 1)
+            # Write directories for each turn within the respective capacitance folder
+            for turn in range(1, turns + 1):
+
+                text_file.write(
+                    f"DirResValsTurn_{turn} = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Capacitance/Turn_{turn}/\";\n"
+                )
             # text_file.write(f"DirResValsSecondary = \
             # "{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Secondary/\";\n")
             # text_file.write(f"DirResValsTertiary = \
@@ -3852,6 +4355,101 @@ class MagneticComponent:
 
         return log_dict
 
+    def calculate_and_write_electrostatic_log(self):
+        """
+        Extract data from the electrostatic simulation and write it into a log file.
+
+        This file includes:
+         * charge
+         * energy stored in air and component
+         * average voltages on the core
+         * calculated capacitance between winding turns and between different windings
+
+        """
+        log_dict = {"charges": {}, "energy": {}, "average_voltages": {}, "capacitances": {}}
+
+        # Extract charge and energy
+        values_folder = self.file_data.e_m_values_folder_path
+
+        log_dict["charges"] = self.load_result("charge_Air", res_type="value", last_n=1)[0]
+        log_dict["energy"]["stored_air"] = self.load_result("Energy_Stored_Air", res_type="value", last_n=1)[0]
+        log_dict["energy"]["stored_core"] = self.load_result("Energy_Stored_Core", res_type="value", last_n=1)[0]
+        log_dict["average_voltages"]["core"] = self.load_result("Avg_Core_voltage", res_type="circuit", last_n=1)[0]
+        log_dict["energy"]["stored_component"] = self.load_result("Energy_Stored_Component", res_type="value", last_n=1)[0]
+
+        # Extract capacitance data
+        capacitance_folder = os.path.join(values_folder, "Capacitance")
+        log_dict["capacitances"] = {"within_winding": {}, "between_windings": {}, "between_turns_core": {}}
+
+        for winding_number in range(len(self.windings)):
+            turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                      winding_number=winding_number)
+            winding_name = f"Winding_{winding_number + 1}"
+            log_dict["capacitances"]["within_winding"][winding_name] = {}
+
+            # Capacitance between turns within the same winding
+            for turn1 in range(1, turns + 1):
+                turn_key = f"Turn_{turn1}"
+                if turn_key not in log_dict["capacitances"]["within_winding"][winding_name]:
+                    log_dict["capacitances"]["within_winding"][winding_name][turn_key] = {}
+                for turn2 in range(1, turns + 1):
+                    if turn1 != turn2:
+                        capacitance_key = f"C_{winding_number + 1}_{min(turn1, turn2)}_{max(turn1, turn2)}"
+                        capacitance_file_path = os.path.join(capacitance_folder, f"Turn_{min(turn1, turn2)}", capacitance_key)
+                        capacitance_value = self.load_result(res_name=capacitance_file_path, res_type="value", last_n=1)[0]
+                        log_dict["capacitances"]["within_winding"][winding_name][turn_key][f"to_Turn_{turn2}"] = capacitance_value
+
+        # Capacitance between turns in different windings
+        for winding1 in range(len(self.windings)):
+            winding1_name = f"Winding_{winding1 + 1}"
+            log_dict["capacitances"]["between_windings"][winding1_name] = {}
+            for winding2 in range(len(self.windings)):
+                if winding1 == winding2:
+                    continue
+                turns1 = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                           winding_number=winding1)
+                turns2 = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                           winding_number=winding2)
+                winding2_name = f"Winding_{winding2 + 1}"
+                log_dict["capacitances"]["between_windings"][winding1_name][winding2_name] = {}
+
+                for turn1 in range(1, turns1 + 1):
+                    turn1_key = f"Turn_{turn1}"
+                    if turn1_key not in log_dict["capacitances"]["between_windings"][winding1_name][winding2_name]:
+                        log_dict["capacitances"]["between_windings"][winding1_name][winding2_name][turn1_key] = {}
+                    for turn2 in range(1, turns2 + 1):
+                        capacitance_key = f"C_Cross_{winding1 + 1}_{turn1}_{winding2 + 1}_{turn2}"
+                        capacitance_file_path = os.path.join(capacitance_folder, f"Turn_{turn1}", capacitance_key)
+                        capacitance_value = self.load_result(res_name=capacitance_file_path, res_type="value", last_n=1)[0]
+                        log_dict["capacitances"]["between_windings"][winding1_name][winding2_name][turn1_key][f"to_Turn_{turn2}"] = capacitance_value
+
+                        # Adding symmetric capacitance value
+                        if winding2_name not in log_dict["capacitances"]["between_windings"]:
+                            log_dict["capacitances"]["between_windings"][winding2_name] = {}
+                        if winding1_name not in log_dict["capacitances"]["between_windings"][winding2_name]:
+                            log_dict["capacitances"]["between_windings"][winding2_name][winding1_name] = {}
+                        if f"Turn_{turn2}" not in log_dict["capacitances"]["between_windings"][winding2_name][winding1_name]:
+                            log_dict["capacitances"]["between_windings"][winding2_name][winding1_name][f"Turn_{turn2}"] = {}
+                        log_dict["capacitances"]["between_windings"][winding2_name][winding1_name][f"Turn_{turn2}"][f"to_Turn_{turn1}"] = capacitance_value
+
+        # Capacitance between each turn and the core
+        for winding_number in range(len(self.windings)):
+            winding_name = f"Winding_{winding_number + 1}"
+            log_dict["capacitances"]["between_turns_core"][winding_name] = {}
+
+            turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                      winding_number=winding_number)
+            for turn in range(1, turns + 1):
+                turn_key = f"Turn_{turn}"
+                capacitance_key = f"C_{winding_number + 1}_{turn}_Core"
+                capacitance_file_path = os.path.join(capacitance_folder, f"Turn_{turn}", capacitance_key)
+                capacitance_value = self.load_result(res_name=capacitance_file_path, res_type="value", last_n=1)[0]
+                log_dict["capacitances"]["between_turns_core"][winding_name][turn_key] = capacitance_value
+
+        # ====== save data as JSON ======
+        with open(self.file_data.electrostatic_results_log_path, "w+", encoding='utf-8') as outfile:
+            json.dump(log_dict, outfile, indent=2, ensure_ascii=False)
+
     def read_log(self) -> dict:
         """
         Read results from electromagnetic simulation.
@@ -4070,6 +4668,78 @@ class MagneticComponent:
             gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
             gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
             gmsh.option.setNumber(f"View[{view}].NbIso", 40)
+            view += 1
+
+        if self.simulation_type == SimulationType.ElectroStatic:
+            # Visualization for electrostatic simulations
+            view = 0
+
+            # Potentials
+            if any(self.windings[i].conductor_type != ConductorType.RoundLitz for i in range(len(self.windings))):
+                gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Potential.pos"))
+                gmsh.option.setNumber(f"View[{view}].ScaleType", 1)
+                gmsh.option.setNumber(f"View[{view}].RangeType", 2)
+                gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
+                gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)
+                gmsh.option.setNumber(f"View[{view}].CustomMax", gmsh.option.getNumber(f"View[{view}].Max"))
+                gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
+                gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
+                gmsh.option.setNumber(f"View[{view}].NbIso", 40)
+                gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
+                view += 1
+
+                # Potential on core
+                gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Voltage_Core_Map.pos"))
+                gmsh.option.setNumber(f"View[{view}].ScaleType", 1)
+                gmsh.option.setNumber(f"View[{view}].RangeType", 2)
+                gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
+                gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)
+                gmsh.option.setNumber(f"View[{view}].CustomMax", gmsh.option.getNumber(f"View[{view}].Max"))
+                gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
+                gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
+                gmsh.option.setNumber(f"View[{view}].NbIso", 40)
+                gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
+                view += 1
+
+            # Electric Field
+            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "MagE.pos"))
+            gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
+            gmsh.option.setNumber(f"View[{view}].RangeType", 2)
+            gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
+            gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)
+            gmsh.option.setNumber(f"View[{view}].CustomMax", gmsh.option.getNumber(f"View[{view}].Max"))
+            gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
+            gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
+            gmsh.option.setNumber(f"View[{view}].NbIso", 40)
+            gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
+
+            view += 1
+
+            # Stored energy
+            # gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "We.pos"))
+            # gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
+            # gmsh.option.setNumber(f"View[{view}].RangeType", 2)
+            # gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
+            # gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)
+            # gmsh.option.setNumber(f"View[{view}].CustomMax", gmsh.option.getNumber(f"View[{view}].Max"))
+            # gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
+            # gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
+            # gmsh.option.setNumber(f"View[{view}].NbIso", 40)
+            # gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
+
+            view += 1
+
+            # Displacement Field
+            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "MagD.pos"))
+            gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
+            gmsh.option.setNumber(f"View[{view}].RangeType", 2)
+            gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
+            gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)
+            gmsh.option.setNumber(f"View[{view}].CustomMax", gmsh.option.getNumber(f"View[{view}].Max"))
+            gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
+            gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
+            gmsh.option.setNumber(f"View[{view}].NbIso", 40)
+            gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
             view += 1
 
         if self.simulation_type == SimulationType.TimeDomain:
@@ -4348,7 +5018,7 @@ class MagneticComponent:
         else:
             raise ValueError(f"Invalid res_type: {res_type}")
 
-        if self.simulation_type == SimulationType.FreqDomain:
+        if self.simulation_type == SimulationType.FreqDomain or self.simulation_type == SimulationType.ElectroStatic:
 
             with open(os.path.join(res_path, f"{res_name}.dat")) as fd:
                 lines = fd.readlines()[-last_n:]
@@ -4890,6 +5560,721 @@ class MagneticComponent:
 
         json.dump(log, file, indent=2, ensure_ascii=False)
         file.close()
+
+    def femm_reference_electrostatic(self, voltages: list[list[float]], ground_core: bool = False, ground_outer_boundary: bool = False, non_visualize: int = 0,
+                                     mesh_size: float = 0.0, mesh_size_conductor: float = 0.0, save_to_excel_file: bool = False,
+                                     compare_femmt_to_femm: bool = False) -> None:
+        """
+        Set up a reference electrostatic simulation using FEMM.
+
+        :param voltages: A list of voltages to be applied to each winding.
+        :type voltages: list[list[float]]
+        :param ground_core: Ground core.
+        :type ground_core: bool
+        :param ground_outer_boundary: Grounding outer boundary.
+        :type ground_outer_boundary: bool
+        :param non_visualize: Flag to control visualization.
+        :param mesh_size: Mesh size for general areas.
+        :param mesh_size_conductor: Mesh size specifically for conductors.
+        :param save_to_excel_file: Save the log to excel file.
+        :type save_to_excel_file: bool
+        :param compare_femmt_to_femm: compare file logs between FEMMT and FEMM in excel form.
+        :type compare_femmt_to_femm: bool
+        :
+        """
+        automesh = 1 if mesh_size == 0.0 else 0
+        automesh_conductor = 1 if mesh_size_conductor == 0.0 else 0
+
+        if os.name == 'nt':
+            ff.install_pyfemm_if_missing()
+            if not self.femm_is_imported:
+                globals()["femm"] = __import__("femm")
+                self.femm_is_imported = True
+        else:
+            raise Exception('This command is only executable on Windows computers.')
+
+        self.file_data.create_folders(self.file_data.femm_folder_path)
+
+        # Ensure voltages is a list
+        if not isinstance(voltages, list):
+            voltages = [voltages]
+
+        # == Initialize FEMM ==
+        femm.openfemm(non_visualize)
+        femm.newdocument(1)  # 1 is for electrostatics
+
+        # Proper use of required parameters
+        femm.ei_probdef('meters', 'axi', 1e-8, 0, 30)  # units, type, precision, depth, and minangle
+
+        # == Materials ==
+        # Define materials with proper relative permittivity and volume charge density
+        femm.ei_addmaterial('Air', 1, 1, 0, )
+
+        # Core material
+        core_permittivity = 5000  # Value for core material permittivity
+        femm.ei_addmaterial('CoreMaterial', core_permittivity, core_permittivity, 0)
+
+        # Insulation
+        insulation_permittivity = 5.5
+        femm.ei_addmaterial('InsulationMaterial', insulation_permittivity, insulation_permittivity, 0)
+
+        # Conductor material
+        femm.ei_addmaterial('Copper', 1, 1, 0)
+
+        # == Geometry ==
+        # Add core
+        if self.air_gaps.number == 0:
+            femm.ei_drawline(self.two_d_axi.p_window[4, 0],
+                             self.two_d_axi.p_window[4, 1],
+                             self.two_d_axi.p_window[5, 0],
+                             self.two_d_axi.p_window[5, 1])
+            femm.ei_drawline(self.two_d_axi.p_window[5, 0],
+                             self.two_d_axi.p_window[5, 1],
+                             self.two_d_axi.p_window[7, 0],
+                             self.two_d_axi.p_window[7, 1])
+            femm.ei_drawline(self.two_d_axi.p_window[7, 0],
+                             self.two_d_axi.p_window[7, 1],
+                             self.two_d_axi.p_window[6, 0],
+                             self.two_d_axi.p_window[6, 1])
+            femm.ei_drawline(self.two_d_axi.p_window[6, 0],
+                             self.two_d_axi.p_window[6, 1],
+                             self.two_d_axi.p_window[4, 0],
+                             self.two_d_axi.p_window[4, 1])
+            femm.ei_drawline(0,
+                             self.two_d_axi.p_outer[2, 1],
+                             self.two_d_axi.p_outer[3, 0],
+                             self.two_d_axi.p_outer[3, 1])
+            femm.ei_drawline(self.two_d_axi.p_outer[3, 0],
+                             self.two_d_axi.p_outer[3, 1],
+                             self.two_d_axi.p_outer[1, 0],
+                             self.two_d_axi.p_outer[1, 1])
+            femm.ei_drawline(self.two_d_axi.p_outer[1, 0],
+                             self.two_d_axi.p_outer[1, 1],
+                             0,
+                             self.two_d_axi.p_outer[0, 1])
+            femm.ei_drawline(0,
+                             self.two_d_axi.p_outer[0, 1],
+                             0,
+                             self.two_d_axi.p_outer[2, 1])
+        elif self.air_gaps.number > 0:
+            femm.ei_drawline(0,
+                             self.two_d_axi.p_air_gaps[0, 1],
+                             self.two_d_axi.p_air_gaps[1, 0],
+                             self.two_d_axi.p_air_gaps[1, 1])
+            femm.ei_drawline(self.two_d_axi.p_air_gaps[1, 0],
+                             self.two_d_axi.p_air_gaps[1, 1],
+                             self.two_d_axi.p_window[4, 0],
+                             self.two_d_axi.p_window[4, 1])
+            femm.ei_drawline(self.two_d_axi.p_window[4, 0],
+                             self.two_d_axi.p_window[4, 1],
+                             self.two_d_axi.p_window[5, 0],
+                             self.two_d_axi.p_window[5, 1])
+            femm.ei_drawline(self.two_d_axi.p_window[5, 0],
+                             self.two_d_axi.p_window[5, 1],
+                             self.two_d_axi.p_window[7, 0],
+                             self.two_d_axi.p_window[7, 1])
+            femm.ei_drawline(self.two_d_axi.p_window[7, 0],
+                             self.two_d_axi.p_window[7, 1],
+                             self.two_d_axi.p_window[6, 0],
+                             self.two_d_axi.p_window[6, 1])
+            femm.ei_drawline(self.two_d_axi.p_window[6, 0],
+                             self.two_d_axi.p_window[6, 1],
+                             self.two_d_axi.p_air_gaps[3, 0],
+                             self.two_d_axi.p_air_gaps[3, 1])
+            femm.ei_drawline(self.two_d_axi.p_air_gaps[3, 0],
+                             self.two_d_axi.p_air_gaps[3, 1],
+                             0,
+                             self.two_d_axi.p_air_gaps[2, 1])
+            femm.ei_drawline(0,
+                             self.two_d_axi.p_air_gaps[2, 1],
+                             0,
+                             self.two_d_axi.p_outer[2, 1])
+            femm.ei_drawline(0,
+                             self.two_d_axi.p_outer[2, 1],
+                             self.two_d_axi.p_outer[3, 0],
+                             self.two_d_axi.p_outer[3, 1])
+            femm.ei_drawline(self.two_d_axi.p_outer[3, 0],
+                             self.two_d_axi.p_outer[3, 1],
+                             self.two_d_axi.p_outer[1, 0],
+                             self.two_d_axi.p_outer[1, 1])
+            femm.ei_drawline(self.two_d_axi.p_outer[1, 0],
+                             self.two_d_axi.p_outer[1, 1],
+                             0,
+                             self.two_d_axi.p_outer[0, 1])
+            femm.ei_drawline(0,
+                             self.two_d_axi.p_outer[0, 1],
+                             0,
+                             self.two_d_axi.p_air_gaps[0, 1])
+        else:
+            raise Exception("Negative air gap number is not allowed")
+
+        # Add Insulation
+        if self.insulation.bobbin_dimensions:
+            if self.insulation.max_aspect_ratio == 0:
+                # If no aspect ratio is set insulations will not be drawn
+                return
+            else:
+                insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
+
+                # Handle the insulation delta for electrostatic transformer
+                # top - bot
+                bobbin_h = self.insulation.bobbin_window_h
+                insulation_delta_top_bot = (self.core.window_h - bobbin_h) / 2
+                # left
+                bobbin_inner_diameter = self.insulation.bobbin_inner_diameter / 2
+                core_inner_diameter = self.core.core_inner_diameter / 2
+                insulation_delta_left = bobbin_inner_diameter - core_inner_diameter
+            # Useful points for insulation creation
+            left_x = self.core.core_inner_diameter / 2 + insulation_delta_left
+            top_y = self.core.window_h / 2 - insulation_delta_top_bot
+            right_x = self.core.r_inner - insulation_delta
+            bot_y = -self.core.window_h / 2 + insulation_delta_top_bot
+
+            # Useful lengths
+            left_iso_width = self.insulation.core_cond[2] - insulation_delta - insulation_delta
+            top_iso_height = self.insulation.core_cond[0] - insulation_delta - insulation_delta
+            right_iso_width = self.insulation.core_cond[3] - insulation_delta - insulation_delta
+            bot_iso_height = self.insulation.core_cond[1] - insulation_delta - insulation_delta
+
+            # Left insulation
+            femm.ei_drawline(left_x,
+                             top_y - top_iso_height - insulation_delta,
+                             left_x + left_iso_width,
+                             top_y - top_iso_height - insulation_delta)
+            femm.ei_drawline(left_x + left_iso_width,
+                             top_y - top_iso_height - insulation_delta,
+                             left_x + left_iso_width,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(left_x + left_iso_width,
+                             bot_y + bot_iso_height + insulation_delta,
+                             left_x,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(left_x,
+                             bot_y + bot_iso_height + insulation_delta,
+                             left_x,
+                             top_y - top_iso_height - insulation_delta)
+
+            # top insulation
+            femm.ei_drawline(left_x,
+                             top_y,
+                             right_x,
+                             top_y)
+            femm.ei_drawline(right_x,
+                             top_y,
+                             right_x,
+                             top_y - top_iso_height)
+            femm.ei_drawline(right_x,
+                             top_y - top_iso_height,
+                             left_x,
+                             top_y - top_iso_height)
+            femm.ei_drawline(left_x,
+                             top_y - top_iso_height,
+                             left_x,
+                             top_y)
+
+            # right insulation
+            femm.ei_drawline(right_x - right_iso_width,
+                             top_y - top_iso_height - insulation_delta,
+                             right_x,
+                             top_y - top_iso_height - insulation_delta)
+            femm.ei_drawline(right_x,
+                             top_y - top_iso_height - insulation_delta,
+                             right_x,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(right_x,
+                             bot_y + bot_iso_height + insulation_delta,
+                             right_x - right_iso_width,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(right_x - right_iso_width,
+                             bot_y + bot_iso_height + insulation_delta,
+                             right_x - right_iso_width,
+                             top_y - top_iso_height - insulation_delta)
+            # bot insulation
+            femm.ei_drawline(left_x,
+                             bot_y + bot_iso_height,
+                             right_x,
+                             bot_y + bot_iso_height)
+            femm.ei_drawline(right_x,
+                             bot_y + bot_iso_height,
+                             right_x,
+                             bot_y)
+            femm.ei_drawline(right_x,
+                             bot_y,
+                             left_x,
+                             bot_y)
+            femm.ei_drawline(left_x,
+                             bot_y,
+                             left_x,
+                             bot_y + bot_iso_height)
+        else:
+            if self.insulation.max_aspect_ratio == 0:
+                # If no aspect ratio is set insulations will not be drawn
+                return
+            else:
+                insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
+
+            # Useful points for insulation creation
+            left_x = self.core.core_inner_diameter / 2 + insulation_delta
+            top_y = self.core.window_h / 2 - insulation_delta
+            right_x = self.core.r_inner - insulation_delta
+            bot_y = -self.core.window_h / 2 + insulation_delta
+
+            # Useful lengths
+            left_iso_width = self.insulation.core_cond[2] - insulation_delta - insulation_delta
+            top_iso_height = self.insulation.core_cond[0] - insulation_delta - insulation_delta
+            right_iso_width = self.insulation.core_cond[3] - insulation_delta - insulation_delta
+            bot_iso_height = self.insulation.core_cond[1] - insulation_delta - insulation_delta
+
+            # Left insulation
+            femm.ei_drawline(left_x,
+                             top_y - top_iso_height - insulation_delta,
+                             left_x + left_iso_width,
+                             top_y - top_iso_height - insulation_delta)
+            femm.ei_drawline(left_x + left_iso_width,
+                             top_y - top_iso_height - insulation_delta,
+                             left_x + left_iso_width,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(left_x + left_iso_width,
+                             bot_y + bot_iso_height + insulation_delta,
+                             left_x,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(left_x,
+                             bot_y + bot_iso_height + insulation_delta,
+                             left_x,
+                             top_y - top_iso_height - insulation_delta)
+
+            # top insulation
+            femm.ei_drawline(left_x,
+                             top_y,
+                             right_x,
+                             top_y)
+            femm.ei_drawline(right_x,
+                             top_y,
+                             right_x,
+                             top_y - top_iso_height)
+            femm.ei_drawline(right_x,
+                             top_y - top_iso_height,
+                             left_x,
+                             top_y - top_iso_height)
+            femm.ei_drawline(left_x,
+                             top_y - top_iso_height,
+                             left_x,
+                             top_y)
+
+            # right insulation
+            femm.ei_drawline(right_x - right_iso_width,
+                             top_y - top_iso_height - insulation_delta,
+                             right_x,
+                             top_y - top_iso_height - insulation_delta)
+            femm.ei_drawline(right_x,
+                             top_y - top_iso_height - insulation_delta,
+                             right_x,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(right_x,
+                             bot_y + bot_iso_height + insulation_delta,
+                             right_x - right_iso_width,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(right_x - right_iso_width,
+                             bot_y + bot_iso_height + insulation_delta,
+                             right_x - right_iso_width,
+                             top_y - top_iso_height - insulation_delta)
+            # bot insulation
+            femm.ei_drawline(left_x,
+                             bot_y + bot_iso_height,
+                             right_x,
+                             bot_y + bot_iso_height)
+            femm.ei_drawline(right_x,
+                             bot_y + bot_iso_height,
+                             right_x,
+                             bot_y)
+            femm.ei_drawline(right_x,
+                             bot_y,
+                             left_x,
+                             bot_y)
+            femm.ei_drawline(left_x,
+                             bot_y,
+                             left_x,
+                             bot_y + bot_iso_height)
+
+        # Now select the segments to assign zero voltage for core
+        if ground_core:
+            boundary_segments = [
+                # Segments for the core and winding, including the two horizontal air gap lines
+                (0, self.two_d_axi.p_air_gaps[0, 1], self.two_d_axi.p_air_gaps[1, 0], self.two_d_axi.p_air_gaps[1, 1]),
+                (self.two_d_axi.p_air_gaps[1, 0], self.two_d_axi.p_air_gaps[1, 1], self.two_d_axi.p_window[4, 0], self.two_d_axi.p_window[4, 1]),
+                (self.two_d_axi.p_window[4, 0], self.two_d_axi.p_window[4, 1], self.two_d_axi.p_window[5, 0], self.two_d_axi.p_window[5, 1]),
+                (self.two_d_axi.p_window[5, 0], self.two_d_axi.p_window[5, 1], self.two_d_axi.p_window[7, 0], self.two_d_axi.p_window[7, 1]),
+                (self.two_d_axi.p_window[7, 0], self.two_d_axi.p_window[7, 1], self.two_d_axi.p_window[6, 0], self.two_d_axi.p_window[6, 1]),
+                (self.two_d_axi.p_window[6, 0], self.two_d_axi.p_window[6, 1], self.two_d_axi.p_air_gaps[3, 0], self.two_d_axi.p_air_gaps[3, 1]),
+                (self.two_d_axi.p_air_gaps[3, 0], self.two_d_axi.p_air_gaps[3, 1], 0, self.two_d_axi.p_air_gaps[2, 1]),
+            ]
+
+            for segment in boundary_segments:
+                x_start, y_start, x_end, y_end = segment
+                femm.ei_selectsegment((x_start + x_end) / 2, (y_start + y_end) / 2)
+                femm.ei_addboundprop('ZeroVoltage', 0, 0, 0, 0, 0)
+                femm.ei_setsegmentprop('ZeroVoltage', 0, 1, 0, 1, '<None>')
+                femm.ei_clearselected()
+
+        if ground_outer_boundary:
+            # Now ground the outer boundary lines
+            outer_boundary_segments = [
+                # Left bottom vertical segment
+                # (0, self.two_d_axi.p_outer[0, 1], 0, self.two_d_axi.p_air_gaps[0, 1]),
+                # bottom horizontal segment
+                (self.two_d_axi.p_outer[1, 0], self.two_d_axi.p_outer[1, 1], 0, self.two_d_axi.p_outer[0, 1]),
+                # right vertical segment
+                (self.two_d_axi.p_outer[3, 0], self.two_d_axi.p_outer[3, 1], self.two_d_axi.p_outer[1, 0], self.two_d_axi.p_outer[1, 1]),
+                # top horizontal segment
+                (0, self.two_d_axi.p_outer[2, 1], self.two_d_axi.p_outer[3, 0], self.two_d_axi.p_outer[3, 1]),
+                # Left top vertical segment
+                # (0, self.two_d_axi.p_outer[0, 3], 0, self.two_d_axi.p_air_gaps[2, 2])
+            ]
+
+            for segment in outer_boundary_segments:
+                x_start, y_start, x_end, y_end = segment
+                femm.ei_selectsegment((x_start + x_end) / 2, (y_start + y_end) / 2)  # Select the segment by its midpoint
+                femm.ei_addboundprop('Ground', 0, 0, 0, 0, 0)  # Add boundary property for grounding
+                femm.ei_setsegmentprop('Ground', 0, 1, 0, 1, '<None>')  # Set segment property to apply grounding
+                femm.ei_clearselected()
+
+        turn_index = 0  # Initialize the turn index for tracking
+        # Iterate through each winding
+        for winding_index, winding_voltages in enumerate(voltages):
+            # Calculate the number of turns for the current winding
+            num_turns = int(self.two_d_axi.p_conductor[winding_index].shape[0] / 5)
+
+            if len(winding_voltages) != num_turns:
+                raise ValueError(f"Mismatch between the number of turns and voltages for winding {winding_index + 1}")
+
+            # Iterate through each turn in the winding
+            for i in range(num_turns):
+                # Draw arcs for the conductor (turn)
+                femm.ei_drawarc(self.two_d_axi.p_conductor[winding_index][5 * i + 1][0],
+                                self.two_d_axi.p_conductor[winding_index][5 * i + 1][1],
+                                self.two_d_axi.p_conductor[winding_index][5 * i + 3][0],
+                                self.two_d_axi.p_conductor[winding_index][5 * i + 3][1], 180, 2.5)
+                femm.ei_addarc(self.two_d_axi.p_conductor[winding_index][5 * i + 3][0],
+                               self.two_d_axi.p_conductor[winding_index][5 * i + 3][1],
+                               self.two_d_axi.p_conductor[winding_index][5 * i + 1][0],
+                               self.two_d_axi.p_conductor[winding_index][5 * i + 1][1], 180, 2.5)
+                # Calculate the center and radius for selecting the conductor turn
+                x_center = self.two_d_axi.p_conductor[winding_index][5 * i][0]
+                y_center = self.two_d_axi.p_conductor[winding_index][5 * i][1]
+                radius = x_center - self.two_d_axi.p_conductor[winding_index][5 * i + 1][0]
+                # Select all entities within the circular region around the conductor center
+                femm.ei_selectcircle(x_center, y_center, radius, 4)
+
+                conductor_name = f'Turn{turn_index + 1}'
+                femm.ei_setarcsegmentprop(2.5, '<None>', 0, turn_index + 5, conductor_name)
+                femm.ei_clearselected()
+
+                # Add a block label at the center of the conductor turn
+                femm.ei_addblocklabel(x_center, y_center)
+
+                # Select the block label and apply conductor properties
+                femm.ei_selectlabel(x_center, y_center)
+
+                # Assign conductor properties with a unique name and apply voltage
+                femm.ei_addconductorprop(conductor_name, winding_voltages[i], 0, 1)
+
+                # Set block properties, using a unique group for each conductor
+                femm.ei_setblockprop('Copper', automesh_conductor, mesh_size_conductor, turn_index + 5)
+
+                # Clear selection to ensure no overlap in label assignments
+                femm.ei_clearselected()
+
+                # Increment the turn index for the next iteration
+                turn_index += 1
+
+        # Define an open boundary condition for electrostatics
+        if not ground_outer_boundary and not ground_core:
+            femm.ei_makeABC(5, 0.5, 0.0, 0.0, 1)
+        else:
+            femm.ei_makeABC()
+        # femm.ei_makeABC(5, 0.5, 0.0, 0.0, 1)
+
+        # == Labels/Designations ==
+        # Label for core
+        femm.ei_addblocklabel(self.two_d_axi.p_outer[3, 0] - 0.001, self.two_d_axi.p_outer[3, 1] - 0.001)
+        femm.ei_selectlabel(self.two_d_axi.p_outer[3, 0] - 0.001, self.two_d_axi.p_outer[3, 1] - 0.001)
+        femm.ei_setblockprop('CoreMaterial', automesh, mesh_size, 1)
+        femm.ei_clearselected()
+
+        # Labels for air inside the core
+        if self.air_gaps.number == 0:
+            femm.ei_addblocklabel(self.two_d_axi.r_inner - 0.0001, 0)
+            femm.ei_selectlabel(self.two_d_axi.r_inner - 0.001, 1)
+            femm.ei_setblockprop('Air', automesh, mesh_size, 2)
+            femm.ei_clearselected()
+        else:
+            femm.ei_addblocklabel(0.001, 0)
+            femm.ei_selectlabel(0.001, 0)
+            femm.ei_setblockprop('Air', automesh, mesh_size, 2)
+            femm.ei_clearselected()
+
+        # Add a block label for the outer region to define it as 'Air'
+        femm.ei_addblocklabel(self.two_d_axi.p_outer[3, 0] + 0.001, self.two_d_axi.p_outer[3, 1] + 0.001)
+        femm.ei_selectlabel(self.two_d_axi.p_outer[3, 0] + 0.001, self.two_d_axi.p_outer[3, 1] + 0.001)
+        femm.ei_setblockprop('Air', automesh, mesh_size, 3)  # Assign 'Air' as the material
+        femm.ei_clearselected()
+
+        # Add Block Labels for Insulation
+        if self.insulation.flag_insulation:
+            # Calculate positions for insulation block labels
+            left_insulation_label_x = left_x + left_iso_width / 2
+            left_insulation_label_y = (top_y - top_iso_height - insulation_delta + bot_y + bot_iso_height + insulation_delta) / 2
+
+            top_insulation_label_x = (left_x + right_x) / 2
+            top_insulation_label_y = top_y - top_iso_height / 2
+
+            right_insulation_label_x = right_x - right_iso_width / 2
+            right_insulation_label_y = (top_y - top_iso_height - insulation_delta + bot_y + bot_iso_height + insulation_delta) / 2
+
+            bot_insulation_label_x = (left_x + right_x) / 2
+            bot_insulation_label_y = bot_y + bot_iso_height / 2
+
+            # Add and set block properties for each insulation region
+            # Left insulation
+            femm.ei_addblocklabel(left_insulation_label_x, left_insulation_label_y)
+            femm.ei_selectlabel(left_insulation_label_x, left_insulation_label_y)
+            femm.ei_setblockprop('InsulationMaterial', automesh, mesh_size, 4)
+            femm.ei_clearselected()
+
+            # Top insulation
+            femm.ei_addblocklabel(top_insulation_label_x, top_insulation_label_y)
+            femm.ei_selectlabel(top_insulation_label_x, top_insulation_label_y)
+            femm.ei_setblockprop('InsulationMaterial', automesh, mesh_size, 4)
+            femm.ei_clearselected()
+
+            # Right insulation
+            femm.ei_addblocklabel(right_insulation_label_x, right_insulation_label_y)
+            femm.ei_selectlabel(right_insulation_label_x, right_insulation_label_y)
+            femm.ei_setblockprop('InsulationMaterial', automesh, mesh_size, 4)
+            femm.ei_clearselected()
+
+            # Bottom insulation
+            femm.ei_addblocklabel(bot_insulation_label_x, bot_insulation_label_y)
+            femm.ei_selectlabel(bot_insulation_label_x, bot_insulation_label_y)
+            femm.ei_setblockprop('InsulationMaterial', automesh, mesh_size, 4)
+            femm.ei_clearselected()
+
+        # Save, analyze, and load the solution
+        femm.ei_zoomnatural()
+        femm.ei_saveas(os.path.join(self.file_data.femm_folder_path, 'coil_electrostatic.FEE'))
+        femm.ei_analyze()
+        femm.ei_loadsolution()
+
+        # Log results
+        self.write_femm_electrostatic_log(voltages)
+        # Convert the log JSON file to Excel
+        if save_to_excel_file:
+            json_file_path = self.file_data.femm_results_log_path
+            output_excel_path = os.path.splitext(json_file_path)[0] + ".xlsx"
+            ff.json_to_excel(json_file_path, output_excel_path)
+        # Compare .xlsx files between FEMMT and FEMM.
+        if compare_femmt_to_femm:
+            femmt_excel_path = os.path.splitext(self.file_data.electrostatic_results_log_path)[0] + ".xlsx"
+            femm_excel_path = os.path.splitext(self.file_data.femm_results_log_path)[0] + ".xlsx"
+            comparison_output_directory = os.path.dirname(self.file_data.electrostatic_results_log_path)
+            comparison_output_path = os.path.join(comparison_output_directory, "comparison_results.xlsx")
+            ff.compare_excel_files(femmt_excel_path, femm_excel_path, comparison_output_path)
+            logger.info(f"Comparison data for all sheets has been successfully written to {comparison_output_path}")
+
+    def write_femm_electrostatic_log(self, voltages):
+        """
+        Write log file for electrostatic simulation to compute capacitance based on stored energy.
+
+        :param voltages: A list of voltages to be applied to each winding.
+        :type voltages: List of List
+        """
+        if os.name == 'nt':
+            ff.install_pyfemm_if_missing()
+            if not self.femm_is_imported:
+                globals()["femm"] = __import__("femm")
+                self.femm_is_imported = True
+        else:
+            raise Exception('This command is only executable on Windows computers.')
+
+        file = open(self.file_data.femm_results_log_path, 'w+', encoding='utf-8')
+
+        log_dict = {"charges": {}, "energy": {}, "average_voltages": {}, "capacitances": {}}
+
+        # Select air inside the core
+        femm.eo_groupselectblock(2)
+        # Get stored energy in the air inside the core (0 represents stored energy)
+        stored_energy_air = femm.eo_blockintegral(0)
+        log_dict["energy"]["stored_air"] = stored_energy_air[0]
+        femm.eo_clearblock()
+
+        # Select the core
+        femm.eo_groupselectblock(1)
+        stored_energy_core = femm.eo_blockintegral(0)
+        log_dict["energy"]["stored_core"] = stored_energy_core[0]
+        femm.eo_clearblock()
+
+        # select insulation
+        # if self.insulation.flag_insulation:
+        #     femm.eo_groupselectblock(4)
+        #     stored_energy_insulation = femm.eo_blockintegral(0)
+        #     log_dict["energy"]["stored_bobbin"] = stored_energy_insulation[0]
+        #     femm.eo_clearblock()
+
+        # select the core
+        femm.eo_groupselectblock(1)
+        # Select air inside the core
+        femm.eo_groupselectblock(2)
+        stored_energy = femm.eo_blockintegral(0)
+        # select insulation
+        if self.insulation.flag_insulation:
+            femm.eo_groupselectblock(4)
+
+        # Select all turn groups across all windings
+        for winding_index, _ in enumerate(voltages):
+            num_turns = int(self.two_d_axi.p_conductor[winding_index].shape[0] / 5)
+            base_turn_group = winding_index * num_turns
+            for turn_number in range(5, 5 + num_turns):
+                turn_group = base_turn_group + turn_number
+                femm.eo_groupselectblock(turn_group)
+
+        stored_energy_component = femm.eo_blockintegral(0)
+        log_dict["energy"]["stored_component"] = stored_energy_component[0]
+        femm.eo_clearblock()
+
+        # If stored_energy is a list, take the first element
+        if isinstance(stored_energy, list):
+            stored_energy = stored_energy[0]
+
+        log_dict["energy"]["stored_component"] = stored_energy
+
+        # === Calculate Average Voltage in Core ===
+        # Define points within the core to sample voltage values
+        core_points = [
+            # Bottom boundary points
+            (self.two_d_axi.p_window[4, 0], self.two_d_axi.p_window[4, 1]),
+            (self.two_d_axi.p_window[5, 0], self.two_d_axi.p_window[5, 1]),
+            # Top boundary points
+            (self.two_d_axi.p_window[6, 0], self.two_d_axi.p_window[6, 1]),
+            (self.two_d_axi.p_window[7, 0], self.two_d_axi.p_window[7, 1]),
+            # Left boundary points
+            (self.two_d_axi.p_air_gaps[0, 0], self.two_d_axi.p_air_gaps[0, 1]),
+            (self.two_d_axi.p_air_gaps[3, 0], self.two_d_axi.p_air_gaps[3, 1]),
+            # Right boundary points
+            (self.two_d_axi.p_air_gaps[1, 0], self.two_d_axi.p_air_gaps[1, 1]),
+            (self.two_d_axi.p_air_gaps[2, 0], self.two_d_axi.p_air_gaps[2, 1]),
+            # (self.two_d_axi.p_window[4, 0] + 0.001, self.two_d_axi.p_window[4, 1] + 0.001),
+            # (self.two_d_axi.p_window[6, 0] - 0.001, self.two_d_axi.p_window[6, 1] - 0.001)
+            (0, self.two_d_axi.p_outer[1, 1]),
+            (self.two_d_axi.p_outer[3, 0], self.two_d_axi.p_outer[1, 1]),
+            (self.two_d_axi.p_outer[3, 0], self.two_d_axi.p_outer[3, 1]),
+            (0, self.two_d_axi.p_outer[3, 1])
+        ]
+
+        total_voltage = 0
+        num_points = len(core_points)
+
+        # Sum the voltages at each sampled point
+        for (x, y) in core_points:
+            voltage = femm.eo_getv(x, y)  # Directly get the voltage at the point
+            if voltage is not None:
+                total_voltage += voltage
+
+        # Calculate average voltage in the core
+        average_voltage_core = total_voltage / num_points
+        log_dict["average_voltages"] = {}
+        log_dict["average_voltages"]["core"] = average_voltage_core
+        # Calculate capacitance between each pair of turns using the stored energy and voltage differences
+        capacitance_within = {}
+
+        # Iterate through each winding
+        for w1_index, winding_voltages in enumerate(voltages):
+            winding_name = f"Winding_{w1_index + 1}"
+            capacitance_within[winding_name] = {}
+
+            # Capacitance within the same winding
+            for i, voltage1 in enumerate(winding_voltages):
+                turn_name = f"Turn_{i + 1}"
+                capacitance_within[winding_name][turn_name] = {}
+
+                for j, voltage2 in enumerate(winding_voltages):
+                    if i != j:
+                        voltage_difference = abs(voltage2 - voltage1)
+
+                        if voltage_difference == 0:
+                            if stored_energy == 0:
+                                capacitance_within[winding_name][turn_name][f"to_Turn_{j + 1}"] = float('NaN')
+                            else:
+                                capacitance_within[winding_name][turn_name][f"to_Turn_{j + 1}"] = float('Infinity')
+                        else:
+                            capacitance = 2 * stored_energy / (voltage_difference ** 2)
+                            capacitance_within[winding_name][turn_name][f"to_Turn_{j + 1}"] = capacitance
+
+        # # Capacitance between different windings
+        capacitance_between = {}
+        for w1_index in range(len(voltages)):
+            for w2_index in range(w1_index + 1, len(voltages)):
+                winding1_voltages = voltages[w1_index]
+                winding2_voltages = voltages[w2_index]
+                winding1_name = f"Winding_{w1_index + 1}"
+                winding2_name = f"Winding_{w2_index + 1}"
+
+                if winding1_name not in capacitance_between:
+                    capacitance_between[winding1_name] = {}
+                if winding2_name not in capacitance_between[winding1_name]:
+                    capacitance_between[winding1_name][winding2_name] = {}
+
+                # Calculate capacitance between every pair of turns from different windings
+                for i, voltage1 in enumerate(winding1_voltages):
+                    turn1_name = f"Turn_{i + 1}"
+                    if turn1_name not in capacitance_between[winding1_name][winding2_name]:
+                        capacitance_between[winding1_name][winding2_name][turn1_name] = {}
+
+                    for j, voltage2 in enumerate(winding2_voltages):
+                        turn2_name = f"Turn_{j + 1}"
+                        voltage_difference = abs(voltage2 - voltage1)
+
+                        if voltage_difference == 0:
+                            if stored_energy == 0:
+                                capacitance_between[winding1_name][winding2_name][turn1_name][f"to_{turn2_name}"] = float('NaN')
+                            else:
+                                capacitance_between[winding1_name][winding2_name][turn1_name][f"to_{turn2_name}"] = float('Infinity')
+                        else:
+                            capacitance = 2 * stored_energy / (voltage_difference ** 2)
+                            capacitance_between[winding1_name][winding2_name][turn1_name][f"to_{turn2_name}"] = capacitance
+
+                            # Add reciprocal capacitance for symmetry
+                            if winding2_name not in capacitance_between:
+                                capacitance_between[winding2_name] = {}
+                            if winding1_name not in capacitance_between[winding2_name]:
+                                capacitance_between[winding2_name][winding1_name] = {}
+                            if turn2_name not in capacitance_between[winding2_name][winding1_name]:
+                                capacitance_between[winding2_name][winding1_name][turn2_name] = {}
+                            capacitance_between[winding2_name][winding1_name][turn2_name][f"to_{turn1_name}"] = capacitance
+
+        # Capacitance between each turn and the core
+        capacitance_between_turns_core = {}
+        for winding_index, winding_voltages in enumerate(voltages):
+            winding_name = f"Winding_{winding_index + 1}"
+            capacitance_between_turns_core[winding_name] = {}
+
+            for i, voltage in enumerate(winding_voltages):
+                turn_name = f"Turn_{i + 1}"
+                voltage_difference = abs(voltage - average_voltage_core)
+                if voltage_difference == 0:
+                    capacitance_between_turns_core[winding_name][turn_name] = float('NaN') if stored_energy == 0 else float('Infinity')
+                else:
+                    capacitance = 2 * stored_energy / (voltage_difference ** 2)
+                    capacitance_between_turns_core[winding_name][turn_name] = capacitance
+
+        log_dict["capacitances"]["within_winding"] = capacitance_within
+        log_dict["capacitances"]["between_windings"] = capacitance_between
+        log_dict["capacitances"]["between_turns_core"] = capacitance_between_turns_core
+
+        # Write to file
+        json.dump(log_dict, file, indent=2, ensure_ascii=False)
+        file.close()
+
+        logger.info(f"Electrostatic capacitance log saved to: {self.file_data.femm_results_log_path}")
 
     @staticmethod
     def calculate_point_average(x1: float, y1: float, x2: float, y2: float) -> tuple[float, float]:
