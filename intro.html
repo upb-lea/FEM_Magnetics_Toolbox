@@ -239,12 +239,16 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-femmt.functions"><span class="sectnum">4.10 </span>Helper functions</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.axial_wavelength"><code class="docutils literal notranslate"><span class="pre">axial_wavelength()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#femmt.functions.bobbin_database"><code class="docutils literal notranslate"><span class="pre">bobbin_database()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.calculate_average"><code class="docutils literal notranslate"><span class="pre">calculate_average()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.calculate_cylinder_volume"><code class="docutils literal notranslate"><span class="pre">calculate_cylinder_volume()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.calculate_quadrature_integral"><code class="docutils literal notranslate"><span class="pre">calculate_quadrature_integral()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.calculate_rms"><code class="docutils literal notranslate"><span class="pre">calculate_rms()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.calculate_squared_quadrature_integral"><code class="docutils literal notranslate"><span class="pre">calculate_squared_quadrature_integral()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.check_mqs_condition"><code class="docutils literal notranslate"><span class="pre">check_mqs_condition()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#femmt.functions.close_excel_file_if_open"><code class="docutils literal notranslate"><span class="pre">close_excel_file_if_open()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#femmt.functions.compare_and_plot_connection_capacitance_of_transformer"><code class="docutils literal notranslate"><span class="pre">compare_and_plot_connection_capacitance_of_transformer()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#femmt.functions.compare_excel_files"><code class="docutils literal notranslate"><span class="pre">compare_excel_files()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.compare_fft_list"><code class="docutils literal notranslate"><span class="pre">compare_fft_list()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.conductivity_temperature"><code class="docutils literal notranslate"><span class="pre">conductivity_temperature()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.convert_air_gap_corner_points_to_center_and_distance"><code class="docutils literal notranslate"><span class="pre">convert_air_gap_corner_points_to_center_and_distance()</span></code></a></li>
@@ -256,26 +260,35 @@
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.create_folders"><code class="docutils literal notranslate"><span class="pre">create_folders()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.create_open_circuit_excitation_sweep"><code class="docutils literal notranslate"><span class="pre">create_open_circuit_excitation_sweep()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.create_physical_group"><code class="docutils literal notranslate"><span class="pre">create_physical_group()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#femmt.functions.distribute_potential_linearly"><code class="docutils literal notranslate"><span class="pre">distribute_potential_linearly()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.fft"><code class="docutils literal notranslate"><span class="pre">fft()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.find_common_frequencies"><code class="docutils literal notranslate"><span class="pre">find_common_frequencies()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.find_result_log_file"><code class="docutils literal notranslate"><span class="pre">find_result_log_file()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#femmt.functions.generate_voltage_matrix"><code class="docutils literal notranslate"><span class="pre">generate_voltage_matrix()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.get_coupling_matrix"><code class="docutils literal notranslate"><span class="pre">get_coupling_matrix()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#femmt.functions.get_defined_potentials"><code class="docutils literal notranslate"><span class="pre">get_defined_potentials()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.get_dict_with_unique_keys"><code class="docutils literal notranslate"><span class="pre">get_dict_with_unique_keys()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.get_dicts_with_keys_and_values"><code class="docutils literal notranslate"><span class="pre">get_dicts_with_keys_and_values()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.get_flux_linkages_from_log"><code class="docutils literal notranslate"><span class="pre">get_flux_linkages_from_log()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.get_inductance_matrix"><code class="docutils literal notranslate"><span class="pre">get_inductance_matrix()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.get_mean_coupling_factors"><code class="docutils literal notranslate"><span class="pre">get_mean_coupling_factors()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.get_number_of_turns_of_winding"><code class="docutils literal notranslate"><span class="pre">get_number_of_turns_of_winding()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#femmt.functions.get_open_circuit_capacitance"><code class="docutils literal notranslate"><span class="pre">get_open_circuit_capacitance()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.get_self_inductances_from_log"><code class="docutils literal notranslate"><span class="pre">get_self_inductances_from_log()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#femmt.functions.get_short_circuit_capacitance"><code class="docutils literal notranslate"><span class="pre">get_short_circuit_capacitance()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.hysteresis_current_excitation"><code class="docutils literal notranslate"><span class="pre">hysteresis_current_excitation()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.install_pyfemm_if_missing"><code class="docutils literal notranslate"><span class="pre">install_pyfemm_if_missing()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#femmt.functions.insulation_materials_database"><code class="docutils literal notranslate"><span class="pre">insulation_materials_database()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#femmt.functions.json_to_excel"><code class="docutils literal notranslate"><span class="pre">json_to_excel()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.list_to_complex"><code class="docutils literal notranslate"><span class="pre">list_to_complex()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.litz_calculate_number_layers"><code class="docutils literal notranslate"><span class="pre">litz_calculate_number_layers()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.litz_calculate_number_strands"><code class="docutils literal notranslate"><span class="pre">litz_calculate_number_strands()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.litz_database"><code class="docutils literal notranslate"><span class="pre">litz_database()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.plot_fourier_coefficients"><code class="docutils literal notranslate"><span class="pre">plot_fourier_coefficients()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#femmt.functions.plot_open_and_short_comparison"><code class="docutils literal notranslate"><span class="pre">plot_open_and_short_comparison()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.pm_core_inner_diameter_calculator"><code class="docutils literal notranslate"><span class="pre">pm_core_inner_diameter_calculator()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.point_is_in_rect"><code class="docutils literal notranslate"><span class="pre">point_is_in_rect()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#femmt.functions.solve_capacitance"><code class="docutils literal notranslate"><span class="pre">solve_capacitance()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.sort_out_small_harmonics"><code class="docutils literal notranslate"><span class="pre">sort_out_small_harmonics()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.store_as_npy_in_directory"><code class="docutils literal notranslate"><span class="pre">store_as_npy_in_directory()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions.time_current_vector_to_fft_excitation"><code class="docutils literal notranslate"><span class="pre">time_current_vector_to_fft_excitation()</span></code></a></li>
@@ -2125,7 +2138,7 @@ frequency &gt; 0: mu_r_abs is used</p>
 <h2><span class="sectnum">4.4 </span>The <code class="docutils literal notranslate"><span class="pre">Insulation</span></code> class<a class="headerlink" href="#the-insulation-class" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="femmt.Insulation">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">femmt.</span></span><span class="sig-name descname"><span class="pre">Insulation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_aspect_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flag_insulation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.Insulation" title="Link to this definition"></a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">femmt.</span></span><span class="sig-name descname"><span class="pre">Insulation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_aspect_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flag_insulation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bobbin_dimensions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.Insulation" title="Link to this definition"></a></dt>
 <dd><p>Defines insulation for the model.</p>
 <p>An insulation between the winding window and the core can always be set.
 When having an inductor only the primary2primary insulation is necessary.
@@ -2135,7 +2148,7 @@ are only describing a set distance between the object.</p>
 <p>In general, it is not necessary to add an insulation object at all when no insulation is needed.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="femmt.Insulation.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_aspect_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flag_insulation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.Insulation.__init__" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_aspect_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flag_insulation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bobbin_dimensions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.Insulation.__init__" title="Link to this definition"></a></dt>
 <dd><p>Create an insulation object.</p>
 <p>Sets an insulation_delta value. In order to simplify the drawing of the isolations between core and winding window the isolation rectangles
 are not exactly drawn at the specified position. They are slightly smaller and the offset can be changed with the insulation_delta variable.
@@ -2144,7 +2157,7 @@ In general, it is not recommended to change this value.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="femmt.Insulation.add_core_insulations">
-<span class="sig-name descname"><span class="pre">add_core_insulations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">top_core</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bot_core</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">left_core</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">right_core</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.Insulation.add_core_insulations" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">add_core_insulations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">top_core</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bot_core</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">left_core</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">right_core</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dielectric_constant</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.Insulation.add_core_insulations" title="Link to this definition"></a></dt>
 <dd><p>Add insulations between the core and the winding window. Creating those will draw real rectangles in the model.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -2153,6 +2166,7 @@ In general, it is not recommended to change this value.</p>
 <li><p><strong>bot_core</strong> (<em>float</em>) – Insulation between winding window and bottom core</p></li>
 <li><p><strong>left_core</strong> (<em>float</em>) – Insulation between winding window and left core</p></li>
 <li><p><strong>right_core</strong> (<em>float</em>) – Insulation between winding window and right core</p></li>
+<li><p><strong>dielectric_constant</strong> (<em>float</em>) – relative permittivity of the core insulation</p></li>
 </ul>
 </dd>
 </dl>
@@ -2160,13 +2174,15 @@ In general, it is not recommended to change this value.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="femmt.Insulation.add_winding_insulations">
-<span class="sig-name descname"><span class="pre">add_winding_insulations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inner_winding_insulation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.Insulation.add_winding_insulations" title="Link to this definition"></a></dt>
-<dd><p>Add insulations between turns of one winding and insulation between virtual winding windows.</p>
+<span class="sig-name descname"><span class="pre">add_winding_insulations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inner_winding_insulation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">per_layer_of_turns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.Insulation.add_winding_insulations" title="Link to this definition"></a></dt>
+<dd><p>Add a consistent insulation between turns of one winding and insulation between virtual winding windows.</p>
 <p>Insulation between virtual winding windows is not always needed.
 :param inner_winding_insulation: List of floats which represent the insulations between turns of the same winding. This does not correspond to
 the order conductors are added to the winding! Instead, the winding number is important. The conductors are sorted by ascending winding number.
 The lowest winding number therefore is combined with index 0. The second lowest with index 1 and so on.
-:type inner_winding_insulation: list[list[float]]</p>
+:type inner_winding_insulation: list[list[float]]
+:param per_layer_of_turns: If it is enabled, the insulation will be added between turns for every layer in every winding.
+:type per_layer_of_turns: bool.</p>
 </dd></dl>
 
 </dd></dl>
@@ -2607,6 +2623,20 @@ is irrelevant.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="femmt.functions.bobbin_database">
+<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">bobbin_database</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#femmt.functions.bobbin_database" title="Link to this definition"></a></dt>
+<dd><p>Return a dictionary containing bobbin dimensions for various core structures.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary containing bobbin dimensions from Datasheet.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="femmt.functions.calculate_average">
 <span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">calculate_average</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">integral</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#femmt.functions.calculate_average" title="Link to this definition"></a></dt>
 <dd><p>Compute the average in general.</p>
@@ -2709,6 +2739,52 @@ results. It is recommended to reduce the frequency or use a full-wave solver (no
 <li><p><strong>complex_permittivity</strong> (<em>float</em>) – complex permittivity</p></li>
 <li><p><strong>conductivity</strong> (<em>float</em>) – core conductivity</p></li>
 <li><p><strong>relative_margin_to_first_resonance</strong> (<em>float</em>) – relative margin to the first resonance. Defaults to 0.5.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt.functions.close_excel_file_if_open">
+<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">close_excel_file_if_open</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepath</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.functions.close_excel_file_if_open" title="Link to this definition"></a></dt>
+<dd><p>Close the specified Excel file if it is currently open.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filepath</strong> (<em>str</em>) – The path to the Excel file to close.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt.functions.compare_and_plot_connection_capacitance_of_transformer">
+<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">compare_and_plot_connection_capacitance_of_transformer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c_vec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">measured_capacitance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_plot</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.functions.compare_and_plot_connection_capacitance_of_transformer" title="Link to this definition"></a></dt>
+<dd><p>Compare the connection capacitance applied in the measurement. The capacitors C1,…C10 can not be compared directly to the measurement results.</p>
+<p>For every connection, we look to the behavior of the equivalent circuit. For example; AB vs CDE will result in C3 + C4 + C5 + C6 + C7 + C8
+:param c_vec: the calculated capacitance from the simulation.
+:type c_vec: byte array
+:param measured_capacitance: represent the measured capacitance of all the connections
+:type measured_capacitance: list[float | None]
+:param show_plot: to show the comparison between the simulation and measurement results in a figure.
+:type show_plot: bool</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt.functions.compare_excel_files">
+<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">compare_excel_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">femmt_excel_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">femm_excel_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comparison_output_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#femmt.functions.compare_excel_files" title="Link to this definition"></a></dt>
+<dd><p>Compare two Excel files (FEMMT and FEMM) and generate a new Excel file with comparison results.</p>
+<p>This function loads two Excel files, one generated by FEMMT and the other by FEMM, compares the data across
+all common sheets, and calculates the differences between corresponding values. The results include:
+- Absolute Difference
+- Relative Error
+- Relative Error Percentage</p>
+<p>The comparison is saved into a new Excel file, with each comparison in a separate sheet named after
+the original sheet with the “_Comparison” suffix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>femmt_excel_path</strong> (<em>str</em>) – Path to the Excel file generated by FEMMT.</p></li>
+<li><p><strong>femm_excel_path</strong> (<em>str</em>) – Path to the Excel file generated by FEMM.</p></li>
+<li><p><strong>comparison_output_path</strong> (<em>str</em>) – Path to save the resulting comparison Excel file.</p></li>
 </ul>
 </dd>
 </dl>
@@ -2921,6 +2997,21 @@ Switched-Mode Power Converter’ 2013.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="femmt.functions.distribute_potential_linearly">
+<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">distribute_potential_linearly</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v_start</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_end</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_turns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#femmt.functions.distribute_potential_linearly" title="Link to this definition"></a></dt>
+<dd><p>Linearly distribute potentials between v_start and v_end over the turns.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v_start</strong> (<em>float</em>) – the voltage on the first turn</p></li>
+<li><p><strong>v_end</strong> (<em>float</em>) – the voltage on the last turn</p></li>
+<li><p><strong>num_turns</strong> (<em>int</em>) – number of turns</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="femmt.functions.fft">
 <span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">fft</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">period_vector_t_i</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Buffer</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">_SupportsArray</span><span class="p"><span class="pre">[</span></span><span class="pre">dtype</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">_NestedSequence</span><span class="p"><span class="pre">[</span></span><span class="pre">_SupportsArray</span><span class="p"><span class="pre">[</span></span><span class="pre">dtype</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">complex</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">_NestedSequence</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">complex</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'no'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'rad'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'ffT'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'factor'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_value_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_value_harmonic</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure_directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dtype</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#femmt.functions.fft" title="Link to this definition"></a></dt>
 <dd><p>Calculate the FFT for a given input signal. Input signal is in vector format and should include one period.</p>
@@ -3026,6 +3117,65 @@ Note: count 1 is DC component, count 2 is the fundamental frequency</p></li>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="femmt.functions.generate_voltage_matrix">
+<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">generate_voltage_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">component_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">potentials</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flip_the_sec_terminal</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#femmt.functions.generate_voltage_matrix" title="Link to this definition"></a></dt>
+<dd><p>Generate the voltage matrix from the potentials.</p>
+<p>W = 0.5 (M^2) * C. M represents the voltage matrix derived from the applied potentials.
+Equivalent circuit of inductor:
+A–.——.—A</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line"><a href="#id4"><span class="problematic" id="id5">|</span></a></div>
+<div class="line"><a href="#id6"><span class="problematic" id="id7">|</span></a></div>
+</div>
+</div></blockquote>
+<dl>
+<dt>v_1    |      c1</dt><dd><div class="line-block">
+<div class="line"><a href="#id8"><span class="problematic" id="id9">|</span></a></div>
+<div class="line"><a href="#id10"><span class="problematic" id="id11">|</span></a></div>
+</div>
+</dd>
+<dt>B–<a href="#id12"><span class="problematic" id="id13">|</span></a>——.—B</dt><dd><div class="line-block">
+<div class="line"><a href="#id14"><span class="problematic" id="id15">|</span></a></div>
+</div>
+</dd>
+<dt>v_2   c2     c3</dt><dd><div class="line-block">
+<div class="line"><a href="#id16"><span class="problematic" id="id17">|</span></a></div>
+</div>
+</dd>
+</dl>
+<p>E–.—–.—-E
+Equivalent circuit of transformer:
+A–.——.—–c4——–.——.——C</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">|           / |      |</div>
+<div class="line">|    c5   c6    |      |</div>
+</div>
+</div></blockquote>
+<dl>
+<dt>v1 |      c1     /       c2     |      v2</dt><dd><div class="line-block">
+<div class="line">|     /       |      |</div>
+<div class="line">|  /          |      |</div>
+</div>
+</dd>
+<dt>B–<a href="#id18"><span class="problematic" id="id19">|------.-----c3--------.------|</span></a>——D</dt><dd><div class="line-block">
+<div class="line">|       v3      |      |</div>
+</div>
+<p>c7     c8 v4          c10    c9
+|      |               |      |</p>
+</dd>
+</dl>
+<p>E–.—–.———————–.——E</p>
+<p>:param component_type : the type of the component to be solved.
+:type component_type: str
+:param potentials: list of potentials
+:type potentials: list[list[float]]
+:param flip_the_sec_terminal: flip the sec voltage. v2 will be negative.
+:type flip_the_sec_terminal: bool</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="femmt.functions.get_coupling_matrix">
 <span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">get_coupling_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flux_linkages</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">array</span></span></span><a class="headerlink" href="#femmt.functions.get_coupling_matrix" title="Link to this definition"></a></dt>
 <dd><p>Calculate the coupling factors from the given flux linkages.</p>
@@ -3040,6 +3190,18 @@ Note: count 1 is DC component, count 2 is the fundamental frequency</p></li>
 <dd class="field-odd"><p>np.array</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt.functions.get_defined_potentials">
+<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">get_defined_potentials</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">component_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#femmt.functions.get_defined_potentials" title="Link to this definition"></a></dt>
+<dd><p>Define of  different potentials to be applied in the simulation.</p>
+<blockquote>
+<div><p>It is needed to save the energies with every simulation based on the number of the capacitors in the equivalent
+circuit and to calculate the voltage matrix.</p>
+</div></blockquote>
+<p>:param component_type : the type of the component to be solved
+:type component_type: str</p>
 </dd></dl>
 
 <dl class="py function">
@@ -3132,6 +3294,21 @@ Note: count 1 is DC component, count 2 is the fundamental frequency</p></li>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="femmt.functions.get_open_circuit_capacitance">
+<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">get_open_circuit_capacitance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c_vec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_turns_w1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_turns_w2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#femmt.functions.get_open_circuit_capacitance" title="Link to this definition"></a></dt>
+<dd><p>Get the capacitance when the secondary is open.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>c_vec</strong> (<em>byte array</em>) – the calculated capacitance from the simulation.</p></li>
+<li><p><strong>num_turns_w1</strong> (<em>int</em>) – number of turns of the first winding</p></li>
+<li><p><strong>num_turns_w2</strong> (<em>int</em>) – number of turns of the second winding</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="femmt.functions.get_self_inductances_from_log">
 <span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">get_self_inductances_from_log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">log</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="headerlink" href="#femmt.functions.get_self_inductances_from_log" title="Link to this definition"></a></dt>
 <dd><p>Read the self-inductances from the result log file (dictionary).</p>
@@ -3144,6 +3321,17 @@ Note: count 1 is DC component, count 2 is the fundamental frequency</p></li>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt.functions.get_short_circuit_capacitance">
+<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">get_short_circuit_capacitance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c_vec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#femmt.functions.get_short_circuit_capacitance" title="Link to this definition"></a></dt>
+<dd><p>Get the capacitance when the secondary is shorted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>c_vec</strong> (<em>byte array</em>) – the calculated capacitance from the simulation.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -3174,6 +3362,34 @@ In case of a center-tapped transformer, halving the amplitudes will be done by s
 <dt class="sig sig-object py" id="femmt.functions.install_pyfemm_if_missing">
 <span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">install_pyfemm_if_missing</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#femmt.functions.install_pyfemm_if_missing" title="Link to this definition"></a></dt>
 <dd><p>Installs femm-software pip package in case of running on Windows machine. Windows users only.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt.functions.insulation_materials_database">
+<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">insulation_materials_database</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#femmt.functions.insulation_materials_database" title="Link to this definition"></a></dt>
+<dd><p>Return insulation properties for different type of materials.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict including insulation parameters</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt.functions.json_to_excel">
+<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">json_to_excel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">json_file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_excel_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#femmt.functions.json_to_excel" title="Link to this definition"></a></dt>
+<dd><p>Extract data from the electrostatic simulation and write it into a log file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>json_file_path</strong> (<em>str</em>) – Path to the JSON input file containing simulation results.</p></li>
+<li><p><strong>output_excel_path</strong> (<em>str</em>) – Path where the Excel (.xlsx) file will be saved.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -3264,6 +3480,22 @@ In case of a center-tapped transformer, halving the amplitudes will be done by s
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="femmt.functions.plot_open_and_short_comparison">
+<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">plot_open_and_short_comparison</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c_sim_open</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_sim_short</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_meas_open</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_meas_short</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.functions.plot_open_and_short_comparison" title="Link to this definition"></a></dt>
+<dd><p>Plot horizontal bar comparison for open-circuit capacitance and short-circuit capacitance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>c_sim_open</strong> – simulated open‑circuit capacitance (F)</p></li>
+<li><p><strong>c_sim_short</strong> – simulated short‑circuit capacitance (F)</p></li>
+<li><p><strong>c_meas_open</strong> – measured open‑circuit capacitance (F) or None</p></li>
+<li><p><strong>c_meas_short</strong> – measured short‑circuit capacitance (F) or None</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="femmt.functions.pm_core_inner_diameter_calculator">
 <span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">pm_core_inner_diameter_calculator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inner_core_diameter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hole_diameter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">array</span></span></span><a class="headerlink" href="#femmt.functions.pm_core_inner_diameter_calculator" title="Link to this definition"></a></dt>
 <dd><p>Calculate the effective inner core diameter without the hole often used in PM-cores.</p>
@@ -3294,6 +3526,23 @@ In case of a center-tapped transformer, halving the amplitudes will be done by s
 <li><p><strong>y</strong> (<em>float</em>) – y coordinate of the point to check</p></li>
 <li><p><strong>rect</strong> (<em>list</em>) – rectangular</p></li>
 </ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt.functions.solve_capacitance">
+<span class="sig-prename descclassname"><span class="pre">femmt.functions.</span></span><span class="sig-name descname"><span class="pre">solve_capacitance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">energies</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#femmt.functions.solve_capacitance" title="Link to this definition"></a></dt>
+<dd><p>Solve the capacitance from the voltage matrix and the energy matrix saved from the simulation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>m</strong> – voltage matrix</p></li>
+<li><p><strong>energies</strong> (<em>byte array</em>) – energies solved from the simulations</p></li>
+</ul>
+</dd>
+<dt class="field-even">Type<span class="colon">:</span></dt>
+<dd class="field-even"><p>array</p>
 </dd>
 </dl>
 </dd></dl>
