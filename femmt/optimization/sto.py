@@ -850,13 +850,13 @@ class StackedTransformerOptimization:
 
                         fem_output = StackedTransformerOptimization.FemSimulation.single_fem_simulation(fem_input, show_visual_outputs=show_visual_outputs)
 
-                        reluctance_df.at[index, 'n'] = fem_output.n_conc
-                        reluctance_df.at[index, 'l_s_conc'] = fem_output.l_s_conc
-                        reluctance_df.at[index, 'l_h_conc'] = fem_output.l_h_conc
-                        reluctance_df.at[index, 'p_loss_winding_1'] = fem_output.p_loss_winding_1
-                        reluctance_df.at[index, 'p_loss_winding_2'] = fem_output.p_loss_winding_2
-                        reluctance_df.at[index, 'eddy_core'] = fem_output.eddy_core
-                        reluctance_df.at[index, 'core'] = fem_output.core
+                        reluctance_df.loc[index, 'n'] = fem_output.n_conc
+                        reluctance_df.loc[index, 'l_s_conc'] = fem_output.l_s_conc
+                        reluctance_df.loc[index, 'l_h_conc'] = fem_output.l_h_conc
+                        reluctance_df.loc[index, 'p_loss_winding_1'] = fem_output.p_loss_winding_1
+                        reluctance_df.loc[index, 'p_loss_winding_2'] = fem_output.p_loss_winding_2
+                        reluctance_df.loc[index, 'eddy_core'] = fem_output.eddy_core
+                        reluctance_df.loc[index, 'core'] = fem_output.core
 
                         # copy result files to result-file folder
                         source_json_file = os.path.join(
@@ -867,13 +867,13 @@ class StackedTransformerOptimization:
 
                     except Exception as e:
                         print(f"The following exception was raised: {e}")
-                        reluctance_df.at[index, 'n'] = None
-                        reluctance_df.at[index, 'l_s_conc'] = None
-                        reluctance_df.at[index, 'l_h_conc'] = None
-                        reluctance_df.at[index, 'p_loss_winding_1'] = None
-                        reluctance_df.at[index, 'p_loss_winding_2'] = None
-                        reluctance_df.at[index, 'eddy_core'] = None
-                        reluctance_df.at[index, 'core'] = None
+                        reluctance_df.loc[index, 'n'] = None
+                        reluctance_df.loc[index, 'l_s_conc'] = None
+                        reluctance_df.loc[index, 'l_h_conc'] = None
+                        reluctance_df.loc[index, 'p_loss_winding_1'] = None
+                        reluctance_df.loc[index, 'p_loss_winding_2'] = None
+                        reluctance_df.loc[index, 'eddy_core'] = None
+                        reluctance_df.loc[index, 'core'] = None
             return reluctance_df
 
         @staticmethod
@@ -1015,8 +1015,8 @@ class StackedTransformerOptimization:
             :rtype: pd.DataFrame
             """
             files_in_folder = [f for f in os.listdir(fem_results_folder_path) if os.path.isfile(os.path.join(fem_results_folder_path, f))]
-            print(files_in_folder)
-            print(len(files_in_folder))
+            logger.info(files_in_folder)
+            logger.info(len(files_in_folder))
 
             # add new columns to the dataframe, init values with None
             reluctance_df['fem_inductance'] = None
