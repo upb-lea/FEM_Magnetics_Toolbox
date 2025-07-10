@@ -420,6 +420,8 @@ class InductorOptimization:
 
             :param config: Integrated transformer configuration file
             :type config: ItoSingleInputConfig
+            :param show_results: True to directly open the browser to view the results.
+            :type show_results: bool
             """
             study = optuna.load_study(study_name=config.inductor_study_name,
                                       storage=f"sqlite:///{config.inductor_optimization_directory}/{config.inductor_study_name}.sqlite3")
