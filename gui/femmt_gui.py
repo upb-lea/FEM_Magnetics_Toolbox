@@ -11,7 +11,6 @@ from PyQt5.QtGui import QPixmap, QDoubleValidator, QIntValidator
 import femmt as fmt
 import json
 import os
-from typing import List
 import PIL
 import webbrowser
 import shutil
@@ -21,7 +20,7 @@ from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QCoreApplicatio
 import materialdatabase as mdb
 import matplotlib.pyplot as plt
 
-from gui.onelab_path_popup import OnelabPathDialog
+from onelab_path_popup import OnelabPathDialog
 
 from femmt.examples.inductor_optimization import AutomatedDesign
 from femmt.examples.inductor_optimization import load_fem_simulation_results, filter_after_fem
@@ -2941,7 +2940,7 @@ class MainWindow(QMainWindow):
     # Simulation tab
     # ----------------------------------------------------------
 
-    def md_get_frequency_lists(self) -> List:
+    def md_get_frequency_lists(self) -> list:
         """
         Read frequency, amplitude and phase depending on the checked frequencies and return it as a list.
 
@@ -3047,9 +3046,6 @@ class MainWindow(QMainWindow):
         returns: femmt MagneticComponent
 
         """
-        # geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, is_gui=True)
-        # self.check_onelab_config(geo)
-
         if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
             self.md_simulation_QLabel.setText('simulation starts...')
 
@@ -3064,7 +3060,9 @@ class MainWindow(QMainWindow):
 
             geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor,
                                         working_directory=self.md_working_directory_lineEdit.text(),
-                                        verbosity=fmt.Verbosity.ToConsole)
+                                        is_gui=True,
+                                        onelab_verbosity=fmt.Verbosity.ToConsole)
+            self.check_onelab_config(geo)
 
             core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=comma_str_to_point_float(self.md_core_width_lineEdit.text()),
                                                             window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text()),
@@ -3246,7 +3244,9 @@ class MainWindow(QMainWindow):
             # 1. chose simulation type
             geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer,
                                         working_directory=self.md_working_directory_lineEdit.text(),
-                                        verbosity=fmt.Verbosity.ToConsole)
+                                        is_gui=True,
+                                        onelab_verbosity=fmt.Verbosity.ToConsole)
+            self.check_onelab_config(geo)
 
             # -----------------------------------------------
             # Core

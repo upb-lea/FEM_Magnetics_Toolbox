@@ -4,6 +4,11 @@ import materialdatabase as mdb
 import os
 # from matplotlib import pyplot as plt
 import numpy as np
+import logging
+
+# configure logging to show femmt terminal output
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+
 def basic_example_transformer_three_windings_time_domain(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
     """
     Demonstrate how to simulate a three winding transformer in time domain.
@@ -27,7 +32,7 @@ def basic_example_transformer_three_windings_time_domain(onelab_folder: str = No
     # 1. chose simulation type
     geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.TimeDomain,
                                 component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
-                                verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
+                                is_gui=is_test)
 
     # This line is for automated pytest running on github only. Please ignore this line!
     if onelab_folder is not None:
@@ -58,7 +63,9 @@ def basic_example_transformer_three_windings_time_domain(onelab_folder: str = No
     insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
     insulation.add_winding_insulations([[0.0002, 0.0004, 0.0004],
                                         [0.0004, 0.0002, 0.0004],
-                                        [0.0004, 0.0004, 0.0002]])
+                                        [0.0004, 0.0004, 0.0002]], per_layer_of_turns=False)
+    insulation.add_turn_insulation([0.25e-5, 0.25e-5, 0.25e-5], add_turn_insulations=False)
+    insulation.add_insulation_between_layers(add_insulation_material=False, thickness=0.0005)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)

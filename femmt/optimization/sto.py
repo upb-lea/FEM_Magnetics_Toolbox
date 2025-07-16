@@ -3,7 +3,6 @@
 import datetime
 import logging
 import os
-from typing import List, Optional
 import shutil
 import json
 import pickle
@@ -26,6 +25,8 @@ import matplotlib.patches as mpatches
 import magnethub as mh
 import pandas as pd
 import tqdm
+
+logger = logging.getLogger(__name__)
 
 class StackedTransformerOptimization:
     """Perform optimizations for the stacked transformer."""
@@ -131,7 +132,7 @@ class StackedTransformerOptimization:
         @staticmethod
         def objective(trial: optuna.Trial, config: StoSingleInputConfig, target_and_fixed_parameters: StoTargetAndFixedParameters):
             """
-            Objective funktion to optimize. Uses reluctance model calculation.
+            Objective function to optimize. Uses reluctance model calculation.
 
             Once core_name_list is not None, the objective function uses fixed core sizes. Cores are picked from the core_database().
             Otherwise, core_inner_diameter_min_max_list, window_w_min_max_list and window_h_bot_min_max_list are used.
@@ -424,7 +425,7 @@ class StackedTransformerOptimization:
             p_winding_1_top = 0
             p_winding_1_bot = 0
             for count, fft_frequency in enumerate(reluctance_input.fft_frequency_list_1):
-                proximity_factor_1_top = fmt.calc_proximity_factor_air_gap(
+                proximity_factor_1_top = fr.calc_proximity_factor_air_gap(
                     litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=reluctance_input.turns_1_top,
                     r_1=reluctance_input.insulations.iso_window_top_core_left,
                     frequency=fft_frequency, winding_area=winding_area_1_top,
@@ -437,7 +438,7 @@ class StackedTransformerOptimization:
                         (reluctance_input.turns_1_bot * 2 * reluctance_input.primary_litz_dict["conductor_radii"] + \
                             (reluctance_input.turns_1_bot - 1) * reluctance_input.insulations.iso_primary_to_primary)
 
-                    proximity_factor_1_bot_inner = fmt.calc_proximity_factor_air_gap(
+                    proximity_factor_1_bot_inner = fr.calc_proximity_factor_air_gap(
                         litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=reluctance_input.turns_1_bot,
                         r_1=reluctance_input.insulations.iso_window_bot_core_left,
                         frequency=fft_frequency, winding_area=winding_area_1_bot,
@@ -449,13 +450,13 @@ class StackedTransformerOptimization:
                         number_bot_prim_turns_per_column * 2 * reluctance_input.primary_litz_dict["conductor_radii"] + \
                         (number_bot_prim_turns_per_column - 1) * reluctance_input.insulations.iso_primary_to_primary))
 
-                    proximity_factor_1_bot_inner = fmt.calc_proximity_factor_air_gap(
+                    proximity_factor_1_bot_inner = fr.calc_proximity_factor_air_gap(
                         litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=number_bot_prim_turns_per_column,
                         r_1=reluctance_input.insulations.iso_window_bot_core_left,
                         frequency=fft_frequency, winding_area=winding_area_1_bot,
                         litz_wire_material_name='Copper', temperature=reluctance_input.temperature)
 
-                    proximity_factor_1_bot_outer = fmt.calc_proximity_factor(
+                    proximity_factor_1_bot_outer = fr.calc_proximity_factor(
                         litz_wire_name=reluctance_input.litz_wire_name_1, number_turns=reluctance_input.turns_1_bot - number_bot_prim_turns_per_column,
                         window_h=reluctance_input.window_h_bot,
                         iso_core_top=reluctance_input.insulations.iso_window_bot_core_top, iso_core_bot=reluctance_input.insulations.iso_window_bot_core_bot,
@@ -468,7 +469,7 @@ class StackedTransformerOptimization:
 
             p_winding_2 = 0
             for count, fft_frequency in enumerate(reluctance_input.fft_frequency_list_2):
-                proximity_factor_assumption_2 = fmt.calc_proximity_factor(
+                proximity_factor_assumption_2 = fr.calc_proximity_factor(
                     litz_wire_name=reluctance_input.litz_wire_name_2, number_turns=reluctance_input.turns_2_bot, window_h=reluctance_input.window_h_bot,
                     iso_core_top=reluctance_input.insulations.iso_window_bot_core_top, iso_core_bot=reluctance_input.insulations.iso_window_bot_core_bot,
                     frequency=fft_frequency, litz_wire_material_name='Copper', temperature=reluctance_input.temperature)
@@ -500,8 +501,8 @@ class StackedTransformerOptimization:
             return reluctance_output
 
         @staticmethod
-        def start_proceed_study(config: StoSingleInputConfig, number_trials: Optional[int] = None,
-                                target_number_trials: Optional[int] = None, storage: str = 'sqlite',
+        def start_proceed_study(config: StoSingleInputConfig, number_trials: int | None = None,
+                                target_number_trials: int | None = None, storage: str = 'sqlite',
                                 sampler=optuna.samplers.NSGAIIISampler(),
                                 ) -> None:
             """
@@ -519,7 +520,7 @@ class StackedTransformerOptimization:
             :type sampler: optuna.sampler-object
             """
             if os.path.exists(f"{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.sqlite3"):
-                print("Existing study found. Proceeding.")
+                logger.info("Existing study found. Proceeding.")
 
             target_and_fixed_parameters = StackedTransformerOptimization.ReluctanceModel.calculate_fix_parameters(config)
 
@@ -549,26 +550,26 @@ class StackedTransformerOptimization:
                 if len(study_in_storage.trials) < target_number_trials:
                     study_in_memory = optuna.create_study(directions=['minimize', 'minimize'],
                                                           study_name=config.stacked_transformer_study_name, sampler=sampler)
-                    print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
+                    logger.info(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
                     study_in_memory.add_trials(study_in_storage.trials)
                     number_trials = target_number_trials - len(study_in_memory.trials)
                     study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
                     study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
-                    print(f"Finished {number_trials} trials.")
-                    print(f"current time: {datetime.datetime.now()}")
+                    logger.info(f"Finished {number_trials} trials.")
+                    logger.info(f"current time: {datetime.datetime.now()}")
                 else:
-                    print(f"Study has already {len(study_in_storage.trials)} trials, and target is {target_number_trials} trials.")
+                    logger.info(f"Study has already {len(study_in_storage.trials)} trials, and target is {target_number_trials} trials.")
 
             else:
                 # normal simulation with number_trials
                 study_in_memory = optuna.create_study(directions=['minimize', 'minimize'], study_name=config.stacked_transformer_study_name, sampler=sampler)
-                print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
+                logger.info(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
                 study_in_memory.add_trials(study_in_storage.trials)
                 study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
 
                 study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
-                print(f"Finished {number_trials} trials.")
-                print(f"current time: {datetime.datetime.now()}")
+                logger.info(f"Finished {number_trials} trials.")
+                logger.info(f"current time: {datetime.datetime.now()}")
             StackedTransformerOptimization.ReluctanceModel.save_config(config)
 
         @staticmethod
@@ -601,7 +602,7 @@ class StackedTransformerOptimization:
             """
             database_url = f'sqlite:///{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.sqlite3'
             if os.path.isfile(database_url.replace('sqlite:///', '')):
-                print("Existing study found.")
+                logger.info("Existing study found.")
             else:
                 raise ValueError(f"Can not find database: {database_url}")
             loaded_study = optuna.load_study(study_name=config.stacked_transformer_study_name, storage=database_url)
@@ -643,7 +644,7 @@ class StackedTransformerOptimization:
             :type interactive: bool
             """
             if color_list is None:
-                color_list = ['red', 'blue', 'green', 'grey']
+                color_list = ['red', 'blue', 'green', 'gray']
             for count, df in enumerate(dataframes):
                 # color_list was before list(ff.colors_femmt_default.keys())
                 df['color_r'], df['color_g'], df['color_b'] = ff.colors_femmt_default[color_list[count]]
@@ -697,13 +698,13 @@ class StackedTransformerOptimization:
             Remove designs with too high losses compared to the minimum losses.
 
             :param df: list of valid DTOs
-            :type df: List[ItoSingleResultFile]
+            :type df: list[ItoSingleResultFile]
             :param factor_min_dc_losses: filter factor for the minimum dc losses
             :type factor_min_dc_losses: float
             :param factor_max_dc_losses: dc_max_loss = factor_max_dc_losses * min_available_dc_losses_in_pareto_front
             :type factor_max_dc_losses: float
             :returns: list with removed objects (too small air gaps)
-            :rtype: List[ItoSingleResultFile]
+            :rtype: list[ItoSingleResultFile]
             """
             # figure out pareto front
             # pareto_volume_list, pareto_core_hyst_list, pareto_dto_list = self.pareto_front(volume_list, core_hyst_loss_list, valid_design_list)
@@ -732,14 +733,14 @@ class StackedTransformerOptimization:
             return pareto_df_offset
 
         @staticmethod
-        def df_trial_numbers(df: pd.DataFrame, trial_number_list: List[int]) -> pd.DataFrame:
+        def df_trial_numbers(df: pd.DataFrame, trial_number_list: list[int]) -> pd.DataFrame:
             """
             Generate a new dataframe from a given one, just with the trial numbers from the trial_number_list.
 
             :param df: input dataframe
             :type df: pandas.DataFrame
             :param trial_number_list: list of trials, e.g. [1530, 1870, 3402]
-            :type trial_number_list: List[int]
+            :type trial_number_list: list[int]
             :return: dataframe with trial numbers from trial_number_list
             :rtype: pandas.DataFrame
             """
@@ -783,13 +784,13 @@ class StackedTransformerOptimization:
             """
             Perform FEM simulations from a given Pandas dataframe. The dataframe is from the reluctance model results.
 
-            :param reluctance_df: Pandas dataframe containing relults from the relutance model
+            :param reluctance_df: Pandas dataframe containing results from the reluctance model
             :type reluctance_df: pandas.DataFrame
             :param config: Configuration for the optimization of the transformer
             :type config: StoSingleInputConfig
-            :param show_visual_outputs: Ture to show visual outputs like the geometry
+            :param show_visual_outputs: True to show visual outputs like the geometry
             :type show_visual_outputs: bool
-            :param process_number: Process number for parallel simulations on multiple cpu cores
+            :param process_number: Process number for parallel simulations on multiple CPU cores
             :type process_number: int
             """
             target_and_fix_parameters = StackedTransformerOptimization.ReluctanceModel.calculate_fix_parameters(config)
@@ -808,7 +809,7 @@ class StackedTransformerOptimization:
                     f'case_{index}.json')
 
                 if os.path.exists(destination_json_file):
-                    print(f'case_{index}.json already exists. Skip simulation.')
+                    logger.info(f'case_{index}.json already exists. Skip simulation.')
                 else:
 
                     try:
@@ -849,13 +850,13 @@ class StackedTransformerOptimization:
 
                         fem_output = StackedTransformerOptimization.FemSimulation.single_fem_simulation(fem_input, show_visual_outputs=show_visual_outputs)
 
-                        reluctance_df.at[index, 'n'] = fem_output.n_conc
-                        reluctance_df.at[index, 'l_s_conc'] = fem_output.l_s_conc
-                        reluctance_df.at[index, 'l_h_conc'] = fem_output.l_h_conc
-                        reluctance_df.at[index, 'p_loss_winding_1'] = fem_output.p_loss_winding_1
-                        reluctance_df.at[index, 'p_loss_winding_2'] = fem_output.p_loss_winding_2
-                        reluctance_df.at[index, 'eddy_core'] = fem_output.eddy_core
-                        reluctance_df.at[index, 'core'] = fem_output.core
+                        reluctance_df.loc[index, 'n'] = fem_output.n_conc
+                        reluctance_df.loc[index, 'l_s_conc'] = fem_output.l_s_conc
+                        reluctance_df.loc[index, 'l_h_conc'] = fem_output.l_h_conc
+                        reluctance_df.loc[index, 'p_loss_winding_1'] = fem_output.p_loss_winding_1
+                        reluctance_df.loc[index, 'p_loss_winding_2'] = fem_output.p_loss_winding_2
+                        reluctance_df.loc[index, 'eddy_core'] = fem_output.eddy_core
+                        reluctance_df.loc[index, 'core'] = fem_output.core
 
                         # copy result files to result-file folder
                         source_json_file = os.path.join(
@@ -866,13 +867,13 @@ class StackedTransformerOptimization:
 
                     except Exception as e:
                         print(f"The following exception was raised: {e}")
-                        reluctance_df.at[index, 'n'] = None
-                        reluctance_df.at[index, 'l_s_conc'] = None
-                        reluctance_df.at[index, 'l_h_conc'] = None
-                        reluctance_df.at[index, 'p_loss_winding_1'] = None
-                        reluctance_df.at[index, 'p_loss_winding_2'] = None
-                        reluctance_df.at[index, 'eddy_core'] = None
-                        reluctance_df.at[index, 'core'] = None
+                        reluctance_df.loc[index, 'n'] = None
+                        reluctance_df.loc[index, 'l_s_conc'] = None
+                        reluctance_df.loc[index, 'l_h_conc'] = None
+                        reluctance_df.loc[index, 'p_loss_winding_1'] = None
+                        reluctance_df.loc[index, 'p_loss_winding_2'] = None
+                        reluctance_df.loc[index, 'eddy_core'] = None
+                        reluctance_df.loc[index, 'core'] = None
             return reluctance_df
 
         @staticmethod
@@ -893,7 +894,7 @@ class StackedTransformerOptimization:
 
             # 1. chose simulation type
             geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
-                                        working_directory=fem_input.working_directory, verbosity=fmt.Verbosity.Silent)
+                                        working_directory=fem_input.working_directory, onelab_verbosity=fmt.Verbosity.Silent)
 
             # 2. set core parameters
             core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=fem_input.core_inner_diameter,
@@ -1014,8 +1015,8 @@ class StackedTransformerOptimization:
             :rtype: pd.DataFrame
             """
             files_in_folder = [f for f in os.listdir(fem_results_folder_path) if os.path.isfile(os.path.join(fem_results_folder_path, f))]
-            print(files_in_folder)
-            print(len(files_in_folder))
+            logger.info(files_in_folder)
+            logger.info(len(files_in_folder))
 
             # add new columns to the dataframe, init values with None
             reluctance_df['fem_inductance'] = None
@@ -1042,7 +1043,7 @@ class StackedTransformerOptimization:
             return reluctance_df
 
         @staticmethod
-        def full_simulation(df_geometry: pd.DataFrame, current_waveform: List, stacked_transformer_config_filepath: str, process_number: int = 1,
+        def full_simulation(df_geometry: pd.DataFrame, current_waveform: list, stacked_transformer_config_filepath: str, process_number: int = 1,
                             show_visual_outputs: bool = False, print_derivations: bool = False):
             """
             Reluctance model (hysteresis losses) and FEM simulation (winding losses and eddy current losses) for geometries from df_geometry.
@@ -1050,14 +1051,14 @@ class StackedTransformerOptimization:
             :param df_geometry: Pandas dataframe with geometries
             :type df_geometry: pd.DataFrame
             :param current_waveform: Current waveform to simulate
-            :type current_waveform: List
+            :type current_waveform: list
             :param stacked_transformer_config_filepath: Filepath of the inductor optimization configuration file
             :type stacked_transformer_config_filepath: str
             :param process_number: process number to run the simulation on
             :type process_number: int
-            :param show_visual_outputs: True to show visual outpus (geometries)
+            :param show_visual_outputs: True to show visual outputs (geometries)
             :type show_visual_outputs: bool
-            :param print_derivations: True to print derivation from FEM simulaton to reluctance model
+            :param print_derivations: True to print derivation from FEM simulation to reluctance model
             :type print_derivations: bool
             """
             for index, _ in df_geometry.iterrows():

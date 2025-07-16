@@ -10,7 +10,10 @@ folder .../femmt/examples/example_results/simulation_file_name/results/log_elect
 """
 import femmt as fmt
 import os
+import logging
 
+# configure logging to show femmt terminal output
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 def basic_example_transformer_stacked(onelab_folder: str = None, show_visual_outputs: bool = True,
                                       is_test: bool = False):
@@ -99,7 +102,7 @@ def basic_example_transformer_stacked(onelab_folder: str = None, show_visual_out
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
-                                working_directory=working_directory, verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
+                                working_directory=working_directory, is_gui=is_test)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
     if onelab_folder is not None:
@@ -125,8 +128,10 @@ def basic_example_transformer_stacked(onelab_folder: str = None, show_visual_out
     # insulation.add_core_insulations(0.001, 0.001, 0.001, 0.001)  # [bot, top, left, right]
     insulation.add_top_section_core_insulations(0.001, 0.002, 0.001, 0.001)
     insulation.add_bottom_section_core_insulations(0.001, 0.001, 0.001, 0.001)
-    insulation.add_winding_insulations([[0.0001, 0.001],
-                                        [0.001, 0.0002]])
+    insulation.add_winding_insulations([[0.0002, 0.001],
+                                        [0.001, 0.0002]], per_layer_of_turns=False)
+    insulation.add_turn_insulation([0.25e-5, 0.25e-5], add_turn_insulations=False)
+    insulation.add_insulation_between_layers(add_insulation_material=False, thickness=0.0005)
     geo.set_insulation(insulation)
 
     winding_window_top, winding_window_bot = fmt.create_stacked_winding_windows(core, insulation)

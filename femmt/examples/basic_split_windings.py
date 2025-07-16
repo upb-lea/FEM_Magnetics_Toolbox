@@ -12,6 +12,10 @@ folder .../femmt/examples/example_results/simulation_file_name/results/log_elect
 """
 import femmt as fmt
 import os
+import logging
+
+# configure logging to show femmt terminal output
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 def run_transformer_vvw_split_examples(num_windings: int, onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
     """
@@ -37,7 +41,7 @@ def run_transformer_vvw_split_examples(num_windings: int, onelab_folder: str = N
 
     def setup_simulation(working_directory, horizontal_split_factors, vertical_split_factors):
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
-                                    verbosity=fmt.Verbosity.Silent, is_gui=is_test)
+                                    is_gui=is_test)
 
         # This line is for automated pytest running on GitHub only. Please ignore this line!
         if onelab_folder is not None:
@@ -69,7 +73,9 @@ def run_transformer_vvw_split_examples(num_windings: int, onelab_folder: str = N
              [iso_against, iso_against, iso_against, iso_self, iso_against, iso_against, iso_against],
              [iso_against, iso_against, iso_against, iso_against, iso_self, iso_against, iso_against],
              [iso_against, iso_against, iso_against, iso_against, iso_against, iso_self, iso_against],
-             [iso_against, iso_against, iso_against, iso_against, iso_against, iso_against, iso_self]])
+             [iso_against, iso_against, iso_against, iso_against, iso_against, iso_against, iso_self]], per_layer_of_turns=False)
+        insulation.add_turn_insulation([0.25e-5, 0.25e-5, 0.25e-5, 0.25e-5, 0.25e-5, 0.25e-5, 0.25e-5], add_turn_insulations=False)
+        insulation.add_insulation_between_layers(add_insulation_material=False, thickness=0.0001)
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)

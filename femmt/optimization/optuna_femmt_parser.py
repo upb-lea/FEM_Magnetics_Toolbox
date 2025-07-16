@@ -33,8 +33,8 @@ class OptunaFemmtParser:
             window_w=frozen_trial.params["window_w"],
             core_material=frozen_trial.params["material"],
             core_inner_diameter=frozen_trial.params["core_inner_diameter"],
-            primary_litz_wire=frozen_trial.params["primary_litz_wire"],
-            secondary_litz_wire=frozen_trial.params["secondary_litz_wire"],
+            litz_wire_name_1=frozen_trial.params["primary_litz_wire"],
+            litz_wire_name_2=frozen_trial.params["secondary_litz_wire"],
 
             # reluctance model results
             flux_top_max=frozen_trial.user_attrs["flux_top_max"],
@@ -44,8 +44,8 @@ class OptunaFemmtParser:
             flux_density_bot_max=frozen_trial.user_attrs["flux_density_bot_max"],
             flux_density_stray_max=frozen_trial.user_attrs["flux_density_stray_max"],
             p_hyst=frozen_trial.user_attrs["p_hyst"],
-            primary_litz_wire_loss=frozen_trial.user_attrs["primary_litz_wire_loss"],
-            secondary_litz_wire_loss=frozen_trial.user_attrs["secondary_litz_wire_loss"],
+            litz_wire_loss_1=frozen_trial.user_attrs["primary_litz_wire_loss"],
+            litz_wire_loss_2=frozen_trial.user_attrs["secondary_litz_wire_loss"],
             core_2daxi_total_volume=frozen_trial.values[0],
             total_loss=frozen_trial.values[1],
         )

@@ -1,15 +1,14 @@
 """Contains information about the file structure."""
 # Python standard libraries
 import os
-
+import logging
 import numpy as np
-from typing import List
 
 # Local libraries
 from femmt.enumerations import ConductorType
 from femmt.model import Conductor
-from typing import Optional
 
+logger = logging.getLogger(__name__)
 
 class FileData:
     """Contains paths to every folder and file needed in femmt."""
@@ -17,7 +16,7 @@ class FileData:
     def __init__(self, working_directory: str, electro_magnetic_folder_path: str = None, strands_coefficients_folder_path: str = None):
         if working_directory is not None:
             self.update_paths(working_directory, electro_magnetic_folder_path, strands_coefficients_folder_path)
-        self.onelab_folder_path: Optional[str] = None
+        self.onelab_folder_path: str | None = None
 
     @staticmethod
     def create_folders(*args: str) -> None:
@@ -57,10 +56,9 @@ class FileData:
                 for file in files:
                     file_path = os.path.join(root, file)
                     os.remove(file_path)
-                    # print(f"remove {file_path}")
-            # print("All simulation results from previous simulations have been deleted successfully.")
+            # logger.info("All simulation results from previous simulations have been deleted successfully.")
         except OSError:
-            print("Error occurred while deleting files and subdirectories.")
+            logger.warning("Error occurred while deleting files and subdirectories.")
 
     def update_paths(self, working_directory: str, electro_magnetic_folder_path: str = None, strands_coefficients_folder_path: str = None) -> None:
         """Set the local path based on the given working directory.
@@ -94,6 +92,12 @@ class FileData:
 
         # Setup file paths
         self.e_m_results_log_path = os.path.join(self.results_folder_path, "log_electro_magnetic.json")
+        ###
+        # for electrostatic
+        self.electrostatic_results_log_path = os.path.join(self.results_folder_path, "log_electro_static.json")
+        self.capacitance_result_log_path = os.path.join(self.results_folder_path, "capacitance_result.json")
+        self.capacitance_matrix_path = os.path.join(self.results_folder_path, "log_capacitance_matrix.json")
+        ###
         self.coordinates_description_log_path = os.path.join(self.results_folder_path, "log_coordinates_description.json")
         self.reluctance_log_path = os.path.join(self.results_folder_path, "log_reluctance_and_inductance.json")
         self.material_log_path = os.path.join(self.results_folder_path, "log_material.json")
@@ -123,8 +127,8 @@ class MeshData:
     skin_mesh_factor: float
     c_core: float
     c_window: float
-    c_conductor = List[float]
-    c_center_conductor = List[float]
+    c_conductor = list[float]
+    c_center_conductor = list[float]
     c_air_gaps: float
     
     center_factor: float
@@ -132,7 +136,7 @@ class MeshData:
     mu0: float
     core_w: float
     window_w: float
-    windings: List["Conductor"]  # This is written as string because it is a forward import
+    windings: list["Conductor"]  # This is written as string because it is a forward import
 
     frequency: float
 
@@ -153,7 +157,7 @@ class MeshData:
         # The value 4 has good impact on the runtime and does not affect the simulation results too much.
         self.center_factor = 4
 
-    def update_spatial_data(self, core_w: float, window_w: float, windings: List["Conductor"]):
+    def update_spatial_data(self, core_w: float, window_w: float, windings: list["Conductor"]):
         """
         Update geometry data of the core of the magnetic component.
 
@@ -162,7 +166,7 @@ class MeshData:
         :param window_w: window width
         :type window_w: float
         :param windings: list of windings
-        :type windings: List["Conductor"]
+        :type windings: list["Conductor"]
         """
         self.core_w = core_w
         self.window_w = window_w

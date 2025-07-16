@@ -9,7 +9,6 @@ from itertools import product
 # import logging
 import inspect
 import time
-from typing import Optional
 
 # 3rd party libraries
 import numpy as np
@@ -20,7 +19,6 @@ import materialdatabase as mdb
 
 # femmt libraries
 import femmt as fmt
-
 
 material_db = mdb.MaterialDatabase()
 
@@ -850,8 +848,8 @@ class AutomatedDesign:
         p_hyst_density_middle = \
             0.5 * (2 * np.pi * self.frequency) * mu_r_imag * fmt.mu_0 * \
             ((data_matrix[:, self.param["total_flux_max"]] / (fmt.mu_0 * data_matrix[:, self.param["mu_r_abs"]])) ** 2) * \
-            (1 / (2 * np.pi * data_matrix[:, self.param["core_h_middle"]])) * np.log((data_matrix[:, self.param["r_inner"]] * 2) / \
-                                                                                     data_matrix[:, self.param["core_inner_diameter"]])
+            (1 / (2 * np.pi * data_matrix[:, self.param["core_h_middle"]])) * np.log((data_matrix[:, self.param["r_inner"]].astype(np.float64) * 2) / \
+                                                                                     data_matrix[:, self.param["core_inner_diameter"]].astype(np.float64))
         p_hyst_density_outer = p_hyst_outer * volume_outer
         total_hyst_loss = p_hyst_density_center + (2 * p_hyst_density_middle) + p_hyst_density_outer
 
@@ -928,7 +926,7 @@ class AutomatedDesign:
         :type factor_min_dc_losses: float
         """
         total_loss_vec = data_matrix[:, self.param["total_loss"]]
-        total_volume_vec = data_matrix[:, self.param["total_volume"]]
+        total_volume_vec = data_matrix[:, self.param["total_volume"]].astype(np.float64)
 
         min_total_loss = np.min(total_loss_vec)
         print(f"{min_total_loss=}")
@@ -945,12 +943,12 @@ class AutomatedDesign:
 
         return return_data_matrix
 
-    def fem_simulation(self, count: Optional[int] = None):
+    def fem_simulation(self, count: int | None = None):
         """
         Perform FEM simulation of the design cases. Save the result in the given working directory for later analysis.
 
         :param count: Number of cases to simulate
-        :type count: Optional[int]
+        :type count: int | None
         """
         start_time = time.time()
 
@@ -963,7 +961,7 @@ class AutomatedDesign:
         for count in cases:
             # MagneticComponent class object
             geo = fmt.MagneticComponent(component_type=self.component_type_dict[self.magnetic_component],
-                                        working_directory=self.femmt_working_directory, verbosity=fmt.Verbosity.Silent)
+                                        working_directory=self.femmt_working_directory, onelab_verbosity=fmt.Verbosity.Silent)
 
             core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=self.data_matrix_fem[count, self.param["core_inner_diameter"]],
                                                             window_w=self.data_matrix_fem[count, self.param["window_w"]],
@@ -1015,6 +1013,9 @@ class AutomatedDesign:
             # 5. create winding window and virtual winding windows (vww)
             winding_window = fmt.WindingWindow(core, insulation)
             vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+
+            if self.data_matrix_fem[count, self.param["litz_fill_factor"]] is None:
+                self.data_matrix_fem[count, self.param["litz_fill_factor"]] = np.NAN
 
             # 6. create conductor and set parameters: use solid wires
             winding = fmt.Conductor(0, fmt.Conductivity.Copper)
@@ -1220,7 +1221,7 @@ if __name__ == '__main__':
             ad.fem_simulation()
     elif task == 'load':
 
-        working_directory = '/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/femmt/examples/example_results/2023-02-28_inductor_optimization_N95_360u_5A'
+        working_directory = ''
 
         # Load design and plot various plots for analysis
         inductance, total_loss, total_volume, total_cost, annotation_list, automated_design_settings = load_fem_simulation_results(
@@ -1236,20 +1237,3 @@ if __name__ == '__main__':
         plot_2d(x_value=plot_data[:, 1], y_value=plot_data[:, 3], z_value=plot_data[:, 2],
                 x_label='Volume / m\u00b3', y_label='Cost / \u20ac', z_label='Loss / W', title='Volume vs Cost',
                 annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
-
-    # plot_2d(x_value=data_array[:, 1], y_value=data_array[:, 3], z_value=data_array[:, 2], x_label='Volume / m\u00b3',
-    #     y_label='Cost / \u20ac', z_label='Loss / W',
-    #         title='Volume vs Cost', plot_color='red')
-
-    # plot_2d(x_value=total_volume, y_value=total_loss, x_label='Volume / m\u00b3', y_label='Loss / W',
-    #         title='Volume vs Loss', annotations=annotation_list, plot_color='red')
-    # plot_2d(x_value=total_volume, y_value=total_cost, x_label='Volume / m\u00b3', y_label='Cost / \u20ac',
-    #         title='Volume vs Cost', annotations=annotation_list, plot_color='red')
-    # plot_2d(x_value=total_volume, y_value=inductance, x_label='Volume / m\u00b3', y_label='Inductance / H',
-    #         title='Volume vs Inductance', annotations=annotation_list, plot_color='red')
-    # plot_3d(x_value=total_volume, y_value=total_loss, z_value=total_cost, x_label='Volume / m\u00b3',
-    #         y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss vs Cost',
-    #         annotations=annotation_list, plot_color='red')
-
-    # load_from_single_file(working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/2022-11-27_fem_simulation_data',
-    #                file_name='case4.json')

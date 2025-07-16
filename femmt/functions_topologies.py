@@ -1,7 +1,6 @@
 """Includes functions to generate different winding topologies."""
 # python libraries
 import copy
-from typing import Optional
 
 # 3rd party libraries
 
@@ -226,7 +225,7 @@ def set_center_tapped_windings(core: Core,
                                iso_primary_to_primary: float, iso_secondary_to_secondary: float, iso_primary_to_secondary: float,
                                interleaving_type: CenterTappedInterleavingType, interleaving_scheme: InterleavingSchemesFoilLitz,
                                bobbin_coil_top: float = None, bobbin_coil_bot: float = None, bobbin_coil_left: float = None, bobbin_coil_right: float = None,
-                               primary_coil_turns: int = None, winding_temperature: Optional[float] = None,
+                               primary_coil_turns: int = None, winding_temperature: float | None = None,
                                wrap_para_type: WrapParaType = WrapParaType.FixedThickness,
                                foil_horizontal_placing_strategy: FoilHorizontalDistribution = None):
     """
@@ -279,7 +278,7 @@ def set_center_tapped_windings(core: Core,
     :param primary_coil_turns: Number of primary coil turns
     :type primary_coil_turns: int
     :param winding_temperature: winding temperature in °C
-    :type winding_temperature: Optional[float]
+    :type winding_temperature: float | None
     :param wrap_para_type: wrap parameter type
     :type wrap_para_type: WrapParaType
     :param foil_horizontal_placing_strategy: strategy for placing foil horizontal windings

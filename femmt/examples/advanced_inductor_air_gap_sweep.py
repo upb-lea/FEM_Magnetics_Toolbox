@@ -2,9 +2,8 @@
 import matplotlib.pyplot as plt
 import femmt as fmt
 import os
-from typing import Optional
 
-def basic_example_sweep(onelab_folder: Optional[str] = None, show_visual_outputs: bool = True, is_test: bool = False):
+def basic_example_sweep(onelab_folder: str | None = None, show_visual_outputs: bool = True, is_test: bool = False):
     """
     Advanced example to demonstrate an air gap sweep for an inductor.
 
@@ -39,7 +38,7 @@ def basic_example_sweep(onelab_folder: Optional[str] = None, show_visual_outputs
 
         working_directories.append(directory)
 
-        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=directory, verbosity=fmt.Verbosity.Silent, is_gui=is_test)
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=directory, is_gui=is_test)
 
         # This line is for automated pytest running on GitHub only. Please ignore this line!
         if onelab_folder is not None:
@@ -65,7 +64,9 @@ def basic_example_sweep(onelab_folder: Optional[str] = None, show_visual_outputs
 
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
-        insulation.add_winding_insulations([[0.0005]])
+        insulation.add_winding_insulations([[0.0005]], per_layer_of_turns=False)
+        insulation.add_turn_insulation([0.25e-5], add_turn_insulations=False)
+        insulation.add_insulation_between_layers(add_insulation_material=False, thickness=0.0005)
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)

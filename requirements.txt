@@ -1,0 +1,16 @@
+pandas
+numpy
+matplotlib
+gmsh==4.13.1
+onelab>=1.0
+scipy
+pytest
+pycodestyle
+PyQt5>=5.15.6
+mplcursors>=0.5.1
+deepdiff>=6.2.1
+materialdatabase==0.3.0
+optuna
+plotly
+mag-net-hub
+tqdm

@@ -5,7 +5,6 @@ import datetime
 import pickle
 import logging
 import shutil
-from typing import List, Optional
 import json
 
 # 3rd party libraries
@@ -27,6 +26,8 @@ import femmt.optimization.ito_functions as itof
 import femmt.optimization.functions_optimization as fo
 import femmt as fmt
 import materialdatabase as mdb
+
+logger = logging.getLogger(__name__)
 
 class InductorOptimization:
     """Reluctance model and FEM simulation for the inductor optimization."""
@@ -63,7 +64,7 @@ class InductorOptimization:
         x_pareto_vec = sorted_vector[0]
         y_pareto_vec = sorted_vector[1]
 
-        total_losses_list = df[y][~np.isnan(df[y])].to_numpy()
+        total_losses_list = df[y][~pd.isnull(df[y])].to_numpy()
 
         min_total_dc_losses = total_losses_list[np.argmin(total_losses_list)]
         loss_offset = factor_min_dc_losses * min_total_dc_losses
@@ -188,7 +189,7 @@ class InductorOptimization:
                 (available_height + config.insulations.primary_to_primary) / (litz_wire_diameter + config.insulations.primary_to_primary))
             max_turns = possible_number_turns_per_row * possible_number_turns_per_column
             if max_turns < 1:
-                logging.warning("Max. number of turns per window < 1")
+                logger.debug("Max. number of turns per window < 1")
                 return float('nan'), float('nan')
 
             turns = trial.suggest_int('turns', 1, max_turns)
@@ -221,8 +222,8 @@ class InductorOptimization:
             )
             try:
                 reluctance_output: ReluctanceModelOutput = InductorOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_input)
-            except ValueError:
-                logging.warning("bot air gap: No fitting air gap length")
+            except ValueError as e:
+                logger.debug("bot air gap: No fitting air gap length")
                 return float('nan'), float('nan')
 
             trial.set_user_attr('p_winding', reluctance_output.p_winding)
@@ -326,8 +327,8 @@ class InductorOptimization:
             return reluctance_model_output
 
         @staticmethod
-        def start_proceed_study(config: InductorOptimizationDTO, number_trials: Optional[int] = None,
-                                target_number_trials: Optional[int] = None, storage: str = 'sqlite',
+        def start_proceed_study(config: InductorOptimizationDTO, number_trials: int | None = None,
+                                target_number_trials: int | None = None, storage: str = 'sqlite',
                                 sampler=optuna.samplers.NSGAIIISampler(),
                                 ) -> None:
             """
@@ -345,7 +346,7 @@ class InductorOptimization:
             :type sampler: optuna.sampler-object
             """
             if os.path.exists(f"{config.inductor_optimization_directory}/{config.inductor_study_name}.sqlite3"):
-                print("Existing study found. Proceeding.")
+                logger.info("Existing study found. Proceeding.")
 
             target_and_fixed_parameters = InductorOptimization.ReluctanceModel.calculate_fix_parameters(config)
 
@@ -393,31 +394,34 @@ class InductorOptimization:
                     number_trials = target_number_trials - len(study_in_memory.trials)
                     study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
                     study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
-                    print(f"Finished {number_trials} trials.")
-                    print(f"current time: {datetime.datetime.now()}")
+                    logger.info(f"Finished {number_trials} trials.")
+                    logger.info(f"current time: {datetime.datetime.now()}")
                 else:
-                    print(f"Study has already {len(study_in_storage.trials)} trials, and target is {target_number_trials} trials.")
+                    logger.info(f"Study has already {len(study_in_storage.trials)} trials, and target is {target_number_trials} trials.")
 
             else:
                 # normal simulation with number_trials
                 study_in_memory = optuna.create_study(directions=['minimize', 'minimize'], study_name=config.inductor_study_name, sampler=sampler)
-                print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
+                logger.info(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
                 study_in_memory.add_trials(study_in_storage.trials)
                 study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
 
                 study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
-                print(f"Finished {number_trials} trials.")
-                print(f"current time: {datetime.datetime.now()}")
+                logger.info(f"Finished {number_trials} trials.")
+                logger.info(f"current time: {datetime.datetime.now()}")
             InductorOptimization.ReluctanceModel.save_config(config)
+            InductorOptimization.ReluctanceModel.show_study_results(config, show_results=False)
 
         @staticmethod
-        def show_study_results(config: InductorOptimizationDTO) -> None:
+        def show_study_results(config: InductorOptimizationDTO, show_results: bool = False) -> None:
             """Show the results of a study.
 
             A local .html file is generated under config.working_directory to store the interactive plotly plots on disk.
 
             :param config: Integrated transformer configuration file
             :type config: ItoSingleInputConfig
+            :param show_results: True to directly open the browser to view the results.
+            :type show_results: bool
             """
             study = optuna.load_study(study_name=config.inductor_study_name,
                                       storage=f"sqlite:///{config.inductor_optimization_directory}/{config.inductor_study_name}.sqlite3")
@@ -426,7 +430,8 @@ class InductorOptimization:
             fig.update_layout(title=f"{config.inductor_study_name} <br><sup>{config.inductor_optimization_directory}</sup>")
             fig.write_html(f"{config.inductor_optimization_directory}/{config.inductor_study_name}"
                            f"_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
-            fig.show()
+            if show_results:
+                fig.show()
 
         @staticmethod
         def save_config(config: InductorOptimizationDTO) -> None:
@@ -467,13 +472,13 @@ class InductorOptimization:
             """
             database_url = f'sqlite:///{config.inductor_optimization_directory}/{config.inductor_study_name}.sqlite3'
             if os.path.isfile(database_url.replace('sqlite:///', '')):
-                print("Existing study found.")
+                logger.info("Existing study found.")
             else:
                 raise ValueError(f"Can not find database: {database_url}")
             loaded_study = optuna.load_study(study_name=config.inductor_study_name, storage=database_url)
             df = loaded_study.trials_dataframe()
             df.to_csv(f'{config.inductor_optimization_directory}/{config.inductor_study_name}.csv')
-            logging.info(f"Exported study as .csv file: {config.inductor_optimization_directory}/{config.inductor_study_name}.csv")
+            logger.info(f"Exported study as .csv file: {config.inductor_optimization_directory}/{config.inductor_study_name}.csv")
             return df
 
         @staticmethod
@@ -509,7 +514,7 @@ class InductorOptimization:
             :type interactive: bool
             """
             if color_list is None:
-                color_list = ['red', 'blue', 'green', 'grey']
+                color_list = ['red', 'blue', 'green', 'gray']
             for count, df in enumerate(dataframes):
                 # color_list was before list(ff.colors_femmt_default.keys())
                 df['color_r'], df['color_g'], df['color_b'] = ff.colors_femmt_default[color_list[count]]
@@ -576,14 +581,14 @@ class InductorOptimization:
             return filtered_df
 
         @staticmethod
-        def df_from_trial_numbers(df: pd.DataFrame, trial_number_list: List[int]) -> pd.DataFrame:
+        def df_from_trial_numbers(df: pd.DataFrame, trial_number_list: list[int]) -> pd.DataFrame:
             """
             Generate a new dataframe from a given one, just with the trial numbers from the trial_number_list.
 
             :param df: input dataframe
             :type df: pandas.DataFrame
             :param trial_number_list: list of trials, e.g. [1530, 1870, 3402]
-            :type trial_number_list: List[int]
+            :type trial_number_list: list[int]
             :return: dataframe with trial numbers from trial_number_list
             :rtype: pandas.DataFrame
             """
@@ -604,7 +609,7 @@ class InductorOptimization:
             :type reluctance_df: pandas.DataFrame
             :param config: Configuration for the optimization of the transformer
             :type config: InductorOptimizationDTO
-            :param show_visual_outputs: Ture to show visual outputs like the geometry
+            :param show_visual_outputs: True to show visual outputs like the geometry
             :type show_visual_outputs: bool
             :param process_number: Process number for parallel simulations on multiple cpu cores
             :type process_number: int
@@ -623,7 +628,7 @@ class InductorOptimization:
                     target_and_fix_parameters.working_directories.fem_simulation_results_directory,
                     f'case_{index}.json')
                 if os.path.exists(destination_json_file):
-                    print(f'case_{index}.json already exists. Skip simulation.')
+                    logger.info(f'case_{index}.json already exists. Skip simulation.')
                 else:
 
                     try:
@@ -657,10 +662,10 @@ class InductorOptimization:
                         # fem simulation here
                         fem_output = InductorOptimization.FemSimulation.single_fem_simulation(fem_input, False)
 
-                        reluctance_df.at[index, 'fem_inductance'] = fem_output.fem_inductance
-                        reluctance_df.at[index, 'fem_p_loss_winding'] = fem_output.fem_p_loss_winding
-                        reluctance_df.at[index, 'fem_eddy_core'] = fem_output.fem_eddy_core
-                        reluctance_df.at[index, 'fem_core'] = fem_output.fem_core_total
+                        reluctance_df.loc[index, 'fem_inductance'] = fem_output.fem_inductance
+                        reluctance_df.loc[index, 'fem_p_loss_winding'] = fem_output.fem_p_loss_winding
+                        reluctance_df.loc[index, 'fem_eddy_core'] = fem_output.fem_eddy_core
+                        reluctance_df.loc[index, 'fem_core'] = fem_output.fem_core_total
 
                         # copy result files to result-file folder
                         source_json_file = os.path.join(
@@ -671,10 +676,10 @@ class InductorOptimization:
 
                     except Exception as e:
                         print(e)
-                        reluctance_df.at[index, 'fem_inductance'] = None
-                        reluctance_df.at[index, 'fem_p_loss_winding'] = None
-                        reluctance_df.at[index, 'fem_eddy_core'] = None
-                        reluctance_df.at[index, 'fem_core'] = None
+                        reluctance_df.loc[index, 'fem_inductance'] = None
+                        reluctance_df.loc[index, 'fem_p_loss_winding'] = None
+                        reluctance_df.loc[index, 'fem_eddy_core'] = None
+                        reluctance_df.loc[index, 'fem_core'] = None
             return reluctance_df
 
         @staticmethod
@@ -726,7 +731,7 @@ class InductorOptimization:
             fig, ax = plt.subplots()
             legend_list = []
             plt.legend(handles=legend_list)
-            plt.scatter(df["values_0"], df["values_1"], s=10, label='Relucatance Model')  # c=color_array
+            plt.scatter(df["values_0"], df["values_1"], s=10, label='Reluctance Model')  # c=color_array
             df["fem_total_loss"] = df["fem_core"] + df["fem_p_loss_winding"]
             plt.scatter(df["values_0"], df["fem_total_loss"], s=10, label='FEM simulation')  # c=color_array
             plt.scatter(df["values_0"], df["combined_losses"], s=10, label="combined_losses")
@@ -775,7 +780,7 @@ class InductorOptimization:
             """
             # 1. chose simulation type
             geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.FreqDomain, component_type=fmt.ComponentType.Inductor,
-                                        working_directory=fem_input.working_directory, verbosity=fmt.Verbosity.Silent,
+                                        working_directory=fem_input.working_directory, onelab_verbosity=fmt.Verbosity.Silent,
                                         simulation_name=fem_input.simulation_name)
 
             # 2. set core parameters
@@ -849,7 +854,7 @@ class InductorOptimization:
             return fem_output
 
         @staticmethod
-        def full_simulation(df_geometry: pd.DataFrame, current_waveform: List, inductor_config_filepath: str, process_number: int = 1,
+        def full_simulation(df_geometry: pd.DataFrame, current_waveform: list, inductor_config_filepath: str, process_number: int = 1,
                             print_derivations: bool = False) -> tuple:
             """
             Reluctance model (hysteresis losses) and FEM simulation (winding losses and eddy current losses) for geometries from df_geometry.
@@ -857,12 +862,12 @@ class InductorOptimization:
             :param df_geometry: Pandas dataframe with geometries
             :type df_geometry: pd.DataFrame
             :param current_waveform: Current waveform to simulate
-            :type current_waveform: List
+            :type current_waveform: list
             :param inductor_config_filepath: Filepath of the inductor optimization configuration file
             :type inductor_config_filepath: str
             :param process_number: process number to run the simulation on
             :type process_number: int
-            :param print_derivations: True to print derivation from FEM simulaton to reluctance model
+            :param print_derivations: True to print derivation from FEM simulation to reluctance model
             :type print_derivations: bool
             :return: volume, loss
             :rtype: tuple

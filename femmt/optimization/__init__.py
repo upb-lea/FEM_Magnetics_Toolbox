@@ -1,4 +1,4 @@
-"""Init file for the optimization section."""
+"""Initialize file for the optimization section."""
 from femmt.optimization.ito import *
 from femmt.optimization.functions_optimization import *
 from femmt.optimization.ito_dtos import *

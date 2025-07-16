@@ -1,14 +1,14 @@
 """Contains different functions, used by the whole FEMMT functions."""
 # Python standard libraries
+# Python standard libraries
 import json
 import pkg_resources
 import subprocess
 import sys
 import os
 import warnings
-from typing import Union, List, Tuple, Dict
-from scipy.integrate import quadrature
-
+from scipy.integrate import quad
+import logging
 
 # Third parry libraries
 import gmsh
@@ -22,13 +22,15 @@ from femmt.enumerations import ConductorType
 from femmt.dtos import *
 import femmt.functions_reluctance as fr
 
+logger = logging.getLogger(__name__)
+
 colors_femmt_default = {"blue": (28, 113, 216),
                         'red': (192, 28, 40),
                         "green": (46, 194, 126),
                         "orange": (230, 97, 0),
                         "purple": (129, 61, 156),
                         "brown": (134, 94, 60),
-                        "grey": (119, 118, 123),
+                        "gray": (119, 118, 123),
                         "yellow": (245, 194, 17),
                         "black": (0, 0, 0),
                         "white": (255, 255, 255)
@@ -37,11 +39,11 @@ colors_femmt_default = {"blue": (28, 113, 216),
 colors_geometry_femmt_default = {
     "core": "black",
     "air_gap": "yellow",
-    "winding": ["orange", "brown", "yellow", "green", "red", "black", "grey", "blue", "orange", "purple", "grey",
+    "winding": ["orange", "brown", "yellow", "green", "red", "black", "gray", "blue", "orange", "purple", "gray",
                 "blue", "orange", "purple"],
     "insulation": "blue",
-    "potting_inner": "grey",
-    "potting_outer": "grey",
+    "potting_inner": "gray",
+    "potting_outer": "gray",
 }
 
 colors_ba_jonas = {"blue": (28, 113, 216),
@@ -50,34 +52,34 @@ colors_ba_jonas = {"blue": (28, 113, 216),
                    "orange": (230, 97, 0),
                    "purple": (129, 61, 156),
                    "brown": (134, 94, 60),
-                   "grey": (193, 193, 193),
+                   "gray": (193, 193, 193),
                    "yellow": (255, 171, 6),
                    "black": (58, 58, 58),
                    "white": (255, 255, 255),
-                   "grey_dark": (109, 109, 109),
-                   "grey_dark_dark": (50, 50, 50)
+                   "gray_dark": (109, 109, 109),
+                   "gray_dark_dark": (50, 50, 50)
                    }
 
 colors_geometry_ba_jonas = {
     "core": "black",
     "air_gap": "yellow",
     "winding": ["green", "red", "yellow"],
-    "insulation": "grey_dark",
-    "potting_inner": "grey",
-    "potting_outer": "grey_dark_dark",
+    "insulation": "gray_dark",
+    "potting_inner": "gray",
+    "potting_outer": "gray_dark_dark",
 }
 
 colors_geometry_draw_only_lines = {
-    "core": "grey_dark",
-    "air_gap": "grey_dark",
+    "core": "gray_dark",
+    "air_gap": "gray_dark",
     "winding": ["green", "green", "green"],
-    "insulation": "grey_dark",
-    "potting_inner": "grey_dark",
-    "potting_outer": "grey_dark",
+    "insulation": "gray_dark",
+    "potting_inner": "gray_dark",
+    "potting_outer": "gray_dark",
 }
 
 
-def core_database() -> Dict:
+def core_database() -> dict:
     """
     Return a core geometry for defined core structure.
 
@@ -93,7 +95,7 @@ def core_database() -> Dict:
     max derivation / mean = 1.07 (< 7% accuracy)
 
     :return: Dict including core_h, core_inner_diameter, window_h, window_w
-    :rtype: Dict
+    :rtype: dict
     """
     core_dict = {}
 
@@ -241,13 +243,336 @@ def core_database() -> Dict:
     }
     return core_dict
 
+def bobbin_database() -> dict:
+    """
+    Return a dictionary containing bobbin dimensions for various core structures.
 
-def litz_database() -> Dict:
+    :return: Dictionary containing bobbin dimensions from Datasheet.
+    :rtype: Dict
+    """
+    bobbin_dict = {}
+
+    # -----------------------
+    # PQ Bobbins
+    # -----------------------
+
+    # bobbin_dict["PQ 16/11.6"] = {
+    #     "bobbin_h": None,
+    #     "bobbin_inner_diameter": None,
+    #     "bobbin_window_h": None,
+    #     "bobbin_window_w": None
+    # }
+    bobbin_dict["PQ 20/16"] = {
+        "bobbin_h": 18.3e-3,
+        "bobbin_inner_diameter": 10.95e-3,
+        "bobbin_window_h": 9.8e-3,
+        "bobbin_window_w": (23.3 - 9.15) / 2 * 1e-3
+    }
+    bobbin_dict["PQ 20/20"] = {
+        "bobbin_h": 22.3e-3,
+        "bobbin_inner_diameter": 10.9e-3,
+        "bobbin_window_h": 13.9e-3,
+        "bobbin_window_w": (23.3 - 9.2) / 2 * 1e-3
+    }
+    bobbin_dict["PQ 26/25"] = {
+        "bobbin_h": 29.3e-3,
+        "bobbin_inner_diameter": 14.2e-3,
+        "bobbin_window_h": 15.5e-3,
+        "bobbin_window_w": (26.5 - 14.2) / 2 * 1e-3
+    }
+    bobbin_dict["PQ 32/20"] = {
+        "bobbin_h": 18.8e-3,
+        "bobbin_inner_diameter": 16.2e-3,
+        "bobbin_window_h": 10.7e-3,
+        "bobbin_window_w": (32.3 - 16.2) / 2 * 1e-3,
+    }
+    bobbin_dict["PQ 32/30"] = {
+        "bobbin_h": 32.8e-3,
+        "bobbin_inner_diameter": 15.9e-3,
+        "bobbin_window_h": 20.7e-3,
+        "bobbin_window_w": (26.4 - 15.9) / 2 * 1e-3
+    }
+    bobbin_dict["PQ 40/40"] = {
+        "bobbin_h": 45.3e-3,
+        "bobbin_inner_diameter": 15.55e-3,
+        "bobbin_window_h": 28.75e-3,
+        "bobbin_window_w": (40.3 - 15.55) / 2 * 1e-3
+    }
+    bobbin_dict["PQ 50/50"] = {
+        "bobbin_h": 51.5e-3,
+        "bobbin_inner_diameter": 23.2e-3,
+        "bobbin_window_h": 35.2e-3,
+        "bobbin_window_w": (51.3 - 23.2) / 2 * 1e-3
+    }
+    bobbin_dict["PQ 65/60"] = {
+        "bobbin_h": 65.5e-3,
+        "bobbin_inner_diameter": 27.3e-3,
+        "bobbin_window_h": 40.7e-3,
+        "bobbin_window_w": (66.5 - 27.3) / 2 * 1e-3
+    }
+
+    # -----------------------
+    # PM Bobbins
+    # -----------------------
+
+    bobbin_dict["PM 114/93"] = {
+        "bobbin_h": 91 * 1e-3,
+        "bobbin_inner_diameter": 44e-3,
+        "bobbin_window_h": 62.3e-3,
+        "bobbin_window_w": (91 - 44) / 2 * 1e-3,
+    }
+    bobbin_dict["PM 50/39"] = {
+        "bobbin_h": 33.8 * 1e-3,
+        "bobbin_inner_diameter": 20.4e-3,
+        "bobbin_window_h": 25.9e-3,
+        "bobbin_window_w": (38.5 - 20.4) / 2 * 1e-3,
+    }
+    bobbin_dict["PM 62/49"] = {
+        "bobbin_h": 48 * 1e-3,
+        "bobbin_inner_diameter": 25.7e-3,
+        "bobbin_window_h": 33.0e-3,
+        "bobbin_window_w": (48 - 25.7) / 2 * 1e-3,
+    }
+    bobbin_dict["PM 74/59"] = {
+        "bobbin_h": 57.8 * 1e-3,
+        "bobbin_inner_diameter": 30e-3,
+        "bobbin_window_h": 40.3e-3,
+        "bobbin_window_w": (57.3 - 30) / 2 * 1e-3,
+    }
+    bobbin_dict["PM 87/70"] = {
+        "bobbin_h": 68.2 * 1e-3,
+        "bobbin_inner_diameter": 32.5e-3,
+        "bobbin_window_h": 47.2e-3,
+        "bobbin_window_w": (66.2 - 32.5) / 2 * 1e-3,
+    }
+    return bobbin_dict
+
+def insulation_materials_database() -> dict:
+    """
+    Return insulation properties for different type of materials.
+
+    :return: Dict including insulation parameters
+    :rtype: dict
+    """
+    # To see the shape and the properties of these materials of the wire insulation, review this website:
+    # https://www.awcwire.com/customersupport/techinfo/insulation-materials?srsltid=AfmBOoqXkVrB6ITF-R9nL_UlgGVpzX2xB2ENjMNQQHmczLRcf0-y6YwG
+
+    insulation_materials = {
+        # wire_insulation materials
+        "wire_insulation": {
+            # Plastic materials
+            "plastic_insulation": {
+                # PVC
+                # 1.a PVC (pure)
+                "Polyvinyl Chloride (PVC)": {"dielectric_constant": 4.0, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: Huang, J., Zhang, X., Liu, R., Ding, Y., & Guo, D. (2023). Polyvinyl chloride-based dielectric elastomer with high permittivity
+                # and low viscoelasticity for actuation and sensing. Nature communications, 14(1), 1483."""
+
+                # 1.b Semi-Rigid PVC (SR-PVC). it is from 2.7 to 6.5
+                "Semi-Rigid PVC (SR-PVC)": {"dielectric_constant": 3.6, "thermal_conductivity": None, "max_temperature": None},
+                # 1.c Plenum Polyvinyl Chloride (Plenum PVC)
+                "Plenum Polyvinyl Chloride (Plenum PVC)": {"dielectric_constant": 3.5, "thermal_conductivity": None, "max_temperature": None},
+                #  """Reference: https://www.anixter.com/content/dam/Anixter/Guide/7H0011X0_W&C_Tech_Handbook_Sec_03.pdf"""
+
+                # 2. Polyethylene (PE): it ranges from 2.7 to 2.8 (30% glass fiber)
+                "Polyethylene (PE)": {"dielectric_constant": 2.7, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: https://passive-components.eu/what-is-dielectric-constant-of-plastic-materials/"""
+                #     """Reference:
+                #      https://www.awcwire.com/customersupport/techinfo/insulation-materials#:~:text=Semi%2DRigid%20PVC%20(SR%2DPVC)%20is%20mainly%20used,
+                #      degrees%20Celsius%2C%20300%20volts)."""
+
+                # 3.Polypropylene (PP) 10-20 glass fiber 2.2 - 2.3
+                "Polypropylene (PP)": {"dielectric_constant": 2.3, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference:
+                #          https://www.awcwire.com/customersupport/techinfo/insulation-materials#:~:text=Semi%2DRigid%20PVC%20(SR%2DPVC)%20is%20mainly%20used,
+                #          degrees%20Celsius%2C%20300%20volts)."""
+
+                # 4.Polyurethane (PUR): the permittivity differs from 1.065 to 3.35 based on the density (kg/m^3). (need to be reviewed)
+                "Polyurethane (PUR)": {"dielectric_constant": 3.35, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: Beverte, I. (2025).
+                # Investigation of the Partial Permittivity of Rigid Polyurethane Foams by a Circular One-Side-Access Capacitive Sensor.
+                # Polymers, 17(5), 602."""
+                # """https://www.anixter.com/content/dam/Anixter/Guide/7H0011X0_W&C_Tech_Handbook_Sec_03.pdf"""
+
+                # 5. Chlorinated Polyethylene (CPE)
+                "Chlorinated Polyethylene (CPE)": {"dielectric_constant": 2.3, "thermal_conductivity": None, "max_temperature": None},
+                # """https://www.anixter.com/content/dam/Anixter/Guide/7H0011X0_W&C_Tech_Handbook_Sec_03.pdf"""
+
+                # 6. Nylon : 3.2 - 5
+                "Nylon": {"dielectric_constant": 5, "thermal_conductivity": None, "max_temperature": None},
+                # """https://www.anixter.com/content/dam/Anixter/Guide/7H0011X0_W&C_Tech_Handbook_Sec_03.pdf"""
+            },
+            # Rubber Materials
+            "rubber_insulation": {
+                # 1. Thermoplastic Rubber (TPR) 3.30 - 5.10. It can be called Thermoplastic Elastomer (TPE)
+                "Thermoplastic Rubber(TPR)": {"dielectric_constant": 5.10, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: https://www.matweb.com/search/datasheet.aspx?matguid=0619837e5f584a1f8c5e6f692952898a"""
+
+                # 2. Neoprene (Polychloroprene): 4-6.7
+                "Neoprene (Polychloroprene)": {"dielectric_constant": 6.7, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: https://hep.physics.illinois.edu/home/serrede/p435/lecture_notes/dielectric_constants.pdf"""
+
+                # 3. Styrene-Butadiene Rubber (SBR): 2.5 - 3
+                "Styrene-Butadiene Rubber (SBR)": {"dielectric_constant": 3.0, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: https://www.azom.com/properties.aspx?ArticleID=1844"""
+
+                # 4. Silicone: 2.9 - 4
+                "Silicone": {"dielectric_constant": 4.0, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: https://en.wikipedia.org/wiki/Relative_permittivity"""
+
+                # 5. Fiberglass 3.0 - 4.0
+                "Fiberglass": {"dielectric_constant": 4.0, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: https://passive-components.eu/what-is-dielectric-constant-of-plastic-materials/"""
+
+                # 6. Ethylene Propylene Rubber (EPR): 2.4 and  can reach 4
+                "Ethylene Propylene Rubber (EPR)": {"dielectric_constant": 2.4, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: https://passive-components.eu/what-is-dielectric-constant-of-plastic-materials/"""
+
+                # 7. Rubber ( refers to natural rubber and SBR compounds.)
+                # 7.a: natural rubber: 2.7 – 4.0 (low freq); 2.4–2.7 (GHz range)
+                "Natural Rubber": {"dielectric_constant": 2.7, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: Al-Hartomy, O. A., Al-Ghamdi, A., Dishovsky, N., Shtarkova, R., Iliev, V., Mutlay, I., & El-Tantawy, F. (2012).
+                #    Dielectric and microwave properties of natural rubber based nanocomposites containing graphene."""
+
+                # 7.b: SBR: 2.5 to 3 (low freq); up to 6.6 (Ghz freq)
+                "Rubber (SBR)": {"dielectric_constant": 3, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: Gunasekaran,S.,Natarajan, R. K., Kala, A., & Jagannathan, R. (2008).
+                # Dielectric studies of some rubber materials at microwave frequencies."""
+
+                # 8. Chlorosulfonated Polyethylene (CSPE): Measured dielectric constant: 8-10
+                "Chlorosulfonated Polyethylene (CSPE)": {"dielectric_constant": 8.5, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: Ganguly, S., & Das, N. C. (2015). Chlorosulphonated polyethylene and its composites for electronic applications.
+                # In Flexible and stretchable electronic composites (pp. 229-259). Cham: Springer International Publishing."""
+            },
+            # Fluoropolymer Insulation Types
+            "fluoropolymer_insulation": {
+                # 1. Perfluoroalkoxy (PFA):  dielectric constant: 2.06 to 2.10:
+                "Perfluoroalkoxy (PFA)": {"dielectric_constant": 2.06, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: https://adtech.co.uk/application/files/1816/0500/0871/Adtech_PFA_General_Properties_2020.pdf"""
+                # """Reference: https://www.fluorotherm.com/technical-information/materials-overview/pfa-properties/"""
+
+                # 2. Polytetrafluoroethylene (PTFE):  dielectric constant: 2.12 to 2.01
+                "Polytetrafluoroethylene (PTFE)": {"dielectric_constant": 2.12, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: Li, L., Bowler, N., Kessler, M. R., & Yoon, S. H. (2010).
+                #  Dielectric response of PTFE and ETFE wiring insulation to thermal exposure.
+                #  IEEE Transactions on Dielectrics and Electrical Insulation, 17(4), 1234-1241."""
+
+                # 3. Fluorinated Ethylene Propylene (FEP):  dielectric constant is about 2.2
+                "Fluorinated Ethylene Propylene (FEP)": {"dielectric_constant": 2.2, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: Lv, X., Yv, J., Wang, X., & Huang, P. (2022).
+                # Flexible low dielectric polyimide/fluorinated ethylene propylene composite films for
+                # flexible integrated circuits. Polymer Science, Series B, 64(2), 219-228.."""
+
+                # 4. Ethylene Tetrafluoroethylene (ETFE) :  dielectric constant is about 2.2 to 2.6
+                "Ethylene Tetrafluoroethylene (ETFE)": {"dielectric_constant": 2.6, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: Wang, M., He, Y., Yang, X., Hou, X., Li, W., Tan, S., & Zhang, Z. (2024). Optimizing thermal and dielectric properties of
+                # ethylene-tetrafluoroethylene (ETFE)/h-BN composites via interface engineering: activation of C–F bonds on ETFE for surface grafting.
+                # Journal of Materials Chemistry A, 12(45), 31424-31431."""
+
+                # 5. Ethylenechlorotrifluoroethylene (ECTFE) :  dielectric constant is 2.5
+                # Note 4. and 5. have approximately the same properties
+                "Ethylenechlorotrifluoroethylene (ECTFE)": {"dielectric_constant": 2.5, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: https://www.polyfluor.nl/assets/files/datasheet-ectfe-uk.pdf"""
+
+                # 6. Polyvinylidene Fluoride (PVDF) :  dielectric constant is 8.5 at 1MHz
+                "Polyvinylidene Fluoride (PVDF)": {"dielectric_constant": 8.5, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: https://www.ipolymer.com/pdf/PVDF.pdf"""
+
+                # 7.Thermoplastic Elastomers (TPE) :  dielectric constant is 3.3 to 5.1
+                "Thermoplastic Elastomers (TPE)": {"dielectric_constant": 4.5, "thermal_conductivity": None, "max_temperature": None},
+                # """https://www.matweb.com/search/datasheet.aspx?matguid=0619837e5f584a1f8c5e6f692952898a&"""
+
+            }
+        },
+
+        # Bobbin materials is based on these references:
+        # 1. https://www.cosmocorp.com/docs/en/cosmo-bcat-en-mdres.pdf
+        # 2. https://pearl-hifi.com/06_Lit_Archive/06_Mchy_Methods_Catalogues/Coil_Winding/Transformer_Bobbin_and_Core_Selection.pdf
+
+        "core_insulation": {
+            "bobbins": {
+                "Thermoplastic": {
+                    "Polyamide (Nylon 66)": {
+                        "dielectric_constant": 3.8,
+                        "thermal_conductivity": 0.25,
+                        "max_temperature": 130
+                    },
+                    "Polybutylene Terephthalate (PBT)": {
+                        "dielectric_constant": 3.7,
+                        "thermal_conductivity": 0.25,
+                        "max_temperature": 155
+                    },
+                    "Polyphenylene Sulfide (PPS)": {
+                        "dielectric_constant": 3.8,
+                        "thermal_conductivity": 0.30,
+                        "max_temperature": 200
+                    },
+                    "Liquid Crystal Polymer (LCP)": {
+                        "dielectric_constant": 3.6,
+                        "thermal_conductivity": 0.50,
+                        "max_temperature": 240
+                    },
+                    "Polyethylene Terephthalate (PET)": {
+                        "dielectric_constant": 3.6,
+                        "thermal_conductivity": 0.15,
+                        "max_temperature": 150
+                    }
+                },
+                "Thermoset": {
+                    "Diallyl Phthalate (DAP)": {
+                        "dielectric_constant": 4.4,
+                        "thermal_conductivity": 0.20,
+                        "max_temperature": 200
+                    },
+                    "Phenolic": {
+                        "dielectric_constant": 4.5,
+                        "thermal_conductivity": 0.20,
+                        "max_temperature": 220
+                    }
+                }
+            }
+        },
+
+        # The kapton has different types, but the dielectric constant is approximately around 3.4-3.5
+        # Reference: https://www.dupont.com/content/dam/electronics/amer/us/en/electronics/public/documents/en/EI-10167-Kapton-General-Specifications.pdf
+        "film_insulation": {
+            "Kapton": {
+                "dielectric_constant": 3.5,
+                "thermal_conductivity": None,
+                "max_temperature": None,
+            },
+            "Nomex 410": {
+                "dielectric_constant": 1.6,
+                "thermal_conductivity": None,
+                "max_temperature": None,
+            },
+            "Mylar": {
+                "dielectric_constant": 3.2,
+                "thermal_conductivity": None,
+                "max_temperature": None,
+            },
+            "PET / bOPET": {
+                "dielectric_constant": 3.3,
+                "thermal_conductivity": None,
+                "max_temperature": None,
+            },
+            "PVC Tape": {
+                "dielectric_constant": 4.0,
+                "max_temperature": None,
+                "thermal_conductivity": None
+            }
+        }
+    }
+
+    return insulation_materials
+
+
+def litz_database() -> dict:
     """
     Return litz parameters for defined litz wires.
 
     :return: Dict including litz parameters like strand_numbers, strand_radii and conductor_radii
-    :rtype: Dict
+    :rtype: dict
     """
     litz_dict = {}
 
@@ -388,12 +713,12 @@ def litz_database() -> Dict:
     return litz_dict
 
 
-def wire_material_database() -> Dict[str, WireMaterial]:
+def wire_material_database() -> dict[str, WireMaterial]:
     """
-    Return wire materials e.g. copper, aluminium in a dictionary.
+    Return wire materials e.g. copper, aluminum in a dictionary.
 
     :return: Dict with materials and conductivity
-    :rtype: Dict
+    :rtype: dict
     """
     wire_material = {}
 
@@ -406,8 +731,8 @@ def wire_material_database() -> Dict[str, WireMaterial]:
         volumetric_mass_density=8920,
     )
 
-    wire_material["Aluminium"] = WireMaterial(
-        name="aluminium",
+    wire_material["Aluminum"] = WireMaterial(
+        name="aluminum",
         sigma=3.7e7,
         temperature=25,
         temperature_coefficient=3.9e-3,
@@ -454,7 +779,7 @@ def create_folders(*args: str) -> None:
             os.mkdir(folder)
 
 
-def cost_material_database() -> Dict:
+def cost_material_database() -> dict:
     """
     Return costs for core and winding. This is split in material and fabrication costs.
 
@@ -523,11 +848,11 @@ def install_pyfemm_if_missing() -> None:
     missing = required - installed
 
     if missing:
-        print("Missing 'pyfemm' installation.")
-        print("Installing 'pyfemm' ...")
+        logger.info("Missing 'pyfemm' installation.")
+        logger.info("Installing 'pyfemm' ...")
         python = sys.executable
         subprocess.check_call([python, '-m', 'pip', 'install', *missing], stdout=subprocess.DEVNULL)
-        print("'pyfemm' is now installed!")
+        logger.info("'pyfemm' is now installed!")
 
 def litz_calculate_number_strands(n_layers: int) -> int:
     """
@@ -561,9 +886,9 @@ def litz_calculate_number_layers(n_strands: int) -> int:
 
 
 def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str = 'no', mode: str = 'rad',
-        f0: Union[float, None] = None, title: str = 'ffT', filter_type: str = 'factor',
+        f0: float | None = None, title: str = 'ffT', filter_type: str = 'factor',
         filter_value_factor: float = 0.01, filter_value_harmonic: int = 100,
-        figure_size: Tuple = None, figure_directory: str = None) -> npt.NDArray[list]:
+        figure_size: tuple = None, figure_directory: str = None) -> npt.NDArray[list]:
     """
     Calculate the FFT for a given input signal. Input signal is in vector format and should include one period.
 
@@ -597,9 +922,9 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
         Note: count 1 is DC component, count 2 is the fundamental frequency
     :type filter_value_harmonic: int
     :param figure_directory: full path with file extension
-    :type figure_directory: Tuple
+    :type figure_directory: tuple
     :param figure_size: None for auto-fit; fig_size for matplotlib (width, length)
-    :type figure_size: Tuple
+    :type figure_size: tuple
 
     :return: numpy-array [[frequency-vector],[amplitude-vector],[phase-vector]]
     :rtype: npt.NDArray[list]
@@ -610,7 +935,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
     # check for input is list. Convert to numpy-array
     if isinstance(period_vector_t_i, list):
         if plot != 'no' and plot is not False:
-            print("Input is list, convert to np.array()")
+            logger.warning("Input is list, convert to np.array()")
         period_vector_t_i = np.array(period_vector_t_i)
 
     # first value of time vector must be zero
@@ -670,14 +995,14 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
             f"filter_type '{filter_value_harmonic}' not available: Must be 'factor','harmonic' or 'disabled ")
 
     if plot != 'no' and plot is not False:
-        print(f"{title=}")
-        print(f"{t[-1]=}")
-        print(f"{f0=}")
-        print(f"{Fs=}")
-        print(f"{sample_factor=}")
-        print(f"f_out = {np.around(f_out, decimals=0)}")
-        print(f"x_out = {np.around(x_out, decimals=3)}")
-        print(f"phi_rad_out = {np.around(phi_rad_out, decimals=3)}")
+        logger.info(f"{title=}")
+        logger.info(f"{t[-1]=}")
+        logger.info(f"{f0=}")
+        logger.info(f"{Fs=}")
+        logger.info(f"{sample_factor=}")
+        logger.info(f"f_out = {np.around(f_out, decimals=0)}")
+        logger.info(f"x_out = {np.around(x_out, decimals=3)}")
+        logger.info(f"phi_rad_out = {np.around(phi_rad_out, decimals=3)}")
 
         reconstructed_signal = 0
         for i_range in range(len(f_out)):
@@ -712,17 +1037,17 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
     return np.array([f_out, x_out, phi_rad_out])
 
 
-def plot_fourier_coefficients(frequency_list: List, amplitude_list: List, phi_rad_list: List,
+def plot_fourier_coefficients(frequency_list: list, amplitude_list: list, phi_rad_list: list,
                               sample_factor: int = 1000, figure_directory: str = None):
     """
     Plot fourier coefficients in a visual figure.
 
     :param frequency_list: List of frequencies in Hz
-    :type frequency_list: List
+    :type frequency_list: list
     :param amplitude_list: List of amplitudes in A
-    :type amplitude_list: List
+    :type amplitude_list: list
     :param phi_rad_list: List of angles in rad
-    :type phi_rad_list: List
+    :type phi_rad_list: list
     :param sample_factor: sample factor
     :type sample_factor: int
     :param figure_directory: directory of figure to save
@@ -770,7 +1095,7 @@ def plot_fourier_coefficients(frequency_list: List, amplitude_list: List, phi_ra
 
 
 def compare_fft_list(input_data_list: list, sample_factor: int = 1000, mode: str = 'rad',
-                     f0: Union[float, None] = None) -> None:
+                     f0: float | None = None) -> None:
     """
     Generate fft curves from input curves and compare them to each other.
 
@@ -786,7 +1111,7 @@ def compare_fft_list(input_data_list: list, sample_factor: int = 1000, mode: str
     :type mode: str
     :param f0: fundamental frequency. Needs to be set in 'rad'- or 'deg'-mode
     :type f0: float
-    :param sample_factor: samle factor, defaults to 1000
+    :param sample_factor: sample factor, defaults to 1000
     :type sample_factor: int
     """
     out = []
@@ -826,12 +1151,12 @@ def store_as_npy_in_directory(dir_path: str, file_name: str, numpy_data) -> None
     np.save(dir_path + "/" + file_name, numpy_data)
 
 
-def get_dicts_with_keys_and_values(data, **kwargs) -> Dict:
+def get_dicts_with_keys_and_values(data, **kwargs) -> dict:
     """
     Return a list of dictionaries out of a list of dictionaries which contains pairs of the given key(s) and value(s).
 
     :param data: list of dicts
-    :type data: List
+    :type data: list
     :param kwargs: keys and values in dicts
     """
     invalid_index = []
@@ -844,7 +1169,7 @@ def get_dicts_with_keys_and_values(data, **kwargs) -> Dict:
     return valid_data
 
 
-def get_dict_with_unique_keys(data: list[dict], *keys) -> Dict:
+def get_dict_with_unique_keys(data: list[dict], *keys) -> dict:
     """
     Return a dictionary out of a list of dictionaries which contains the given key(s).
 
@@ -866,25 +1191,25 @@ def get_dict_with_unique_keys(data: list[dict], *keys) -> Dict:
     return valid_data[0]
 
 
-def find_common_frequencies(frequency_list_1: List, amplitude_list_1: List, phase_list_1_rad_or_deg: List,
-                            frequency_list_2: List, amplitude_list_2: List, phase_list_2_rad_or_deg: List) -> List:
+def find_common_frequencies(frequency_list_1: list, amplitude_list_1: list, phase_list_1_rad_or_deg: list,
+                            frequency_list_2: list, amplitude_list_2: list, phase_list_2_rad_or_deg: list) -> list:
     """
     Find common frequencies and returns a list of intersections.
 
     :param amplitude_list_1: Amplitudes signal 1
-    :type amplitude_list_1: List
+    :type amplitude_list_1: list
     :param phase_list_1_rad_or_deg: Phases signal 1, can be degree or rad. return is same as input.
-    :type phase_list_1_rad_or_deg: List
+    :type phase_list_1_rad_or_deg: list
     :param frequency_list_1: Frequencies signal 1
-    :type frequency_list_1: List
+    :type frequency_list_1: list
     :param amplitude_list_2: Amplitudes signal 2
-    :type amplitude_list_2: List
+    :type amplitude_list_2: list
     :param phase_list_2_rad_or_deg: Phases signal 2, can be degree or rad. return is same as input
-    :type phase_list_2_rad_or_deg: List
+    :type phase_list_2_rad_or_deg: list
     :param frequency_list_2: Frequencies signal 2
-    :type frequency_list_2: List
+    :type frequency_list_2: list
     :return: [current_pair_list, phase_pair_list, common_frequency_list]
-    :rtype: Tuple
+    :rtype: tuple
 
     :Example:
 
@@ -908,12 +1233,12 @@ def find_common_frequencies(frequency_list_1: List, amplitude_list_1: List, phas
     common_phases_list_2 = []
 
     common_frequency_list = list(set(frequency_list_1).intersection(frequency_list_2))
-    print(f"{common_frequency_list=}")
+    logger.info(f"{common_frequency_list=}")
     common_frequency_list.sort()
-    print(f"{common_frequency_list=}")
+    logger.info(f"{common_frequency_list=}")
 
     # Delete the corresponding phases and amplitudes
-    if isinstance(amplitude_list_1, List):
+    if isinstance(amplitude_list_1, list):
         for frequency in common_frequency_list:
             common_amplitude_list_1.append(amplitude_list_1[frequency_list_1.index(frequency)])
             common_phase_list_1.append(phase_list_1_rad_or_deg[frequency_list_1.index(frequency)])
@@ -934,21 +1259,21 @@ def find_common_frequencies(frequency_list_1: List, amplitude_list_1: List, phas
     return [common_frequency_list, current_pair_list, phase_pair_list]
 
 
-def sort_out_small_harmonics(frequency_list: List, amplitude_pair_list: List,
-                             phase_pair_list_rad_or_deg: List, sort_out_factor: float) -> List:
+def sort_out_small_harmonics(frequency_list: list, amplitude_pair_list: list,
+                             phase_pair_list_rad_or_deg: list, sort_out_factor: float) -> list:
     """
     Sort out small harmonics from a given fft-output of a signal.
 
-    :param frequency_list: List of input frequencies
-    :type frequency_list: List
+    :param frequency_list: list of input frequencies
+    :type frequency_list: list
     :param amplitude_pair_list: list of amplitude pairs
-    :type amplitude_pair_list: List
+    :type amplitude_pair_list: list
     :param phase_pair_list_rad_or_deg: list of phase pairs (can be rad or degree)
-    :type phase_pair_list_rad_or_deg: List
+    :type phase_pair_list_rad_or_deg: list
     :param sort_out_factor: sort out factor [0...1]
     :type sort_out_factor: float
     :return: [frequency_list, amplitude_pair_list, phase_pair_list_rad_or_deg]
-    :rtype: List
+    :rtype: list
     """
     # Calculate geometric lengths
     amp_tot = np.sqrt(np.sum(np.array(amplitude_pair_list) ** 2, axis=0))
@@ -985,7 +1310,7 @@ def calculate_cylinder_volume(cylinder_diameter: float, cylinder_height: float):
 
 def create_physical_group(dim: int, entities: int, name: str):
     """
-    Greate a physical group, what is used inside ONELAB.
+    Create a physical group, what is used inside ONELAB.
 
     :param dim: dim inside onelab
     :type dim: int
@@ -1088,7 +1413,7 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
 
     return loaded_results_dict
 
-def point_is_in_rect(x: float, y: float, rect: List):
+def point_is_in_rect(x: float, y: float, rect: list):
     """
     Check if a given x-y point is inside a rectangular field (e.g. inside a conductor).
 
@@ -1097,7 +1422,7 @@ def point_is_in_rect(x: float, y: float, rect: List):
     :param y: y coordinate of the point to check
     :type y: float
     :param rect: rectangular
-    :type rect: List
+    :type rect: list
     """
     # x, y of the point
     # List of 4 points given as tuples with (x, y) in the order top-right, top-left, bottom-right, bottom-left
@@ -1108,14 +1433,14 @@ def point_is_in_rect(x: float, y: float, rect: List):
     return False
 
 
-def get_number_of_turns_of_winding(winding_windows: List, windings: List, winding_number: int):
+def get_number_of_turns_of_winding(winding_windows: list, windings: list, winding_number: int):
     """
     Get the number of turns of a winding.
 
-    :param winding_windows: List of winding windows
-    :type winding_windows: List
-    :param windings: List of windings
-    :type windings: List
+    :param winding_windows: list of winding windows
+    :type winding_windows: list
+    :param windings: list of windings
+    :type windings: list
     :param winding_number: number of winding
     :type winding_number: int
     """
@@ -1150,8 +1475,8 @@ def cost_function_core(core_weight: float, core_type: str = "ferrite") -> float:
     return sigma_core * core_weight
 
 
-def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[str],
-                          single_strand_cross_section_list: Union[List[float], None] = None):
+def cost_function_winding(wire_weight_list: list[float], wire_type_list: list[str],
+                          single_strand_cross_section_list: list[float] | None = None):
     """
     Calculate single winding material and fabrication costs depending on winding-type and weight.
 
@@ -1159,11 +1484,11 @@ def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[st
     of Switched-Mode Power Converters"
 
     :param wire_weight_list: winding weight in kg in list-form
-    :type wire_weight_list: List[float]
+    :type wire_weight_list: list[float]
     :param wire_type_list: winding type. Must fit to enum-names in ConductorType-Enum
-    :type wire_type_list: List[str]
+    :type wire_type_list: list[str]
     :param single_strand_cross_section_list: single strand cross-section in list-form
-    :type single_strand_cross_section_list: List[float]
+    :type single_strand_cross_section_list: list[float]
     :return: winding cost of single winding
     :rtype: float
     """
@@ -1201,8 +1526,8 @@ def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[st
     return winding_cost_list
 
 
-def cost_function_total(core_weight: float, core_type: str, wire_weight_list: List[float], wire_type_list: List[str],
-                        single_strand_cross_section_list: Union[None, List[float]] = None) -> float:
+def cost_function_total(core_weight: float, core_type: str, wire_weight_list: list[float], wire_type_list: list[str],
+                        single_strand_cross_section_list: None | list[float] = None) -> float:
     """
     Calculate the total costs for an inductive element.
 
@@ -1218,9 +1543,9 @@ def cost_function_total(core_weight: float, core_type: str, wire_weight_list: Li
     :param wire_weight_list: winding weight in kg
     :type wire_weight_list: float
     :param wire_type_list: winding type in list-form. Must fit to enum-names in ConductorType-Enum
-    :type wire_type_list: List[str]
+    :type wire_type_list: list[str]
     :param single_strand_cross_section_list: single strand cross-section in list-form
-    :type single_strand_cross_section_list: List[float]
+    :type single_strand_cross_section_list: list[float]
     :return: total costs for inductive element
     :rtype: float
     """
@@ -1243,11 +1568,11 @@ def find_result_log_file(result_log_folder: str, keyword_list: list, value_min_m
     """
     Find a result log-file in a folder with many result-log files.
 
-    Check a dictornary keyword list for matching a certain value (equel, greater equal, smaller equal).
+    Check a dictionary keyword list for matching a certain value (equal, greater equal, smaller equal).
 
     :param result_log_folder: filepath to result-log folder
     :type result_log_folder: str
-    :param keyword_list: list with hirarchical keywords for dictionary structure, e.g. ["simulation_settings", "core", "core_inner_diameter"]
+    :param keyword_list: list with hierarchical keywords for dictionary structure, e.g. ["simulation_settings", "core", "core_inner_diameter"]
     :type keyword_list: list
     :param value_min_max: value to check for
     :type value_min_max: list
@@ -1280,7 +1605,7 @@ def find_result_log_file(result_log_folder: str, keyword_list: list, value_min_m
                 keyword_list[4]]
 
         if value_min <= data_to_compare <= value_max:
-            print(f"{value_min} <= {data_to_compare} <= {value_max} for file named {file}")
+            logger.info(f"{value_min} <= {data_to_compare} <= {value_max} for file named {file}")
 
 
 def wave_vector(f: float, complex_permeability: complex, complex_permittivity: complex, conductivity: float):
@@ -1320,7 +1645,7 @@ def axial_wavelength(f: float, complex_permeability: float, complex_permittivity
 
 
 def check_mqs_condition(radius: float, frequency: float, complex_permeability: float, complex_permittivity: float,
-                        conductivity: float, relative_margin_to_first_resonance: float = 0.5, silent: bool = False):
+                        conductivity: float, relative_margin_to_first_resonance: float = 0.5):
     """
     Check if the condition for a magnetoquasistatic simulation is fulfilled.
 
@@ -1340,8 +1665,6 @@ def check_mqs_condition(radius: float, frequency: float, complex_permeability: f
     :type conductivity: float
     :param relative_margin_to_first_resonance: relative margin to the first resonance. Defaults to 0.5.
     :type relative_margin_to_first_resonance: float
-    :param silent: True for no terminal output
-    :type silent: bool
     """
     if frequency == 0:
         raise ValueError("check_mqs_condition() only works for frequencies != 0")
@@ -1352,11 +1675,10 @@ def check_mqs_condition(radius: float, frequency: float, complex_permeability: f
     if diameter_to_wavelength_ratio > diameter_to_wavelength_ratio_of_first_resonance * relative_margin_to_first_resonance:
         # raise Warning(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance} - "
         #               f"1 means 1st resonance - should be kept well below 1 to ensure MQS approach to be correct! ")
-        if not silent:
-            print(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance}")
+        logger.info(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance}")
 
 
-def create_open_circuit_excitation_sweep(I0: float, n: float, frequency: float) -> List[List[float]]:
+def create_open_circuit_excitation_sweep(I0: float, n: float, frequency: float) -> list[list[float]]:
     """
     Create a circuit excitation sweep with the other windings unloaded.
 
@@ -1392,14 +1714,14 @@ def list_to_complex(complex_list: list):
     return complex(complex_list[0], complex_list[1])
 
 
-def get_self_inductances_from_log(log: Dict) -> List:
+def get_self_inductances_from_log(log: dict) -> list:
     """
     Read the self-inductances from the result log file (dictionary).
 
     :param log: Result log dictionary
-    :type log: Dict
+    :type log: dict
     :return: self-inductances in a list
-    :rtype: List
+    :rtype: list
     """
     self_inductances = []
     for ol_index, open_loop_result in enumerate(log["single_sweeps"]):
@@ -1408,14 +1730,14 @@ def get_self_inductances_from_log(log: Dict) -> List:
     return self_inductances
 
 
-def get_flux_linkages_from_log(log: Dict) -> List:
+def get_flux_linkages_from_log(log: dict) -> list:
     """
     Read the flux-linkages from the result log file (dictionary).
 
     :param log: Result log dictionary
-    :type log: Dict
+    :type log: dict
     :return: flux-linkages in a list
-    :rtype: List
+    :rtype: list
     """
     flux_linkages = []
     for ol_index, open_loop_result in enumerate(log["single_sweeps"]):
@@ -1425,12 +1747,12 @@ def get_flux_linkages_from_log(log: Dict) -> List:
     return flux_linkages
 
 
-def get_coupling_matrix(flux_linkages: List) -> np.array:
+def get_coupling_matrix(flux_linkages: list) -> np.array:
     """
     Calculate the coupling factors from the given flux linkages.
 
     :param flux_linkages: flux-linkages
-    :type flux_linkages: List
+    :type flux_linkages: list
     :return: coupling-matrix in a matrix (np.array)
     :rtype: np.array
     """
@@ -1475,115 +1797,99 @@ def get_inductance_matrix(self_inductances: np.array, mean_coupling_factors: np.
     return inductance_matrix
 
 
-def visualize_flux_linkages(flux_linkages: List, silent: bool) -> None:
+def visualize_flux_linkages(flux_linkages: list) -> None:
     """
     Print the flux linkages to the terminal (or file-) output.
 
     :param flux_linkages: flux-linkages in a list
-    :type flux_linkages: List
-    :param silent: True for no output
-    :type silent: bool
+    :type flux_linkages: list
     """
     string_to_print = ""
     for x in range(0, len(flux_linkages)):
         for y in range(0, len(flux_linkages)):
             string_to_print += f"Phi_{x+1}{y+1} = {flux_linkages[x][y]}     Induced by I_{y+1} in Winding{x+1}\n"
-    if not silent:
-        print("\nFluxes: ")
-        print(string_to_print)
+
+    logger.info("\nFluxes: ")
+    logger.info(string_to_print)
 
 
-def visualize_self_inductances(self_inductances: Union[List, np.array], flux_linkages: Union[List, np.array], silent: bool) -> None:
+def visualize_self_inductances(self_inductances: list | np.ndarray, flux_linkages: list | np.ndarray) -> None:
     """
     Print the self-inductances to the terminal (or file-) output.
 
     :param self_inductances: self-inductances in H in a list or numpy array
-    :type self_inductances: Union[List, np.array]
+    :type self_inductances: list | np.ndarray
     :param flux_linkages: flux linkages
-    :type flux_linkages: Union[List, np.array]
-    :param silent: True for no output
-    :type silent: bool
+    :type flux_linkages: st | np.ndarray
     """
     string_to_print = ""
     for x in range(0, len(flux_linkages)):
         string_to_print += f"L_{x+1}_{x+1} = {self_inductances[x]}\n"
-    if not silent:
-        print("\n"
-              "Self Inductances: ")
-        print(string_to_print)
+    logger.info("\n"
+                "Self Inductances: ")
+    logger.info(string_to_print)
 
 
-def visualize_self_resistances(self_inductances: List, flux_linkages: List, frequency: float, silent: bool) -> None:
+def visualize_self_resistances(self_inductances: list, flux_linkages: list, frequency: float) -> None:
     """
     Calculate and print the self resistances to the terminal (or file-) output.
 
     :param self_inductances: self-inductances in a list
-    :type self_inductances: List
+    :type self_inductances: list
     :param flux_linkages: flux-linkage
-    :type flux_linkages: List
+    :type flux_linkages: list
     :param frequency: Frequency in Hz
     :type frequency: float
-    :param silent: True for no output
-    :type silent: bool
     """
     string_to_print = ""
     for x in range(0, len(flux_linkages)):
         string_to_print += f"Z_{x+1}_{x+1} = {self_inductances[x].imag*2*np.pi*frequency}\n"
-    if not silent:
-        print("\n"
-              "Self Resistances: ")
-        print(string_to_print)
+    logger.info("\n"
+                "Self Resistances: ")
+    logger.info(string_to_print)
 
 
-def visualize_coupling_factors(coupling_matrix: np.array, flux_linkages: List, silent: bool):
+def visualize_coupling_factors(coupling_matrix: np.array, flux_linkages: list):
     """
     Print the coupling factors to the terminal (or file-) output.
 
     :param coupling_matrix: matrix with coupling factors between the windings
     :type coupling_matrix: np.array
     :param flux_linkages: flux-linkages in a list
-    :type flux_linkages: List
-    :param silent: True for no output
-    :type silent: bool
+    :type flux_linkages: list
     """
     string_to_print = ""
     for x in range(0, len(flux_linkages)):
         for y in range(0, len(coupling_matrix)):
             string_to_print += f"K_{x + 1}{y + 1} = Phi_{x + 1}{y + 1} / Phi_{y + 1}{y + 1} = {coupling_matrix[x][y]}\n"
-    if not silent:
-        print("\n"
-              "Coupling Factors: ")
-        print(string_to_print)
+    logger.info("\n"
+                "Coupling Factors: ")
+
+    logger.info(string_to_print)
 
 
-def visualize_mean_coupling_factors(mean_coupling_factors: List, silent: bool):
+def visualize_mean_coupling_factors(mean_coupling_factors: list):
     """
     Print the mean coupling factors to the terminal (or file-) output.
 
     :param mean_coupling_factors: mean_coupling_factors in a list
-    :type mean_coupling_factors: List
-    :param silent: True for no output
-    :type silent: bool
+    :type mean_coupling_factors: list
     """
     string_to_print = ""
     for x in range(0, len(mean_coupling_factors)):
         for y in range(0, len(mean_coupling_factors)):
             string_to_print += f"k_{x + 1}{y + 1} = Sqrt(K_{x + 1}{y + 1} * K_{y + 1}{x + 1}) = M_{x + 1}{y + 1} " \
                                f"/ Sqrt(L_{x + 1}_{x + 1} * L_{y + 1}_{y + 1}) = {mean_coupling_factors[x][y]}\n"
-        if not silent:
-            print("\n"
-                  "Mean Coupling Factors: ")
-            print(string_to_print)
+    logger.info("\nMean Coupling Factors: ")
+    logger.info(string_to_print)
 
 
-def visualize_mean_mutual_inductances(inductance_matrix: np.array, silent: bool):
+def visualize_mean_mutual_inductances(inductance_matrix: np.array):
     """
-    Print the mean mutal inductances to the terminal (or file-) output.
+    Print the mean mutual inductances to the terminal (or file-) output.
 
     :param inductance_matrix: inductance matrix
     :type inductance_matrix: np.array
-    :param silent: True for no output
-    :type silent: bool
 
     e.g.  M_12 = M_21 = k_12 * (L_11 * L_22) ** 0.5
     """
@@ -1594,22 +1900,18 @@ def visualize_mean_mutual_inductances(inductance_matrix: np.array, silent: bool)
                 pass
             else:
                 string_to_print += f"M_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
-    if not silent:
-        print("\n"
-              "Mean Mutual Inductances: ")
-        print(string_to_print)
+    logger.info("\nMean Mutual Inductances: ")
+    logger.info(string_to_print)
 
 
-def visualize_mutual_inductances(self_inductances: List, coupling_factors: List, silent: bool):
+def visualize_mutual_inductances(self_inductances: list, coupling_factors: list):
     """
-    Print the mutal inductances to the terminal (or file-) output.
+    Print the mutual inductances to the terminal (or file-) output.
 
     :param self_inductances: Matrix with self inductances
-    :type self_inductances: List
+    :type self_inductances: list
     :param coupling_factors: Matrix with coupling factors
-    :type coupling_factors: List
-    :param silent: True for no output
-    :type silent: bool
+    :type coupling_factors: list
 
     e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
     """
@@ -1620,21 +1922,17 @@ def visualize_mutual_inductances(self_inductances: List, coupling_factors: List,
                 pass
             else:
                 string_to_print += f"M_{x + 1}{y + 1} = {self_inductances[y].real * coupling_factors[x][y]}\n"
-    if not silent:
-        print("\n"
-              "Mutual Inductances: ")
-        print(string_to_print)
+    logger.info("\nMutual Inductances: ")
+    logger.info(string_to_print)
 
 
-def visualize_inductance_matrix_coefficients(inductance_matrix: np.array, silent: bool):
+def visualize_inductance_matrix_coefficients(inductance_matrix: np.array):
     """Visualize the inductance matrix coefficients in the terminal.
 
     e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
 
     :param inductance_matrix: inductance matrix of transformer
     :type inductance_matrix: np.array
-    :param silent: False to show the terminal output
-    :type silent: bool
     """
     string_to_print = ""
     for x in range(0, len(inductance_matrix)):
@@ -1643,20 +1941,16 @@ def visualize_inductance_matrix_coefficients(inductance_matrix: np.array, silent
                 string_to_print += f"L_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
             else:
                 string_to_print += f"M_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
-    if not silent:
-        print("\n"
-              "Inductance Matrix Coefficients: ")
-        print(string_to_print)
+    logger.info("Inductance Matrix Coefficients: ")
+    logger.info(string_to_print)
 
 
-def visualize_inductance_matrix(inductance_matrix: np.array, silent: bool) -> None:
+def visualize_inductance_matrix(inductance_matrix: np.array) -> None:
     """
     Visualize the inductance matrix in the terminal.
 
     :param inductance_matrix: inductance matrix in H
     :type inductance_matrix: np.array
-    :param silent: True for no output
-    :type silent: bool
 
     e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
     """
@@ -1666,47 +1960,45 @@ def visualize_inductance_matrix(inductance_matrix: np.array, silent: bool) -> No
             string_to_print += f"{np.round(inductance_matrix[x][y].real, 12)} "
         string_to_print += "\n"
 
-    if not silent:
-        print("\n"
-              "Inductance Matrix: ")
-        print(string_to_print)
+    logger.info("\nInductance Matrix: ")
+    logger.info(string_to_print)
 
-def calculate_quadrature_integral(time_steps: List[float], data: List[float]) -> float:
+def calculate_quadrature_integral(time_steps: list[float], data: list[float]) -> float:
     """
-    Calculate the integral of given data over specific time steps using the quadrature method.
+    Calculate the integral of given data over specific time steps using the quad method.
 
     :param time_steps: List of time steps.
-    :type time_steps: List[float]
+    :type time_steps: list[float]
     :param data: List of data corresponding to each timestep.
-    :type data: List[float]
+    :type data: list[float]
     :return: The calculated integral.
     :rtype: float
     """
     func = lambda x: np.interp(x, time_steps, data)
-    return quadrature(func, time_steps[0], time_steps[-1])[0]
+    return quad(func, time_steps[0], time_steps[-1])[0]
 
-def calculate_squared_quadrature_integral(time_steps: List[float], data: List[float]) -> float:
+def calculate_squared_quadrature_integral(time_steps: list[float], data: list[float]) -> float:
     """
-    Calculate the integral of squared given data over specific time steps using the quadrature method..
+    Calculate the integral of squared given data over specific time steps using the quad method.
 
     :param time_steps: List of time steps.
-    :type time_steps: List[float]
+    :type time_steps: list[float]
     :param data: List of data corresponding to each timestep.
-    :type data: List[float]
+    :type data: list[float]
     :return: The calculated integral.
     :rtype: float
     """
     func = lambda x: np.interp(x, time_steps, data) ** 2
-    return quadrature(func, time_steps[0], time_steps[-1])[0]
+    return quad(func, time_steps[0], time_steps[-1])[0]
 
-def calculate_average(integral: float, time_steps: List[float]) -> float:
+def calculate_average(integral: float, time_steps: list[float]) -> float:
     """
     Compute the average in general.
 
     :param integral: The integral value.
     :type integral: float
     :param time_steps: List of time steps.
-    :type time_steps: List[float]
+    :type time_steps: list[float]
 
     Returns:
     :return: The calculated average.
@@ -1717,14 +2009,14 @@ def calculate_average(integral: float, time_steps: List[float]) -> float:
         raise ValueError("Total time cannot be zero.")
     return integral / total_time
 
-def calculate_rms(squared_integral: float, time_steps: List[float]) -> float:
+def calculate_rms(squared_integral: float, time_steps: list[float]) -> float:
     """
     Compute the RMS.
 
     :param squared_integral: The integral value.
     :type squared_integral: float
     :param time_steps: List of time steps.
-    :type time_steps: List[float]
+    :type time_steps: list[float]
 
     Returns:
     :return: The calculated average.
@@ -1762,14 +2054,14 @@ def convert_air_gap_corner_points_to_center_and_distance(corner_points: list) ->
     return centers, heights
 
 
-def time_current_vector_to_fft_excitation(time_current_vectors: List[List[List[float]]], fft_filter_value_factor: float = 0.01):
+def time_current_vector_to_fft_excitation(time_current_vectors: list[list[list[float]]], fft_filter_value_factor: float = 0.01):
     """
     Perform FFT to get the primary and secondary currents e.g. to calculate the wire losses.
 
     For further calculations e.g. calculating wire losses, the single frequencies can be 'linear added' to get the total winding losses.
 
     :param time_current_vectors: primary and secondary current waveforms over time
-    :type time_current_vectors: List[List[List[float]]]
+    :type time_current_vectors: list[list[list[float]]]
     :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default]
         removes all amplitudes below 1 % of the maximum amplitude from the result-frequency list
     :type fft_filter_value_factor: float
@@ -1817,7 +2109,7 @@ def time_current_vector_to_fft_excitation(time_current_vectors: List[List[List[f
     return frequency_list, current_list_list, phi_deg_list_list
 
 
-def hysteresis_current_excitation(input_time_current_vectors: List[List[List[float]]]):
+def hysteresis_current_excitation(input_time_current_vectors: list[list[list[float]]]):
     """
     Collect the peak current and the corresponding phase shift for the fundamental frequency for all windings.
 
@@ -1825,10 +2117,10 @@ def hysteresis_current_excitation(input_time_current_vectors: List[List[List[flo
     In case of a center-tapped transformer, halving the amplitudes will be done by split_hysteresis_loss_excitation_center_tapped.
 
     :param input_time_current_vectors: e.g. [[time_vec, i_primary_vec], [time_vec, i_secondary_vec]]
-    :type input_time_current_vectors: List[List[List[float]]]
+    :type input_time_current_vectors: list[list[list[float]]]
     :raises ValueError: if time vector does not start at zero seconds.
     :return: hyst_frequency, hyst_current_amplitudes, hyst_phases_deg, e.g. 200400.80170764355 [6.13, 26.65] [49.13, 229.49]
-    :rtype: List[List[float]]
+    :rtype: list[list[float]]
     """
     if input_time_current_vectors[0][0][0] != 0:
         raise ValueError("time must start at 0 seconds!")
@@ -1843,6 +2135,513 @@ def hysteresis_current_excitation(input_time_current_vectors: List[List[List[flo
         hyst_phases_deg.append(
             fr.phases_deg_from_time_current(time_current_vector[0], time_current_vector[1])[0])
     return hyst_frequency, hyst_current_amplitudes, hyst_phases_deg
+
+def get_defined_potentials(component_type: str) -> list[list[float]]:
+    """
+    Define of  different potentials to be applied in the simulation.
+
+     It is needed to save the energies with every simulation based on the number of the capacitors in the equivalent
+     circuit and to calculate the voltage matrix.
+
+    :param component_type : the type of the component to be solved
+    :type component_type: str
+    """
+    if component_type == 'inductor':
+        return [[1, 0, 0],  # Scenario 1
+                [1, 1, 0],  # Scenario 2
+                [1, 0, 1]]  # Scenario 3
+    if component_type == 'transformer':
+        return [[1, 0, 0, 0],  # Simulation 1
+                [0, 0, 1, 0],  # Simulation 2
+                [0, 0, 1, 1],  # Simulation 3
+                [1, 1, 1, 1],  # Simulation 4
+                [1, 0, 1, 0],  # Simulation 5
+                [1, 0, 1, 1],  # Simulation 6
+                [2, 1, 1, 1],  # Simulation 7
+                [0, 0, 2, 1],  # Simulation 8
+                [1, 1, 2, 1],  # Simulation 9
+                [1, 1, 2, 2]]  # Simulation 10
+    else:
+        raise ValueError(f"Unknown component_type: {component_type}")
+
+def generate_voltage_matrix(component_type: str, potentials: list[list[float]], flip_the_sec_terminal: bool = False) -> np.ndarray:
+    r"""
+    Generate the voltage matrix from the potentials.
+
+    W = 0.5 (M^2) * C. M represents the voltage matrix derived from the applied potentials.
+    Equivalent circuit of inductor:
+    A--.------.---A
+           |      |
+           |      |
+    v_1    |      c1
+           |      |
+           |      |
+    B--|------.---B
+       |      |
+    v_2   c2     c3
+       |      |
+    E--.-----.----E
+    Equivalent circuit of transformer:
+    A--.------.-----c4--------.------.------C
+       |      |  \          / |      |
+       |      |    c5   c6    |      |
+    v1 |      c1     \/       c2     |      v2
+       |      |     /    \    |      |
+       |      |  /         \  |      |
+    B--|------.-----c3--------.------|------D
+       |      |       v3      |      |
+       c7     c8 v4          c10    c9
+       |      |               |      |
+    E--.-----.-----------------------.------E
+
+    :param component_type : the type of the component to be solved.
+    :type component_type: str
+    :param potentials: list of potentials
+    :type potentials: list[list[float]]
+    :param flip_the_sec_terminal: flip the sec voltage. v2 will be negative.
+    :type flip_the_sec_terminal: bool
+    """
+    diffs = []
+    for vs in potentials:
+        if component_type == 'inductor':
+            a, b, e = vs
+            # Potentials are a, b, e, where the voltage matrix is derived from these potentials.
+            diffs.append([a - b,
+                          a - e,
+                          b - e])
+        elif component_type == 'transformer':
+            # Core is always grounded
+            # a, b, c, d are potentials (terminals). The voltage matrix is derived from these potentials.
+            # see the equivalent circuit of transformer in the description
+            e = 0
+            a, b, c, d = vs
+            if not flip_the_sec_terminal:
+                diffs.append([a - b,
+                              c - d,
+                              d - b,
+                              a - b - (d - b) - (c - d),
+                              d - b + c - d,
+                              a - b - (d - b),
+                              a - b + b - e,
+                              b - e,
+                              c - d + d - b + b - e,
+                              d - b + b - e
+                              ])
+            elif flip_the_sec_terminal:
+                diffs.append([a - b,
+                              d - c,
+                              d - b,
+                              a - b - (d - b) - (d - c),
+                              d - b + d - c,
+                              a - b - (d - b),
+                              a - b + b - e,
+                              b - e,
+                              d - c + d - b + b - e,
+                              d - b + b - e
+                              ])
+
+    return np.array(diffs)
+
+def solve_capacitance(m: np.ndarray, energies: np.ndarray) -> np.ndarray:
+    """
+    Solve the capacitance from the voltage matrix and the energy matrix saved from the simulation.
+
+    :param m: voltage matrix
+    :type: array
+    :param energies: energies solved from the simulations
+    :type energies: byte array
+    """
+    m_squared = m ** 2
+    if np.isclose(np.linalg.det(m_squared), 0):
+        raise ValueError("Singular matrix!")
+    return (2 * np.linalg.inv(m_squared) @ energies.reshape(-1, 1)).flatten()
+
+def distribute_potential_linearly(v_start: float, v_end: float, num_turns: int) -> list[float]:
+    """
+    Linearly distribute potentials between v_start and v_end over the turns.
+
+    :param v_start: the voltage on the first turn
+    :type v_start: float
+    :param v_end: the voltage on the last turn
+    :type v_end: float
+    :param num_turns: number of turns
+    :type num_turns: int
+    """
+    if v_start == v_end or num_turns == 1:
+        return [v_start] * num_turns
+    return [v_start + (v_end - v_start) * j / (num_turns - 1) for j in range(num_turns)]
+
+def get_open_circuit_capacitance(c_vec: np.ndarray, num_turns_w1: int, num_turns_w2: int) -> float:
+    """
+    Get the capacitance when the secondary is open.
+
+    :param c_vec: the calculated capacitance from the simulation.
+    :type c_vec: byte array
+    :param num_turns_w1: number of turns of the first winding
+    :type num_turns_w1: int
+    :param num_turns_w2: number of turns of the second winding
+    :type num_turns_w2: int
+    """
+    c_1, c_2, c_3, c_4, c_5, c_6, c_7, c_8, c_9, c_10 = c_vec
+    n_sym = num_turns_w1 / num_turns_w2
+    den = c_3 * c_7 + c_3 * c_8 + c_4 * c_7 + c_3 * c_9 + c_4 * c_8 + c_5 * c_7 + c_3 * c_10 + c_4 * c_9 + \
+        c_5 * c_8 + c_6 * c_7 + c_4 * c_10 + c_5 * c_9 + c_6 * c_8 + c_5 * c_10 + c_6 * c_9 + c_6 * c_10 + \
+        c_7 * c_9 + c_7 * c_10 + c_8 * c_9 + c_8 * c_10
+
+    num1 = (c_2 * c_3 * c_7 + c_2 * c_3 * c_8 + c_2 * c_4 * c_7 + c_2 * c_3 * c_9 + c_2 * c_4 * c_8 + c_2 * c_5 * c_7 + c_3 * c_4 * c_7 + c_2 * c_3 * c_10 + \
+            c_2 * c_4 * c_9 + c_2 * c_5 * c_8 + c_2 * c_6 * c_7 + c_3 * c_4 * c_8 + c_3 * c_5 * c_7 + c_2 * c_4 * c_10 + c_2 * c_5 * c_9 + c_2 * c_6 * c_8 + \
+            c_3 * c_4 * c_9 + c_3 * c_5 * c_8 + c_2 * c_5 * c_10 + c_2 * c_6 * c_9 + c_3 * c_4 * c_10 + c_3 * c_5 * c_9 + c_4 * c_6 * c_7 + \
+            c_2 * c_6 * c_10 + c_2 * c_7 * c_9 + c_3 * c_5 * c_10 + c_4 * c_6 * c_8 + c_5 * c_6 * c_7 + c_2 * c_7 * c_10 + c_2 * c_8 * c_9 + \
+            c_3 * c_7 * c_9 + c_4 * c_6 * c_9 + c_5 * c_6 * c_8 + c_2 * c_8 * c_10 + c_3 * c_8 * c_9 + c_4 * c_6 * c_10 + c_5 * c_6 * c_9 + \
+            c_4 * c_7 * c_10 + c_5 * c_6 * c_10 + c_3 * c_9 * c_10 + c_4 * c_8 * c_10 + c_5 * c_7 * c_10 + c_6 * c_7 * c_9 + c_4 * c_9 * c_10 + \
+            c_5 * c_8 * c_10 + c_6 * c_8 * c_9 + c_5 * c_9 * c_10 + c_6 * c_9 * c_10 + c_7 * c_9 * c_10 + c_8 * c_9 * c_10) * n_sym ** 2
+
+    num2 = (-2 * c_3 * c_4 * c_7 - 2 * c_3 * c_4 * c_8 - 2 * c_3 * c_4 * c_9 - 2 * c_3 * c_4 * c_10 + 2 * c_5 * c_6 * c_7 + 2 * c_3 * c_7 * c_9 - \
+            2 * c_5 * c_6 * c_8 - 2 * c_5 * c_6 * c_9 - 2 * c_5 * c_6 * c_10 + 2 * c_4 * c_8 * c_10 - 2 * c_5 * c_7 * c_10 - 2 * c_6 * c_8 * c_9) * n_sym
+
+    num3 = (c_1 * c_3 * c_7 + c_1 * c_3 * c_8 + c_1 * c_4 * c_7 + c_1 * c_3 * c_9 + c_1 * c_4 * c_8 + c_1 * c_5 * c_7 + c_1 * c_3 * c_10 + c_1 * c_4 * c_9 + \
+            c_1 * c_5 * c_8 + c_1 * c_6 * c_7 + c_3 * c_4 * c_7 + c_1 * c_4 * c_10 + c_1 * c_5 * c_9 + c_1 * c_6 * c_8 + c_3 * c_4 * c_8 + c_1 * c_5 * c_10 + \
+            c_1 * c_6 * c_9 + c_3 * c_4 * c_9 + c_3 * c_6 * c_7 + c_4 * c_5 * c_7 + c_1 * c_6 * c_10 + c_1 * c_7 * c_9 + c_3 * c_4 * c_10 + c_3 * c_6 * c_8 + \
+            c_4 * c_5 * c_8 + c_1 * c_7 * c_10 + c_1 * c_8 * c_9 + c_3 * c_6 * c_9 + c_3 * c_7 * c_8 + c_4 * c_5 * c_9 + c_5 * c_6 * c_7 + c_1 * c_8 * c_10 + \
+            c_3 * c_6 * c_10 + c_3 * c_7 * c_9 + c_4 * c_5 * c_10 + c_4 * c_7 * c_8 + c_5 * c_6 * c_8 + c_3 * c_7 * c_10 + c_5 * c_6 * c_9 + c_5 * c_7 * c_8 + \
+            c_4 * c_8 * c_9 + c_5 * c_6 * c_10 + c_5 * c_7 * c_9 + c_6 * c_7 * c_8 + c_4 * c_8 * c_10 + c_5 * c_7 * c_10 + c_6 * c_8 * c_9 + \
+            c_6 * c_8 * c_10 + c_7 * c_8 * c_9 + c_7 * c_8 * c_10)
+    return (num1 - num2 + num3) / den
+
+def get_short_circuit_capacitance(c_vec: np.ndarray) -> float:
+    """
+    Get the capacitance when the secondary is shorted.
+
+    :param c_vec: the calculated capacitance from the simulation.
+    :type c_vec: byte array
+    """
+    c_1, c_2, c_3, c_4, c_5, c_6, c_7, c_8, c_9, c_10 = c_vec
+    num = c_3 * c_4 * c_7 + c_3 * c_4 * c_8 + c_3 * c_4 * c_9 + c_3 * c_6 * c_7 + c_4 * c_5 * c_7 + c_3 * c_4 * c_10 + \
+        c_3 * c_6 * c_8 + c_4 * c_5 * c_8 + c_3 * c_6 * c_9 + c_3 * c_7 * c_8 + c_4 * c_5 * c_9 + c_5 * c_6 * c_7 + \
+        c_3 * c_6 * c_10 + c_3 * c_7 * c_9 + c_4 * c_5 * c_10 + c_4 * c_7 * c_8 + c_5 * c_6 * c_8 + c_3 * c_7 * c_10 + \
+        c_5 * c_6 * c_9 + c_5 * c_7 * c_8 + c_4 * c_8 * c_9 + c_5 * c_6 * c_10 + c_5 * c_7 * c_9 + c_6 * c_7 * c_8 + \
+        c_4 * c_8 * c_10 + c_5 * c_7 * c_10 + c_6 * c_8 * c_9 + c_6 * c_8 * c_10 + c_7 * c_8 * c_9 + c_7 * c_8 * c_10
+    den = c_3 * c_7 + c_3 * c_8 + c_4 * c_7 + c_3 * c_9 + c_4 * c_8 + c_5 * c_7 + c_3 * c_10 + c_4 * c_9 + c_5 * c_8 + \
+        c_6 * c_7 + c_4 * c_10 + c_5 * c_9 + c_6 * c_8 + c_5 * c_10 + c_6 * c_9 + c_6 * c_10 + c_7 * c_9 + c_7 * c_10 + \
+        c_8 * c_9 + c_8 * c_10
+    c_sim_short = (c_1 + (num / den))
+    return c_sim_short
+
+def compare_and_plot_connection_capacitance_of_transformer(c_vec: np.ndarray, measured_capacitance: list[float | None] | None = None, show_plot: bool = True):
+    """
+    Compare the connection capacitance applied in the measurement. The capacitors C1,...C10 can not be compared directly to the measurement results.
+
+    For every connection, we look to the behavior of the equivalent circuit. For example; AB vs CDE will result in C3 + C4 + C5 + C6 + C7 + C8
+    :param c_vec: the calculated capacitance from the simulation.
+    :type c_vec: byte array
+    :param measured_capacitance: represent the measured capacitance of all the connections
+    :type measured_capacitance: list[float | None]
+    :param show_plot: to show the comparison between the simulation and measurement results in a figure.
+    :type show_plot: bool
+    """
+    connection_keys = [
+        'C_ABvsCDE', 'C_ABCDvsE', 'C_ABEvsCD', 'C_AvsBCDE', 'C_BvsACDE',
+        'C_CvsABDE', 'C_DvsABCE', 'C_ACvsBDE', 'C_ADvsBCE', 'C_BC_ADE'
+    ]
+    connection_sums = {
+        'C_ABvsCDE': lambda C: C[2] + C[3] + C[4] + C[5] + C[6] + C[7],
+        'C_ABCDvsE': lambda C: C[6] + C[7] + C[8] + C[9],
+        'C_ABEvsCD': lambda C: C[2] + C[3] + C[4] + C[5] + C[8] + C[9],
+        'C_AvsBCDE': lambda C: C[0] + C[3] + C[5] + C[6],
+        'C_BvsACDE': lambda C: C[0] + C[2] + C[4] + C[7],
+        'C_CvsABDE': lambda C: C[1] + C[3] + C[4] + C[8],
+        'C_DvsABCE': lambda C: C[1] + C[2] + C[5] + C[9],
+        'C_ACvsBDE': lambda C: C[0] + C[1] + C[4] + C[5] + C[6] + C[8],
+        'C_ADvsBCE': lambda C: C[0] + C[1] + C[2] + C[3] + C[6] + C[9],
+        'C_BC_ADE': lambda C: C[0] + C[1] + C[2] + C[3] + C[7] + C[8],
+    }
+
+    if measured_capacitance is not None:
+        if len(measured_capacitance) != 10:
+            raise ValueError("measured_capacitances must be a sequence of 10 numbers (float or None).")
+
+        # build simulated connection sums
+        sim_sums = [connection_sums[k](c_vec) for k in connection_keys]
+
+        logger.info("\n---  Simulated vs Measured Capacitance  (pF) -------------")
+        logger.info(f"{'Connection':<12}{'Measured':>12}{'Simulated':>12}{'Error %':>10}")
+        logger.info("-" * 46)
+
+        # prepare data for optional plot
+        idx_used, meas_pf_used, calc_pf_used, ratio_used = [], [], [], []
+
+        for i, (k, meas, sim) in enumerate(zip(connection_keys,
+                                               measured_capacitance,
+                                               sim_sums)):
+            sim_pf = sim * 1e12
+            if meas is None or (isinstance(meas, float) and np.isnan(meas)):
+                logger.info(f"{k:<12}{'---':>12}{sim_pf:12.2f}{'---':>10}")
+                # still plot simulated value
+                idx_used.append(i)
+                meas_pf_used.append(None)
+                calc_pf_used.append(sim_pf)
+                ratio_used.append(None)
+            else:
+                meas_pf = meas * 1e12
+                error_percentage = 100 * (sim - meas) / meas
+                logger.info(f"{k:<12}{meas_pf:12.2f}{sim_pf:12.2f}{error_percentage:10.2f}")
+
+                idx_used.append(i)
+                meas_pf_used.append(meas_pf)
+                calc_pf_used.append(sim_pf)
+                ratio_used.append(sim_pf / meas_pf)
+
+        if show_plot:
+
+            idx = np.arange(10)
+            plt.figure(figsize=(14, 6))
+
+            # plot all simulated points
+            plt.scatter(idx, [s for s in calc_pf_used],
+                        label="Simulated", color="C0", marker="o")
+
+            # plot only measured values that exist
+            idx_meas = [i for i, m in zip(idx_used, meas_pf_used) if m is not None]
+            meas_pf_ok = [m for m in meas_pf_used if m is not None]
+            plt.scatter(idx_meas, meas_pf_ok,
+                        label="Measured", color="C3", marker="x")
+
+            # annotate ratio where both values exist
+            for i, sim_pf, ratio in zip(idx_used, calc_pf_used, ratio_used):
+                if ratio is not None:
+                    plt.text(i, sim_pf, f"{ratio:.2f}×",
+                             ha="center", va="bottom", fontsize=8)
+
+            label_txt = [k.replace('vs', ' vs ') for k in connection_keys]
+            plt.xticks(idx, label_txt, rotation=45, ha="right")
+            plt.xlabel("Capacitance Connections")
+            plt.ylabel("Capacitance / pF]")
+            plt.title("Simulated vs Measured Capacitance")
+            plt.grid(True, linestyle=":")
+            plt.legend()
+            plt.tight_layout()
+            plt.show()
+
+def plot_open_and_short_comparison(c_sim_open: float, c_sim_short: float, c_meas_open: float | None, c_meas_short: float | None):
+    """
+    Plot horizontal bar comparison for open-circuit capacitance and short-circuit capacitance.
+
+    :param c_sim_open: simulated open‑circuit capacitance (F)
+    :param c_sim_short: simulated short‑circuit capacitance (F)
+    :param c_meas_open: measured open‑circuit capacitance (F) or None
+    :param c_meas_short: measured short‑circuit capacitance (F) or None
+    """
+    labels, sim_bar, meas_bar = [], [], []
+    if c_meas_open is not None:
+        labels.append("A‑B  (CD open)")
+        sim_bar.append(c_sim_open * 1e12)
+        meas_bar.append(c_meas_open * 1e12)
+    if c_meas_short is not None:
+        labels.append("A‑B  (CD short)")
+        sim_bar.append(c_sim_short * 1e12)
+        meas_bar.append(c_meas_short * 1e12)
+
+    if not labels:
+        return  # nothing to plot
+
+    y = np.arange(len(labels))
+    h = 0.3
+    plt.figure(figsize=(10, 3.5))
+    plt.barh(y - h/2, sim_bar, height=h, color='tab:blue', label="Simulated")
+    plt.barh(y + h/2, meas_bar, height=h, color='tab:red', label="Measured")
+
+    for i, (s, m) in enumerate(zip(sim_bar, meas_bar)):
+        if m != 0:
+            plt.text(s * 1.01, i - h/2, f"{s/m:.2f}×", va='center', fontsize=9, color='blue')
+
+    plt.yticks(y, labels)
+    plt.xlabel("Capacitance / pF")
+    plt.grid(axis='x', linestyle='--', alpha=0.6)
+    plt.title("Simulated vs Measured Open / Short Capacitance")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+
+def close_excel_file_if_open(filepath):
+    """
+    Close the specified Excel file if it is currently open.
+
+    :param filepath: The path to the Excel file to close.
+    :type filepath: str
+    """
+    # Get the absolute path
+    filepath = os.path.abspath(filepath)
+
+    try:
+        excel = win32com.client.Dispatch("Excel.Application")
+        for workbook in excel.Workbooks:
+            if workbook.FullName.lower() == filepath.lower():
+                workbook.Close(SaveChanges=False)
+                return
+        excel.Quit()
+    except Exception as e:
+        print(f"Unable to close Excel. Error: {e}")
+
+def json_to_excel(json_file_path: str, output_excel_path: str) -> None:
+    """
+    Extract data from the electrostatic simulation and write it into a log file.
+
+    :param json_file_path: Path to the JSON input file containing simulation results.
+    :type json_file_path: str
+    :param output_excel_path: Path where the Excel (.xlsx) file will be saved.
+    :type output_excel_path: str
+    """
+    # Trying to close the Excel file if it's open
+    close_excel_file_if_open(output_excel_path)
+    # Load the JSON data from the file
+    with open(json_file_path, 'r') as json_file:
+        data = json.load(json_file)
+
+    # Prepare the different data sections
+    charges_data = []
+    energy_data = []
+    average_voltages_data = []
+    capacitances_within_data = []
+    capacitances_between_data = []
+    capacitances_between_turns_core_data = []
+
+    # Extract charges
+    charge_value = data.get("charges", None)
+    if charge_value is not None:
+        charges_data.append({"Charge Type": "Total Charge", "Value (Coulombs)": charge_value})
+
+    # Extract energy
+    for key, value in data.get("energy", {}).items():
+        energy_data.append({"Energy Type": key, "Value (Joules)": value})
+
+    # Extract average voltages
+    for region, voltage in data.get("average_voltages", {}).items():
+        average_voltages_data.append({"Region": region, "Average Voltage (V)": voltage})
+
+    # Extract capacitance within windings
+    for winding, turns in data.get("capacitances", {}).get("within_winding", {}).items():
+        for turn, connections in turns.items():
+            for target_turn, capacitance_value in connections.items():
+                capacitances_within_data.append({
+                    "Winding": winding,
+                    "Turn": turn,
+                    "To Turn": target_turn,
+                    "Capacitance (F)": capacitance_value
+                })
+
+    # Extract capacitance between windings
+    for winding1, windings in data.get("capacitances", {}).get("between_windings", {}).items():
+        for winding2, turns in windings.items():
+            for turn1, connections in turns.items():
+                for turn2, capacitance_value in connections.items():
+                    capacitances_between_data.append({
+                        "Winding 1": winding1,
+                        "Turn 1": turn1,
+                        "Winding 2": winding2,
+                        "Turn 2": turn2,
+                        "Capacitance (F)": capacitance_value
+                    })
+    # Extract capacitance between turns and core
+    for winding, turns in data.get("capacitances", {}).get("between_turns_core", {}).items():
+        for turn, capacitance_value in turns.items():
+            capacitances_between_turns_core_data.append({
+                "Winding": winding,
+                "Turn": turn,
+                "Capacitance to Core (F)": capacitance_value
+            })
+
+    # Create DataFrames for each section
+    charges_df = pd.DataFrame(charges_data)
+    energy_df = pd.DataFrame(energy_data)
+    average_voltages_df = pd.DataFrame(average_voltages_data)
+    capacitances_within_df = pd.DataFrame(capacitances_within_data)
+    capacitances_between_df = pd.DataFrame(capacitances_between_data)
+    capacitances_between_turns_core_df = pd.DataFrame(capacitances_between_turns_core_data)
+
+    # Write to Excel file with multiple sheets
+    with pd.ExcelWriter(output_excel_path) as writer:
+        if not charges_df.empty:
+            charges_df.to_excel(writer, sheet_name='Charges', index=False)
+            worksheet = writer.sheets['Charges']
+            worksheet.set_column('A:B', 30)
+        if not energy_df.empty:
+            energy_df.to_excel(writer, sheet_name='Energy', index=False)
+            worksheet = writer.sheets['Energy']
+            worksheet.set_column('A:B', 30)
+        if not average_voltages_df.empty:
+            average_voltages_df.to_excel(writer, sheet_name='Average_Voltages', index=False)
+            worksheet = writer.sheets['Average_Voltages']
+            worksheet.set_column('A:E', 30)
+        if not capacitances_within_df.empty:
+            capacitances_within_df.to_excel(writer, sheet_name='Capacitances_Within', index=False)
+            worksheet = writer.sheets['Capacitances_Within']
+            worksheet.set_column('A:D', 30)
+        if not capacitances_between_df.empty:
+            capacitances_between_df.to_excel(writer, sheet_name='Capacitances_Between', index=False)
+            worksheet = writer.sheets['Capacitances_Between']
+            worksheet.set_column('A:E', 30)
+        if not capacitances_between_turns_core_df.empty:
+            capacitances_between_turns_core_df.to_excel(writer, sheet_name='Turns_Core', index=False)
+            worksheet = writer.sheets['Turns_Core']
+            worksheet.set_column('A:C', 30)
+
+def compare_excel_files(femmt_excel_path: str, femm_excel_path: str, comparison_output_path: str) -> None:
+    """
+    Compare two Excel files (FEMMT and FEMM) and generate a new Excel file with comparison results.
+
+    This function loads two Excel files, one generated by FEMMT and the other by FEMM, compares the data across
+    all common sheets, and calculates the differences between corresponding values. The results include:
+    - Absolute Difference
+    - Relative Error
+    - Relative Error Percentage
+
+    The comparison is saved into a new Excel file, with each comparison in a separate sheet named after
+    the original sheet with the "_Comparison" suffix.
+
+    :param femmt_excel_path: Path to the Excel file generated by FEMMT.
+    :type femmt_excel_path: str
+    :param femm_excel_path: Path to the Excel file generated by FEMM.
+    :type femm_excel_path: str
+    :param comparison_output_path: Path to save the resulting comparison Excel file.
+    :type comparison_output_path: str
+    """
+    # Trying to close the Excel file if it's open
+    close_excel_file_if_open(comparison_output_path)
+    # Load both Excel files, get all sheets
+    femmt_sheets = pd.read_excel(femmt_excel_path, sheet_name=None)
+    femm_sheets = pd.read_excel(femm_excel_path, sheet_name=None)
+
+    # Define sheets to compare
+    sheets_to_compare = femmt_sheets.keys()
+
+    # Create an Excel writer for the output
+    with pd.ExcelWriter(comparison_output_path, engine='xlsxwriter') as writer:
+        # Iterate through each sheet to compare
+        for sheet_name in sheets_to_compare:
+            if sheet_name in femm_sheets:
+                # Load DataFrames for the current sheet
+                femmt_df = femmt_sheets[sheet_name]
+                femm_df = femm_sheets[sheet_name]
+                # Rename columns (FEMMT and FEMM)
+                femmt_df.columns = [f"{col}_FEMMT" for col in femmt_df.columns]
+                femm_df.columns = [f"{col}_FEMM" for col in femm_df.columns]
+
+                # Concatenate both DataFrames side by side
+                comparison_df = pd.concat([femmt_df, femm_df], axis=1)
+
+                # Calculating difference, relative error, and relative error in percentage for columns
+                for femmt_col, femm_col in zip(femmt_df.columns, femm_df.columns):
+                    col_name = femmt_col.replace("_FEMMT", "")
+                    if np.issubdtype(comparison_df[femmt_col].dtype, np.number) and np.issubdtype(comparison_df[femm_col].dtype, np.number):
+                        comparison_df[f"{col_name}_Difference"] = comparison_df[femmt_col] - comparison_df[femm_col]
+                        comparison_df[f"{col_name}_Relative_Error"] = comparison_df[f"{col_name}_Difference"] / comparison_df[femmt_col].replace(0, np.nan)
+                        comparison_df[f"{col_name}_Error_Percent"] = comparison_df[f"{col_name}_Relative_Error"] * 100
+
+                # Writing to the Excel output file
+                comparison_df.to_excel(writer, sheet_name=f"{sheet_name}_Comparison", index=False)
+                worksheet = writer.sheets[f"{sheet_name}_Comparison"]
+                worksheet.set_column('A:Z', 35)
 
 
 if __name__ == '__main__':

@@ -9,14 +9,12 @@ import warnings
 import inspect
 import re
 import pandas as pd
-from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 import time
 import logging
 import dataclasses
 from matplotlib import pyplot as plt
 import ast
-
 
 # Third party libraries
 from onelab import onelab
@@ -35,6 +33,7 @@ from femmt.thermal import thermal_simulation, calculate_heat_flux_round_wire, re
 from femmt.dtos import *
 import femmt.functions_reluctance as fr
 
+logger = logging.getLogger(__name__)
 
 class MagneticComponent:
     """
@@ -48,13 +47,12 @@ class MagneticComponent:
     # Initialization of all class variables
     # Common variables for all instances
     onelab_folder_path: str = None
-    silent: bool = False
+    is_onelab_silent: bool = False
 
     def __init__(self, simulation_type: SimulationType = SimulationType.FreqDomain,
                  component_type: ComponentType = ComponentType.Inductor, working_directory: str = None,
-
-                 clean_previous_results: bool = True, verbosity: Verbosity = 2, is_gui: bool = False,
-                 simulation_name: Optional[str] = None, wwr_enabled=True):
+                 clean_previous_results: bool = True, onelab_verbosity: Verbosity = 1, is_gui: bool = False,
+                 simulation_name: str | None = None, wwr_enabled=True):
         # TODO Add a enum? for the verbosity to combine silent and print_output_to_file variables
         """
         Initialize the magnetic component.
@@ -87,28 +85,20 @@ class MagneticComponent:
             self.file_data.clear_previous_simulation_results()
 
         # Variable to set silent mode
-        self.verbosity = verbosity
-        self.logger = logging.getLogger("FEMMTLogger")
-        logging.basicConfig(format='%(levelname)s,%(asctime)s:%(message)s', encoding='utf-8')
-        self.logger.setLevel(logging.INFO)
+        self.verbosity = onelab_verbosity
         if not gmsh.isInitialized():
             gmsh.initialize()
 
-        if verbosity != Verbosity.ToConsole:
+        if onelab_verbosity != Verbosity.ToConsole:
             gmsh.option.setNumber("General.Terminal", 0)
-            self.silent = True
+            self.is_onelab_silent = True
 
-        if verbosity == Verbosity.ToFile:
-            fh = logging.FileHandler(self.file_data.femmt_log, mode="w")
-            fh.setLevel(logging.INFO)
-            self.logger.addHandler(fh)
-            self.silent = True
+        if onelab_verbosity == Verbosity.ToFile:
+            self.is_onelab_silent = True
 
         self.wwr_enabled = wwr_enabled
 
-        self.femmt_print(f"\n"
-                         f"Initialized a new Magnetic Component of type {component_type.name}\n"
-                         f"--- --- --- ---")
+        logger.info(f"Initialized a new Magnetic Component of type {component_type.name}")
 
         # To make sure femm is only imported once
         self.femm_is_imported = False
@@ -121,7 +111,7 @@ class MagneticComponent:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Components
         self.core: Core = None  # Contains all information about the cores
-        self.air_gaps: Optional[AirGaps] = None  # Contains every air gap
+        self.air_gaps: AirGaps | None = None  # Contains every air gap
         self.windings = None
         # self.windings: List of the different winding objects which the following structure:
         # windings[0]: primary, windings[1]: secondary, windings[2]: tertiary ....
@@ -144,6 +134,11 @@ class MagneticComponent:
         self.current = []                       # Defined for every conductor
         self.current_density = []               # Defined for every conductor
         self.voltage = []                       # Defined for every conductor
+        self.charge = []
+        self.v_core = None
+        # self.v_ground_core = None
+        self.v_ground_out_boundary = None
+        self.capacitance_matrix_nodes = {}
         self.time = []                          # Defined for time domain simulation
         self.average_currents = []              # Defined for average currents for every winding
         self.rms_currents = []                  # Defined for rms currents for every winding
@@ -161,13 +156,13 @@ class MagneticComponent:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Steinmetz loss material coefficients and current waveform
-        self.Ipeak: Optional[float] = None
-        self.ki: Optional[float] = None
-        self.alpha: Optional[float] = None
-        self.beta: Optional[float] = None
-        self.t_rise: Optional[float] = None
-        self.t_fall: Optional[float] = None
-        self.f_switch: Optional[float] = None
+        self.Ipeak: float | None = None
+        self.ki: float | None = None
+        self.alpha: float | None = None
+        self.beta: float | None = None
+        self.t_rise: float | None = None
+        self.t_fall: float | None = None
+        self.f_switch: float | None = None
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # MeshData to store the mesh size for different points
@@ -217,16 +212,6 @@ class MagneticComponent:
         self.onelab_client = onelab.client(__file__)
         self.simulation_name = simulation_name
 
-    def femmt_print(self, text: str):
-        """
-        Print text to terminal or to log-file, dependent on the current verbosity.
-
-        :param text: text to print
-        :type text: str
-        """
-        if self.verbosity != Verbosity.Silent:
-            self.logger.info(text)
-
     def update_mesh_accuracies(self, mesh_accuracy_core: float, mesh_accuracy_window: float,
                                mesh_accuracy_conductor, mesh_accuracy_air_gaps: float):
         """
@@ -248,20 +233,20 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Thermal simulation
-    def thermal_simulation(self, thermal_conductivity_dict: Dict, boundary_temperatures_dict: Dict,
-                           boundary_flags_dict: Dict, case_gap_top: float,
+    def thermal_simulation(self, thermal_conductivity_dict: dict, boundary_temperatures_dict: dict,
+                           boundary_flags_dict: dict, case_gap_top: float,
                            case_gap_right: float, case_gap_bot: float, show_thermal_simulation_results: bool = True,
-                           pre_visualize_geometry: bool = False, color_scheme: Dict = ff.colors_femmt_default,
-                           colors_geometry: Dict = ff.colors_geometry_femmt_default, flag_insulation: bool = True):
+                           pre_visualize_geometry: bool = False, color_scheme: dict = ff.colors_femmt_default,
+                           colors_geometry: dict = ff.colors_geometry_femmt_default, flag_insulation: bool = True):
         """
         Start the thermal simulation using thermal_simulation.py.
 
         :param thermal_conductivity_dict: Contains the thermal conductivities for every region
-        :type thermal_conductivity_dict: Dict
+        :type thermal_conductivity_dict: dict
         :param boundary_temperatures_dict: Contains the temperatures at each boundary line
-        :type boundary_temperatures_dict: Dict
-        :param boundary_flags_dict: Sets the boundary type (dirichlet or von neumann) for each boundary line
-        :type boundary_flags_dict: Dict
+        :type boundary_temperatures_dict: dict
+        :param boundary_flags_dict: Sets the boundary type (Dirichlet or von Neumann) for each boundary line
+        :type boundary_flags_dict: dict
         :param case_gap_top: Size of the top case
         :type case_gap_top: float
         :param case_gap_right: Size of the right case
@@ -273,9 +258,9 @@ class MagneticComponent:
         :param pre_visualize_geometry: Shows the thermal model before simulation, defaults to False
         :type pre_visualize_geometry: bool, optional
         :param color_scheme: Color scheme for visualization, defaults to ff.colors_femmt_default
-        :type color_scheme: Dict, optional
+        :type color_scheme: dict, optional
         :param colors_geometry: Color geometry for visualization, defaults to ff.colors_geometry_femmt_default
-        :type colors_geometry: Dict, optional
+        :type colors_geometry: dict, optional
         :param flag_insulation: True to simulate the insulation
         :type flag_insulation: bool
         """
@@ -348,8 +333,8 @@ class MagneticComponent:
         }
 
         thermal_simulation.run_thermal(**thermal_parameters)
-        self.femmt_print(f"The electromagnetic results are stored here: {self.file_data.e_m_results_log_path}")
-        self.femmt_print(f"The thermal results are stored here: {self.file_data.results_folder_path}/results_thermal.json")
+        logger.info(f"The electromagnetic results are stored here: {self.file_data.e_m_results_log_path}")
+        logger.info(f"The thermal results are stored here: {self.file_data.results_folder_path}/results_thermal.json")
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Setup
@@ -389,13 +374,13 @@ class MagneticComponent:
 
         while onelab_path_wrong:
             onelab_path = os.path.normpath(input(
-                "Enter the path of onelab's parent folder (path to folder which contains getdp, onelab executables): "))
+                "Enter the path of onelab's parent folder (path to folder which contains getdp, onelab executable files): "))
 
             if os.path.exists(onelab_path):
                 onelab_path_wrong = False
                 break
             else:
-                self.femmt_print('onelab not found! Tool searches for onelab.py in the folder. Please re-enter path!')
+                logger.info('onelab not found! Tool searches for onelab.py in the folder. Please re-enter path!')
         self.file_data.onelab_folder_path = onelab_path
 
         # Write the path to the config.json
@@ -422,13 +407,12 @@ class MagneticComponent:
         # Create model
         self.two_d_axi = TwoDaxiSymmetric(self.core, self.mesh_data, self.air_gaps, self.winding_windows,
                                           self.stray_path,
-                                          self.insulation, self.component_type, len(self.windings), self.verbosity,
-                                          self.logger)
+                                          self.insulation, self.component_type, len(self.windings), self.verbosity)
         self.two_d_axi.draw_model()
 
         # Create mesh
         self.mesh = Mesh(self.two_d_axi, self.windings, self.winding_windows, self.core.correct_outer_leg,
-                         self.file_data, self.verbosity, self.logger, None, self.wwr_enabled)
+                         self.file_data, self.verbosity, None, self.wwr_enabled)
         # self.mesh = Mesh(self.two_d_axi, self.windings, self.core.correct_outer_leg, self.file_data, None, ff.silent)
 
     def mesh(self, frequency: float = None, skin_mesh_factor: float = None):
@@ -460,8 +444,13 @@ class MagneticComponent:
             if insulation.cond_cond is None or not insulation.cond_cond:
                 raise Exception("insulations between the conductors must be set")
 
-            if insulation.core_cond is None or not insulation.core_cond:
-                raise Exception("insulations between the core and the conductors must be set")
+        if self.simulation_type == SimulationType.ElectroStatic:
+            insulation.bobbin_dimensions = True
+        else:
+            insulation.bobbin_dimensions = False
+
+        if self.simulation_type == SimulationType.ElectroStatic and insulation.bobbin_dimensions is None:
+            raise Exception("bobbin parameters must be set in electrostatic simulations")
 
         self.insulation = insulation
 
@@ -484,15 +473,15 @@ class MagneticComponent:
 
         self.air_gaps = air_gaps
 
-    def set_winding_windows(self, winding_windows: List[WindingWindow]):
+    def set_winding_windows(self, winding_windows: list[WindingWindow]):
         """
         Add the winding windows to the model.
 
         Creates the windings list, which contains the conductors from the virtual winding windows but sorted
         by the winding_number (ascending). Sets empty lists for excitation parameters.
 
-        :param winding_windows: List of WindingWindow objects
-        :type winding_windows: List[WindingWindow]
+        :param winding_windows: list of WindingWindow objects
+        :type winding_windows: list[WindingWindow]
         """
         self.winding_windows = winding_windows
         windings = []
@@ -504,21 +493,17 @@ class MagneticComponent:
                     if winding not in windings:
                         windings.append(winding)
 
-        # print(f"{winding_window.virtual_winding_windows = }")
-        # print(f"{windings = }")
         self.windings = sorted(windings, key=lambda x: x.winding_number)
 
         # Print statement was moved here so the silence functionality is not needed in Conductors class.
         # TODO Can this be even removed?
         for winding in self.windings:
             if winding.conductor_type == ConductorType.RoundLitz:
-                self.femmt_print(f"Updated Litz Configuration: \n"
-                                 f" ff: {winding.ff} \n"
-                                 f" Number of layers/strands: {winding.n_layers}/{winding.n_strands} \n"
-                                 f" Strand radius: {winding.strand_radius} \n"
-                                 f" Conductor radius: {winding.conductor_radius}\n"
-                                 f"---")
-
+                logger.info(f"Updated Litz Configuration: \n"
+                            f"    ff: {winding.ff} \n"
+                            f"    Number of layers/strands: {winding.n_layers}/{winding.n_strands} \n"
+                            f"    Strand radius: {winding.strand_radius} \n"
+                            f"    Conductor radius: {winding.conductor_radius}")
         # Set excitation parameter lists
         self.current = [None] * len(windings)
         self.current_density = [None] * len(windings)
@@ -548,8 +533,8 @@ class MagneticComponent:
     # Pre-Processing
 
     def create_model(self, freq: float, skin_mesh_factor: float = 0.5, pre_visualize_geometry: bool = False,
-                     save_png: bool = False, color_scheme: Dict = ff.colors_femmt_default,
-                     colors_geometry: Dict = ff.colors_geometry_femmt_default, benchmark: bool = False):
+                     save_png: bool = False, color_scheme: dict = ff.colors_femmt_default,
+                     colors_geometry: dict = ff.colors_geometry_femmt_default, benchmark: bool = False):
         """
         Create a model from the abstract geometry description inside onelab including optional mesh generation.
 
@@ -557,15 +542,15 @@ class MagneticComponent:
         :type freq: float
         :param skin_mesh_factor: [default to 0.5]
         :type skin_mesh_factor: float
-        :param pre_visualize_geometry: True for a pre-visualisation (e.g. check your geometry) and after this a
+        :param pre_visualize_geometry: True for a pre-visualization (e.g. check your geometry) and after this a
             simulation runs, False for a direct simulation
         :type pre_visualize_geometry: bool
         :param save_png: True to save a png-figure, false for no figure
         :type save_png: bool
         :param color_scheme: color file (definition for red, green, blue, ...)
-        :type color_scheme: Dict
-        :param colors_geometry: definition for e.g. core is grey, winding is orange, ...
-        :type colors_geometry: Dict
+        :type color_scheme: dict
+        :param colors_geometry: definition for e.g. core is gray, winding is orange, ...
+        :type colors_geometry: dict
         :param benchmark: Benchmark simulation (stop time). Defaults to False.
         :type benchmark: bool
         """
@@ -573,7 +558,7 @@ class MagneticComponent:
             raise Exception("A core class needs to be added to the magnetic component")
         if self.air_gaps is None:
             self.air_gaps = AirGaps(None, None)
-            self.femmt_print("No air gaps are added")
+            logger.info("No air gaps are added")
         if self.insulation is None:
             raise Exception("An insulation class need to be added to the magnetic component")
         if self.winding_windows is None:
@@ -609,7 +594,7 @@ class MagneticComponent:
             complex_permeability = mu_0 * mdb.MaterialDatabase(
                 self.verbosity == Verbosity.Silent).get_material_attribute(material_name=self.core.material,
                                                                            attribute="initial_permeability")
-            self.femmt_print(f"{complex_permeability=}")
+            logger.info(f"{complex_permeability=}")
         if self.core.permeability_type == PermeabilityType.FixedLossAngle:
             complex_permeability = mu_0 * self.core.mu_r_abs * complex(np.cos(np.deg2rad(self.core.phi_mu_deg)),
                                                                        np.sin(np.deg2rad(self.core.phi_mu_deg)))
@@ -638,20 +623,20 @@ class MagneticComponent:
 
                 complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(epsilon_phi_deg)),
                                                                        np.sin(np.deg2rad(epsilon_phi_deg)))
-                self.femmt_print(f"{complex_permittivity=}\n"
-                                 f"{epsilon_r=}\n"
-                                 f"{epsilon_phi_deg=}")
+                logger.info(f"{complex_permittivity=}\n"
+                            f"{epsilon_r=}\n"
+                            f"{epsilon_phi_deg=}")
 
                 ff.check_mqs_condition(radius=self.core.core_inner_diameter / 2, frequency=self.frequency,
                                        complex_permeability=self.get_single_complex_permeability(),
                                        complex_permittivity=complex_permittivity, conductivity=self.core.sigma,
-                                       relative_margin_to_first_resonance=0.5, silent=self.silent)
+                                       relative_margin_to_first_resonance=0.5)
 
             else:
                 ff.check_mqs_condition(radius=self.core.core_inner_diameter / 2, frequency=self.frequency,
                                        complex_permeability=self.get_single_complex_permeability(),
                                        complex_permittivity=0, conductivity=self.core.sigma,
-                                       relative_margin_to_first_resonance=0.5, silent=self.silent)
+                                       relative_margin_to_first_resonance=0.5)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Miscellaneous
@@ -943,11 +928,11 @@ class MagneticComponent:
                 material_name=self.core.material, attribute="volumetric_mass_density")
         return self.calculate_core_volume() * volumetric_mass_density
 
-    def get_wire_distances(self) -> List[List[float]]:
+    def get_wire_distances(self) -> list[list[float]]:
         """Return the distance (radius) of each conductor to the y-axis.
 
         :return: Wire distances
-        :rtype: List[List[float]]
+        :rtype: list[list[float]]
         """
         # wire_distance = []
         # for winding in self.two_d_axi.p_conductor:
@@ -974,7 +959,7 @@ class MagneticComponent:
 
         return wire_distance
 
-    def calculate_wire_lengths(self) -> List[float]:
+    def calculate_wire_lengths(self) -> list[float]:
         """Calculate the wire length of all conductors inside the magnetic component."""
         distances = self.get_wire_distances()
         lengths = []
@@ -983,7 +968,7 @@ class MagneticComponent:
 
         return lengths
 
-    def calculate_wire_volumes(self) -> List[float]:
+    def calculate_wire_volumes(self) -> list[float]:
         """Calculate the wire volume of the magnetic component."""
         wire_volumes = []
         wire_lengths = self.calculate_wire_lengths()
@@ -1032,7 +1017,7 @@ class MagneticComponent:
 
         return wire_volumes
 
-    def calculate_wire_weight(self) -> List[float]:
+    def calculate_wire_weight(self) -> list[float]:
         """Calculate the weight of all wires used inside the magnetic component."""
         wire_material = ff.wire_material_database()
 
@@ -1046,7 +1031,7 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # GetDP Interaction / Simulation / Excitation
-    def excitation(self, frequency: float, amplitude_list: List, phase_deg_list: List = None, ex_type: str = 'current',
+    def excitation(self, frequency: float, amplitude_list: list, phase_deg_list: list = None, ex_type: str = 'current',
                    plot_interpolation: bool = False):
         """
         Run the electromagnetic simulation.
@@ -1059,9 +1044,9 @@ class MagneticComponent:
         :param frequency: Frequency
         :type frequency: float
         :param amplitude_list: Current amplitudes according to windings
-        :type amplitude_list: List
+        :type amplitude_list: list
         :param phase_deg_list: Current phases in degree according to the current amplitudes (according to windings)
-        :type phase_deg_list: List
+        :type phase_deg_list: list
         :param ex_type: Excitation type. 'Current' implemented only. Future use may: 'voltage' and 'current_density'
         :type ex_type: str
         """
@@ -1073,11 +1058,10 @@ class MagneticComponent:
                 raise ValueError(
                     "Negative currents are not allowed. Use the phase + 180 degree to generate a negative current.")
 
-        self.femmt_print(f"\n---\n"
-                         f"Excitation: \n"
-                         f"Frequency: {frequency}\n"
-                         f"Current(s): {amplitude_list}\n"
-                         f"Phase(s): {phase_deg_list}\n")
+        logger.info(f"Excitation:\n"
+                    f"    Frequency: {frequency}\n"
+                    f"    Current(s): {amplitude_list}\n"
+                    f"    Phase(s): {phase_deg_list}")
 
         # -- Excitation --
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
@@ -1135,8 +1119,8 @@ class MagneticComponent:
                 elif self.windings[num].conductor_type == ConductorType.RoundSolid:
                     self.red_freq[num] = self.windings[num].conductor_radius / self.delta
                 else:
-                    self.femmt_print("Reduced Frequency does not have a physical value here")
-                    self.femmt_print(self.windings[num].conductor_type)
+                    logger.info("Reduced Frequency does not have a physical value here")
+                    logger.info(self.windings[num].conductor_type)
                     self.red_freq[
                         num] = 1  # TODO: doesn't make sense like this -> rewrite fore conductor windings shape
         else:
@@ -1149,16 +1133,16 @@ class MagneticComponent:
         if self.core.material != "custom":
             self.reluctance_model_pre_check()
 
-    def excitation_time_domain(self, current_list: List[List[float]], time_list: List[float],
+    def excitation_time_domain(self, current_list: list[list[float]], time_list: list[float],
                                number_of_periods: int, ex_type: str = 'current',
                                plot_interpolation: bool = False, imposed_red_f=0):
         """
         Excites the electromagnetic problem in the time domain with specified current and time settings.
 
         :param current_list: A nested list containing current values for each time step and winding.
-        :type current_list: List[List[float]]
+        :type current_list: list[list[float]]
         :param time_list: A nested list containing the corresponding time values for each current value.
-        :type time_list: List[float]
+        :type time_list: list[float]
         :param number_of_periods: The total number of periods within the provided time period of simulation.
         :type number_of_periods: int
         :param ex_type: Excitation type. 'current' implemented only. Future use may include 'voltage' and 'current_density'.
@@ -1171,11 +1155,11 @@ class MagneticComponent:
         if any(len(sublist) != len(time_list) for sublist in current_list):
             raise ValueError("The length of at least one sublist in current_list does not match the length of time_list.")
 
-        self.femmt_print(f"\n---\n"
-                         f"Excitation: \n"
-                         f"Maximum Time(sec): {number_of_periods}\n"
-                         f"Current(s): {current_list}\n"
-                         f"Time(s): {time_list}\n")
+        logger.info(f"\n---\n"
+                    f"Excitation: \n"
+                    f"Maximum Time(sec): {number_of_periods}\n"
+                    f"Current(s): {current_list}\n"
+                    f"Time(s): {time_list}\n")
         self.frequency = 1/time_list[-1]
         # -- Excitation --
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
@@ -1189,8 +1173,8 @@ class MagneticComponent:
         self.initial_time = 0  # defined 0
         self.step_time = time_list[1]  # convention!!! for fixed time steps
         self.time_period = time_list[-1]
-        print(f"{1/self.frequency=}")
-        print(f"{time_list[-1]=}")
+        logger.info(f"{1/self.frequency=}")
+        logger.info(f"{time_list[-1]=}")
         self.nb_steps_per_period = len(time_list)
         self.max_time = number_of_periods * (self.time_period + self.step_time)
         # current excitation
@@ -1234,8 +1218,8 @@ class MagneticComponent:
                 elif self.windings[num].conductor_type == ConductorType.RoundSolid:
                     self.red_freq[num] = self.windings[num].conductor_radius / self.delta
                 else:
-                    self.femmt_print("Reduced Frequency does not have a physical value here")
-                    self.femmt_print(self.windings[num].conductor_type)
+                    logger.info("Reduced Frequency does not have a physical value here")
+                    logger.info(self.windings[num].conductor_type)
                     self.red_freq[
                         num] = 1  # TODO: doesn't make sense like this -> rewrite fore conductor windings shape
         else:
@@ -1244,12 +1228,110 @@ class MagneticComponent:
             for num in range(len(self.windings)):
                 self.red_freq[num] = 0
 
+    def excitation_electrostatic(self, voltage: list[list[float]] = None, core_voltage: float = None, charge: list[list[float]] = None,
+                                 ground_outer_boundary: bool = False, plot_interpolation: bool = False):
+        """
+        Run the electrostatic simulation.
+
+        - Excitation of the electrostatic problem using voltage applied for each turn as [[V_winding_1_turn_1, V_winding_1_turn_2], [V_winding_2_turn_1,
+         V_winding_2_turn_2],....] or charge applied to each
+        turn as [[Q_winding_1_turn_1, Q_winding_1_turn_2], [Q_winding_2_turn_1, Q_winding_2_turn_2],....].
+
+        :param voltage: Values to apply to each turn in each winding as voltages. Example: [[V_winding_1_turn_1, V_winding_2_turn_2], [V_winding_2_turn_1,
+         V_winding2_turn_42]]
+        :type voltage: list[list[float]]
+        :param charge: Values to apply to each turn in each winding as charges. Example: [[Q_winding_1_turn_1, Q_winding_1_turn_2],
+         [Q_winding_2_turn_1, Q_winding_2_turn_2]]
+        :type charge: list[list[float]]
+        :param core_voltage: excite the core with a voltage
+        :type core_voltage: float
+        :param ground_outer_boundary: If True, ground the outer boundary. Defaults to False.
+        :type ground_outer_boundary: bool
+        :param plot_interpolation: If True, plot the interpolation between the provided values for the material.
+        :type plot_interpolation: bool
+        """
+        # prevent ground the core and induce a voltage to it in the same time
+        # if ground_core and core_voltage is not None:
+        #     raise ValueError("Cannot use 'ground_core=True' and 'core_potential' at the same time. Choose one.")
+
+        # Validate input
+        if voltage is None and charge is None:
+            raise ValueError("Either 'voltage_list' or 'charge_list' must be provided.")
+
+        if voltage is not None and charge is not None:
+            raise ValueError("Only one of 'voltage_list' or 'charge_list' should be provided, not both.")
+
+        # Determine excitation type and values
+        if voltage is not None:
+            excitation_type = 'voltage'
+            value_list = voltage
+        else:
+            excitation_type = 'charge'
+            value_list = charge
+
+        # Validate that value_list contains nested lists with the correct number of turns
+        if not isinstance(value_list, list) or not all(isinstance(inner_list, list) for inner_list in value_list):
+            raise ValueError(
+                f"{excitation_type.capitalize()} list should be a list of lists, where each inner list represents values for each turn in a winding.")
+
+        # Check that no negative voltages are provided if using voltage excitation
+        # if excitation_type == 'voltage':
+        #     for winding_voltages in value_list:
+        #         for voltage in winding_voltages:
+        #             if voltage < 0:
+        #                 raise ValueError("Negative voltages are not allowed in this setup. Please adjust the excitation accordingly.")
+
+        # Print excitation details
+        logger.info(f"\n---\n"
+                    f"Excitation: \n"
+                    f"{excitation_type.capitalize()} Excitation\n"
+                    f"Value(s): {value_list}\n")
+
+        # Set the excitation type (voltage or charge)
+        self.flag_excitation_type = excitation_type
+
+        # Update material permittivity for the electrostatic analysis if not custom defined
+        if self.core.permittivity["datasource"] != MaterialDataSource.Custom:
+            self.core.update_core_material_pro_file(0, self.file_data.electro_magnetic_folder_path,
+                                                    plot_interpolation)  # No frequency is used in electrostatics
+
+        # Apply the excitation to each turn in each winding
+        num_windings = len(self.windings)
+
+        if excitation_type == 'charge':
+            # Initialize charges with zero values
+            self.charge = [[0.0] * len(turns) for turns in value_list]
+            for winding_index in range(num_windings):
+                for turn_index in range(len(value_list[winding_index])):
+                    # Assign charge value to each turn in each winding
+                    self.charge[winding_index][turn_index] = value_list[winding_index][turn_index]
+        else:
+            # Initialize voltages with zero values
+            self.voltage = [[0.0] * len(turns) for turns in value_list]
+            for winding_index in range(num_windings):
+                for turn_index in range(len(value_list[winding_index])):
+                    # Assign voltage value to each turn in each winding
+                    self.voltage[winding_index][turn_index] = value_list[winding_index][turn_index]
+
+        # assign a voltage to the core
+        # self.v_core = core_voltage if core_voltage else None
+        self.v_core = core_voltage if core_voltage is not None else None
+
+        # Set grounding conditions for core and outer boundary
+        # self.v_ground_core = 0 if ground_core else None
+        self.v_ground_out_boundary = 0 if ground_outer_boundary else None
+
+        # Set reduced frequency as 0 for DC-like electrostatic setup
+        self.red_freq = [0 for _ in range(num_windings)]
+
+        logger.info("Electrostatic problem set up for excitation.")
+
     def simulate(self):
         """Initialize the onelab client. Provides the GetDP based solver with the created mesh file."""
-        self.femmt_print("\n---\n"
-                         "Initialize ONELAB API\n"
-                         "Run Simulation\n")
-        self.log_material_properties()
+        logger.info("Initialize ONELAB API")
+        logger.info("Run Simulation")
+        if not self.simulation_type == SimulationType.ElectroStatic:
+            self.log_material_properties()
 
         # -- Simulation --
         # create a new onelab client
@@ -1258,10 +1340,10 @@ class MagneticComponent:
         gmsh.clear()
 
         # get model file names with correct path
-
         solver_freq = os.path.join(self.file_data.electro_magnetic_folder_path, "ind_axi_python_controlled.pro")
         solver_time = os.path.join(self.file_data.electro_magnetic_folder_path, "ind_axi_python_controlled_time.pro")
-
+        solver_electrostatic = os.path.join(self.file_data.electro_magnetic_folder_path, "ind_axi_python_controlled_electrostatic.pro")
+        # solver_electrostatic = os.path.join(self.file_data.electro_magnetic_folder_path, "ind_axi_python_controlled_electrostatic_2.pro")
         os.chdir(self.file_data.working_directory)
 
         if self.verbosity == Verbosity.Silent:
@@ -1284,6 +1366,9 @@ class MagneticComponent:
                                             " -solve Analysis -pos Map_local  " + verbose + to_file_str)
             # self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file +
             # " -solve Analysis -v2 " + verbose) # freeing solutions
+        if self.simulation_type == SimulationType.ElectroStatic:
+            self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver_electrostatic + " -msh " + \
+                                            self.file_data.e_m_mesh_file + " -solve EleSta_v -v2 " + verbose + to_file_str)
 
     def write_simulation_parameters_to_pro_files(self):
         """
@@ -1296,8 +1381,7 @@ class MagneticComponent:
 
         """
         # All shared control variables and parameters are passed to a temporary Prolog file
-        self.femmt_print("\n---\n"
-                         "Write simulation parameters to .pro files (file communication).\n")
+        logger.info("Write simulation parameters to .pro files (file communication).")
 
         # Write initialization parameters for simulation in 'Parameter.pro' file
         self.write_electro_magnetic_parameter_pro()
@@ -1340,7 +1424,7 @@ class MagneticComponent:
             with open(os.path.join(os.path.join(self.file_data.e_m_mesh_file)), "w") as mesh_file:
                 mesh_file.write(mesh_data)
 
-    def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None,
+    def single_simulation(self, freq: float, current: list[float], phi_deg: list[float] = None,
                           plot_interpolation: bool = False, show_fem_simulation_results: bool = True,
                           benchmark: bool = False):
         """
@@ -1351,7 +1435,7 @@ class MagneticComponent:
         :type freq: float
         :param current: current to simulate
         :param phi_deg: phase angle in degree
-        :type phi_deg: List[float]
+        :type phi_deg: list[float]
         :param show_fem_simulation_results: Set to True to show the simulation results after the simulation has finished
         :type show_fem_simulation_results: bool
         :param benchmark: Benchmark simulation (stop time). Defaults to False.
@@ -1408,10 +1492,9 @@ class MagneticComponent:
             self.log_reluctance_and_inductance()
             if show_fem_simulation_results:
                 self.visualize()
-        self.femmt_print(f"The electromagnetic results are stored here: {self.file_data.e_m_results_log_path}")
+        logger.info(f"The electromagnetic results are stored here: {self.file_data.e_m_results_log_path}")
 
-    def time_domain_simulation(self, current_period_vec: List[List[float]], time_period_vec: List[float],
-                               number_of_periods: int,
+    def time_domain_simulation(self, current_period_vec: list[list[float]], time_period_vec: list[float], number_of_periods: int,
                                plot_interpolation: bool = False, show_fem_simulation_results: bool = True,
                                show_rolling_average: bool = True, rolling_avg_window_size: int = 5, benchmark: bool = False):
         """
@@ -1420,9 +1503,9 @@ class MagneticComponent:
         :param plot_interpolation: Plot interpolation for the used material between the given data from the material database
         :type plot_interpolation: bool
         :param current_period_vec: current to simulate in a vector for all windings.
-        :type current_period_vec: List[List[float]]
+        :type current_period_vec: list[list[float]]
         :param time_period_vec: time list
-        :type time_period_vec: List[float]
+        :type time_period_vec: list[float]
         :param number_of_periods: periods (1, 2, 3,...)
         :type number_of_periods: int
         :param show_fem_simulation_results: Set to True to show the simulation results after the simulation has finished
@@ -1481,13 +1564,93 @@ class MagneticComponent:
             if show_rolling_average:
                 self.get_rolling_average(window_size=rolling_avg_window_size)
 
-    def excitation_sweep(self, frequency_list: List, current_list_list: List, phi_deg_list_list: List,
+    def electrostatic_simulation(self, voltage: list[list[float]] = None, charge: list[list[float]] = None, core_voltage: float = None,
+                                 ground_outer_boundary: bool = False, plot_interpolation: bool = False,
+                                 show_fem_simulation_results: bool = True, benchmark: bool = False, save_to_excel_file: bool = False):
+        """
+        Start an electrostatic ONELAB simulation.
+
+        :param voltage: Voltage is a list of list, indicating a voltage of each turn in every winding.
+        :type voltage: list[list[float]].
+        :param charge: Charge is a list of list, indicating a voltage of each turn in every winding.
+        :type charge: list[list[float]].
+        :param core_voltage: assign a voltage to the core
+        :type core_voltage: float
+        :param ground_outer_boundary: default to false
+        :type ground_outer_boundary: bool
+        :param plot_interpolation: Plot interpolation for the used material between the given data from the material database
+        :type plot_interpolation: bool
+        :param show_fem_simulation_results: Set to True to show the simulation results after the simulation has finished
+        :type show_fem_simulation_results: bool
+        :param benchmark: Benchmark simulation (stop time). Defaults to False.
+        :type benchmark: bool
+        :param save_to_excel_file: Save the log to excel file.
+        :type save_to_excel_file: bool
+        """
+        # Check if the voltage list is valid
+        # Check if the voltage or charge is provided as a single list
+        if isinstance(voltage, list) and all(isinstance(v, (int, float)) for v in voltage):
+            raise ValueError("The 'voltage' parameter should be a list of lists, with each inner list representing voltages for each turn in a winding.")
+
+        if isinstance(charge, list) and all(isinstance(q, (int, float)) for q in charge):
+            raise ValueError("The 'charge' parameter should be a list of lists, with each inner list representing charges for each turn in a winding.")
+
+        if benchmark:
+            start_time = time.time()
+            self.mesh.generate_electro_magnetic_mesh()
+            generate_electro_magnetic_mesh_time = time.time() - start_time
+
+            start_time = time.time()
+            self.excitation_electrostatic(voltage=voltage, charge=charge, core_voltage=core_voltage,
+                                          ground_outer_boundary=ground_outer_boundary, plot_interpolation=plot_interpolation)
+            self.check_create_empty_material_log()
+            self.write_simulation_parameters_to_pro_files()
+            prepare_simulation_time = time.time() - start_time
+
+            start_time = time.time()
+            self.simulate()
+            real_simulation_time = time.time() - start_time
+
+            start_time = time.time()
+            self.calculate_and_write_electrostatic_log()
+            # Convert the log JSON file to Excel
+            if save_to_excel_file:
+                json_file_path = self.file_data.electrostatic_results_log_path
+                output_excel_path = os.path.splitext(json_file_path)[0] + ".xlsx"
+                ff.json_to_excel(json_file_path, output_excel_path)
+                logger.info(f"Data has been successfully written to {output_excel_path}")
+            logging_time = time.time() - start_time
+
+            if show_fem_simulation_results:
+                self.visualize()
+
+            return generate_electro_magnetic_mesh_time, prepare_simulation_time, real_simulation_time, logging_time
+        else:
+            self.mesh.generate_electro_magnetic_mesh()
+            self.excitation_electrostatic(voltage=voltage, charge=charge, core_voltage=core_voltage,
+                                          ground_outer_boundary=ground_outer_boundary, plot_interpolation=plot_interpolation)
+            self.write_simulation_parameters_to_pro_files()
+            self.simulate()
+            self.calculate_and_write_electrostatic_log()
+            # Convert the log JSON file to Excel
+            if save_to_excel_file:
+                json_file_path = self.file_data.electrostatic_results_log_path
+                output_excel_path = os.path.splitext(json_file_path)[0] + ".xlsx"
+                ff.json_to_excel(json_file_path, output_excel_path)
+                logger.info(f"Data has been successfully written to {output_excel_path}")
+
+            if show_fem_simulation_results:
+                self.visualize()
+
+        logger.info(f"The electrostatic results are stored here: {self.file_data.electrostatic_results_log_path}")
+
+    def excitation_sweep(self, frequency_list: list, current_list_list: list, phi_deg_list_list: list,
                          show_last_fem_simulation: bool = False,
                          excitation_meshing_type: ExcitationMeshingType = None, skin_mesh_factor: float = 0.5,
                          visualize_before: bool = False, save_png: bool = False,
-                         color_scheme: Dict = ff.colors_femmt_default,
-                         colors_geometry: Dict = ff.colors_geometry_femmt_default,
-                         inductance_dict: Dict = None, core_hyst_loss: List[float] | np.ndarray = None) -> None:
+                         color_scheme: dict = ff.colors_femmt_default,
+                         colors_geometry: dict = ff.colors_geometry_femmt_default,
+                         inductance_dict: dict = None, core_hyst_loss: list[float] | np.ndarray = None) -> None:
         """
         Perform a sweep simulation for frequency-current pairs.
 
@@ -1512,26 +1675,26 @@ class MagneticComponent:
         >>>     phi_deg_list_list=phase_list_list)
 
         :param frequency_list: Frequency in a list
-        :type frequency_list: List
+        :type frequency_list: list
         :param current_list_list: current amplitude, must be a list in a list, see example!
-        :type current_list_list: List
+        :type current_list_list: list
         :param phi_deg_list_list: phase in degree, must be a list in a list, see example!
-        :type phi_deg_list_list: List
+        :type phi_deg_list_list: list
         :param show_last_fem_simulation: shows last simulation in gmsh if set to True
         :type show_last_fem_simulation: bool
-        :param visualize_before: show genarated mesh before the simulation is run
+        :param visualize_before: show generated mesh before the simulation is run
         :type visualize_before: bool
         :param color_scheme: colorfile (definition for red, green, blue, ...)
-        :type color_scheme: Dict
-        :param colors_geometry: definition for e.g. core is grey, winding is orange, ...
-        :type colors_geometry: Dict
+        :type color_scheme: dict
+        :param colors_geometry: definition for e.g. core is gray, winding is orange, ...
+        :type colors_geometry: dict
         :param save_png: True to save a .png
         :type save_png: bool
         :param inductance_dict: result dictionary from get_inductances()-function
-        :type inductance_dict: Dict
-        :param core_hyst_loss: List with hysteresis list. If given, the hysteresis losses in this function be
+        :type inductance_dict: dict
+        :param core_hyst_loss: list with hysteresis list. If given, the hysteresis losses in this function be
             overwritten in the result log.
-        :type core_hyst_loss: List
+        :type core_hyst_loss: list
         :param excitation_meshing_type: MeshOnlyLowestFrequency / MeshOnlyHighestFrequency / MeshEachFrequency
         :type excitation_meshing_type: ExcitationMeshingType
         :param skin_mesh_factor: Define the fineness of the mesh
@@ -1612,14 +1775,14 @@ class MagneticComponent:
         if show_last_fem_simulation:
             self.write_simulation_parameters_to_pro_files()
             self.visualize()
-        self.femmt_print(f"The electromagnetic results are stored here: {self.file_data.e_m_results_log_path}")
+        logger.info(f"The electromagnetic results are stored here: {self.file_data.e_m_results_log_path}")
 
-    def component_study(self, time_current_vectors: List[List[List[float]]], fft_filter_value_factor: float = 0.01):
+    def component_study(self, time_current_vectors: list[list[list[float]]], fft_filter_value_factor: float = 0.01):
         """
         Full study for the component: inductance values and losses.
 
         :param time_current_vectors: ....
-        :type time_current_vectors: List[List[List[float]]]
+        :type time_current_vectors: list[list[list[float]]]
         :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all
             amplitudes below 1 % of the maximum amplitude from the result-frequency list
         :type fft_filter_value_factor: float
@@ -1693,7 +1856,7 @@ class MagneticComponent:
         self.excitation_sweep(frequency_list, current_list_list, phi_deg_list_list, inductance_dict=inductance_dict,
                               core_hyst_loss=p_hyst_core_parts)
 
-    def stacked_core_study_excitation(self, time_current_vectors: List[List[List[float]]], transfer_ratio_n: float,
+    def stacked_core_study_excitation(self, time_current_vectors: list[list[list[float]]], transfer_ratio_n: float,
                                       plot_waveforms: bool = False, fft_filter_value_factor: float = 0.01):
         """
         Generate the current waveforms needed for the stacked_core_study().
@@ -1702,7 +1865,7 @@ class MagneticComponent:
         The transfer_ratio_n is used to neglect the transformer loss part when the hysteresis loss part of the inductor is calculated.
 
         :param time_current_vectors: time-current vectors for primary and secondary, e.g. [[time, current_prim], [time, current_sec]]
-        :type time_current_vectors: List[List[List[float]]]
+        :type time_current_vectors: list[list[list[float]]]
         :param plot_waveforms: True to watch the pre-calculated waveforms
         :type plot_waveforms: bool
         :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all
@@ -1796,7 +1959,7 @@ class MagneticComponent:
         return stacked_core_study_excitation
 
     def stacked_core_study(self, number_primary_coil_turns: int,
-                           time_current_vectors: List[List[List[float]]],
+                           time_current_vectors: list[list[list[float]]],
                            plot_waveforms: bool = False, fft_filter_value_factor: float = 0.01) -> None:
         """
         Comprehensive component analysis for the 2 winding stacked transformers with dedicated choke.
@@ -1807,7 +1970,7 @@ class MagneticComponent:
             transformer losses without effect of the choke
         :type number_primary_coil_turns: int
                 :param time_current_vectors: time-current vectors for primary and secondary, e.g. [[time, current_prim], [time, current_sec]]
-        :type time_current_vectors: List[List[List[float]]]
+        :type time_current_vectors: list[list[list[float]]]
         :param plot_waveforms: True to watch the pre-calculated waveforms
         :type plot_waveforms: bool
         :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all
@@ -1816,7 +1979,7 @@ class MagneticComponent:
         """
         hyst_frequency, _, _ = ff.hysteresis_current_excitation(time_current_vectors)
         # get the inductance
-        inductance_dict = self.get_inductances(I0=1, skin_mesh_factor=1, op_frequency=hyst_frequency, silent=self.silent)
+        inductance_dict = self.get_inductances(I0=1, skin_mesh_factor=1, op_frequency=hyst_frequency, silent=self.is_onelab_silent)
 
         study_excitation = self.stacked_core_study_excitation(time_current_vectors, plot_waveforms=plot_waveforms,
                                                               fft_filter_value_factor=fft_filter_value_factor,
@@ -1876,8 +2039,8 @@ class MagneticComponent:
                               study_excitation["linear_losses"]["current_phases_deg"],
                               inductance_dict=inductance_dict, core_hyst_loss=p_hyst_core_parts)
 
-    def stacked_core_center_tapped_pre_study(self, time_current_vectors: List[List[List[float]]], plot_waveforms: bool = False,
-                                             fft_filter_value_factor: float = 0.01) -> Dict:
+    def stacked_core_center_tapped_pre_study(self, time_current_vectors: list[list[list[float]]], plot_waveforms: bool = False,
+                                             fft_filter_value_factor: float = 0.01) -> dict:
         """
         Generate the current waveforms needed for the stacked_core_center_tapped_study().
 
@@ -1886,14 +2049,14 @@ class MagneticComponent:
         inductance values and so on.
 
         :param time_current_vectors: time-current vectors for primary and secondary, e.g. [[time, current_prim], [time, current_sec]]
-        :type time_current_vectors: List[List[List[float]]]
+        :type time_current_vectors: list[list[list[float]]]
         :param plot_waveforms: True to watch the pre-calculated waveforms
         :type plot_waveforms: bool
         :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all
             amplitudes below 1 % of the maximum amplitude from the result-frequency list
         :type fft_filter_value_factor: float
         :return: new current waveform vector
-        :rtype: Dict
+        :rtype: dict
 
         return dict:
         center_tapped_study_excitation = {
@@ -1915,28 +2078,28 @@ class MagneticComponent:
             }
         }
         """
-        def split_hysteresis_loss_excitation_center_tapped(hyst_frequency: List, hyst_loss_amplitudes: List, hyst_loss_phases_deg: List):
+        def split_hysteresis_loss_excitation_center_tapped(hyst_frequency: list, hyst_loss_amplitudes: list, hyst_loss_phases_deg: list):
             """
             Split the last winding (2nd) peak current into half and add a 3rd winding with the same value.
 
             :param hyst_frequency: list with the fundamental frequency of core losses
-            :type hyst_frequency: List
+            :type hyst_frequency: list
             :param hyst_loss_amplitudes: amplitudes for all windings in a list
-            :type hyst_loss_amplitudes: List
+            :type hyst_loss_amplitudes: list
             :param hyst_loss_phases_deg: phases in degree for all windings in a list
-            :type hyst_loss_phases_deg: List
+            :type hyst_loss_phases_deg: list
             """
             hyst_loss_amplitudes[-1] = hyst_loss_amplitudes[-1] / 2
             hyst_loss_amplitudes.append(hyst_loss_amplitudes[-1])
             hyst_loss_phases_deg.append(hyst_loss_phases_deg[-1])
             return hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg
 
-        def split_time_current_vectors_center_tapped(time_current_vectors: List[List[List[float]]]):
+        def split_time_current_vectors_center_tapped(time_current_vectors: list[list[list[float]]]):
             """
             Split the given time-current vectors (primary and a common secondary) into primary, secondary and tertiary current.
 
             :param time_current_vectors: e.g. [[time_vec, i_primary_vec], [time_vec, i_secondary_vec]]
-            :type time_current_vectors: List[List[List[float]]]
+            :type time_current_vectors: list[list[list[float]]]
             """
             positive_secondary_current = np.copy(time_current_vectors[1][1])
             positive_secondary_current[positive_secondary_current < 0] = 0
@@ -2060,7 +2223,7 @@ class MagneticComponent:
         # get the inductance
         inductance_dict = self.get_inductances(I0=1, skin_mesh_factor=1,
                                                op_frequency=center_tapped_study_excitation["hysteresis"]["frequency"],
-                                               silent=self.silent)
+                                               silent=self.is_onelab_silent)
 
         # Initialize the hysteresis losses with zero
         # Note: To calculate the hysteresis losses, two steps are performed:
@@ -2097,7 +2260,6 @@ class MagneticComponent:
             # temperature=self.core.temperature, material_name=self.core.material, datasource="measurements",
             # datatype=mdb.MeasurementDataType.Steinmetz, measurement_setup="LEA_LK",interpolation_type="linear")
             # p_hyst_core_parts = factor_triangular_hysteresis_loss_iGSE(D=0.5, alpha=alpha_from_db) * p_hyst_core_parts
-            # print(f"{p_hyst_core_parts = }")
 
         # From here on, inductor losses are calculated
         # Therefore, the first done overwrite of inductor conductors is restored
@@ -2619,9 +2781,10 @@ class MagneticComponent:
                     f"Core saturation detected! B-field ({abs(b_field)} T) exceeds {saturation_threshold * 100}% of the saturation flux density"
                     f" ({saturation_flux_density} T).")
 
-            self.femmt_print(f"B-field: {b_field:.4f} T")
-            self.femmt_print(f"Flux: {total_flux:.4f} Wb")
-            self.femmt_print(f"Total Reluctance: {reluctance:.6e} A/Wb")
+            logger.info(f"Reluctance model pre-check:\n"
+                        f"    B-field: {b_field:.4f} T\n"
+                        f"    Flux: {total_flux:.4f} Wb\n"
+                        f"    Total Reluctance: {reluctance:.6e} A/Wb")
 
         else:
             # single core with stray path
@@ -2680,7 +2843,7 @@ class MagneticComponent:
                 ])
                 # Calculate flux matrix
                 flux_matrix = fr.calculate_flux_matrix(reluctance_matrix, winding_matrix, current_matrix)
-                print(flux_matrix)
+                logger.info(flux_matrix)
                 # Extract flux values from the flux matrix
                 flux_top = flux_matrix[0, 0]
                 flux_bot = flux_matrix[1, 0]
@@ -2714,16 +2877,16 @@ class MagneticComponent:
                         f"Core saturation detected in middle section! B-field ({abs(b_field_middle)} T) exceeds "
                         f"{saturation_threshold * 100}% of the saturation flux density ({saturation_flux_density} T).")
 
-                self.femmt_print(f"B-field Top: {b_field_top:.4f} T")
-                self.femmt_print(f"B-field Bottom: {b_field_bot:.4f} T")
-                self.femmt_print(f"B-field Middle: {b_field_middle:.4f} T")
+                logger.info(f"B-field Top: {b_field_top:.4f} T")
+                logger.info(f"B-field Bottom: {b_field_bot:.4f} T")
+                logger.info(f"B-field Middle: {b_field_middle:.4f} T")
             else:
                 if self.core.core_type == CoreType.Stacked or self.stray_path:
                     # Raise a warning if there are more than 2 windings in a stacked core with stray path
                     raise Warning("Warning: More than two windings detected in a stacked core with a stray path. "
                                   "This configuration is not fully supported.")
 
-        self.femmt_print("Reluctance model pre-check passed.")
+        logger.info("Reluctance model pre-check passed.")
 
     def get_inductance_from_reluctance(self):
         """
@@ -2764,8 +2927,8 @@ class MagneticComponent:
                         # Mutual inductance
                         inductance_matrix[i, j] = (turns_i * turns_j) / reluctance
             # Print the inductance matrix
-            self.femmt_print("Inductance Matrix from reluctance:")
-            self.femmt_print(f"{inductance_matrix}")
+            logger.info("Inductance Matrix from reluctance:")
+            logger.info(f"{inductance_matrix}")
             return inductance_matrix
         else:
             # Initialize the inductance matrix
@@ -2824,12 +2987,259 @@ class MagneticComponent:
                         # Mutual inductance
                         inductance_matrix[i, j] = (turns_i_top * turns_j_top / top_reluctance) + (turns_i_bottom * turns_j_bottom / bot_reluctance)
             # Print the inductance matrix
-            self.femmt_print("Inductance Matrix from reluctance:")
-            self.femmt_print(f"{inductance_matrix}")
+            logger.info("Inductance Matrix from reluctance:")
+            logger.info(f"{inductance_matrix}")
             return inductance_matrix
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-    # Post-Processing
+    # Post-Processing --- Capacitance extraction---
+    def get_capacitance_of_inductor_component(self, freq_for_mesh: float = 0.0, show_visual_outputs: bool = False, plot_interpolation: bool = False,
+                                              show_fem_simulation_results: bool = False, benchmark: bool = False, save_to_excel: bool = False):
+        """
+        Needed for finding parasitic capacitance of an inductor. A represent the first turn, B represents the last turn. e represents the core.
+
+        A--.------.---A
+           |      |
+           |      |
+           |      c1
+           |      |
+           |      |
+        B--|------.---B
+           |      |
+           c2     c3
+           |      |
+        E--.-----.----E
+
+        :param freq_for_mesh: the frequency is used here for generating the mesh
+        :type freq_for_mesh: float = 0.0
+        :param show_visual_outputs: show the electrostatic model before simulation
+        :type show_visual_outputs: bool, optional
+        :param plot_interpolation: if True, plot the interpolation between the provided values for the material.
+        :type plot_interpolation: bool
+        :param show_fem_simulation_results: if True, show the simulation results after the simulation has finished
+        :type show_fem_simulation_results: bool
+        :param benchmark: Benchmark simulation (stop time). Defaults to False.
+        :type benchmark: bool
+        :param save_to_excel: save the result to excel file.
+        :type save_to_excel: bool
+        """
+        potentials = ff.get_defined_potentials("inductor")
+        m = ff.generate_voltage_matrix("inductor", potentials)  # 3×3 matrix
+
+        # 2️⃣ Run simulations and collect energies
+        energies = []
+        self.simulation_type = SimulationType.ElectroStatic
+
+        num_turns = ff.get_number_of_turns_of_winding(self.winding_windows, self.windings, 0)
+
+        for idx, (A, B, E) in enumerate(potentials):
+            voltages = [ff.distribute_potential_linearly(A, B, num_turns)]
+            self.create_model(freq=freq_for_mesh,
+                              pre_visualize_geometry=show_visual_outputs,
+                              save_png=False,
+                              skin_mesh_factor=0.5)
+
+            self.electrostatic_simulation(
+                voltage=voltages,
+                core_voltage=E,
+                ground_outer_boundary=False,
+                plot_interpolation=plot_interpolation,
+                show_fem_simulation_results=show_fem_simulation_results,
+                benchmark=benchmark,
+                save_to_excel_file=save_to_excel
+            )
+
+            with open(self.file_data.electrostatic_results_log_path, "r") as f:
+                energy = json.load(f)["energy"]["stored_component"]
+            logger.info(f" → Stored Electrostatic Energy (case {idx + 1}): {energy:.4e} J")
+            energies.append(energy)
+
+        # 3️⃣ Solve for capacitance
+        c_vec = ff.solve_capacitance(m, np.array(energies))
+        logger.info("--- Capacitance Results ---")
+        labels = ["C(A‑B)", "C(A‑0)", "C(B‑0)"]
+
+        for lbl, val in zip(labels, c_vec):
+            logger.info(f"{lbl}: {val:.4e} F")
+
+        # 4️⃣ Compute total C_AB
+        c_ab, c_ae, c_be = c_vec
+        c_ab_stray = c_ab + (c_ae * c_be) / (c_ae + c_be)
+        logger.info(f"→ C_AB (incl. parasitic): {c_ab_stray:.4e} F")
+
+        return c_vec
+
+    def get_stray_capacitance_of_inductor_component(self, freq_for_mesh: float = 0.0, show_visual_outputs: bool = False, plot_interpolation: bool = False,
+                                                    show_fem_simulation_results: bool = True, benchmark: bool = False, save_to_excel: bool = False):
+        """
+        Compute the stray (parasitic) capacitance of an inductor via a single electrostatic simulation.
+
+         Assumes a 1V potential applied across the windings. The effect of the core is ignored.
+         :param freq_for_mesh: the frequency is used here for generating the mesh
+        :type freq_for_mesh: float = 0.0
+        :param show_visual_outputs: show the electrostatic model before simulation
+        :type show_visual_outputs: bool, optional
+        :param plot_interpolation: if True, plot the interpolation between the provided values for the material.
+        :type plot_interpolation: bool
+        :param show_fem_simulation_results: if True, show the simulation results after the simulation has finished
+        :type show_fem_simulation_results: bool
+        :param benchmark: Benchmark simulation (stop time). Defaults to False.
+        :type benchmark: bool
+        :param save_to_excel: save the result to excel file.
+        :type save_to_excel: bool
+        """
+        # Define terminal voltages for the simulation
+        v_a = 1
+        v_b = 0
+
+        # Set the simulation type to ElectroStatic
+        self.simulation_type = SimulationType.ElectroStatic
+
+        # Number of turns (assumes one winding)
+        winding_index = 0
+        num_turns = ff.get_number_of_turns_of_winding(self.winding_windows, self.windings, winding_index)
+
+        # Linear voltage distribution from V_A to V_B across the turns
+        winding_voltages = [v_a - (v_a - v_b) * j / (num_turns - 1) for j in range(num_turns)]
+
+        # Format the voltages for FEMMT
+        voltages = [winding_voltages]
+        self.create_model(freq=freq_for_mesh, pre_visualize_geometry=show_visual_outputs, save_png=False, skin_mesh_factor=0.5)
+        # Run the electrostatic FEM simulation
+        self.electrostatic_simulation(
+            voltage=voltages,
+            core_voltage=None,
+            ground_outer_boundary=False,
+            plot_interpolation=plot_interpolation,
+            show_fem_simulation_results=show_fem_simulation_results,
+            benchmark=benchmark,
+            save_to_excel_file=save_to_excel
+        )
+
+        # Retrieve stored electrostatic energy from the log
+        log_path = self.file_data.electrostatic_results_log_path
+        with open(log_path, "r", encoding='utf-8') as f:
+            log = json.load(f)
+        energy = log["energy"]["stored_component"]
+
+        logger.info(f"  → Stored Electrostatic Energy: {energy:.4e} J")
+
+        # Compute stray capacitance using: C = 2W / (V^2), with V = 1V ⇒ C = 2W
+        c_ab_stray = 2 * energy
+
+        logger.info("\n--- Capacitance Results ---")
+        logger.info(f"→ Total C_AB: {c_ab_stray:.4e} F")
+
+        return c_ab_stray
+
+    def get_capacitance_of_transformer(self, freq_for_mesh: float = 0.0, c_meas_open: float | None = None,
+                                       c_meas_short: float | None = None, measured_capacitances: tuple | list | None = None,
+                                       flip_the_sec_terminal: bool = False, show_visual_outputs: bool = False, plot_interpolation: bool = False,
+                                       show_fem_simulation_results: bool = False, benchmark: bool = False, save_to_excel: bool = False,
+                                       show_plot_comparison: bool = True):
+        r"""
+        Get 10 parasitic capacitance of a transformer.
+
+        Perform 10 electrostatic simulations and calculate the 10 parasitic capacitance through W = 0.5 CV^2.
+
+        A--.------.-----c4--------.------.------C
+           |      |  \          / |      |
+           |      |    c5   c6    |      |
+           |      c1     \/       c2     |
+           |      |     /    \    |      |
+           |      |  /         \  |      |
+        B--|------.-----c3--------.------|------D
+           |      |               |      |
+           c7     c8              c10    c9
+           |      |               |      |
+        E--.-----.-----------------------.------E
+
+        The result can be compared to the results obtain from the measurement.
+
+         :param freq_for_mesh: the frequency is used here for generating the mesh
+        :type freq_for_mesh: float = 0.0
+        :param c_meas_open: measured open-circuit capacitance provided by the user.
+        :type c_meas_open: float
+        :param c_meas_short: measured short-circuit capacitance provided by the user.
+        :type c_meas_short: float
+        :param measured_capacitances: measured 10 capacitances provided by the user.
+        :type measured_capacitances: float
+        :param flip_the_sec_terminal: flip the terminal C and D of the secondary.
+        :type flip_the_sec_terminal: bool
+        :param show_visual_outputs: show the electrostatic model before simulation
+        :type show_visual_outputs: bool, optional
+        :param plot_interpolation: if True, plot the interpolation between the provided values for the material.
+        :type plot_interpolation: bool
+        :param show_fem_simulation_results: if True, show the simulation results after the simulation has finished
+        :type show_fem_simulation_results: bool
+        :param benchmark: Benchmark simulation (stop time). Defaults to False.
+        :type benchmark: bool
+        :param save_to_excel: save the result to excel file.
+        :type save_to_excel: bool
+        :param show_plot_comparison: compare between the simulation and measurement results.
+        :type show_plot_comparison: bool
+        """
+        potentials = ff.get_defined_potentials('transformer')
+        m = ff.generate_voltage_matrix("transformer", potentials, flip_the_sec_terminal)
+
+        w_e = []  # Electrostatic energies for each case
+        # Set the simulation type to ElectroStatic before running the open-circuit simulations
+        self.simulation_type = SimulationType.ElectroStatic
+        # Get number of turns for both windings
+        num_turns_w1 = ff.get_number_of_turns_of_winding(self.winding_windows, self.windings, 0)
+        num_turns_w2 = ff.get_number_of_turns_of_winding(self.winding_windows, self.windings, 1)
+        # Run electrostatic simulation
+        for i, (A, B, C, D) in enumerate(potentials):
+            # Interpolate voltages across both windings
+            voltages_winding_1 = ff.distribute_potential_linearly(A, B, num_turns_w1)
+            voltages_winding_2 = ff.distribute_potential_linearly(C, D, num_turns_w2)
+            # Run electrostatic simulation
+            self.create_model(freq=freq_for_mesh, pre_visualize_geometry=show_visual_outputs, save_png=False, skin_mesh_factor=0.5)
+            self.electrostatic_simulation(
+                voltage=[voltages_winding_1, voltages_winding_2],
+                core_voltage=0,
+                ground_outer_boundary=False,
+                plot_interpolation=plot_interpolation,
+                show_fem_simulation_results=show_fem_simulation_results,
+                benchmark=benchmark,
+                save_to_excel_file=save_to_excel
+            )
+            # Read energy log
+            log_path = self.file_data.electrostatic_results_log_path
+            with open(log_path, "r", encoding="utf-8") as f:
+                log = json.load(f)
+                energy = log["energy"]["stored_component"]
+
+            logger.info(f"  → Stored Electrostatic Energy (Scenario {i + 1}): {energy:.4e} J")
+            w_e.append(energy)
+
+        c_vec = ff.solve_capacitance(m, np.array(w_e))
+        logger.info("\n--- Capacitance Coefficients (Transformer) ---")
+        for idx, c_val in enumerate(c_vec):
+            logger.info(f"C[{idx + 1}]: {c_val:.4e} F")
+
+        # ------------------------------------------------------------------
+        # 0) internal mapping of the 10 connection sums
+        # ------------------------------------------------------------------
+        if measured_capacitances is not None:
+            ff.compare_and_plot_connection_capacitance_of_transformer(c_vec, measured_capacitance=measured_capacitances, show_plot=show_plot_comparison)
+        # ------------------------------------------------------------------
+        # 1) open circuit capacitance
+        # ------------------------------------------------------------------
+        c_sim_open = ff.get_open_circuit_capacitance(c_vec=c_vec, num_turns_w1=num_turns_w1, num_turns_w2=num_turns_w2)
+        logger.info(f"\n→ Calculated Open Capacitance (C_sim_open): {c_sim_open:.4e} F")
+        # ------------------------------------------------------------------
+        # 2) short circuit capacitance
+        # ------------------------------------------------------------------
+        c_sim_short = ff.get_short_circuit_capacitance(c_vec=c_vec)
+        logger.info(f"\n→ Calculated short Capacitance (C_sim_short): {c_sim_short:.4e} F")
+
+        # comparison
+        if show_plot_comparison and (c_meas_open is not None or c_meas_short is not None):
+            ff.plot_open_and_short_comparison(c_sim_open, c_sim_short, c_meas_open, c_meas_short)
+
+        return c_vec
+
     def get_inductances(self, I0: float, op_frequency: float = 0, skin_mesh_factor: float = 1,
                         visualize_last_fem_simulation: bool = False, silent: bool = False, compare_with_inductance_from_reluctance: bool = False):
         """
@@ -2881,17 +3291,14 @@ class MagneticComponent:
             inductance_matrix = ff.get_inductance_matrix(self_inductances, mean_coupling_factors, coupling_matrix)
 
             if not silent:
-                ff.visualize_self_inductances(self_inductances, flux_linkages, silent=self.silent)
-                ff.visualize_self_resistances(self_inductances, flux_linkages, op_frequency, silent=self.silent)
-                ff.visualize_flux_linkages(flux_linkages, silent=self.silent)
+                ff.visualize_self_inductances(self_inductances, flux_linkages)
+                ff.visualize_self_resistances(self_inductances, flux_linkages, op_frequency)
+                ff.visualize_flux_linkages(flux_linkages)
                 # visualize_coupling_factors(coupling_matrix)
-                ff.visualize_mean_coupling_factors(mean_coupling_factors, silent=self.silent)
+                ff.visualize_mean_coupling_factors(mean_coupling_factors)
                 # visualize_mean_mutual_inductances(inductance_matrix)
                 # visualize_mutual_inductances(self_inductances, coupling_matrix)
-                ff.visualize_inductance_matrix(inductance_matrix, silent=self.silent)
-                # print(np.array(inductance_matrix).real)
-                # print("")
-                # print(np.array(inductance_matrix).imag)
+                ff.visualize_inductance_matrix(inductance_matrix)
                 # Read the inductance matrix from the log file
             if compare_with_inductance_from_reluctance:
                 # Extract the real part of the inductance matrix using the existing visualization function
@@ -2913,8 +3320,8 @@ class MagneticComponent:
                             inductance_matrix_log[i, j] = log_data["inductance_matrix_from_reluctance"].get(label, 0)
 
                     # Print the inductance matrix from reluctance
-                    print("\nInductance Matrix from Reluctance Calculation:")
-                    ff.visualize_inductance_matrix(inductance_matrix_log, silent=silent)
+                    logger.info("\nInductance Matrix from Reluctance Calculation:")
+                    ff.visualize_inductance_matrix(inductance_matrix_log)
 
                     # Prepare data for plotting
                     labels = []
@@ -2958,7 +3365,7 @@ class MagneticComponent:
                     plt.show()
 
                 else:
-                    print(f"Log file not found at {log_file_path}. Skipping comparison.")
+                    logger.info(f"Log file not found at {log_file_path}. Skipping comparison.")
 
         if len(self.windings) == 2:
             # Self inductances. Only real parts are taken into account, this is for the LOSSLESS equivalent circuit.
@@ -2976,16 +3383,16 @@ class MagneticComponent:
             self.L_s_conc = (1 - k ** 2) * self.L_1_1
             self.L_h_conc = self.M ** 2 / self.L_2_2
 
-            self.femmt_print(f"\n"
-                             f"Lossless T-ECD (primary side concentrated):\n"
-                             f"[Under-determined System: n := M / L_2_2  -->  L_s2 = L_2_2 - M / n = 0]\n"
-                             f"    - Transformation Ratio: n\n"
-                             f"    - (Primary) Stray Inductance: L_s1\n"
-                             f"    - Primary Side Main Inductance: L_h\n"
-                             f"n := M / L_2_2 = k * Sqrt(L_1_1 / L_2_2) = {self.n_conc}\n"
-                             f"L_s1 = (1 - k^2) * L_1_1 = {self.L_s_conc}\n"
-                             f"L_h = M^2 / L_2_2 = k^2 * L_1_1 = {self.L_h_conc}\n"
-                             )
+            logger.info(f"\n"
+                        f"Lossless T-ECD (primary side concentrated):\n"
+                        f"[Under-determined System: n := M / L_2_2  -->  L_s2 = L_2_2 - M / n = 0]\n"
+                        f"    - Transformation Ratio: n\n"
+                        f"    - (Primary) Stray Inductance: L_s1\n"
+                        f"    - Primary Side Main Inductance: L_h\n"
+                        f"n := M / L_2_2 = k * Sqrt(L_1_1 / L_2_2) = {self.n_conc}\n"
+                        f"L_s1 = (1 - k^2) * L_1_1 = {self.L_s_conc}\n"
+                        f"L_h = M^2 / L_2_2 = k^2 * L_1_1 = {self.L_h_conc}\n"
+                        )
 
             inductance = TransformerInductance(
                 l_h_conc=self.L_h_conc,
@@ -3022,26 +3429,26 @@ class MagneticComponent:
             self.L_s13 = self.L_s1 + self.n_13 ** 2 * self.L_s3
             self.L_s23 = self.L_s2 + (self.n_13 / self.n_12) ** 2 * self.L_s3
 
-            self.femmt_print(f"\n"
-                             f"Lossless T-ECD (Lh on primary side):\n"
-                             f"    - Primary Side Stray Inductance: L_s1\n"
-                             f"    - Secondary Side Stray Inductance: L_s2\n"
-                             f"    - Tertiary Side Stray Inductance: L_s3\n"
-                             f"    - Transformation Ratio with respect to the primary and the Secondary: n2\n"
-                             f"    - Transformation Ratio with respect to the primary and the Tertiary: n3\n"
-                             f"    - Primary Side Main Inductance: L_h\n"
-                             f"L_s1 = L_1_1 - M_12 * M_13 / M_23 = {self.L_s1}\n"
-                             f"L_s2 = L_2_2 - M_12 * M_23 / M_13 = {self.L_s2}\n"
-                             f"L_s3 = L_3_3 - M_13 * M_23 / M_12 = {self.L_s3}\n"
-                             f"n_12 = np.sqrt(self.L_1_1/self.L_2_2) = {self.n_12}\n"
-                             f"n_13 = np.sqrt(self.L_1_1/self.L_3_3) = {self.n_13}\n"
-                             f"n_23 = np.sqrt(self.L_2_2/self.L_3_3) = {self.n_23}\n"
-                             f"L_h = M_12 * M_13 / M_23 = {self.L_h}\n\n"
-                             f"Shortcut Inductances L_snm measured on winding n with short applied to winding m\n"
-                             f"L_s12 = L_s1 + n_12**2 * L_s2 = {self.L_s12}\n"
-                             f"L_s13 = L_s1 + n_13**2 * L_s3 = {self.L_s13}\n"
-                             f"L_s23 = L_s2 + (n_13/n_12)**2 * L_s3 = {self.L_s23}\n"
-                             )
+            logger.info(f"\n"
+                        f"Lossless T-ECD (Lh on primary side):\n"
+                        f"    - Primary Side Stray Inductance: L_s1\n"
+                        f"    - Secondary Side Stray Inductance: L_s2\n"
+                        f"    - Tertiary Side Stray Inductance: L_s3\n"
+                        f"    - Transformation Ratio with respect to the primary and the Secondary: n2\n"
+                        f"    - Transformation Ratio with respect to the primary and the Tertiary: n3\n"
+                        f"    - Primary Side Main Inductance: L_h\n"
+                        f"L_s1 = L_1_1 - M_12 * M_13 / M_23 = {self.L_s1}\n"
+                        f"L_s2 = L_2_2 - M_12 * M_23 / M_13 = {self.L_s2}\n"
+                        f"L_s3 = L_3_3 - M_13 * M_23 / M_12 = {self.L_s3}\n"
+                        f"n_12 = np.sqrt(self.L_1_1/self.L_2_2) = {self.n_12}\n"
+                        f"n_13 = np.sqrt(self.L_1_1/self.L_3_3) = {self.n_13}\n"
+                        f"n_23 = np.sqrt(self.L_2_2/self.L_3_3) = {self.n_23}\n"
+                        f"L_h = M_12 * M_13 / M_23 = {self.L_h}\n\n"
+                        f"Shortcut Inductances L_snm measured on winding n with short applied to winding m\n"
+                        f"L_s12 = L_s1 + n_12**2 * L_s2 = {self.L_s12}\n"
+                        f"L_s13 = L_s1 + n_13**2 * L_s3 = {self.L_s13}\n"
+                        f"L_s23 = L_s2 + (n_13/n_12)**2 * L_s3 = {self.L_s23}\n"
+                        )
 
             inductances = ThreeWindingTransformerInductance(
                 M_12=self.M_12,
@@ -3128,44 +3535,53 @@ class MagneticComponent:
             text_file.write("Flag_Time_Domain = 1;\n")
             text_file.write("Flag_Freq_Domain = 0;\n")
             text_file.write("Flag_Static = 0;\n")
+        if self.simulation_type == SimulationType.ElectroStatic:
+            text_file.write("Flag_Static = 1;\n")
+            text_file.write("Flag_Freq_Domain = 0;\n")
+            text_file.write("Flag_Time_Domain = 0;\n")
 
-        # Frequency
-        text_file.write("Freq = %s;\n" % self.frequency)
-        text_file.write(f"delta = {self.delta};\n")
+        # Airgap number
+        if self.simulation_type == SimulationType.ElectroStatic:
+            text_file.write("n_airgaps = {};\n".format(len(self.air_gaps.midpoints)))
 
-        # Core Loss
-        text_file.write(f"Flag_Steinmetz_loss = {self.core.steinmetz_loss};\n")
-        text_file.write(f"Flag_Generalized_Steinmetz_loss = {self.core.generalized_steinmetz_loss};\n")
+            # Frequency
+        if not self.simulation_type == SimulationType.ElectroStatic:
+            text_file.write("Freq = %s;\n" % self.frequency)
+            text_file.write(f"delta = {self.delta};\n")
 
-        if self.core.sigma != 0 and self.core.sigma is not None:
-            text_file.write("Flag_Conducting_Core = 1;\n")
-            if isinstance(self.core.sigma, str):
-                # TODO: Make following definition general
-                # self.core.sigma = 2 * np.pi * self.frequency * epsilon_0 * f_N95_er_imag(f=self.frequency) + 1 / 6
-                self.core.sigma = 1 / 6
-            text_file.write(f"sigma_core = {self.core.sigma.real};\n")
-            text_file.write(f"sigma_core_imag = {self.core.sigma.imag};\n")
-        else:
-            text_file.write("Flag_Conducting_Core = 0;\n")
+            # Core Loss
+            text_file.write(f"Flag_Steinmetz_loss = {self.core.steinmetz_loss};\n")
+            text_file.write(f"Flag_Generalized_Steinmetz_loss = {self.core.generalized_steinmetz_loss};\n")
 
-        if self.core.steinmetz_loss:
-            text_file.write(f"ki = {self.core.ki};\n")
-            text_file.write(f"alpha = {self.core.alpha};\n")
-            text_file.write(f"beta = {self.core.beta};\n")
-        if self.core.generalized_steinmetz_loss:
-            text_file.write(f"t_rise = {self.t_rise};\n")
-            text_file.write(f"t_fall = {self.t_fall};\n")
-            text_file.write(f"f_switch = {self.f_switch};\n")
-        # time domain parameters
-        if self.simulation_type == SimulationType.TimeDomain:
-            text_file.write(f"T = {self.time_period};\n")
-            text_file.write(f"time0 = {self.initial_time};\n")
-            text_file.write(f"timemax = {self.max_time};\n")
-            text_file.write(f"NbStepsPerPeriod = {self.nb_steps_per_period};\n")
-            text_file.write(f"NbSteps = {self.nb_steps};\n")
-            text_file.write(f"delta_t = {self.step_time};\n")
-            time_values_str = ', '.join(map(str, self.time))
-            text_file.write(f"TimeList = {{{time_values_str}}};\n")  # TimeList is interpolated with current lists in the solver
+            if self.core.sigma != 0 and self.core.sigma is not None:
+                text_file.write("Flag_Conducting_Core = 1;\n")
+                if isinstance(self.core.sigma, str):
+                    # TODO: Make following definition general
+                    # self.core.sigma = 2 * np.pi * self.frequency * epsilon_0 * f_N95_er_imag(f=self.frequency) + 1 / 6
+                    self.core.sigma = 1 / 6
+                text_file.write(f"sigma_core = {self.core.sigma.real};\n")
+                text_file.write(f"sigma_core_imag = {self.core.sigma.imag};\n")
+            else:
+                text_file.write("Flag_Conducting_Core = 0;\n")
+
+            if self.core.steinmetz_loss:
+                text_file.write(f"ki = {self.core.ki};\n")
+                text_file.write(f"alpha = {self.core.alpha};\n")
+                text_file.write(f"beta = {self.core.beta};\n")
+            if self.core.generalized_steinmetz_loss:
+                text_file.write(f"t_rise = {self.t_rise};\n")
+                text_file.write(f"t_fall = {self.t_fall};\n")
+                text_file.write(f"f_switch = {self.f_switch};\n")
+            # time domain parameters
+            if self.simulation_type == SimulationType.TimeDomain:
+                text_file.write(f"T = {self.time_period};\n")
+                text_file.write(f"time0 = {self.initial_time};\n")
+                text_file.write(f"timemax = {self.max_time};\n")
+                text_file.write(f"NbStepsPerPeriod = {self.nb_steps_per_period};\n")
+                text_file.write(f"NbSteps = {self.nb_steps};\n")
+                text_file.write(f"delta_t = {self.step_time};\n")
+                time_values_str = ', '.join(map(str, self.time))
+                text_file.write(f"TimeList = {{{time_values_str}}};\n")  # TimeList is interpolated with current lists in the solver
 
         # Conductor specific definitions
         for winding_number in range(len(self.windings)):
@@ -3192,6 +3608,13 @@ class MagneticComponent:
             else:
                 text_file.write(f"NbrCond_{winding_number + 1} = {turns};\n")
                 text_file.write(f"AreaCell_{winding_number + 1} = {self.windings[winding_number].a_cell};\n")
+
+            # relative permittivity
+            # Turn insulation is not implemented yet for RectangularSolid
+            if self.windings[winding_number].conductor_type == ConductorType.RectangularSolid:
+                text_file.write(f"er_turns_insulation_{winding_number + 1} = 1.0;\n")
+            else:
+                text_file.write(f"er_turns_insulation_{winding_number + 1} = {self.insulation.er_turn_insulation[winding_number]};\n")
 
             # For stranded Conductors:
             # text_file.write(f"NbrstrandedCond = {self.turns};\n")  # redundant
@@ -3225,16 +3648,38 @@ class MagneticComponent:
                 text_file.write(f"Val_EE_{winding_number + 1} = {self.current_density[winding_number]};\n")
                 raise NotImplementedError
 
-            if self.flag_excitation_type == 'voltage':
-                text_file.write(f"Val_EE_{winding_number + 1} = {self.voltage[winding_number]};\n")
-                raise NotImplementedError
+            if self.simulation_type == SimulationType.ElectroStatic:
+                if self.voltage is not None:
+                    text_file.write("Flag_voltage = 1;\n")
+                    text_file.write("Flag_charge = 0;\n")
+                    turns = self.voltage[winding_number]
+                    for turn_index, voltage_value in enumerate(turns):
+                        text_file.write(f"Voltage_{winding_number + 1}_{turn_index + 1} = {voltage_value};\n")
+                elif self.charge is not None:
+                    text_file.write("Flag_charge = 1;\n")
+                    text_file.write("Flag_voltage = 0;\n")
+                    turns = self.charge[winding_number]
+                    for turn_index, charge_value in enumerate(turns):
+                        text_file.write(f"Charge_{winding_number + 1}_{turn_index + 1} = {charge_value};\n")
 
-            self.femmt_print(f"Cell surface area: {self.windings[winding_number].a_cell} \n"
-                             f"Reduced frequency: {self.red_freq[winding_number]}")
+                if self.v_core is not None:
+                    text_file.write("v_core = {};\n".format(self.v_core))
+                    text_file.write("Flag_excite_core = 1;\n")
+                else:
+                    text_file.write("Flag_excite_core = 0;\n")
+
+                if self.v_ground_out_boundary == 0:
+                    text_file.write("Flag_ground_OutBoundary = 1;\n")
+                    text_file.write("v_ground_OutBoundary = 0;\n")
+                else:
+                    text_file.write("Flag_ground_OutBoundary = 0;\n")
+
+            logger.info(f"Cell surface area: {self.windings[winding_number].a_cell}, "
+                        f"Reduced frequency: {self.red_freq[winding_number]}")
 
             if self.red_freq[winding_number] > self.max_reduced_frequency and self.windings[winding_number].conductor_type == ConductorType.RoundLitz:
                 # TODO: Allow higher reduced frequencies
-                self.femmt_print(f"Litz Coefficients only implemented for X<={self.max_reduced_frequency}")
+                logger.info(f"Litz Coefficients only implemented for X<={self.max_reduced_frequency}")
                 raise Warning("Reduced frequency exceeds limit for Litz Coefficients.")
             # Reduced Frequency
             text_file.write(f"Rr_{winding_number + 1} = {self.red_freq[winding_number]};\n")
@@ -3249,6 +3694,11 @@ class MagneticComponent:
         text_file.write("mu0 = 4.e-7 * Pi;\n")
         text_file.write("nu0 = 1 / mu0;\n")
         text_file.write(f"e0 = {epsilon_0};\n")
+        if self.insulation.er_layer_insulation is not None:
+            text_file.write(f"er_layer_insulation = {self.insulation.er_layer_insulation};\n")
+        else:
+            text_file.write("er_layer_insulation = 1.0;\n")
+        text_file.write(f"er_bobbin = {self.insulation.er_bobbin};\n")
 
         # Material Properties
 
@@ -3301,9 +3751,28 @@ class MagneticComponent:
         text_file.write(f"DirResVals = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/\";\n")
         text_file.write(
             f"DirResValsCore = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/core_parts/\";\n")
+        text_file.write(
+            f"DirResValsCapacitance = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Capacitance/\";\n")
         for i in range(1, len(self.windings) + 1):
             text_file.write(
                 f"DirResValsWinding_{i} = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Winding_{i}/\";\n")
+            text_file.write(
+                f"DirResValsCharge_{i} = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Winding_{i}/Charges/\";\n"
+            )
+            text_file.write(
+                f"DirResValsVoltage_{i} = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Winding_{i}/Voltages/\";\n"
+            )
+            text_file.write(
+                f"DirResValsCapacitanceFromQV_{i} = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Winding_{i}/Capacitance_From_QV/\";\n"
+            )
+            turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                      winding_number=i - 1)
+            # Write directories for each turn within the respective capacitance folder
+            for turn in range(1, turns + 1):
+
+                text_file.write(
+                    f"DirResValsTurn_{turn} = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Capacitance/Turn_{turn}/\";\n"
+                )
             # text_file.write(f"DirResValsSecondary = \
             # "{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Secondary/\";\n")
             # text_file.write(f"DirResValsTertiary = \
@@ -3313,7 +3782,7 @@ class MagneticComponent:
         text_file.write(
             f"DirStrandCoeff = \"{self.file_data.e_m_strands_coefficients_folder_path.replace(backslash, '/')}/\";\n")
 
-        # Visualisation
+        # visualization
         if self.plot_fields == "standard":
             text_file.write("Flag_show_standard_fields = 1;\n")
         else:
@@ -3321,9 +3790,9 @@ class MagneticComponent:
 
         text_file.close()
 
-    def calculate_and_write_freq_domain_log(self, number_frequency_simulations: int = 1, current_amplitude_list: List = None,
-                                            phase_deg_list: List = None, frequencies: List = None,
-                                            core_hyst_losses: List[float] = None, inductance_dict: Optional[List] = None):
+    def calculate_and_write_freq_domain_log(self, number_frequency_simulations: int = 1, current_amplitude_list: list = None,
+                                            phase_deg_list: list = None, frequencies: list = None,
+                                            core_hyst_losses: list[float] = None, inductance_dict: list | None = None):
         """
         Read back the results from the .dat result files created by the ONELAB simulation client.
 
@@ -3353,9 +3822,9 @@ class MagneticComponent:
         :param core_hyst_losses: Optional core hysteresis losses value from another simulation. If a value is given,
             the external value is used in the result-log. Otherwise, the hysteresis losses of the
             fundamental frequency is used
-        :type core_hyst_losses: List[float]
+        :type core_hyst_losses: list[float]
         :param inductance_dict: Given inductance dictionary to write to the result log.
-        :type inductance_dict: Dict
+        :type inductance_dict: dict
         """
         fundamental_index = 0  # index of the fundamental frequency
 
@@ -3545,7 +4014,7 @@ class MagneticComponent:
         log_dict["total_losses"]["eddy_core"] = sum(
             log_dict["single_sweeps"][d]["core_eddy_losses"] for d in range(len(log_dict["single_sweeps"])))
 
-        if isinstance(core_hyst_losses, List) or isinstance(core_hyst_losses, np.ndarray):
+        if isinstance(core_hyst_losses, list) or isinstance(core_hyst_losses, np.ndarray):
             # overwrite the hysteresis losses for each core part
             # Note: This generation MUST BE before summing up the total core losses
             # 1. set all hysteresis losses for all frequencies to zero
@@ -3607,12 +4076,12 @@ class MagneticComponent:
         with open(self.file_data.e_m_results_log_path, "w+", encoding='utf-8') as outfile:
             json.dump(final_log_dict, outfile, indent=2, ensure_ascii=False)
 
-    def calculate_and_write_time_domain_log(self, inductance_dict: Optional[List] = None):
+    def calculate_and_write_time_domain_log(self, inductance_dict: list | None = None):
         """
         Process and log the results of time domain simulations.
 
         :param inductance_dict: Given inductance dictionary to write to the result log.
-        :type inductance_dict: Dict
+        :type inductance_dict: dict
 
         Reads back the results from the simulation output files and stores them in a JSON format.
         The log includes detailed information about each time step of the simulation, as well as average and total losses.
@@ -3877,17 +4346,112 @@ class MagneticComponent:
 
         # ---- Print current configuration ----
         log_dict["simulation_settings"] = MagneticComponent.encode_settings(self)
-        if isinstance(inductance_dict, Dict):
+        if isinstance(inductance_dict, dict):
             log_dict["inductances"] = inductance_dict
 
         return log_dict
 
-    def read_log(self) -> Dict:
+    def calculate_and_write_electrostatic_log(self):
+        """
+        Extract data from the electrostatic simulation and write it into a log file.
+
+        This file includes:
+         * charge
+         * energy stored in air and component
+         * average voltages on the core
+         * calculated capacitance between winding turns and between different windings
+
+        """
+        log_dict = {"charges": {}, "energy": {}, "average_voltages": {}, "capacitances": {}}
+
+        # Extract charge and energy
+        values_folder = self.file_data.e_m_values_folder_path
+
+        log_dict["charges"] = self.load_result("charge_Air", res_type="value", last_n=1)[0]
+        log_dict["energy"]["stored_air"] = self.load_result("Energy_Stored_Air", res_type="value", last_n=1)[0]
+        log_dict["energy"]["stored_core"] = self.load_result("Energy_Stored_Core", res_type="value", last_n=1)[0]
+        log_dict["average_voltages"]["core"] = self.load_result("Avg_Core_voltage", res_type="circuit", last_n=1)[0]
+        log_dict["energy"]["stored_component"] = self.load_result("Energy_Stored_Component", res_type="value", last_n=1)[0]
+
+        # Extract capacitance data
+        capacitance_folder = os.path.join(values_folder, "Capacitance")
+        log_dict["capacitances"] = {"within_winding": {}, "between_windings": {}, "between_turns_core": {}}
+
+        for winding_number in range(len(self.windings)):
+            turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                      winding_number=winding_number)
+            winding_name = f"Winding_{winding_number + 1}"
+            log_dict["capacitances"]["within_winding"][winding_name] = {}
+
+            # Capacitance between turns within the same winding
+            for turn1 in range(1, turns + 1):
+                turn_key = f"Turn_{turn1}"
+                if turn_key not in log_dict["capacitances"]["within_winding"][winding_name]:
+                    log_dict["capacitances"]["within_winding"][winding_name][turn_key] = {}
+                for turn2 in range(1, turns + 1):
+                    if turn1 != turn2:
+                        capacitance_key = f"C_{winding_number + 1}_{min(turn1, turn2)}_{max(turn1, turn2)}"
+                        capacitance_file_path = os.path.join(capacitance_folder, f"Turn_{min(turn1, turn2)}", capacitance_key)
+                        capacitance_value = self.load_result(res_name=capacitance_file_path, res_type="value", last_n=1)[0]
+                        log_dict["capacitances"]["within_winding"][winding_name][turn_key][f"to_Turn_{turn2}"] = capacitance_value
+
+        # Capacitance between turns in different windings
+        for winding1 in range(len(self.windings)):
+            winding1_name = f"Winding_{winding1 + 1}"
+            log_dict["capacitances"]["between_windings"][winding1_name] = {}
+            for winding2 in range(len(self.windings)):
+                if winding1 == winding2:
+                    continue
+                turns1 = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                           winding_number=winding1)
+                turns2 = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                           winding_number=winding2)
+                winding2_name = f"Winding_{winding2 + 1}"
+                log_dict["capacitances"]["between_windings"][winding1_name][winding2_name] = {}
+
+                for turn1 in range(1, turns1 + 1):
+                    turn1_key = f"Turn_{turn1}"
+                    if turn1_key not in log_dict["capacitances"]["between_windings"][winding1_name][winding2_name]:
+                        log_dict["capacitances"]["between_windings"][winding1_name][winding2_name][turn1_key] = {}
+                    for turn2 in range(1, turns2 + 1):
+                        capacitance_key = f"C_Cross_{winding1 + 1}_{turn1}_{winding2 + 1}_{turn2}"
+                        capacitance_file_path = os.path.join(capacitance_folder, f"Turn_{turn1}", capacitance_key)
+                        capacitance_value = self.load_result(res_name=capacitance_file_path, res_type="value", last_n=1)[0]
+                        log_dict["capacitances"]["between_windings"][winding1_name][winding2_name][turn1_key][f"to_Turn_{turn2}"] = capacitance_value
+
+                        # Adding symmetric capacitance value
+                        if winding2_name not in log_dict["capacitances"]["between_windings"]:
+                            log_dict["capacitances"]["between_windings"][winding2_name] = {}
+                        if winding1_name not in log_dict["capacitances"]["between_windings"][winding2_name]:
+                            log_dict["capacitances"]["between_windings"][winding2_name][winding1_name] = {}
+                        if f"Turn_{turn2}" not in log_dict["capacitances"]["between_windings"][winding2_name][winding1_name]:
+                            log_dict["capacitances"]["between_windings"][winding2_name][winding1_name][f"Turn_{turn2}"] = {}
+                        log_dict["capacitances"]["between_windings"][winding2_name][winding1_name][f"Turn_{turn2}"][f"to_Turn_{turn1}"] = capacitance_value
+
+        # Capacitance between each turn and the core
+        for winding_number in range(len(self.windings)):
+            winding_name = f"Winding_{winding_number + 1}"
+            log_dict["capacitances"]["between_turns_core"][winding_name] = {}
+
+            turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                      winding_number=winding_number)
+            for turn in range(1, turns + 1):
+                turn_key = f"Turn_{turn}"
+                capacitance_key = f"C_{winding_number + 1}_{turn}_Core"
+                capacitance_file_path = os.path.join(capacitance_folder, f"Turn_{turn}", capacitance_key)
+                capacitance_value = self.load_result(res_name=capacitance_file_path, res_type="value", last_n=1)[0]
+                log_dict["capacitances"]["between_turns_core"][winding_name][turn_key] = capacitance_value
+
+        # ====== save data as JSON ======
+        with open(self.file_data.electrostatic_results_log_path, "w+", encoding='utf-8') as outfile:
+            json.dump(log_dict, outfile, indent=2, ensure_ascii=False)
+
+    def read_log(self) -> dict:
         """
         Read results from electromagnetic simulation.
 
         :return: Logfile as a dictionary
-        :rtype: Dict
+        :rtype: dict
         """
         with open(self.file_data.e_m_results_log_path, "r") as fd:
             content = json.loads(fd.read())
@@ -4015,12 +4579,12 @@ class MagneticComponent:
             with open(self.file_data.material_log_path, "w+", encoding='utf-8') as outfile:
                 json.dump(material_dict, outfile, indent=2, ensure_ascii=False)
 
-    def read_thermal_log(self) -> Dict:
+    def read_thermal_log(self) -> dict:
         """
         Read results from electromagnetic simulation.
 
         :return: Logfile as a dictionary
-        :rtype: Dict
+        :rtype: dict
         """
         with open(os.path.join(self.file_data.results_folder_path, "results_thermal.json"), "r") as fd:
             content = json.loads(fd.read())
@@ -4038,8 +4602,7 @@ class MagneticComponent:
         """
         # ---------------------------------------- Visualization in gmsh ---------------------------------------
 
-        self.femmt_print("\n---\n"
-                         "Visualize fields in GMSH front end:\n")
+        logger.info("\n---\nVisualize fields in GMSH front end:\n")
 
         # gmsh.initialize()
         epsilon = 1e-9
@@ -4074,7 +4637,7 @@ class MagneticComponent:
                 gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
                 gmsh.option.setNumber(f"View[{view}].NbIso", 40)
                 gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
-                self.femmt_print(gmsh.option.getNumber(f"View[{view}].Max"))
+                logger.info(gmsh.option.getNumber(f"View[{view}].Max"))
                 view += 1
 
             if any(self.windings[i].conductor_type == ConductorType.RoundLitz for i in range(len(self.windings))):
@@ -4101,6 +4664,78 @@ class MagneticComponent:
             gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
             gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
             gmsh.option.setNumber(f"View[{view}].NbIso", 40)
+            view += 1
+
+        if self.simulation_type == SimulationType.ElectroStatic:
+            # Visualization for electrostatic simulations
+            view = 0
+
+            # Potentials
+            if any(self.windings[i].conductor_type != ConductorType.RoundLitz for i in range(len(self.windings))):
+                gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Potential.pos"))
+                gmsh.option.setNumber(f"View[{view}].ScaleType", 1)
+                gmsh.option.setNumber(f"View[{view}].RangeType", 2)
+                gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
+                gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)
+                gmsh.option.setNumber(f"View[{view}].CustomMax", gmsh.option.getNumber(f"View[{view}].Max"))
+                gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
+                gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
+                gmsh.option.setNumber(f"View[{view}].NbIso", 40)
+                gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
+                view += 1
+
+                # Potential on core
+                gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Voltage_Core_Map.pos"))
+                gmsh.option.setNumber(f"View[{view}].ScaleType", 1)
+                gmsh.option.setNumber(f"View[{view}].RangeType", 2)
+                gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
+                gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)
+                gmsh.option.setNumber(f"View[{view}].CustomMax", gmsh.option.getNumber(f"View[{view}].Max"))
+                gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
+                gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
+                gmsh.option.setNumber(f"View[{view}].NbIso", 40)
+                gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
+                view += 1
+
+            # Electric Field
+            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "MagE.pos"))
+            gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
+            gmsh.option.setNumber(f"View[{view}].RangeType", 2)
+            gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
+            gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)
+            gmsh.option.setNumber(f"View[{view}].CustomMax", gmsh.option.getNumber(f"View[{view}].Max"))
+            gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
+            gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
+            gmsh.option.setNumber(f"View[{view}].NbIso", 40)
+            gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
+
+            view += 1
+
+            # Stored energy
+            # gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "We.pos"))
+            # gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
+            # gmsh.option.setNumber(f"View[{view}].RangeType", 2)
+            # gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
+            # gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)
+            # gmsh.option.setNumber(f"View[{view}].CustomMax", gmsh.option.getNumber(f"View[{view}].Max"))
+            # gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
+            # gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
+            # gmsh.option.setNumber(f"View[{view}].NbIso", 40)
+            # gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
+
+            view += 1
+
+            # Displacement Field
+            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "MagD.pos"))
+            gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
+            gmsh.option.setNumber(f"View[{view}].RangeType", 2)
+            gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
+            gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)
+            gmsh.option.setNumber(f"View[{view}].CustomMax", gmsh.option.getNumber(f"View[{view}].Max"))
+            gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
+            gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
+            gmsh.option.setNumber(f"View[{view}].NbIso", 40)
+            gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
             view += 1
 
         if self.simulation_type == SimulationType.TimeDomain:
@@ -4144,7 +4779,6 @@ class MagneticComponent:
                     gmsh.option.setNumber(f"View[{v[1]}].TimeStep", 1)
                     gmsh.option.setNumber(f"View[{v[1]}].Time", 1)
                     gmsh.option.setNumber(f"View[{v[1]}].NbTimeStep", 1)
-                    # ff.femmt_print(gmsh.option.getNumber(f"View[{v[1]}].Max"))
 
                 # Magnetic flux density
                 # gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Magb.pos"))
@@ -4380,7 +5014,7 @@ class MagneticComponent:
         else:
             raise ValueError(f"Invalid res_type: {res_type}")
 
-        if self.simulation_type == SimulationType.FreqDomain:
+        if self.simulation_type == SimulationType.FreqDomain or self.simulation_type == SimulationType.ElectroStatic:
 
             with open(os.path.join(res_path, f"{res_name}.dat")) as fd:
                 lines = fd.readlines()[-last_n:]
@@ -4435,13 +5069,13 @@ class MagneticComponent:
                 # f"/Strands_Coefficients/coeff/pB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat"):
                 if os.path.exists(os.path.join(self.file_data.e_m_strands_coefficients_folder_path, "coeff",
                                                f"pB_RS_la{self.windings[num].ff}_4layer.dat")):
-                    self.femmt_print("Coefficients for stands approximation are found.")
+                    logger.info("Coefficients for stands approximation are found.")
 
                 else:
                     # Rounding X to fit it with corresponding parameters from the database
                     X = self.red_freq[num]
                     X = np.around(X, decimals=3)
-                    self.femmt_print(f"Rounded Reduced frequency X = {X}")
+                    logger.info(f"Rounded Reduced frequency X = {X}")
                     self.create_strand_coeff(num)
 
     def create_strand_coeff(self, winding_number: int) -> None:
@@ -4458,10 +5092,9 @@ class MagneticComponent:
         :param winding_number: Winding number
         :type winding_number: int
         """
-        self.femmt_print("\n"
-                         "Pre-Simulation\n"
-                         "-----------------------------------------\n"
-                         "Create coefficients for strands approximation\n")
+        logger.info("\nPre-Simulation\n"
+                    "-----------------------------------------\n"
+                    "Create coefficients for strands approximation\n")
 
         text_file = open(os.path.join(self.file_data.e_m_strands_coefficients_folder_path, "PreParameter.pro"), "w")
 
@@ -4474,7 +5107,7 @@ class MagneticComponent:
         text_file.close()
         cell_geo = os.path.join(self.file_data.e_m_strands_coefficients_folder_path, "cell.geo")
 
-        verbose = "-verbose 1" if self.silent else "-verbose 5"
+        verbose = "-verbose 1" if self.is_onelab_silent else "-verbose 5"
 
         # Run gmsh as a sub client
         gmsh_client = os.path.join(self.file_data.onelab_folder_path, "gmsh")
@@ -4601,7 +5234,7 @@ class MagneticComponent:
                 # self.core.sigma = 2 * np.pi * self.frequency * epsilon_0 * f_N95_er_imag(f=self.frequency) + 1 / 6
                 self.core.sigma = 1 / 6
 
-        self.femmt_print(f"{self.core.permeability_type=}, {self.core.sigma=}")
+        logger.info(f"{self.core.permeability_type=}, {self.core.sigma=}")
         if self.core.permeability_type == PermeabilityType.FixedLossAngle:
             femm.mi_addmaterial('Ferrite', self.core.mu_r_abs, self.core.mu_r_abs, 0, 0, self.core.sigma / 1e6, 0, 0, 1,
                                 0, self.core.phi_mu_deg, self.core.phi_mu_deg)
@@ -4618,8 +5251,8 @@ class MagneticComponent:
                 femm.mi_addmaterial('Litz', 1, 1, 0, 0, self.windings[i].cond_sigma / 1e6, 0, 0, 1, 5, 0, 0,
                                     self.windings[i].n_strands,
                                     2 * 1000 * self.windings[i].strand_radius)  # type := 5. last argument
-                self.femmt_print(f"Number of strands: {self.windings[i].n_strands}")
-                self.femmt_print(f"Diameter of strands in mm: {2 * 1000 * self.windings[i].strand_radius}")
+                logger.info(f"Number of strands: {self.windings[i].n_strands}")
+                logger.info(f"Diameter of strands in mm: {2 * 1000 * self.windings[i].strand_radius}")
             if self.windings[i].conductor_type == ConductorType.RoundSolid \
                     or self.windings[i].conductor_type == ConductorType.RectangularSolid:
                 femm.mi_addmaterial('Copper', 1, 1, 0, 0, self.windings[i].cond_sigma / 1e6, 0, 0, 1, 0, 0, 0, 0, 0)
@@ -4832,9 +5465,9 @@ class MagneticComponent:
         # If we were interested in the flux density at specific positions,
         # we could inquire at specific points directly:
         b0 = femm.mo_getb(0, 0)
-        self.femmt_print('Flux density at the center of the bar is %g T' % np.abs(b0[1]))
+        logger.info('Flux density at the center of the bar is %g T' % np.abs(b0[1]))
         b1 = femm.mo_getb(0.01, 0.05)
-        self.femmt_print(f"Flux density at r=1cm, z=5cm is {np.abs(b1[1])} T")
+        logger.info(f"Flux density at r=1cm, z=5cm is {np.abs(b1[1])} T")
 
         # The program will report the terminal properties of the circuit:
         # current, voltage, and flux linkage
@@ -4846,7 +5479,7 @@ class MagneticComponent:
         # If we were interested in inductance, it could be obtained by
         # dividing flux linkage by current
         L = 1000 * np.abs(vals[2]) / np.abs(vals[0])
-        self.femmt_print('The self-inductance of the coil is %g mH' % L)
+        logger.info('The self-inductance of the coil is %g mH' % L)
 
         # Or we could, for example, plot the results along a line using
         zee = []
@@ -4880,11 +5513,11 @@ class MagneticComponent:
 
         log = {}
 
-        # self.femmt_print(hyst_loss)
+        # logger.info(hyst_loss)
         # tmp = femm.mo_getcircuitproperties('Primary')
-        # self.femmt_print(tmp)
+        # logger.info(tmp)
         # self.tot_loss_femm = 0.5 * tmp[0] * tmp[1]
-        # self.femmt_print(self.tot_loss_femm)
+        # logger.info(self.tot_loss_femm)
 
         # Write Circuit Properties
         # log["Circuit Properties"] = femm.mo_getcircuitproperties('Primary')
@@ -4924,8 +5557,723 @@ class MagneticComponent:
         json.dump(log, file, indent=2, ensure_ascii=False)
         file.close()
 
+    def femm_reference_electrostatic(self, voltages: list[list[float]], ground_core: bool = False, ground_outer_boundary: bool = False, non_visualize: int = 0,
+                                     mesh_size: float = 0.0, mesh_size_conductor: float = 0.0, save_to_excel_file: bool = False,
+                                     compare_femmt_to_femm: bool = False) -> None:
+        """
+        Set up a reference electrostatic simulation using FEMM.
+
+        :param voltages: A list of voltages to be applied to each winding.
+        :type voltages: list[list[float]]
+        :param ground_core: Ground core.
+        :type ground_core: bool
+        :param ground_outer_boundary: Grounding outer boundary.
+        :type ground_outer_boundary: bool
+        :param non_visualize: Flag to control visualization.
+        :param mesh_size: Mesh size for general areas.
+        :param mesh_size_conductor: Mesh size specifically for conductors.
+        :param save_to_excel_file: Save the log to excel file.
+        :type save_to_excel_file: bool
+        :param compare_femmt_to_femm: compare file logs between FEMMT and FEMM in excel form.
+        :type compare_femmt_to_femm: bool
+        :
+        """
+        automesh = 1 if mesh_size == 0.0 else 0
+        automesh_conductor = 1 if mesh_size_conductor == 0.0 else 0
+
+        if os.name == 'nt':
+            ff.install_pyfemm_if_missing()
+            if not self.femm_is_imported:
+                globals()["femm"] = __import__("femm")
+                self.femm_is_imported = True
+        else:
+            raise Exception('This command is only executable on Windows computers.')
+
+        self.file_data.create_folders(self.file_data.femm_folder_path)
+
+        # Ensure voltages is a list
+        if not isinstance(voltages, list):
+            voltages = [voltages]
+
+        # == Initialize FEMM ==
+        femm.openfemm(non_visualize)
+        femm.newdocument(1)  # 1 is for electrostatics
+
+        # Proper use of required parameters
+        femm.ei_probdef('meters', 'axi', 1e-8, 0, 30)  # units, type, precision, depth, and minangle
+
+        # == Materials ==
+        # Define materials with proper relative permittivity and volume charge density
+        femm.ei_addmaterial('Air', 1, 1, 0, )
+
+        # Core material
+        core_permittivity = 5000  # Value for core material permittivity
+        femm.ei_addmaterial('CoreMaterial', core_permittivity, core_permittivity, 0)
+
+        # Insulation
+        insulation_permittivity = 5.5
+        femm.ei_addmaterial('InsulationMaterial', insulation_permittivity, insulation_permittivity, 0)
+
+        # Conductor material
+        femm.ei_addmaterial('Copper', 1, 1, 0)
+
+        # == Geometry ==
+        # Add core
+        if self.air_gaps.number == 0:
+            femm.ei_drawline(self.two_d_axi.p_window[4, 0],
+                             self.two_d_axi.p_window[4, 1],
+                             self.two_d_axi.p_window[5, 0],
+                             self.two_d_axi.p_window[5, 1])
+            femm.ei_drawline(self.two_d_axi.p_window[5, 0],
+                             self.two_d_axi.p_window[5, 1],
+                             self.two_d_axi.p_window[7, 0],
+                             self.two_d_axi.p_window[7, 1])
+            femm.ei_drawline(self.two_d_axi.p_window[7, 0],
+                             self.two_d_axi.p_window[7, 1],
+                             self.two_d_axi.p_window[6, 0],
+                             self.two_d_axi.p_window[6, 1])
+            femm.ei_drawline(self.two_d_axi.p_window[6, 0],
+                             self.two_d_axi.p_window[6, 1],
+                             self.two_d_axi.p_window[4, 0],
+                             self.two_d_axi.p_window[4, 1])
+            femm.ei_drawline(0,
+                             self.two_d_axi.p_outer[2, 1],
+                             self.two_d_axi.p_outer[3, 0],
+                             self.two_d_axi.p_outer[3, 1])
+            femm.ei_drawline(self.two_d_axi.p_outer[3, 0],
+                             self.two_d_axi.p_outer[3, 1],
+                             self.two_d_axi.p_outer[1, 0],
+                             self.two_d_axi.p_outer[1, 1])
+            femm.ei_drawline(self.two_d_axi.p_outer[1, 0],
+                             self.two_d_axi.p_outer[1, 1],
+                             0,
+                             self.two_d_axi.p_outer[0, 1])
+            femm.ei_drawline(0,
+                             self.two_d_axi.p_outer[0, 1],
+                             0,
+                             self.two_d_axi.p_outer[2, 1])
+        elif self.air_gaps.number > 0:
+            femm.ei_drawline(0,
+                             self.two_d_axi.p_air_gaps[0, 1],
+                             self.two_d_axi.p_air_gaps[1, 0],
+                             self.two_d_axi.p_air_gaps[1, 1])
+            femm.ei_drawline(self.two_d_axi.p_air_gaps[1, 0],
+                             self.two_d_axi.p_air_gaps[1, 1],
+                             self.two_d_axi.p_window[4, 0],
+                             self.two_d_axi.p_window[4, 1])
+            femm.ei_drawline(self.two_d_axi.p_window[4, 0],
+                             self.two_d_axi.p_window[4, 1],
+                             self.two_d_axi.p_window[5, 0],
+                             self.two_d_axi.p_window[5, 1])
+            femm.ei_drawline(self.two_d_axi.p_window[5, 0],
+                             self.two_d_axi.p_window[5, 1],
+                             self.two_d_axi.p_window[7, 0],
+                             self.two_d_axi.p_window[7, 1])
+            femm.ei_drawline(self.two_d_axi.p_window[7, 0],
+                             self.two_d_axi.p_window[7, 1],
+                             self.two_d_axi.p_window[6, 0],
+                             self.two_d_axi.p_window[6, 1])
+            femm.ei_drawline(self.two_d_axi.p_window[6, 0],
+                             self.two_d_axi.p_window[6, 1],
+                             self.two_d_axi.p_air_gaps[3, 0],
+                             self.two_d_axi.p_air_gaps[3, 1])
+            femm.ei_drawline(self.two_d_axi.p_air_gaps[3, 0],
+                             self.two_d_axi.p_air_gaps[3, 1],
+                             0,
+                             self.two_d_axi.p_air_gaps[2, 1])
+            femm.ei_drawline(0,
+                             self.two_d_axi.p_air_gaps[2, 1],
+                             0,
+                             self.two_d_axi.p_outer[2, 1])
+            femm.ei_drawline(0,
+                             self.two_d_axi.p_outer[2, 1],
+                             self.two_d_axi.p_outer[3, 0],
+                             self.two_d_axi.p_outer[3, 1])
+            femm.ei_drawline(self.two_d_axi.p_outer[3, 0],
+                             self.two_d_axi.p_outer[3, 1],
+                             self.two_d_axi.p_outer[1, 0],
+                             self.two_d_axi.p_outer[1, 1])
+            femm.ei_drawline(self.two_d_axi.p_outer[1, 0],
+                             self.two_d_axi.p_outer[1, 1],
+                             0,
+                             self.two_d_axi.p_outer[0, 1])
+            femm.ei_drawline(0,
+                             self.two_d_axi.p_outer[0, 1],
+                             0,
+                             self.two_d_axi.p_air_gaps[0, 1])
+        else:
+            raise Exception("Negative air gap number is not allowed")
+
+        # Add Insulation
+        if self.insulation.bobbin_dimensions:
+            if self.insulation.max_aspect_ratio == 0:
+                # If no aspect ratio is set insulations will not be drawn
+                return
+            else:
+                insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
+
+                # Handle the insulation delta for electrostatic transformer
+                # top - bot
+                bobbin_h = self.insulation.bobbin_window_h
+                insulation_delta_top_bot = (self.core.window_h - bobbin_h) / 2
+                # left
+                bobbin_inner_diameter = self.insulation.bobbin_inner_diameter / 2
+                core_inner_diameter = self.core.core_inner_diameter / 2
+                insulation_delta_left = bobbin_inner_diameter - core_inner_diameter
+            # Useful points for insulation creation
+            left_x = self.core.core_inner_diameter / 2 + insulation_delta_left
+            top_y = self.core.window_h / 2 - insulation_delta_top_bot
+            right_x = self.core.r_inner - insulation_delta
+            bot_y = -self.core.window_h / 2 + insulation_delta_top_bot
+
+            # Useful lengths
+            left_iso_width = self.insulation.core_cond[2] - insulation_delta - insulation_delta
+            top_iso_height = self.insulation.core_cond[0] - insulation_delta - insulation_delta
+            right_iso_width = self.insulation.core_cond[3] - insulation_delta - insulation_delta
+            bot_iso_height = self.insulation.core_cond[1] - insulation_delta - insulation_delta
+
+            # Left insulation
+            femm.ei_drawline(left_x,
+                             top_y - top_iso_height - insulation_delta,
+                             left_x + left_iso_width,
+                             top_y - top_iso_height - insulation_delta)
+            femm.ei_drawline(left_x + left_iso_width,
+                             top_y - top_iso_height - insulation_delta,
+                             left_x + left_iso_width,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(left_x + left_iso_width,
+                             bot_y + bot_iso_height + insulation_delta,
+                             left_x,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(left_x,
+                             bot_y + bot_iso_height + insulation_delta,
+                             left_x,
+                             top_y - top_iso_height - insulation_delta)
+
+            # top insulation
+            femm.ei_drawline(left_x,
+                             top_y,
+                             right_x,
+                             top_y)
+            femm.ei_drawline(right_x,
+                             top_y,
+                             right_x,
+                             top_y - top_iso_height)
+            femm.ei_drawline(right_x,
+                             top_y - top_iso_height,
+                             left_x,
+                             top_y - top_iso_height)
+            femm.ei_drawline(left_x,
+                             top_y - top_iso_height,
+                             left_x,
+                             top_y)
+
+            # right insulation
+            femm.ei_drawline(right_x - right_iso_width,
+                             top_y - top_iso_height - insulation_delta,
+                             right_x,
+                             top_y - top_iso_height - insulation_delta)
+            femm.ei_drawline(right_x,
+                             top_y - top_iso_height - insulation_delta,
+                             right_x,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(right_x,
+                             bot_y + bot_iso_height + insulation_delta,
+                             right_x - right_iso_width,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(right_x - right_iso_width,
+                             bot_y + bot_iso_height + insulation_delta,
+                             right_x - right_iso_width,
+                             top_y - top_iso_height - insulation_delta)
+            # bot insulation
+            femm.ei_drawline(left_x,
+                             bot_y + bot_iso_height,
+                             right_x,
+                             bot_y + bot_iso_height)
+            femm.ei_drawline(right_x,
+                             bot_y + bot_iso_height,
+                             right_x,
+                             bot_y)
+            femm.ei_drawline(right_x,
+                             bot_y,
+                             left_x,
+                             bot_y)
+            femm.ei_drawline(left_x,
+                             bot_y,
+                             left_x,
+                             bot_y + bot_iso_height)
+        else:
+            if self.insulation.max_aspect_ratio == 0:
+                # If no aspect ratio is set insulations will not be drawn
+                return
+            else:
+                insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
+
+            # Useful points for insulation creation
+            left_x = self.core.core_inner_diameter / 2 + insulation_delta
+            top_y = self.core.window_h / 2 - insulation_delta
+            right_x = self.core.r_inner - insulation_delta
+            bot_y = -self.core.window_h / 2 + insulation_delta
+
+            # Useful lengths
+            left_iso_width = self.insulation.core_cond[2] - insulation_delta - insulation_delta
+            top_iso_height = self.insulation.core_cond[0] - insulation_delta - insulation_delta
+            right_iso_width = self.insulation.core_cond[3] - insulation_delta - insulation_delta
+            bot_iso_height = self.insulation.core_cond[1] - insulation_delta - insulation_delta
+
+            # Left insulation
+            femm.ei_drawline(left_x,
+                             top_y - top_iso_height - insulation_delta,
+                             left_x + left_iso_width,
+                             top_y - top_iso_height - insulation_delta)
+            femm.ei_drawline(left_x + left_iso_width,
+                             top_y - top_iso_height - insulation_delta,
+                             left_x + left_iso_width,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(left_x + left_iso_width,
+                             bot_y + bot_iso_height + insulation_delta,
+                             left_x,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(left_x,
+                             bot_y + bot_iso_height + insulation_delta,
+                             left_x,
+                             top_y - top_iso_height - insulation_delta)
+
+            # top insulation
+            femm.ei_drawline(left_x,
+                             top_y,
+                             right_x,
+                             top_y)
+            femm.ei_drawline(right_x,
+                             top_y,
+                             right_x,
+                             top_y - top_iso_height)
+            femm.ei_drawline(right_x,
+                             top_y - top_iso_height,
+                             left_x,
+                             top_y - top_iso_height)
+            femm.ei_drawline(left_x,
+                             top_y - top_iso_height,
+                             left_x,
+                             top_y)
+
+            # right insulation
+            femm.ei_drawline(right_x - right_iso_width,
+                             top_y - top_iso_height - insulation_delta,
+                             right_x,
+                             top_y - top_iso_height - insulation_delta)
+            femm.ei_drawline(right_x,
+                             top_y - top_iso_height - insulation_delta,
+                             right_x,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(right_x,
+                             bot_y + bot_iso_height + insulation_delta,
+                             right_x - right_iso_width,
+                             bot_y + bot_iso_height + insulation_delta)
+            femm.ei_drawline(right_x - right_iso_width,
+                             bot_y + bot_iso_height + insulation_delta,
+                             right_x - right_iso_width,
+                             top_y - top_iso_height - insulation_delta)
+            # bot insulation
+            femm.ei_drawline(left_x,
+                             bot_y + bot_iso_height,
+                             right_x,
+                             bot_y + bot_iso_height)
+            femm.ei_drawline(right_x,
+                             bot_y + bot_iso_height,
+                             right_x,
+                             bot_y)
+            femm.ei_drawline(right_x,
+                             bot_y,
+                             left_x,
+                             bot_y)
+            femm.ei_drawline(left_x,
+                             bot_y,
+                             left_x,
+                             bot_y + bot_iso_height)
+
+        # Now select the segments to assign zero voltage for core
+        if ground_core:
+            boundary_segments = [
+                # Segments for the core and winding, including the two horizontal air gap lines
+                (0, self.two_d_axi.p_air_gaps[0, 1], self.two_d_axi.p_air_gaps[1, 0], self.two_d_axi.p_air_gaps[1, 1]),
+                (self.two_d_axi.p_air_gaps[1, 0], self.two_d_axi.p_air_gaps[1, 1], self.two_d_axi.p_window[4, 0], self.two_d_axi.p_window[4, 1]),
+                (self.two_d_axi.p_window[4, 0], self.two_d_axi.p_window[4, 1], self.two_d_axi.p_window[5, 0], self.two_d_axi.p_window[5, 1]),
+                (self.two_d_axi.p_window[5, 0], self.two_d_axi.p_window[5, 1], self.two_d_axi.p_window[7, 0], self.two_d_axi.p_window[7, 1]),
+                (self.two_d_axi.p_window[7, 0], self.two_d_axi.p_window[7, 1], self.two_d_axi.p_window[6, 0], self.two_d_axi.p_window[6, 1]),
+                (self.two_d_axi.p_window[6, 0], self.two_d_axi.p_window[6, 1], self.two_d_axi.p_air_gaps[3, 0], self.two_d_axi.p_air_gaps[3, 1]),
+                (self.two_d_axi.p_air_gaps[3, 0], self.two_d_axi.p_air_gaps[3, 1], 0, self.two_d_axi.p_air_gaps[2, 1]),
+            ]
+
+            for segment in boundary_segments:
+                x_start, y_start, x_end, y_end = segment
+                femm.ei_selectsegment((x_start + x_end) / 2, (y_start + y_end) / 2)
+                femm.ei_addboundprop('ZeroVoltage', 0, 0, 0, 0, 0)
+                femm.ei_setsegmentprop('ZeroVoltage', 0, 1, 0, 1, '<None>')
+                femm.ei_clearselected()
+
+        if ground_outer_boundary:
+            # Now ground the outer boundary lines
+            outer_boundary_segments = [
+                # Left bottom vertical segment
+                # (0, self.two_d_axi.p_outer[0, 1], 0, self.two_d_axi.p_air_gaps[0, 1]),
+                # bottom horizontal segment
+                (self.two_d_axi.p_outer[1, 0], self.two_d_axi.p_outer[1, 1], 0, self.two_d_axi.p_outer[0, 1]),
+                # right vertical segment
+                (self.two_d_axi.p_outer[3, 0], self.two_d_axi.p_outer[3, 1], self.two_d_axi.p_outer[1, 0], self.two_d_axi.p_outer[1, 1]),
+                # top horizontal segment
+                (0, self.two_d_axi.p_outer[2, 1], self.two_d_axi.p_outer[3, 0], self.two_d_axi.p_outer[3, 1]),
+                # Left top vertical segment
+                # (0, self.two_d_axi.p_outer[0, 3], 0, self.two_d_axi.p_air_gaps[2, 2])
+            ]
+
+            for segment in outer_boundary_segments:
+                x_start, y_start, x_end, y_end = segment
+                femm.ei_selectsegment((x_start + x_end) / 2, (y_start + y_end) / 2)  # Select the segment by its midpoint
+                femm.ei_addboundprop('Ground', 0, 0, 0, 0, 0)  # Add boundary property for grounding
+                femm.ei_setsegmentprop('Ground', 0, 1, 0, 1, '<None>')  # Set segment property to apply grounding
+                femm.ei_clearselected()
+
+        turn_index = 0  # Initialize the turn index for tracking
+        # Iterate through each winding
+        for winding_index, winding_voltages in enumerate(voltages):
+            # Calculate the number of turns for the current winding
+            num_turns = int(self.two_d_axi.p_conductor[winding_index].shape[0] / 5)
+
+            if len(winding_voltages) != num_turns:
+                raise ValueError(f"Mismatch between the number of turns and voltages for winding {winding_index + 1}")
+
+            # Iterate through each turn in the winding
+            for i in range(num_turns):
+                # Draw arcs for the conductor (turn)
+                femm.ei_drawarc(self.two_d_axi.p_conductor[winding_index][5 * i + 1][0],
+                                self.two_d_axi.p_conductor[winding_index][5 * i + 1][1],
+                                self.two_d_axi.p_conductor[winding_index][5 * i + 3][0],
+                                self.two_d_axi.p_conductor[winding_index][5 * i + 3][1], 180, 2.5)
+                femm.ei_addarc(self.two_d_axi.p_conductor[winding_index][5 * i + 3][0],
+                               self.two_d_axi.p_conductor[winding_index][5 * i + 3][1],
+                               self.two_d_axi.p_conductor[winding_index][5 * i + 1][0],
+                               self.two_d_axi.p_conductor[winding_index][5 * i + 1][1], 180, 2.5)
+                # Calculate the center and radius for selecting the conductor turn
+                x_center = self.two_d_axi.p_conductor[winding_index][5 * i][0]
+                y_center = self.two_d_axi.p_conductor[winding_index][5 * i][1]
+                radius = x_center - self.two_d_axi.p_conductor[winding_index][5 * i + 1][0]
+                # Select all entities within the circular region around the conductor center
+                femm.ei_selectcircle(x_center, y_center, radius, 4)
+
+                conductor_name = f'Turn{turn_index + 1}'
+                femm.ei_setarcsegmentprop(2.5, '<None>', 0, turn_index + 5, conductor_name)
+                femm.ei_clearselected()
+
+                # Add a block label at the center of the conductor turn
+                femm.ei_addblocklabel(x_center, y_center)
+
+                # Select the block label and apply conductor properties
+                femm.ei_selectlabel(x_center, y_center)
+
+                # Assign conductor properties with a unique name and apply voltage
+                femm.ei_addconductorprop(conductor_name, winding_voltages[i], 0, 1)
+
+                # Set block properties, using a unique group for each conductor
+                femm.ei_setblockprop('Copper', automesh_conductor, mesh_size_conductor, turn_index + 5)
+
+                # Clear selection to ensure no overlap in label assignments
+                femm.ei_clearselected()
+
+                # Increment the turn index for the next iteration
+                turn_index += 1
+
+        # Define an open boundary condition for electrostatics
+        if not ground_outer_boundary and not ground_core:
+            femm.ei_makeABC(5, 0.5, 0.0, 0.0, 1)
+        else:
+            femm.ei_makeABC()
+        # femm.ei_makeABC(5, 0.5, 0.0, 0.0, 1)
+
+        # == Labels/Designations ==
+        # Label for core
+        femm.ei_addblocklabel(self.two_d_axi.p_outer[3, 0] - 0.001, self.two_d_axi.p_outer[3, 1] - 0.001)
+        femm.ei_selectlabel(self.two_d_axi.p_outer[3, 0] - 0.001, self.two_d_axi.p_outer[3, 1] - 0.001)
+        femm.ei_setblockprop('CoreMaterial', automesh, mesh_size, 1)
+        femm.ei_clearselected()
+
+        # Labels for air inside the core
+        if self.air_gaps.number == 0:
+            femm.ei_addblocklabel(self.two_d_axi.r_inner - 0.0001, 0)
+            femm.ei_selectlabel(self.two_d_axi.r_inner - 0.001, 1)
+            femm.ei_setblockprop('Air', automesh, mesh_size, 2)
+            femm.ei_clearselected()
+        else:
+            femm.ei_addblocklabel(0.001, 0)
+            femm.ei_selectlabel(0.001, 0)
+            femm.ei_setblockprop('Air', automesh, mesh_size, 2)
+            femm.ei_clearselected()
+
+        # Add a block label for the outer region to define it as 'Air'
+        femm.ei_addblocklabel(self.two_d_axi.p_outer[3, 0] + 0.001, self.two_d_axi.p_outer[3, 1] + 0.001)
+        femm.ei_selectlabel(self.two_d_axi.p_outer[3, 0] + 0.001, self.two_d_axi.p_outer[3, 1] + 0.001)
+        femm.ei_setblockprop('Air', automesh, mesh_size, 3)  # Assign 'Air' as the material
+        femm.ei_clearselected()
+
+        # Add Block Labels for Insulation
+        if self.insulation.flag_insulation:
+            # Calculate positions for insulation block labels
+            left_insulation_label_x = left_x + left_iso_width / 2
+            left_insulation_label_y = (top_y - top_iso_height - insulation_delta + bot_y + bot_iso_height + insulation_delta) / 2
+
+            top_insulation_label_x = (left_x + right_x) / 2
+            top_insulation_label_y = top_y - top_iso_height / 2
+
+            right_insulation_label_x = right_x - right_iso_width / 2
+            right_insulation_label_y = (top_y - top_iso_height - insulation_delta + bot_y + bot_iso_height + insulation_delta) / 2
+
+            bot_insulation_label_x = (left_x + right_x) / 2
+            bot_insulation_label_y = bot_y + bot_iso_height / 2
+
+            # Add and set block properties for each insulation region
+            # Left insulation
+            femm.ei_addblocklabel(left_insulation_label_x, left_insulation_label_y)
+            femm.ei_selectlabel(left_insulation_label_x, left_insulation_label_y)
+            femm.ei_setblockprop('InsulationMaterial', automesh, mesh_size, 4)
+            femm.ei_clearselected()
+
+            # Top insulation
+            femm.ei_addblocklabel(top_insulation_label_x, top_insulation_label_y)
+            femm.ei_selectlabel(top_insulation_label_x, top_insulation_label_y)
+            femm.ei_setblockprop('InsulationMaterial', automesh, mesh_size, 4)
+            femm.ei_clearselected()
+
+            # Right insulation
+            femm.ei_addblocklabel(right_insulation_label_x, right_insulation_label_y)
+            femm.ei_selectlabel(right_insulation_label_x, right_insulation_label_y)
+            femm.ei_setblockprop('InsulationMaterial', automesh, mesh_size, 4)
+            femm.ei_clearselected()
+
+            # Bottom insulation
+            femm.ei_addblocklabel(bot_insulation_label_x, bot_insulation_label_y)
+            femm.ei_selectlabel(bot_insulation_label_x, bot_insulation_label_y)
+            femm.ei_setblockprop('InsulationMaterial', automesh, mesh_size, 4)
+            femm.ei_clearselected()
+
+        # Save, analyze, and load the solution
+        femm.ei_zoomnatural()
+        femm.ei_saveas(os.path.join(self.file_data.femm_folder_path, 'coil_electrostatic.FEE'))
+        femm.ei_analyze()
+        femm.ei_loadsolution()
+
+        # Log results
+        self.write_femm_electrostatic_log(voltages)
+        # Convert the log JSON file to Excel
+        if save_to_excel_file:
+            json_file_path = self.file_data.femm_results_log_path
+            output_excel_path = os.path.splitext(json_file_path)[0] + ".xlsx"
+            ff.json_to_excel(json_file_path, output_excel_path)
+        # Compare .xlsx files between FEMMT and FEMM.
+        if compare_femmt_to_femm:
+            femmt_excel_path = os.path.splitext(self.file_data.electrostatic_results_log_path)[0] + ".xlsx"
+            femm_excel_path = os.path.splitext(self.file_data.femm_results_log_path)[0] + ".xlsx"
+            comparison_output_directory = os.path.dirname(self.file_data.electrostatic_results_log_path)
+            comparison_output_path = os.path.join(comparison_output_directory, "comparison_results.xlsx")
+            ff.compare_excel_files(femmt_excel_path, femm_excel_path, comparison_output_path)
+            logger.info(f"Comparison data for all sheets has been successfully written to {comparison_output_path}")
+
+    def write_femm_electrostatic_log(self, voltages):
+        """
+        Write log file for electrostatic simulation to compute capacitance based on stored energy.
+
+        :param voltages: A list of voltages to be applied to each winding.
+        :type voltages: List of List
+        """
+        if os.name == 'nt':
+            ff.install_pyfemm_if_missing()
+            if not self.femm_is_imported:
+                globals()["femm"] = __import__("femm")
+                self.femm_is_imported = True
+        else:
+            raise Exception('This command is only executable on Windows computers.')
+
+        file = open(self.file_data.femm_results_log_path, 'w+', encoding='utf-8')
+
+        log_dict = {"charges": {}, "energy": {}, "average_voltages": {}, "capacitances": {}}
+
+        # Select air inside the core
+        femm.eo_groupselectblock(2)
+        # Get stored energy in the air inside the core (0 represents stored energy)
+        stored_energy_air = femm.eo_blockintegral(0)
+        log_dict["energy"]["stored_air"] = stored_energy_air[0]
+        femm.eo_clearblock()
+
+        # Select the core
+        femm.eo_groupselectblock(1)
+        stored_energy_core = femm.eo_blockintegral(0)
+        log_dict["energy"]["stored_core"] = stored_energy_core[0]
+        femm.eo_clearblock()
+
+        # select insulation
+        # if self.insulation.flag_insulation:
+        #     femm.eo_groupselectblock(4)
+        #     stored_energy_insulation = femm.eo_blockintegral(0)
+        #     log_dict["energy"]["stored_bobbin"] = stored_energy_insulation[0]
+        #     femm.eo_clearblock()
+
+        # select the core
+        femm.eo_groupselectblock(1)
+        # Select air inside the core
+        femm.eo_groupselectblock(2)
+        stored_energy = femm.eo_blockintegral(0)
+        # select insulation
+        if self.insulation.flag_insulation:
+            femm.eo_groupselectblock(4)
+
+        # Select all turn groups across all windings
+        for winding_index, _ in enumerate(voltages):
+            num_turns = int(self.two_d_axi.p_conductor[winding_index].shape[0] / 5)
+            base_turn_group = winding_index * num_turns
+            for turn_number in range(5, 5 + num_turns):
+                turn_group = base_turn_group + turn_number
+                femm.eo_groupselectblock(turn_group)
+
+        stored_energy_component = femm.eo_blockintegral(0)
+        log_dict["energy"]["stored_component"] = stored_energy_component[0]
+        femm.eo_clearblock()
+
+        # If stored_energy is a list, take the first element
+        if isinstance(stored_energy, list):
+            stored_energy = stored_energy[0]
+
+        log_dict["energy"]["stored_component"] = stored_energy
+
+        # === Calculate Average Voltage in Core ===
+        # Define points within the core to sample voltage values
+        core_points = [
+            # Bottom boundary points
+            (self.two_d_axi.p_window[4, 0], self.two_d_axi.p_window[4, 1]),
+            (self.two_d_axi.p_window[5, 0], self.two_d_axi.p_window[5, 1]),
+            # Top boundary points
+            (self.two_d_axi.p_window[6, 0], self.two_d_axi.p_window[6, 1]),
+            (self.two_d_axi.p_window[7, 0], self.two_d_axi.p_window[7, 1]),
+            # Left boundary points
+            (self.two_d_axi.p_air_gaps[0, 0], self.two_d_axi.p_air_gaps[0, 1]),
+            (self.two_d_axi.p_air_gaps[3, 0], self.two_d_axi.p_air_gaps[3, 1]),
+            # Right boundary points
+            (self.two_d_axi.p_air_gaps[1, 0], self.two_d_axi.p_air_gaps[1, 1]),
+            (self.two_d_axi.p_air_gaps[2, 0], self.two_d_axi.p_air_gaps[2, 1]),
+            # (self.two_d_axi.p_window[4, 0] + 0.001, self.two_d_axi.p_window[4, 1] + 0.001),
+            # (self.two_d_axi.p_window[6, 0] - 0.001, self.two_d_axi.p_window[6, 1] - 0.001)
+            (0, self.two_d_axi.p_outer[1, 1]),
+            (self.two_d_axi.p_outer[3, 0], self.two_d_axi.p_outer[1, 1]),
+            (self.two_d_axi.p_outer[3, 0], self.two_d_axi.p_outer[3, 1]),
+            (0, self.two_d_axi.p_outer[3, 1])
+        ]
+
+        total_voltage = 0
+        num_points = len(core_points)
+
+        # Sum the voltages at each sampled point
+        for (x, y) in core_points:
+            voltage = femm.eo_getv(x, y)  # Directly get the voltage at the point
+            if voltage is not None:
+                total_voltage += voltage
+
+        # Calculate average voltage in the core
+        average_voltage_core = total_voltage / num_points
+        log_dict["average_voltages"] = {}
+        log_dict["average_voltages"]["core"] = average_voltage_core
+        # Calculate capacitance between each pair of turns using the stored energy and voltage differences
+        capacitance_within = {}
+
+        # Iterate through each winding
+        for w1_index, winding_voltages in enumerate(voltages):
+            winding_name = f"Winding_{w1_index + 1}"
+            capacitance_within[winding_name] = {}
+
+            # Capacitance within the same winding
+            for i, voltage1 in enumerate(winding_voltages):
+                turn_name = f"Turn_{i + 1}"
+                capacitance_within[winding_name][turn_name] = {}
+
+                for j, voltage2 in enumerate(winding_voltages):
+                    if i != j:
+                        voltage_difference = abs(voltage2 - voltage1)
+
+                        if voltage_difference == 0:
+                            if stored_energy == 0:
+                                capacitance_within[winding_name][turn_name][f"to_Turn_{j + 1}"] = float('NaN')
+                            else:
+                                capacitance_within[winding_name][turn_name][f"to_Turn_{j + 1}"] = float('Infinity')
+                        else:
+                            capacitance = 2 * stored_energy / (voltage_difference ** 2)
+                            capacitance_within[winding_name][turn_name][f"to_Turn_{j + 1}"] = capacitance
+
+        # # Capacitance between different windings
+        capacitance_between = {}
+        for w1_index in range(len(voltages)):
+            for w2_index in range(w1_index + 1, len(voltages)):
+                winding1_voltages = voltages[w1_index]
+                winding2_voltages = voltages[w2_index]
+                winding1_name = f"Winding_{w1_index + 1}"
+                winding2_name = f"Winding_{w2_index + 1}"
+
+                if winding1_name not in capacitance_between:
+                    capacitance_between[winding1_name] = {}
+                if winding2_name not in capacitance_between[winding1_name]:
+                    capacitance_between[winding1_name][winding2_name] = {}
+
+                # Calculate capacitance between every pair of turns from different windings
+                for i, voltage1 in enumerate(winding1_voltages):
+                    turn1_name = f"Turn_{i + 1}"
+                    if turn1_name not in capacitance_between[winding1_name][winding2_name]:
+                        capacitance_between[winding1_name][winding2_name][turn1_name] = {}
+
+                    for j, voltage2 in enumerate(winding2_voltages):
+                        turn2_name = f"Turn_{j + 1}"
+                        voltage_difference = abs(voltage2 - voltage1)
+
+                        if voltage_difference == 0:
+                            if stored_energy == 0:
+                                capacitance_between[winding1_name][winding2_name][turn1_name][f"to_{turn2_name}"] = float('NaN')
+                            else:
+                                capacitance_between[winding1_name][winding2_name][turn1_name][f"to_{turn2_name}"] = float('Infinity')
+                        else:
+                            capacitance = 2 * stored_energy / (voltage_difference ** 2)
+                            capacitance_between[winding1_name][winding2_name][turn1_name][f"to_{turn2_name}"] = capacitance
+
+                            # Add reciprocal capacitance for symmetry
+                            if winding2_name not in capacitance_between:
+                                capacitance_between[winding2_name] = {}
+                            if winding1_name not in capacitance_between[winding2_name]:
+                                capacitance_between[winding2_name][winding1_name] = {}
+                            if turn2_name not in capacitance_between[winding2_name][winding1_name]:
+                                capacitance_between[winding2_name][winding1_name][turn2_name] = {}
+                            capacitance_between[winding2_name][winding1_name][turn2_name][f"to_{turn1_name}"] = capacitance
+
+        # Capacitance between each turn and the core
+        capacitance_between_turns_core = {}
+        for winding_index, winding_voltages in enumerate(voltages):
+            winding_name = f"Winding_{winding_index + 1}"
+            capacitance_between_turns_core[winding_name] = {}
+
+            for i, voltage in enumerate(winding_voltages):
+                turn_name = f"Turn_{i + 1}"
+                voltage_difference = abs(voltage - average_voltage_core)
+                if voltage_difference == 0:
+                    capacitance_between_turns_core[winding_name][turn_name] = float('NaN') if stored_energy == 0 else float('Infinity')
+                else:
+                    capacitance = 2 * stored_energy / (voltage_difference ** 2)
+                    capacitance_between_turns_core[winding_name][turn_name] = capacitance
+
+        log_dict["capacitances"]["within_winding"] = capacitance_within
+        log_dict["capacitances"]["between_windings"] = capacitance_between
+        log_dict["capacitances"]["between_turns_core"] = capacitance_between_turns_core
+
+        # Write to file
+        json.dump(log_dict, file, indent=2, ensure_ascii=False)
+        file.close()
+
+        logger.info(f"Electrostatic capacitance log saved to: {self.file_data.femm_results_log_path}")
+
     @staticmethod
-    def calculate_point_average(x1: float, y1: float, x2: float, y2: float) -> Tuple[float, float]:
+    def calculate_point_average(x1: float, y1: float, x2: float, y2: float) -> tuple[float, float]:
         """Calculate the middle point between two given points.
 
         :param x1: Point1 x
@@ -4942,14 +6290,14 @@ class MagneticComponent:
         # TODO Move to femmt_functions
         return (x1 + x2) / 2, (y1 + y2) / 2
 
-    def femm_thermal_validation(self, thermal_conductivity_dict: Dict, boundary_temperature: Dict, case_gap_top: float,
+    def femm_thermal_validation(self, thermal_conductivity_dict: dict, boundary_temperature: dict, case_gap_top: float,
                                 case_gap_right: float, case_gap_bot: float):
         """Create a thermal model in femm and simulates it with the given thermal conductivities.
 
-        :param thermal_conductivity_dict: Dict containing conductivities for air, winding, case, core
-        :type thermal_conductivity_dict: Dict
-        :param boundary_temperature: Dict containing temperatures on boundary lines
-        :type boundary_temperature: Dict
+        :param thermal_conductivity_dict: dict containing conductivities for air, winding, case, core
+        :type thermal_conductivity_dict: dict
+        :param boundary_temperature: dict containing temperatures on boundary lines
+        :type boundary_temperature: dict
         :param case_gap_top: Length top case
         :type case_gap_top: float
         :param case_gap_right: Length right case
@@ -5243,13 +6591,13 @@ class MagneticComponent:
         # femm.closefemm()
 
     @staticmethod
-    def encode_settings(o) -> Dict:
+    def encode_settings(o) -> dict:
         """Encode the magnetic component in a dictionary.
 
         :param o: Magnetic component containing the model.
         :type o: MagneticComponent
         :return: Model encodes as dictionary
-        :rtype: Dict
+        :rtype: dict
         """
         content = {
             "simulation_name": o.simulation_name,
@@ -5274,7 +6622,7 @@ class MagneticComponent:
     @staticmethod
     def decode_settings_from_log(log_file_path: str, working_directory: str = None, verbosity: Verbosity = Verbosity.Silent):
         """
-        Read the given log and returns the magnetic component from th elog.
+        Read the given log and returns the magnetic component from the log.
 
         :param log_file_path: Path to the log file
         :type log_file_path: str
@@ -5296,7 +6644,7 @@ class MagneticComponent:
         if settings is not None:
             cwd = working_directory if working_directory is not None else settings["working_directory"]
             geo = MagneticComponent(component_type=ComponentType[settings["component_type"]], working_directory=cwd,
-                                    verbosity=verbosity)
+                                    onelab_verbosity=verbosity)
 
             settings["core"]["loss_approach"] = LossApproach[settings["core"]["loss_approach"]]
             core_type = settings["core"]["core_type"]
@@ -5316,7 +6664,7 @@ class MagneticComponent:
             else:
                 raise ValueError("unknown core_type for decoding from result_log.")
 
-            if isinstance(settings["core"]["sigma"], List):
+            if isinstance(settings["core"]["sigma"], list):
                 # in case of sigma is a complex number, it is given as a list and needs to translated to complex.
                 settings["core"]["sigma"] = complex(settings["core"]["sigma"][0], settings["core"]["sigma"][1])
 
@@ -5388,12 +6736,12 @@ class MagneticComponent:
                                                    vww["right_bound"])
                     winding_type = WindingType[vww["winding_type"]]
                     if winding_type == WindingType.Single:
-                        print("Winding Type Single")
+                        logger.info("Winding Type Single")
                         winding_scheme = WindingScheme[vww["winding_scheme"]] if vww["winding_scheme"] \
                             is not None else None
                         wrap_para_type = WrapParaType[vww["wrap_para"]] if vww["wrap_para"] is not None else None
                         new_vww.set_winding(conductors[0], turns[winding_number], winding_scheme, wrap_para_type)
-                        print(turns[0])
+                        logger.info(turns[0])
                     elif winding_type == WindingType.TwoInterleaved:
                         new_vww.set_interleaved_winding(conductors[0], turns[0], conductors[1], turns[1],
                                                         InterleavedWindingScheme[vww["winding_scheme"]],
