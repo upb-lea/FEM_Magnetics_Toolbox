@@ -174,8 +174,6 @@ def fixture_inductor_core_material_database(temp_folder: pytest.fixture):
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
         insulation.add_winding_insulations([[0.0005]], per_layer_of_turns=False)
-        insulation.add_turn_insulation([0.25e-5], add_turn_insulations=False)
-        insulation.add_insulation_between_layers(add_insulation_material=False, thickness=0.0005)
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)
@@ -301,8 +299,6 @@ def fixture_inductor_core_material_database_measurement(temp_folder: pytest.fixt
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
         insulation.add_winding_insulations([[0.0005]], per_layer_of_turns=False)
-        insulation.add_turn_insulation([0.25e-5], add_turn_insulations=False)
-        insulation.add_insulation_between_layers(add_insulation_material=False, thickness=0.0005)
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)
@@ -424,8 +420,6 @@ def fixture_inductor_core_fixed_loss_angle(temp_folder: pytest.fixture):
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
         insulation.add_winding_insulations([[0.0005]], per_layer_of_turns=False)
-        insulation.add_turn_insulation([0.25e-5], add_turn_insulations=False)
-        insulation.add_insulation_between_layers(add_insulation_material=False, thickness=0.0005)
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)
@@ -546,8 +540,6 @@ def fixture_inductor_core_fixed_loss_angle_dc(temp_folder: pytest.fixture):
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
         insulation.add_winding_insulations([[0.0005]], per_layer_of_turns=False)
-        insulation.add_turn_insulation([0.25e-5], add_turn_insulations=False)
-        insulation.add_insulation_between_layers(add_insulation_material=False, thickness=0.0005)
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)
@@ -666,8 +658,6 @@ def fixture_inductor_core_fixed_loss_angle_litz_wire(temp_folder: pytest.fixture
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
         insulation.add_winding_insulations([[0.0005]], per_layer_of_turns=False)
-        insulation.add_turn_insulation([0.25e-5], add_turn_insulations=False)
-        insulation.add_insulation_between_layers(add_insulation_material=False, thickness=0.0005)
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)
@@ -1038,8 +1028,6 @@ def fixture_transformer_core_fixed_loss_angle(temp_folder: pytest.fixture):
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
         insulation.add_winding_insulations([[0.0002, 0.0002], [0.0002, 0.0002]], per_layer_of_turns=False)
-        insulation.add_turn_insulation([0.25e-5, 0.25e-5], add_turn_insulations=False)
-        insulation.add_insulation_between_layers(add_insulation_material=False, thickness=0.0002)
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
@@ -1169,8 +1157,6 @@ def fixture_transformer_interleaved_core_fixed_loss_angle(temp_folder: pytest.fi
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
         insulation.add_winding_insulations([[0.0002, 0.0005], [0.0005, 0.0002]], per_layer_of_turns=False)
-        insulation.add_turn_insulation([0.25e-5, 0.25e-5], add_turn_insulations=False)
-        insulation.add_insulation_between_layers(add_insulation_material=False, thickness=0.0002)
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
@@ -1304,8 +1290,6 @@ def fixture_transformer_integrated_core_fixed_loss_angle(temp_folder: pytest.fix
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
         insulation.add_winding_insulations([[0.0002, 0.0005], [0.0005, 0.0002]], per_layer_of_turns=False)
-        insulation.add_turn_insulation([0.25e-5, 0.25e-5], add_turn_insulations=False)
-        insulation.add_insulation_between_layers(add_insulation_material=False, thickness=0.0002)
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
@@ -1456,8 +1440,6 @@ def fixture_transformer_stacked_center_tapped(temp_folder: pytest.fixture):
             center_foil_additional_bobbin=0e-3,
             wrap_para_type=fmt.WrapParaType.FixedThickness,
             foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalUpward)
-        insulation.add_turn_insulation([0.25e-5, 0.25e-5], add_turn_insulations=False)
-        insulation.add_insulation_between_layers(add_insulation_material=False, thickness=2e-4)
 
         geo.set_insulation(insulation)
         geo.set_winding_windows([coil_window, transformer_window])
@@ -1601,8 +1583,6 @@ def fixture_transformer_5_windings(temp_folder: pytest.fixture):
              [iso_against, iso_against, iso_self, iso_against, iso_against],
              [iso_against, iso_against, iso_self, iso_against, iso_against],
              [iso_against, iso_against, iso_against, iso_against, iso_self]], per_layer_of_turns=False)
-        insulation.add_turn_insulation([0.25e-5, 0.25e-5, 0.25e-5, 0.25e-5, 0.25e-5], add_turn_insulations=False)
-        insulation.add_insulation_between_layers(add_insulation_material=False, thickness=0.0001)
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
@@ -1764,8 +1744,6 @@ def fixture_inductor_time_domain(temp_folder: pytest.fixture):
         insulation = fmt.Insulation(flag_insulation=True)
         insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
         insulation.add_winding_insulations([[0.0005]], per_layer_of_turns=False)
-        insulation.add_turn_insulation([0.25e-5, 0.25e-5], add_turn_insulations=False)
-        insulation.add_insulation_between_layers(add_insulation_material=False, thickness=0.0005)
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
@@ -1853,8 +1831,6 @@ def fixture_transformer_time_domain(temp_folder: pytest.fixture):
         insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
         insulation.add_winding_insulations([[0.0002, 0.001],
                                             [0.001, 0.0002]], per_layer_of_turns=False)
-        insulation.add_turn_insulation([0.25e-5, 0.25e-5], add_turn_insulations=False)
-        insulation.add_insulation_between_layers(add_insulation_material=False, thickness=0.0002)
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
@@ -1948,8 +1924,6 @@ def fixture_transformer_3_windings_time_domain(temp_folder: pytest.fixture):
         insulation.add_winding_insulations([[0.0002, 0.0004, 0.0004],
                                             [0.0004, 0.0002, 0.0004],
                                             [0.0004, 0.0004, 0.0002]], per_layer_of_turns=False)
-        insulation.add_turn_insulation([0.25e-5, 0.25e-5, 0.25e-5], add_turn_insulations=False)
-        insulation.add_insulation_between_layers(add_insulation_material=False, thickness=0.0002)
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
@@ -2064,13 +2038,12 @@ def fixture_inductor_electrostatic(temp_folder: pytest.fixture):
         insulation.add_core_insulations(0.2e-3, 0.2e-3, 0.2e-3, 0.2e-3,
                                         dielectric_constant=bobbin_material["dielectric_constant"])
         turn_insulation_material = fmt.insulation_materials_database()["wire_insulation"]["plastic_insulation"]["Plenum Polyvinyl Chloride (Plenum PVC)"]
-        insulation.add_turn_insulation([0.2e-3], dielectric_constant=[turn_insulation_material["dielectric_constant"]],
-                                       add_turn_insulations=True)
+        insulation.add_turn_insulation([0.2e-3], dielectric_constant=[turn_insulation_material["dielectric_constant"]])
         # This is an air between turns if needed
         insulation.add_winding_insulations([[1e-3, 1e-3]], per_layer_of_turns=True)
         # Kapton material is added between every layer of turns
         layer_insulation = fmt.insulation_materials_database()["film_insulation"]["Kapton"]
-        insulation.add_insulation_between_layers(add_insulation_material=True, thickness=0.6e-3, dielectric_constant=layer_insulation["dielectric_constant"])
+        insulation.add_insulation_between_layers(thickness=0.6e-3, dielectric_constant=layer_insulation["dielectric_constant"])
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
@@ -2172,10 +2145,9 @@ def fixture_transformer_electrostatic(temp_folder: pytest.fixture):
                                             [0.095e-3, 0.0002]], per_layer_of_turns=True)
         turn_insulation_material = fmt.insulation_materials_database()["wire_insulation"]["plastic_insulation"]["Plenum Polyvinyl Chloride (Plenum PVC)"]
         insulation.add_turn_insulation([0.25e-5, 0.25e-5],
-                                       dielectric_constant=[turn_insulation_material["dielectric_constant"], turn_insulation_material["dielectric_constant"]],
-                                       add_turn_insulations=False)
+                                       dielectric_constant=[turn_insulation_material["dielectric_constant"], turn_insulation_material["dielectric_constant"]])
         layer_insulation = fmt.insulation_materials_database()["film_insulation"]["Kapton"]
-        insulation.add_insulation_between_layers(add_insulation_material=True, thickness=0.5e-3, dielectric_constant=layer_insulation["dielectric_constant"])
+        insulation.add_insulation_between_layers(thickness=0.5e-3, dielectric_constant=layer_insulation["dielectric_constant"])
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)

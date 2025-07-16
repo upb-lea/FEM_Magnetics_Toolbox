@@ -672,7 +672,7 @@ class Insulation:
     er_layer_insulation: float = None
     er_bobbin: float = None
     bobbin_dimensions: None
-    thickness_of_insulation: float
+    thickness_of_layer_insulation: float
     consistent_ins: bool = True
     draw_insulation_between_layers: bool = True
     flag_insulation: bool = True
@@ -697,6 +697,9 @@ class Insulation:
             self.bobbin_window_w = bobbin_dimensions.bobbin_window_w
             self.bobbin_window_h = bobbin_dimensions.bobbin_window_h
             self.bobbin_h = bobbin_dimensions.bobbin_h
+
+        self.turn_ins = []
+        self.thickness_of_layer_insulation = 0.0
 
     def set_flag_insulation(self, flag: bool):  # to differentiate between the simulation with and without insulation
         """
@@ -728,36 +731,25 @@ class Insulation:
         else:
             self.consistent_ins = True
 
-    def add_turn_insulation(self, insulation_thickness: list[float], dielectric_constant: list[float] = None, add_turn_insulations: bool = False):
+    def add_turn_insulation(self, insulation_thickness: list[float], dielectric_constant: list[float] = None):
         """Add insulation for turns in every winding.
 
         :param insulation_thickness: List of floats which represent the insulation around every winding.
         :type insulation_thickness: list[[float]]
         :param dielectric_constant: relative permittivity of the insulation of the winding
         :type dielectric_constant list[[float]]
-        :param add_turn_insulations: bool to draw the insulation around turns
-        :type add_turn_insulations: bool
         """
-        self.add_turn_insulations = add_turn_insulations
-        # self.er_turn_insulation = dielectric_constant
+        # Check for negative values
+        for t in insulation_thickness:
+            if t < 0:
+                raise ValueError(f"Turn insulation thickness must be positive, got {t}")
+        self.turn_ins = insulation_thickness
+        self.er_turn_insulation = dielectric_constant or [1.0] * len(insulation_thickness)
 
-        if dielectric_constant is not None:
-            self.er_turn_insulation = dielectric_constant
-        else:
-            self.er_turn_insulation = [1.0 for _ in insulation_thickness]
-
-        if add_turn_insulations:
-            self.turn_ins = insulation_thickness
-        else:
-            # self.turn_ins = []
-            self.turn_ins = [0.0 for _ in insulation_thickness]
-
-    def add_insulation_between_layers(self, add_insulation_material: bool = True, thickness: float = 0.0, dielectric_constant: float = None):
+    def add_insulation_between_layers(self, thickness: float = 0.0, dielectric_constant: float = None):
         """
-        Add an insulation (thickness_of_insulation or tape insulation) between layers.
+        Add an insulation (thickness_of_layer_insulation or tape insulation) between layers.
 
-        :param add_insulation_material: show the drawing of the insulation between the layers of turns. If false, it is not drawn and it is an air by default
-        :type add_insulation_material: bool
         :param thickness: the thickness of the insulation between the layers of turns
         :type thickness: float
         :param dielectric_constant: relative permittivity of the insulation between the layers
@@ -766,14 +758,9 @@ class Insulation:
         if thickness <= 0:
             raise ValueError("insulation thickness must be greater than zero.")
         else:
-            self.thickness_of_insulation = thickness
+            self.thickness_of_layer_insulation = thickness
 
         self.er_layer_insulation = dielectric_constant if dielectric_constant is not None else 1.0
-
-        if add_insulation_material:
-            self.draw_insulation_between_layers = True
-        else:
-            self.draw_insulation_between_layers = False
 
     def add_core_insulations(self, top_core: float, bot_core: float, left_core: float, right_core: float, dielectric_constant: float = None):
         """Add insulations between the core and the winding window. Creating those will draw real rectangles in the model.
