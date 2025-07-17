@@ -862,8 +862,8 @@ class Mesh:
         :param curve_loop_iso_cond: List of insulation curve loops
         :type curve_loop_iso_cond: list
         """
-        if not self.insulation.add_turn_insulations:
-            logger.info("Turn insulation drawing skipped.")
+        if not self.insulation.turn_ins:
+            logger.info("Turn insulation is not drawn.")
             return []
         p_iso_cond_center = []
         # points of conductor insulation

@@ -82,12 +82,12 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
     insulation.add_core_insulations(0.2e-3, 0.2e-3, 0.2e-3, 0.2e-3, dielectric_constant=bobbin_material["dielectric_constant"])
     # This is the insulation of the turn itself
     turn_insulation_material = fmt.insulation_materials_database()["wire_insulation"]["plastic_insulation"]["Plenum Polyvinyl Chloride (Plenum PVC)"]
-    insulation.add_turn_insulation([0.2e-3], dielectric_constant=[turn_insulation_material["dielectric_constant"]], add_turn_insulations=True)
+    insulation.add_turn_insulation([0.2e-3], dielectric_constant=[turn_insulation_material["dielectric_constant"]])
     # This is an air between turns if needed
     insulation.add_winding_insulations([[1e-3, 1e-3]], per_layer_of_turns=True)
     # Kapton material is added between every layer of turns
     layer_insulation = fmt.insulation_materials_database()["film_insulation"]["Kapton"]
-    insulation.add_insulation_between_layers(add_insulation_material=True, thickness=0.6e-3, dielectric_constant=layer_insulation["dielectric_constant"])
+    insulation.add_insulation_between_layers(thickness=0.6e-3, dielectric_constant=layer_insulation["dielectric_constant"])
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -96,7 +96,7 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
 
     # 6. create conductor and set parameters: use solid wires
     winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=45)
-    winding.set_solid_round_conductor(conductor_radius=1.1506e-3, conductor_arrangement=fmt.ConductorArrangement.Square)
+    winding.set_solid_round_conductor(conductor_radius=1.1506e-3, conductor_arrangement=fmt.ConductorArrangement.Hexagonal)
     winding.parallel = False  # set True to make the windings parallel, currently only for solid conductors
     # 7. add conductor to vww and add winding window to MagneticComponent
     vww.set_winding(winding, 7, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.VerticalUpward_HorizontalRightward,
