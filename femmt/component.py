@@ -3611,7 +3611,8 @@ class MagneticComponent:
 
             # relative permittivity
             # Turn insulation is not implemented yet for RectangularSolid
-            if self.windings[winding_number].conductor_type == ConductorType.RectangularSolid:
+            # Or if the turn insulation is not drawn
+            if self.windings[winding_number].conductor_type == ConductorType.RectangularSolid or not self.insulation.turn_ins:
                 text_file.write(f"er_turns_insulation_{winding_number + 1} = 1.0;\n")
             else:
                 text_file.write(f"er_turns_insulation_{winding_number + 1} = {self.insulation.er_turn_insulation[winding_number]};\n")

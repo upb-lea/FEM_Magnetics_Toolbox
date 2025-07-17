@@ -89,10 +89,9 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
                                         [0.095e-3, 0.0002]], per_layer_of_turns=True)
     turn_insulation_material = fmt.insulation_materials_database()["wire_insulation"]["plastic_insulation"]["Plenum Polyvinyl Chloride (Plenum PVC)"]
     insulation.add_turn_insulation([0.25e-5, 0.25e-5],
-                                   dielectric_constant=[turn_insulation_material["dielectric_constant"], turn_insulation_material["dielectric_constant"]],
-                                   add_turn_insulations=False)
+                                   dielectric_constant=[turn_insulation_material["dielectric_constant"], turn_insulation_material["dielectric_constant"]])
     layer_insulation = fmt.insulation_materials_database()["film_insulation"]["Kapton"]
-    insulation.add_insulation_between_layers(add_insulation_material=True, thickness=0.5e-3, dielectric_constant=layer_insulation["dielectric_constant"])
+    insulation.add_insulation_between_layers(thickness=0.5e-3, dielectric_constant=layer_insulation["dielectric_constant"])
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)

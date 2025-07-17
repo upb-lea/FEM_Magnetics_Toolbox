@@ -931,51 +931,57 @@ class TwoDaxiSymmetric:
                                     ConductorDistribution.HorizontalRightward_VerticalDownward]
                                 # define a delta insulation
                                 insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
-                                thickness_of_the_insulation_layer = self.insulation.thickness_of_insulation
+                                # thickness_of_the_insulation_layer = self.insulation.thickness_of_layer_insulation
+                                thickness_of_the_insulation_layer = (
+                                    self.insulation.thickness_of_layer_insulation
+                                    if self.insulation.thickness_of_layer_insulation
+                                    else self.insulation.cond_cond[num][num]
+                                )
+                                thickness_of_turn_insulation = (self.insulation.turn_ins[num] if num < len(self.insulation.turn_ins) else 0.0)
                                 # Set the starting position and step size based on initial conditions
                                 if vertical_first:
                                     if upward_movement:
-                                        start_y = bot_bound + winding.conductor_radius + self.insulation.turn_ins[num]  # Start from the bottom
-                                        step_y = winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num]
+                                        start_y = bot_bound + winding.conductor_radius + thickness_of_turn_insulation  # Start from the bottom
+                                        step_y = winding.conductor_radius * 2 + 2 * thickness_of_turn_insulation
                                     else:
-                                        start_y = top_bound - winding.conductor_radius - self.insulation.turn_ins[num]  # Start from the top
-                                        step_y = -(winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num])
+                                        start_y = top_bound - winding.conductor_radius - thickness_of_turn_insulation  # Start from the top
+                                        step_y = -(winding.conductor_radius * 2 + 2 * thickness_of_turn_insulation)
 
                                     if rightward_movement:
                                         # Moving right after completing a column
-                                        start_x = left_bound + winding.conductor_radius + self.insulation.turn_ins[num]
-                                        step_x = winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + thickness_of_the_insulation_layer
+                                        start_x = left_bound + winding.conductor_radius + thickness_of_turn_insulation
+                                        step_x = winding.conductor_radius * 2 + 2 * thickness_of_turn_insulation + thickness_of_the_insulation_layer
                                         # For insulation between layer
-                                        start_x_layer = left_bound + 2 * winding.conductor_radius + 2 * self.insulation.turn_ins[num]
-                                        step_x_layer = winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + thickness_of_the_insulation_layer
+                                        start_x_layer = left_bound + 2 * winding.conductor_radius + 2 * thickness_of_turn_insulation
+                                        step_x_layer = winding.conductor_radius * 2 + 2 * thickness_of_turn_insulation + thickness_of_the_insulation_layer
                                     else:
                                         # Moving left after completing a column
-                                        start_x = right_bound - winding.conductor_radius - self.insulation.turn_ins[num]
-                                        step_x = -(winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + thickness_of_the_insulation_layer)
+                                        start_x = right_bound - winding.conductor_radius - thickness_of_turn_insulation
+                                        step_x = -(winding.conductor_radius * 2 + 2 * thickness_of_turn_insulation + thickness_of_the_insulation_layer)
                                         # For insulation between layer
-                                        start_x_layer = right_bound - 2 * winding.conductor_radius - 2 * self.insulation.turn_ins[num]
-                                        step_x_layer = -(winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + thickness_of_the_insulation_layer)
+                                        start_x_layer = right_bound - 2 * winding.conductor_radius - 2 * thickness_of_turn_insulation
+                                        step_x_layer = -(winding.conductor_radius * 2 + 2 * thickness_of_turn_insulation + thickness_of_the_insulation_layer)
                                         # Determine if the first movement is horizontally (rightward or leftward)
                                 else:
                                     if rightward_movement:
-                                        start_x = left_bound + winding.conductor_radius + self.insulation.turn_ins[num]  # start from the left
-                                        step_x = winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num]
+                                        start_x = left_bound + winding.conductor_radius + thickness_of_turn_insulation  # start from the left
+                                        step_x = winding.conductor_radius * 2 + 2 * thickness_of_turn_insulation
                                     else:
-                                        start_x = right_bound - winding.conductor_radius - self.insulation.turn_ins[num]  # Start from the right
-                                        step_x = -(winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num])
+                                        start_x = right_bound - winding.conductor_radius - thickness_of_turn_insulation  # Start from the right
+                                        step_x = -(winding.conductor_radius * 2 + 2 * thickness_of_turn_insulation)
 
                                     if upward_movement:
-                                        start_y = bot_bound + winding.conductor_radius + self.insulation.turn_ins[num]   # Moving top after completing a raw
-                                        step_y = winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + thickness_of_the_insulation_layer
+                                        start_y = bot_bound + winding.conductor_radius + thickness_of_turn_insulation   # Moving top after completing a raw
+                                        step_y = winding.conductor_radius * 2 + 2 * thickness_of_turn_insulation + thickness_of_the_insulation_layer
                                         # For insulation between layer
-                                        start_y_layer = bot_bound + 2 * winding.conductor_radius + 2 * self.insulation.turn_ins[num]
-                                        step_y_layer = winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + thickness_of_the_insulation_layer
+                                        start_y_layer = bot_bound + 2 * winding.conductor_radius + 2 * thickness_of_turn_insulation
+                                        step_y_layer = winding.conductor_radius * 2 + 2 * thickness_of_turn_insulation + thickness_of_the_insulation_layer
                                     else:
-                                        start_y = top_bound - winding.conductor_radius - self.insulation.turn_ins[num]  # Moving bottom after completing a raw
-                                        step_y = -(winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + thickness_of_the_insulation_layer)
+                                        start_y = top_bound - winding.conductor_radius - thickness_of_turn_insulation  # Moving bottom after completing a raw
+                                        step_y = -(winding.conductor_radius * 2 + 2 * thickness_of_turn_insulation + thickness_of_the_insulation_layer)
                                         # For insulation between layer
-                                        start_y_layer = top_bound - 2 * winding.conductor_radius - 2 * self.insulation.turn_ins[num]
-                                        step_y_layer = -(winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + thickness_of_the_insulation_layer)
+                                        start_y_layer = top_bound - 2 * winding.conductor_radius - 2 * thickness_of_turn_insulation
+                                        step_y_layer = -(winding.conductor_radius * 2 + 2 * thickness_of_turn_insulation + thickness_of_the_insulation_layer)
 
                                 # Loop and place conductors accordingly
                                 x = start_x
@@ -1046,7 +1052,8 @@ class TwoDaxiSymmetric:
                                                 [x_l - insulation_delta, bot_bound, 0, mesh_to_conductor]
                                             ]
                                         # Add the points to the layer insulation data structure
-                                        if self.insulation.draw_insulation_between_layers:
+                                        # if self.insulation.draw_insulation_between_layers:
+                                        if self.insulation.thickness_of_layer_insulation:
                                             self.p_iso_layer.append(layer_insulation_points)
                                         if not zigzag:
                                             # Start the next column with the same starting point (consistent direction)
@@ -1119,7 +1126,8 @@ class TwoDaxiSymmetric:
                                                 [right_bound, y_l - insulation_delta, 0, self.mesh_data.c_window]
                                             ]
                                         # Add the points to the layer insulation data structure
-                                        if self.insulation.draw_insulation_between_layers:
+                                        # if self.insulation.draw_insulation_between_layers:
+                                        if self.insulation.thickness_of_layer_insulation:
                                             self.p_iso_layer.append(layer_insulation_points)
                                         if not zigzag:
                                             # Start the next raw with the same starting point (consistent direction)
@@ -1175,13 +1183,21 @@ class TwoDaxiSymmetric:
                                         self.p_conductor[num][i][0] += adjustment_x
 
                             elif conductor_arrangement == ConductorArrangement.Hexagonal:
-                                thickness_of_the_insulation_layer = self.insulation.thickness_of_insulation
+                                # thickness_of_the_insulation_layer = self.insulation.thickness_of_layer_insulation
+                                thickness_of_the_insulation_layer = (
+                                    self.insulation.thickness_of_layer_insulation
+                                    if self.insulation.thickness_of_layer_insulation
+                                    else self.insulation.cond_cond[num][num]
+                                )
                                 if placing_strategy == ConductorDistribution.VerticalUpward_HorizontalRightward:
+                                    thickness_of_turn_insulation = (self.insulation.turn_ins[num]
+                                                                    if num < len(self.insulation.turn_ins)
+                                                                    else 0.0)
+                                    y = bot_bound + winding.conductor_radius + thickness_of_turn_insulation
+                                    x = left_bound + winding.conductor_radius + thickness_of_turn_insulation
 
-                                    y = bot_bound + winding.conductor_radius + self.insulation.turn_ins[num]
-                                    x = left_bound + winding.conductor_radius + self.insulation.turn_ins[num]
-                                    start_x_layer = left_bound + 2 * winding.conductor_radius + 2 * self.insulation.turn_ins[num]
-                                    step_x_layer = 2 * np.cos(np.pi / 6) * (winding.conductor_radius + self.insulation.turn_ins[num] / 2 + \
+                                    start_x_layer = left_bound + 2 * winding.conductor_radius + 2 * thickness_of_turn_insulation
+                                    step_x_layer = 2 * np.cos(np.pi / 6) * (winding.conductor_radius + thickness_of_turn_insulation / 2 + \
                                                                             thickness_of_the_insulation_layer)
                                     mesh_to_conductor = min(self.mesh_data.c_conductor)
                                     insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
@@ -1228,9 +1244,9 @@ class TwoDaxiSymmetric:
 
                                             if zigzag:
                                                 if counter_layer % 2 == 0:
-                                                    y += winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + winding_insulation
+                                                    y += winding.conductor_radius * 2 + 2 * thickness_of_turn_insulation + winding_insulation
                                                 elif counter_layer % 2 == 1:
-                                                    y += -(winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + winding_insulation)
+                                                    y += -(winding.conductor_radius * 2 + 2 * thickness_of_turn_insulation + winding_insulation)
                                             else:
                                                 y += winding.conductor_radius * 2 + 2 * self.insulation.cond_cond[num][num] + winding_insulation
                                             # from bottom to top
@@ -1240,9 +1256,10 @@ class TwoDaxiSymmetric:
                                             [start_x_layer + thickness_of_the_insulation_layer - insulation_delta, bot_bound, 0, mesh_to_conductor],
                                             [start_x_layer + insulation_delta, bot_bound, 0, mesh_to_conductor]
                                         ]
-                                        if self.insulation.draw_insulation_between_layers:
+                                        # if self.insulation.draw_insulation_between_layers:
+                                        if self.insulation.thickness_of_layer_insulation:
                                             self.p_iso_layer.append(layer_insulation_points)
-                                        x += 2 * np.cos(np.pi / 6) * (winding.conductor_radius + self.insulation.turn_ins[num] / 2 + \
+                                        x += 2 * np.cos(np.pi / 6) * (winding.conductor_radius + thickness_of_turn_insulation / 2 + \
                                                                       thickness_of_the_insulation_layer)
                                         start_x_layer += step_x_layer
                                         counter_layer += 1
@@ -1253,21 +1270,23 @@ class TwoDaxiSymmetric:
 
                                         if not zigzag:
                                             if base_line:
-                                                y = bot_bound + winding.conductor_radius + self.insulation.turn_ins[num]
+                                                y = bot_bound + winding.conductor_radius + thickness_of_turn_insulation
                                             else:
-                                                y = bot_bound + 2 * winding.conductor_radius + self.insulation.turn_ins[num] / 2
+                                                y = bot_bound + 2 * winding.conductor_radius + thickness_of_turn_insulation / 2
                                         elif zigzag:
                                             if base_line:
-                                                y = bot_bound + 4 * winding.conductor_radius + self.insulation.turn_ins[num]
+                                                y = bot_bound + 4 * winding.conductor_radius + thickness_of_turn_insulation
                                             else:
-                                                y = top_bound - 3 * winding.conductor_radius - self.insulation.turn_ins[num] / 2
+                                                y = top_bound - 3 * winding.conductor_radius - thickness_of_turn_insulation / 2
 
                                 elif placing_strategy == ConductorDistribution.HorizontalRightward_VerticalUpward:
-
-                                    y = bot_bound + winding.conductor_radius + self.insulation.turn_ins[num][num]
-                                    x = left_bound + winding.conductor_radius + self.insulation.turn_ins[num][num]
-                                    start_y_layer = bot_bound + 2 * winding.conductor_radius + 2 * self.insulation.turn_ins[num]
-                                    step_y_layer = 2 * np.cos(np.pi / 6) * (winding.conductor_radius + self.insulation.turn_ins[num] / 2 + \
+                                    thickness_of_turn_insulation = (self.insulation.turn_ins[num]
+                                                                    if num < len(self.insulation.turn_ins)
+                                                                    else 0.0)
+                                    y = bot_bound + winding.conductor_radius + thickness_of_turn_insulation
+                                    x = left_bound + winding.conductor_radius + thickness_of_turn_insulation
+                                    start_y_layer = bot_bound + 2 * winding.conductor_radius + 2 * thickness_of_turn_insulation
+                                    step_y_layer = 2 * np.cos(np.pi / 6) * (winding.conductor_radius + thickness_of_turn_insulation / 2 + \
                                                                             thickness_of_the_insulation_layer)
                                     mesh_to_conductor = min(self.mesh_data.c_conductor)
                                     insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
@@ -1314,11 +1333,11 @@ class TwoDaxiSymmetric:
                                                 winding_insulation = self.insulation.cond_cond[num][counter_layer]
                                             if zigzag:
                                                 if counter_layer % 2 == 0:
-                                                    x += winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + winding_insulation
+                                                    x += winding.conductor_radius * 2 + 2 * thickness_of_turn_insulation + winding_insulation
                                                 elif counter_layer % 2 == 1:
-                                                    x += -(winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + winding_insulation)
+                                                    x += -(winding.conductor_radius * 2 + 2 * thickness_of_turn_insulation + winding_insulation)
                                             else:
-                                                x += winding.conductor_radius * 2 + 2 * self.insulation.turn_ins[num] + winding_insulation
+                                                x += winding.conductor_radius * 2 + 2 * thickness_of_turn_insulation + winding_insulation
 
                                         # Insert layer insulation after each layer
                                         layer_insulation_points = [
@@ -1327,10 +1346,11 @@ class TwoDaxiSymmetric:
                                             [right_bound, start_y_layer + thickness_of_the_insulation_layer - insulation_delta, 0, mesh_to_conductor],
                                             [right_bound, start_y_layer + insulation_delta, 0, mesh_to_conductor]
                                         ]
-                                        if self.insulation.draw_insulation_between_layers:
+                                        # if self.insulation.draw_insulation_between_layers:
+                                        if self.insulation.thickness_of_layer_insulation:
                                             self.p_iso_layer.append(layer_insulation_points)
 
-                                        y += 2 * np.cos(np.pi / 6) * (winding.conductor_radius + self.insulation.turn_ins[num] / 2 + \
+                                        y += 2 * np.cos(np.pi / 6) * (winding.conductor_radius + thickness_of_turn_insulation / 2 + \
                                                                       thickness_of_the_insulation_layer)
                                         start_y_layer += step_y_layer
                                         counter_layer += 1
@@ -1338,14 +1358,14 @@ class TwoDaxiSymmetric:
                                         base_line = not base_line
                                         if not zigzag:
                                             if base_line:
-                                                x = left_bound + winding.conductor_radius + self.insulation.turn_ins[num]
+                                                x = left_bound + winding.conductor_radius + thickness_of_turn_insulation
                                             else:
-                                                x = left_bound + 2 * winding.conductor_radius + self.insulation.turn_ins[num] / 2
+                                                x = left_bound + 2 * winding.conductor_radius + thickness_of_turn_insulation / 2
                                         elif zigzag:
                                             if base_line:
-                                                x = left_bound + winding.conductor_radius + self.insulation.turn_ins[num]
+                                                x = left_bound + winding.conductor_radius + thickness_of_turn_insulation
                                             else:
-                                                x = right_bound - 3 * winding.conductor_radius - self.insulation.turn_ins[num] / 2
+                                                x = right_bound - 3 * winding.conductor_radius - thickness_of_turn_insulation / 2
                             elif conductor_arrangement == ConductorArrangement.SquareFullWidth:
                                 y = bot_bound + winding.conductor_radius
                                 x = left_bound + winding.conductor_radius
@@ -2220,7 +2240,7 @@ class TwoDaxiSymmetric:
 
     def draw_insulation_conductor(self):
         """Draw insulation around each conductor turn."""
-        if not self.insulation.add_turn_insulations:
+        if not self.insulation.turn_ins:
             return
 
         for winding_window in self.winding_windows:
@@ -2253,8 +2273,8 @@ class TwoDaxiSymmetric:
                                 [center_x, center_y - insulation_radius, 0, self.mesh_data.c_conductor[winding_number]]  # Bottom
                             ])
 
-                    # Convert collected points to a NumPy array and store it
-                    self.p_iso_conductor[winding_number] = np.array(insulation_points)
+                            # Convert collected points to a NumPy array and store it
+                            self.p_iso_conductor[winding_number] = np.array(insulation_points)
                 # TODO Add logic for rectangularsolid.
 
         logger.info("Insulation around conductors drawn successfully.")
@@ -2276,8 +2296,7 @@ class TwoDaxiSymmetric:
 
         if self.insulation.flag_insulation:  # check flag before drawing insulations
             self.draw_insulations()
-        if self.insulation.add_turn_insulations is True:
-            self.draw_insulation_conductor()
+        self.draw_insulation_conductor()
         # TODO: Region
         # if self.core.core_type == CoreType.Single:
         #     self.draw_region_single()

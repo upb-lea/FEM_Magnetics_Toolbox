@@ -146,9 +146,6 @@ def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, s
         wrap_para_type=fmt.WrapParaType.FixedThickness,
         foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalUpward)
 
-    insulation.add_turn_insulation([0.25e-5, 0.25e-5], add_turn_insulations=False)
-    insulation.add_insulation_between_layers(add_insulation_material=False, thickness=0.0005)
-
     geo.set_insulation(insulation)
     geo.set_winding_windows([coil_window, transformer_window])
 
