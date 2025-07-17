@@ -1524,11 +1524,11 @@ class Mesh:
             bg_field = gmsh.model.mesh.field.add("PostView")
             # TODO: gmsh.model.mesh.field.setNumber(bg_field, "ViewTag", sf_view)
             gmsh.model.mesh.field.setAsBackgroundMesh(bg_field)
-            logger.info("\nMeshing...\n")
+            logger.info("Meshing...")
             gmsh.model.mesh.generate(2)
         else:
             # Mesh the model
-            logger.info("\nMeshing...\n")
+            logger.info("Meshing...")
             gmsh.model.mesh.generate(2)
 
         if not os.path.exists(self.mesh_folder_path):

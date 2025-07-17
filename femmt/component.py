@@ -98,9 +98,7 @@ class MagneticComponent:
 
         self.wwr_enabled = wwr_enabled
 
-        logger.info(f"\n"
-                    f"Initialized a new Magnetic Component of type {component_type.name}\n"
-                    f"--- --- --- ---")
+        logger.info(f"Initialized a new Magnetic Component of type {component_type.name}")
 
         # To make sure femm is only imported once
         self.femm_is_imported = False
@@ -500,12 +498,10 @@ class MagneticComponent:
         for winding in self.windings:
             if winding.conductor_type == ConductorType.RoundLitz:
                 logger.info(f"Updated Litz Configuration: \n"
-                            f" ff: {winding.ff} \n"
-                            f" Number of layers/strands: {winding.n_layers}/{winding.n_strands} \n"
-                            f" Strand radius: {winding.strand_radius} \n"
-                            f" Conductor radius: {winding.conductor_radius}\n"
-                            f"---")
-
+                            f"    ff: {winding.ff} \n"
+                            f"    Number of layers/strands: {winding.n_layers}/{winding.n_strands} \n"
+                            f"    Strand radius: {winding.strand_radius} \n"
+                            f"    Conductor radius: {winding.conductor_radius}")
         # Set excitation parameter lists
         self.current = [None] * len(windings)
         self.current_density = [None] * len(windings)
@@ -1060,11 +1056,10 @@ class MagneticComponent:
                 raise ValueError(
                     "Negative currents are not allowed. Use the phase + 180 degree to generate a negative current.")
 
-        logger.info(f"\n---\n"
-                    f"Excitation: \n"
-                    f"Frequency: {frequency}\n"
-                    f"Current(s): {amplitude_list}\n"
-                    f"Phase(s): {phase_deg_list}\n")
+        logger.info(f"Excitation:\n"
+                    f"    Frequency: {frequency}\n"
+                    f"    Current(s): {amplitude_list}\n"
+                    f"    Phase(s): {phase_deg_list}")
 
         # -- Excitation --
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
@@ -1331,9 +1326,8 @@ class MagneticComponent:
 
     def simulate(self):
         """Initialize the onelab client. Provides the GetDP based solver with the created mesh file."""
-        logger.info("\n---\n"
-                    "Initialize ONELAB API\n"
-                    "Run Simulation\n")
+        logger.info("Initialize ONELAB API")
+        logger.info("Run Simulation")
         if not self.simulation_type == SimulationType.ElectroStatic:
             self.log_material_properties()
 
@@ -1385,8 +1379,7 @@ class MagneticComponent:
 
         """
         # All shared control variables and parameters are passed to a temporary Prolog file
-        logger.info("\n---\n"
-                    "Write simulation parameters to .pro files (file communication).\n")
+        logger.info("Write simulation parameters to .pro files (file communication).")
 
         # Write initialization parameters for simulation in 'Parameter.pro' file
         self.write_electro_magnetic_parameter_pro()
@@ -2786,9 +2779,10 @@ class MagneticComponent:
                     f"Core saturation detected! B-field ({abs(b_field)} T) exceeds {saturation_threshold * 100}% of the saturation flux density"
                     f" ({saturation_flux_density} T).")
 
-            logger.info(f"B-field: {b_field:.4f} T")
-            logger.info(f"Flux: {total_flux:.4f} Wb")
-            logger.info(f"Total Reluctance: {reluctance:.6e} A/Wb")
+            logger.info(f"Reluctance model pre-check:\n"
+                        f"    B-field: {b_field:.4f} T\n"
+                        f"    Flux: {total_flux:.4f} Wb\n"
+                        f"    Total Reluctance: {reluctance:.6e} A/Wb")
 
         else:
             # single core with stray path
@@ -3679,7 +3673,7 @@ class MagneticComponent:
                 else:
                     text_file.write("Flag_ground_OutBoundary = 0;\n")
 
-            logger.info(f"Cell surface area: {self.windings[winding_number].a_cell} \n"
+            logger.info(f"Cell surface area: {self.windings[winding_number].a_cell}, "
                         f"Reduced frequency: {self.red_freq[winding_number]}")
 
             if self.red_freq[winding_number] > self.max_reduced_frequency and self.windings[winding_number].conductor_type == ConductorType.RoundLitz:

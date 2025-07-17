@@ -26,6 +26,8 @@ import magnethub as mh
 import pandas as pd
 import tqdm
 
+logger = logging.getLogger(__name__)
+
 class StackedTransformerOptimization:
     """Perform optimizations for the stacked transformer."""
 
@@ -518,7 +520,7 @@ class StackedTransformerOptimization:
             :type sampler: optuna.sampler-object
             """
             if os.path.exists(f"{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.sqlite3"):
-                print("Existing study found. Proceeding.")
+                logger.info("Existing study found. Proceeding.")
 
             target_and_fixed_parameters = StackedTransformerOptimization.ReluctanceModel.calculate_fix_parameters(config)
 
@@ -548,26 +550,26 @@ class StackedTransformerOptimization:
                 if len(study_in_storage.trials) < target_number_trials:
                     study_in_memory = optuna.create_study(directions=['minimize', 'minimize'],
                                                           study_name=config.stacked_transformer_study_name, sampler=sampler)
-                    print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
+                    logger.info(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
                     study_in_memory.add_trials(study_in_storage.trials)
                     number_trials = target_number_trials - len(study_in_memory.trials)
                     study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
                     study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
-                    print(f"Finished {number_trials} trials.")
-                    print(f"current time: {datetime.datetime.now()}")
+                    logger.info(f"Finished {number_trials} trials.")
+                    logger.info(f"current time: {datetime.datetime.now()}")
                 else:
-                    print(f"Study has already {len(study_in_storage.trials)} trials, and target is {target_number_trials} trials.")
+                    logger.info(f"Study has already {len(study_in_storage.trials)} trials, and target is {target_number_trials} trials.")
 
             else:
                 # normal simulation with number_trials
                 study_in_memory = optuna.create_study(directions=['minimize', 'minimize'], study_name=config.stacked_transformer_study_name, sampler=sampler)
-                print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
+                logger.info(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
                 study_in_memory.add_trials(study_in_storage.trials)
                 study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
 
                 study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
-                print(f"Finished {number_trials} trials.")
-                print(f"current time: {datetime.datetime.now()}")
+                logger.info(f"Finished {number_trials} trials.")
+                logger.info(f"current time: {datetime.datetime.now()}")
             StackedTransformerOptimization.ReluctanceModel.save_config(config)
 
         @staticmethod
@@ -600,7 +602,7 @@ class StackedTransformerOptimization:
             """
             database_url = f'sqlite:///{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.sqlite3'
             if os.path.isfile(database_url.replace('sqlite:///', '')):
-                print("Existing study found.")
+                logger.info("Existing study found.")
             else:
                 raise ValueError(f"Can not find database: {database_url}")
             loaded_study = optuna.load_study(study_name=config.stacked_transformer_study_name, storage=database_url)
@@ -807,7 +809,7 @@ class StackedTransformerOptimization:
                     f'case_{index}.json')
 
                 if os.path.exists(destination_json_file):
-                    print(f'case_{index}.json already exists. Skip simulation.')
+                    logger.info(f'case_{index}.json already exists. Skip simulation.')
                 else:
 
                     try:
@@ -848,13 +850,13 @@ class StackedTransformerOptimization:
 
                         fem_output = StackedTransformerOptimization.FemSimulation.single_fem_simulation(fem_input, show_visual_outputs=show_visual_outputs)
 
-                        reluctance_df.at[index, 'n'] = fem_output.n_conc
-                        reluctance_df.at[index, 'l_s_conc'] = fem_output.l_s_conc
-                        reluctance_df.at[index, 'l_h_conc'] = fem_output.l_h_conc
-                        reluctance_df.at[index, 'p_loss_winding_1'] = fem_output.p_loss_winding_1
-                        reluctance_df.at[index, 'p_loss_winding_2'] = fem_output.p_loss_winding_2
-                        reluctance_df.at[index, 'eddy_core'] = fem_output.eddy_core
-                        reluctance_df.at[index, 'core'] = fem_output.core
+                        reluctance_df.loc[index, 'n'] = fem_output.n_conc
+                        reluctance_df.loc[index, 'l_s_conc'] = fem_output.l_s_conc
+                        reluctance_df.loc[index, 'l_h_conc'] = fem_output.l_h_conc
+                        reluctance_df.loc[index, 'p_loss_winding_1'] = fem_output.p_loss_winding_1
+                        reluctance_df.loc[index, 'p_loss_winding_2'] = fem_output.p_loss_winding_2
+                        reluctance_df.loc[index, 'eddy_core'] = fem_output.eddy_core
+                        reluctance_df.loc[index, 'core'] = fem_output.core
 
                         # copy result files to result-file folder
                         source_json_file = os.path.join(
@@ -865,13 +867,13 @@ class StackedTransformerOptimization:
 
                     except Exception as e:
                         print(f"The following exception was raised: {e}")
-                        reluctance_df.at[index, 'n'] = None
-                        reluctance_df.at[index, 'l_s_conc'] = None
-                        reluctance_df.at[index, 'l_h_conc'] = None
-                        reluctance_df.at[index, 'p_loss_winding_1'] = None
-                        reluctance_df.at[index, 'p_loss_winding_2'] = None
-                        reluctance_df.at[index, 'eddy_core'] = None
-                        reluctance_df.at[index, 'core'] = None
+                        reluctance_df.loc[index, 'n'] = None
+                        reluctance_df.loc[index, 'l_s_conc'] = None
+                        reluctance_df.loc[index, 'l_h_conc'] = None
+                        reluctance_df.loc[index, 'p_loss_winding_1'] = None
+                        reluctance_df.loc[index, 'p_loss_winding_2'] = None
+                        reluctance_df.loc[index, 'eddy_core'] = None
+                        reluctance_df.loc[index, 'core'] = None
             return reluctance_df
 
         @staticmethod
@@ -1013,8 +1015,8 @@ class StackedTransformerOptimization:
             :rtype: pd.DataFrame
             """
             files_in_folder = [f for f in os.listdir(fem_results_folder_path) if os.path.isfile(os.path.join(fem_results_folder_path, f))]
-            print(files_in_folder)
-            print(len(files_in_folder))
+            logger.info(files_in_folder)
+            logger.info(len(files_in_folder))
 
             # add new columns to the dataframe, init values with None
             reluctance_df['fem_inductance'] = None

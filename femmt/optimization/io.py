@@ -189,7 +189,7 @@ class InductorOptimization:
                 (available_height + config.insulations.primary_to_primary) / (litz_wire_diameter + config.insulations.primary_to_primary))
             max_turns = possible_number_turns_per_row * possible_number_turns_per_column
             if max_turns < 1:
-                logger.warning("Max. number of turns per window < 1")
+                logger.debug("Max. number of turns per window < 1")
                 return float('nan'), float('nan')
 
             turns = trial.suggest_int('turns', 1, max_turns)
@@ -223,7 +223,7 @@ class InductorOptimization:
             try:
                 reluctance_output: ReluctanceModelOutput = InductorOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_input)
             except ValueError as e:
-                logger.info("bot air gap: No fitting air gap length")
+                logger.debug("bot air gap: No fitting air gap length")
                 return float('nan'), float('nan')
 
             trial.set_user_attr('p_winding', reluctance_output.p_winding)
@@ -346,7 +346,7 @@ class InductorOptimization:
             :type sampler: optuna.sampler-object
             """
             if os.path.exists(f"{config.inductor_optimization_directory}/{config.inductor_study_name}.sqlite3"):
-                print("Existing study found. Proceeding.")
+                logger.info("Existing study found. Proceeding.")
 
             target_and_fixed_parameters = InductorOptimization.ReluctanceModel.calculate_fix_parameters(config)
 
@@ -394,31 +394,34 @@ class InductorOptimization:
                     number_trials = target_number_trials - len(study_in_memory.trials)
                     study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
                     study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
-                    print(f"Finished {number_trials} trials.")
-                    print(f"current time: {datetime.datetime.now()}")
+                    logger.info(f"Finished {number_trials} trials.")
+                    logger.info(f"current time: {datetime.datetime.now()}")
                 else:
-                    print(f"Study has already {len(study_in_storage.trials)} trials, and target is {target_number_trials} trials.")
+                    logger.info(f"Study has already {len(study_in_storage.trials)} trials, and target is {target_number_trials} trials.")
 
             else:
                 # normal simulation with number_trials
                 study_in_memory = optuna.create_study(directions=['minimize', 'minimize'], study_name=config.inductor_study_name, sampler=sampler)
-                print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
+                logger.info(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
                 study_in_memory.add_trials(study_in_storage.trials)
                 study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
 
                 study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
-                print(f"Finished {number_trials} trials.")
-                print(f"current time: {datetime.datetime.now()}")
+                logger.info(f"Finished {number_trials} trials.")
+                logger.info(f"current time: {datetime.datetime.now()}")
             InductorOptimization.ReluctanceModel.save_config(config)
+            InductorOptimization.ReluctanceModel.show_study_results(config, show_results=False)
 
         @staticmethod
-        def show_study_results(config: InductorOptimizationDTO) -> None:
+        def show_study_results(config: InductorOptimizationDTO, show_results: bool = False) -> None:
             """Show the results of a study.
 
             A local .html file is generated under config.working_directory to store the interactive plotly plots on disk.
 
             :param config: Integrated transformer configuration file
             :type config: ItoSingleInputConfig
+            :param show_results: True to directly open the browser to view the results.
+            :type show_results: bool
             """
             study = optuna.load_study(study_name=config.inductor_study_name,
                                       storage=f"sqlite:///{config.inductor_optimization_directory}/{config.inductor_study_name}.sqlite3")
@@ -427,7 +430,8 @@ class InductorOptimization:
             fig.update_layout(title=f"{config.inductor_study_name} <br><sup>{config.inductor_optimization_directory}</sup>")
             fig.write_html(f"{config.inductor_optimization_directory}/{config.inductor_study_name}"
                            f"_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
-            fig.show()
+            if show_results:
+                fig.show()
 
         @staticmethod
         def save_config(config: InductorOptimizationDTO) -> None:
@@ -468,7 +472,7 @@ class InductorOptimization:
             """
             database_url = f'sqlite:///{config.inductor_optimization_directory}/{config.inductor_study_name}.sqlite3'
             if os.path.isfile(database_url.replace('sqlite:///', '')):
-                print("Existing study found.")
+                logger.info("Existing study found.")
             else:
                 raise ValueError(f"Can not find database: {database_url}")
             loaded_study = optuna.load_study(study_name=config.inductor_study_name, storage=database_url)
@@ -624,7 +628,7 @@ class InductorOptimization:
                     target_and_fix_parameters.working_directories.fem_simulation_results_directory,
                     f'case_{index}.json')
                 if os.path.exists(destination_json_file):
-                    print(f'case_{index}.json already exists. Skip simulation.')
+                    logger.info(f'case_{index}.json already exists. Skip simulation.')
                 else:
 
                     try:
@@ -658,10 +662,10 @@ class InductorOptimization:
                         # fem simulation here
                         fem_output = InductorOptimization.FemSimulation.single_fem_simulation(fem_input, False)
 
-                        reluctance_df.at[index, 'fem_inductance'] = fem_output.fem_inductance
-                        reluctance_df.at[index, 'fem_p_loss_winding'] = fem_output.fem_p_loss_winding
-                        reluctance_df.at[index, 'fem_eddy_core'] = fem_output.fem_eddy_core
-                        reluctance_df.at[index, 'fem_core'] = fem_output.fem_core_total
+                        reluctance_df.loc[index, 'fem_inductance'] = fem_output.fem_inductance
+                        reluctance_df.loc[index, 'fem_p_loss_winding'] = fem_output.fem_p_loss_winding
+                        reluctance_df.loc[index, 'fem_eddy_core'] = fem_output.fem_eddy_core
+                        reluctance_df.loc[index, 'fem_core'] = fem_output.fem_core_total
 
                         # copy result files to result-file folder
                         source_json_file = os.path.join(
@@ -672,10 +676,10 @@ class InductorOptimization:
 
                     except Exception as e:
                         print(e)
-                        reluctance_df.at[index, 'fem_inductance'] = None
-                        reluctance_df.at[index, 'fem_p_loss_winding'] = None
-                        reluctance_df.at[index, 'fem_eddy_core'] = None
-                        reluctance_df.at[index, 'fem_core'] = None
+                        reluctance_df.loc[index, 'fem_inductance'] = None
+                        reluctance_df.loc[index, 'fem_p_loss_winding'] = None
+                        reluctance_df.loc[index, 'fem_eddy_core'] = None
+                        reluctance_df.loc[index, 'fem_core'] = None
             return reluctance_df
 
         @staticmethod
