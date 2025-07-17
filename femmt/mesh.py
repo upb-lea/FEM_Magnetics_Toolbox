@@ -10,7 +10,6 @@ GMSH default procedure
 # Python standard libraries
 import os
 import numpy as np
-import warnings
 import logging
 
 # Third parry libraries
@@ -1052,8 +1051,8 @@ class Mesh:
 
         # The first curve loop represents the outer bounds: self.curve_loop_air (should only contain one element)
         # The other curve loops represent holes in the surface -> For each conductor as well as each insulation
-        self.plane_surface_air.append(gmsh.model.geo.addPlaneSurface(curve_loop_air + flatten_curve_loop_cond + curve_loop_iso_core +
-                                                                     curve_loop_iso_top_core + curve_loop_iso_bot_core +
+        self.plane_surface_air.append(gmsh.model.geo.addPlaneSurface(curve_loop_air + flatten_curve_loop_cond + curve_loop_iso_core + \
+                                                                     curve_loop_iso_top_core + curve_loop_iso_bot_core + \
                                                                      curve_loop_iso_layer + flatten_curve_loop_iso_cond))
 
         # if curve_loop_iso_core is not None:

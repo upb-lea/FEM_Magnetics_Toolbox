@@ -663,7 +663,6 @@ class Insulation:
     In general, it is not necessary to add an insulation object at all when no insulation is needed.
     """
 
-
     conductor_type: ConductorType  # it is needed here tempoarily
     cond_cond: list[list[float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
     core_cond: list[float] = None  # list with size 4x1, with respectively isolation of cond_n -> [top_core, bot_core, left_core, right_core]
