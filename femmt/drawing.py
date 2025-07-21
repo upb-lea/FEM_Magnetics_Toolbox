@@ -843,11 +843,13 @@ class TwoDaxiSymmetric:
                                             if round(y_move) < round(bot_bound):
                                                 break
                                         # Foil
+                                        # An Insulation delta is necessary when the window is divided into cells
+                                        insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
                                         self.p_conductor[num].extend([
-                                            [left_bound, y_start, 0, self.mesh_data.c_conductor[num]],
-                                            [right_bound, y_start, 0, self.mesh_data.c_conductor[num]],
-                                            [left_bound, y_move, 0, self.mesh_data.c_conductor[num]],
-                                            [right_bound, y_move, 0, self.mesh_data.c_conductor[num]]
+                                            [left_bound + insulation_delta, y_start, 0, self.mesh_data.c_conductor[num]],
+                                            [right_bound - insulation_delta, y_start, 0, self.mesh_data.c_conductor[num]],
+                                            [left_bound + insulation_delta, y_move, 0, self.mesh_data.c_conductor[num]],
+                                            [right_bound - insulation_delta, y_move, 0, self.mesh_data.c_conductor[num]]
                                         ])
                                         # Find the center point of each turn
                                         center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3],
