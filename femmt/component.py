@@ -298,8 +298,7 @@ class MagneticComponent:
             "winding_tags": self.mesh.ps_cond,
             "air_gaps_tag": self.mesh.ps_air_gaps if self.air_gaps.number > 0 else None,
             "boundary_regions": self.mesh.thermal_boundary_region_tags,
-            "insulations_tag": self.mesh.ps_insulation if flag_insulation and len(
-                self.insulation.core_cond) == 4 else None
+            "insulations_tag": self.mesh.ps_insulation if flag_insulation else None
         }
 
         # Core area -> Is needed to estimate the heat flux
@@ -436,6 +435,15 @@ class MagneticComponent:
         :param insulation: insulation object
         :type insulation: Insulation
         """
+        # For integrated transformers, check if top and bottom core insulations are set
+        if self.component_type == ComponentType.IntegratedTransformer:
+            if (insulation.top_section_core_cond is None or not insulation.top_section_core_cond) and (
+                    insulation.bot_section_core_cond is None or not insulation.bot_section_core_cond):
+                raise Exception("Insulations for the top and bottom core sections must be set for integrated transformers")
+        else:
+            if insulation.cond_cond is None or not insulation.cond_cond:
+                raise Exception("insulations between the conductors must be set")
+
         if self.simulation_type == SimulationType.ElectroStatic:
             insulation.bobbin_dimensions = True
         else:
@@ -443,12 +451,6 @@ class MagneticComponent:
 
         if self.simulation_type == SimulationType.ElectroStatic and insulation.bobbin_dimensions is None:
             raise Exception("bobbin parameters must be set in electrostatic simulations")
-
-        if insulation.cond_cond is None or not insulation.cond_cond:
-            raise Exception("insulations between the conductors must be set")
-
-        if insulation.core_cond is None or not insulation.core_cond:
-            raise Exception("insulations between the core and the conductors must be set")
 
         self.insulation = insulation
 
