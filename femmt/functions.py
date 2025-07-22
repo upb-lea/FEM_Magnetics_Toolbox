@@ -33,7 +33,8 @@ colors_femmt_default = {"blue": (28, 113, 216),
                         "gray": (119, 118, 123),
                         "yellow": (245, 194, 17),
                         "black": (0, 0, 0),
-                        "white": (255, 255, 255)
+                        "white": (255, 255, 255),
+                        "teal": (0, 128, 128)
                         }
 
 colors_geometry_femmt_default = {
@@ -42,6 +43,7 @@ colors_geometry_femmt_default = {
     "winding": ["orange", "brown", "yellow", "green", "red", "black", "gray", "blue", "orange", "purple", "gray",
                 "blue", "orange", "purple"],
     "insulation": "blue",
+    "layer_insulation": "teal",
     "potting_inner": "gray",
     "potting_outer": "gray",
 }

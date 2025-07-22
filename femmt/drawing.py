@@ -830,31 +830,54 @@ class TwoDaxiSymmetric:
                                         self.p_conductor[num][i][0] += adjustment_x
                             # Foil conductors where each conductor is very long and the conductors are expanding the y-direction
                             elif winding_scheme == WindingScheme.FoilHorizontal:
+                                # thickness_of_the_insulation_layer = self.insulation.thickness_of_layer_insulation
+                                thickness_of_the_insulation_layer = (
+                                    self.insulation.thickness_of_layer_insulation
+                                    if self.insulation.thickness_of_layer_insulation
+                                    else self.insulation.cond_cond[num][num]
+                                )
                                 # the user can choose the thickness
                                 if virtual_winding_window.wrap_para == WrapParaType.FixedThickness:
                                     # Find the turn space
                                     winding.a_cell = winding.thickness * (right_bound - left_bound)
+                                    insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
                                     for i in range(turns):
                                         # Starting point of y depending on the distribution way if it is from left to right or vice versa.
                                         if foil_horizontal_placing_strategy == FoilHorizontalDistribution.VerticalUpward:
-                                            y_start = bot_bound + i * winding.thickness + i * self.insulation.cond_cond[num][num]
-                                            y_move = bot_bound + (i + 1) * winding.thickness + i * self.insulation.cond_cond[num][num]
+                                            y_start = bot_bound + i * winding.thickness + i * thickness_of_the_insulation_layer
+                                            y_move = bot_bound + (i + 1) * winding.thickness + i * thickness_of_the_insulation_layer
+                                            start_y_layer = y_move + insulation_delta
+                                            step_y_layer = start_y_layer + thickness_of_the_insulation_layer
                                             if round(y_move, 6) > round(top_bound, 6):
                                                 break
+                                            if round(step_y_layer, 6) > round(top_bound, 6):
+                                                break
                                         elif foil_horizontal_placing_strategy == FoilHorizontalDistribution.VerticalDownward:
-                                            y_start = top_bound - i * winding.thickness - i * self.insulation.cond_cond[num][num]
-                                            y_move = top_bound - (i + 1) * winding.thickness - i * self.insulation.cond_cond[num][num]
+                                            y_start = top_bound - i * winding.thickness - i * thickness_of_the_insulation_layer
+                                            y_move = top_bound - (i + 1) * winding.thickness - i * thickness_of_the_insulation_layer
+                                            start_y_layer = y_move - insulation_delta
+                                            step_y_layer = start_y_layer - thickness_of_the_insulation_layer
                                             if round(y_move) < round(bot_bound):
                                                 break
+                                            # if round(step_y_layer, 6) < round(bot_bound, 6):
+                                            #     break
                                         # Foil
                                         # An Insulation delta is necessary when the window is divided into cells
-                                        insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
                                         self.p_conductor[num].extend([
                                             [left_bound + insulation_delta, y_start, 0, self.mesh_data.c_conductor[num]],
                                             [right_bound - insulation_delta, y_start, 0, self.mesh_data.c_conductor[num]],
                                             [left_bound + insulation_delta, y_move, 0, self.mesh_data.c_conductor[num]],
                                             [right_bound - insulation_delta, y_move, 0, self.mesh_data.c_conductor[num]]
                                         ])
+                                        # add layer insulation
+                                        layer_insulation_point = [
+                                            [left_bound + insulation_delta, start_y_layer, 0, self.mesh_data.c_conductor[num]],
+                                            [right_bound - insulation_delta, start_y_layer, 0, self.mesh_data.c_conductor[num]],
+                                            [right_bound - insulation_delta, step_y_layer, 0, self.mesh_data.c_conductor[num]],
+                                            [left_bound + insulation_delta, step_y_layer, 0, self.mesh_data.c_conductor[num]]]
+
+                                        if self.insulation.thickness_of_layer_insulation:
+                                            self.p_iso_layer.append(layer_insulation_point)
                                         # Find the center point of each turn
                                         center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3],
                                                                                self.p_conductor[num][-2], self.p_conductor[num][-1])

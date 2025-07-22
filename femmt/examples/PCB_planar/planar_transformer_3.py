@@ -59,7 +59,7 @@ def transformer_3x2(onelab_folder: str = None,
     ins.add_winding_insulations([[prep/2, prep/2],[prep/2, prep/2]])
     # Kapton material is added between every layer of turns
     layer_insulation = fmt.insulation_materials_database()["film_insulation"]["Kapton"]
-    ins.add_insulation_between_layers(thickness=0.6e-3, dielectric_constant=layer_insulation["dielectric_constant"])
+    ins.add_insulation_between_layers(thickness=2.6e-4, dielectric_constant=layer_insulation["dielectric_constant"])
     geo.set_insulation(ins)
 
     # 6) Split into 3 columns × 2 rows

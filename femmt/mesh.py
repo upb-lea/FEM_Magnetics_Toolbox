@@ -900,7 +900,7 @@ class Mesh:
         for iso in l_iso_layer:
             cl = gmsh.model.geo.addCurveLoop(iso)
             curve_loop_iso_layer.append(cl)
-            self.plane_surface_iso_core.append(gmsh.model.geo.addPlaneSurface([cl]))
+            self.plane_surface_iso_layer.append(gmsh.model.geo.addPlaneSurface([cl]))
         return curve_loop_iso_layer
 
     def conductor_insulation(self, p_iso_cond: list, l_iso_cond: list, curve_loop_iso_cond: list):
@@ -1322,6 +1322,15 @@ class Mesh:
                                 color_scheme[colors_geometry["insulation"]][1],
                                 color_scheme[colors_geometry["insulation"]][2],
                                 recursive=True)
+
+        if self.plane_surface_iso_layer:
+            gmsh.model.setColor(
+                [(2, iso_layer_surface) for iso_layer_surface in self.plane_surface_iso_layer],
+                color_scheme[colors_geometry["layer_insulation"]][0],
+                color_scheme[colors_geometry["layer_insulation"]][1],
+                color_scheme[colors_geometry["layer_insulation"]][2],
+                recursive=True
+            )
         if visualize_before:
             gmsh.fltk.run()
 
