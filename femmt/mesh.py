@@ -1302,6 +1302,16 @@ class Mesh:
                                 color_scheme[colors_geometry["potting_inner"]][1], color_scheme[colors_geometry["potting_inner"]][2],
                                 recursive=True)
 
+        # layer insulation
+        if self.plane_surface_iso_layer:
+            gmsh.model.setColor(
+                [(2, iso_layer_surface) for iso_layer_surface in self.plane_surface_iso_layer],
+                color_scheme[colors_geometry["layer_insulation"]][0],
+                color_scheme[colors_geometry["layer_insulation"]][1],
+                color_scheme[colors_geometry["layer_insulation"]][2],
+                recursive=True
+            )
+
         # winding colors
         for winding_number in range(len(self.windings)):
             for turn_number in range(len(self.plane_surface_cond[winding_number])):
