@@ -50,10 +50,10 @@ class InductorOptimizationDTO:
     # optimization parameters
     material_name_list: list[str]
     core_name_list: list[str] | None
-    core_inner_diameter_list: list[float] | None
-    window_w_list: list[float] | None
-    window_h_list: list[float] | None
-    litz_wire_list: list[str]
+    core_inner_diameter_min_max_list: list[float] | None
+    window_w_min_max_list: list[float] | None
+    window_h_min_max_list: list[float] | None
+    litz_wire_name_list: list[str]
 
     # FEM simulation
     material_data_sources: InductorMaterialDataSources

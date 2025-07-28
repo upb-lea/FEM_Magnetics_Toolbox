@@ -171,11 +171,11 @@ class InductorOptimization:
 
             else:
                 # using arbitrary core sizes
-                core_inner_diameter = trial.suggest_float("core_inner_diameter", config.core_inner_diameter_list[0], config.core_inner_diameter_list[1])
-                window_w = trial.suggest_float("window_w", config.window_w_list[0], config.window_w_list[1])
-                window_h = trial.suggest_float("window_h", config.window_h_list[0], config.window_h_list[1])
+                core_inner_diameter = trial.suggest_float("core_inner_diameter", config.core_inner_diameter_min_max_list[0], config.core_inner_diameter_min_max_list[1])
+                window_w = trial.suggest_float("window_w", config.window_w_min_max_list[0], config.window_w_min_max_list[1])
+                window_h = trial.suggest_float("window_h", config.window_h_min_max_list[0], config.window_h_min_max_list[1])
 
-            litz_wire_name = trial.suggest_categorical("litz_wire_name", config.litz_wire_list)
+            litz_wire_name = trial.suggest_categorical("litz_wire_name", config.litz_wire_name_list)
             litz_wire = ff.litz_database()[litz_wire_name]
             litz_wire_diameter = 2 * litz_wire["conductor_radii"]
 
