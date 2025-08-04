@@ -229,7 +229,7 @@ class StackedTransformerOptimization:
 
             # as the window_h_top is adapted to the number of n_p_top, the top windings always fit into the top window.
             if total_area_windings_bot > window_bot_available_area:
-                logging.warning("Winding window too small for too many turns.")
+                logger.debug("Winding window too small for too many turns.")
                 return float('nan'), float('nan')
 
             reluctance_model_intput = ReluctanceModelInput(
@@ -272,7 +272,7 @@ class StackedTransformerOptimization:
             try:
                 reluctance_output = StackedTransformerOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_intput)
             except ValueError:
-                logging.warning("No fitting air gap length")
+                logger.warning("No fitting air gap length")
                 return float('nan'), float('nan')
 
             # set additional attributes
@@ -608,7 +608,7 @@ class StackedTransformerOptimization:
             loaded_study = optuna.load_study(study_name=config.stacked_transformer_study_name, storage=database_url)
             df = loaded_study.trials_dataframe()
             df.to_csv(f'{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.csv')
-            logging.info(f"Exported study as .csv file: {config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.csv")
+            logger.info(f"Exported study as .csv file: {config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.csv")
             return df
 
         @staticmethod
