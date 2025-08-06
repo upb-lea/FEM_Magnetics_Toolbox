@@ -949,7 +949,7 @@ class InductorOptimization:
             """
             Reluctance model (hysteresis losses) and FEM simulation (winding losses and eddy current losses) for geometries from df_geometry.
 
-            :param df_geometry: Pandas dataframe with geometries
+            :param df_geometry: Pandas dataframe with only one single geometries
             :type df_geometry: pd.DataFrame
             :param current_waveform: Current waveform to simulate
             :type current_waveform: list
@@ -962,107 +962,110 @@ class InductorOptimization:
             :return: volume, loss
             :rtype: tuple
             """
-            for index, _ in df_geometry.iterrows():
+            index_number = df_geometry.first_valid_index()
 
-                local_config = InductorOptimization.ReluctanceModel.load_config(inductor_config_filepath)
+            if df_geometry.shape[0] > 1:
+                raise ValueError("df_geometry must have only one entry.")
 
-                if local_config.core_name_list is not None:
-                    # using fixed core sizes from the database with flexible height.
-                    core_name = df_geometry['params_core_name'][index]
-                    core = ff.core_database()[core_name]
-                    core_inner_diameter = core["core_inner_diameter"]
-                    window_w = core["window_w"]
-                else:
-                    core_inner_diameter = df_geometry['params_core_inner_diameter'][index]
-                    window_w = df_geometry['params_window_w'][index]
+            local_config = InductorOptimization.ReluctanceModel.load_config(inductor_config_filepath)
 
-                # overwrite the old time-current vector with the new one
-                local_config.time_current_vec = current_waveform
-                target_and_fix_parameters = InductorOptimization.ReluctanceModel.calculate_fix_parameters(local_config)
+            if local_config.core_name_list is not None:
+                # using fixed core sizes from the database with flexible height.
+                core_name = df_geometry['params_core_name'][index_number]
+                core = ff.core_database()[core_name]
+                core_inner_diameter = core["core_inner_diameter"]
+                window_w = core["window_w"]
+            else:
+                core_inner_diameter = df_geometry['params_core_inner_diameter'][index_number]
+                window_w = df_geometry['params_window_w'][index_number]
 
-                working_directory = target_and_fix_parameters.working_directories.fem_working_directory
-                if not os.path.exists(working_directory):
-                    os.mkdir(working_directory)
-                working_directory = os.path.join(
-                    target_and_fix_parameters.working_directories.fem_working_directory, f"process_{process_number}")
+            # overwrite the old time-current vector with the new one
+            local_config.time_current_vec = current_waveform
+            target_and_fix_parameters = InductorOptimization.ReluctanceModel.calculate_fix_parameters(local_config)
 
-                fem_input = FemInput(
-                    # general parameters
-                    working_directory=working_directory,
-                    simulation_name='xx',
+            working_directory = target_and_fix_parameters.working_directories.fem_working_directory
+            if not os.path.exists(working_directory):
+                os.mkdir(working_directory)
+            working_directory = os.path.join(
+                target_and_fix_parameters.working_directories.fem_working_directory, f"process_{process_number}")
 
-                    # material and geometry parameters
-                    material_name=df_geometry['params_material_name'][index],
-                    litz_wire_name=df_geometry['params_litz_wire_name'][index],
-                    core_inner_diameter=core_inner_diameter,
-                    window_w=window_w,
-                    window_h=df_geometry["params_window_h"][index],
-                    air_gap_length=df_geometry['user_attrs_l_air_gap'][index],
-                    turns=int(df_geometry['params_turns'][index].item()),
-                    insulations=local_config.insulations,
+            fem_input = FemInput(
+                # general parameters
+                working_directory=working_directory,
+                simulation_name='xx',
 
-                    # data sources
-                    material_data_sources=local_config.material_data_sources,
+                # material and geometry parameters
+                material_name=df_geometry['params_material_name'][index_number],
+                litz_wire_name=df_geometry['params_litz_wire_name'][index_number],
+                core_inner_diameter=core_inner_diameter,
+                window_w=window_w,
+                window_h=df_geometry["params_window_h"][index_number],
+                air_gap_length=df_geometry['user_attrs_l_air_gap'][index_number],
+                turns=int(df_geometry['params_turns'][index_number].item()),
+                insulations=local_config.insulations,
 
-                    # operating point conditions
-                    temperature=local_config.temperature,
-                    fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
-                    fft_frequency_list=target_and_fix_parameters.fft_frequency_list,
-                    fft_amplitude_list=target_and_fix_parameters.fft_amplitude_list,
-                    fft_phases_list=target_and_fix_parameters.fft_phases_list
-                )
+                # data sources
+                material_data_sources=local_config.material_data_sources,
 
-                fem_output = InductorOptimization.FemSimulation.single_fem_simulation(fem_input, False)
+                # operating point conditions
+                temperature=local_config.temperature,
+                fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
+                fft_frequency_list=target_and_fix_parameters.fft_frequency_list,
+                fft_amplitude_list=target_and_fix_parameters.fft_amplitude_list,
+                fft_phases_list=target_and_fix_parameters.fft_phases_list
+            )
 
-                litz_wire = ff.litz_database()[df_geometry['params_litz_wire_name'][index]]
-                litz_wire_diameter = 2 * litz_wire["conductor_radii"]
+            fem_output = InductorOptimization.FemSimulation.single_fem_simulation(fem_input, False)
 
-                # material properties
-                material_db = mdb.MaterialDatabase(is_silent=True)
+            litz_wire = ff.litz_database()[df_geometry['params_litz_wire_name'][index_number]]
+            litz_wire_diameter = 2 * litz_wire["conductor_radii"]
 
-                material_dto: mdb.MaterialCurve = material_db.material_data_interpolation_to_dto(
-                    df_geometry['params_material_name'][index], target_and_fix_parameters.fundamental_frequency, local_config.temperature)
-                # instantiate material-specific model
-                magnet_material_model: mh.loss.LossModel = mh.loss.LossModel(material=df_geometry['params_material_name'][index], team="paderborn")
+            # material properties
+            material_db = mdb.MaterialDatabase(is_silent=True)
 
-                reluctance_model_input = ReluctanceModelInput(
-                    core_inner_diameter=core_inner_diameter,
-                    window_w=window_w,
-                    window_h=df_geometry["params_window_h"][index],
-                    turns=int(df_geometry['params_turns'][index].item()),
-                    target_inductance=local_config.target_inductance,
-                    litz_wire_name=df_geometry['params_litz_wire_name'][index],
-                    litz_wire_diameter=litz_wire_diameter,
+            material_dto: mdb.MaterialCurve = material_db.material_data_interpolation_to_dto(
+                df_geometry['params_material_name'][index_number], target_and_fix_parameters.fundamental_frequency, local_config.temperature)
+            # instantiate material-specific model
+            magnet_material_model: mh.loss.LossModel = mh.loss.LossModel(material=df_geometry['params_material_name'][index_number], team="paderborn")
 
-                    insulations=local_config.insulations,
-                    material_dto=material_dto,
-                    magnet_material_model=magnet_material_model,
+            reluctance_model_input = ReluctanceModelInput(
+                core_inner_diameter=core_inner_diameter,
+                window_w=window_w,
+                window_h=df_geometry["params_window_h"][index_number],
+                turns=int(df_geometry['params_turns'][index_number].item()),
+                target_inductance=local_config.target_inductance,
+                litz_wire_name=df_geometry['params_litz_wire_name'][index_number],
+                litz_wire_diameter=litz_wire_diameter,
 
-                    temperature=local_config.temperature,
-                    current_extracted_vec=target_and_fix_parameters.current_extracted_vec,
-                    fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
-                    fft_frequency_list=target_and_fix_parameters.fft_frequency_list,
-                    fft_amplitude_list=target_and_fix_parameters.fft_amplitude_list,
-                    fft_phases_list=target_and_fix_parameters.fft_phases_list
-                )
+                insulations=local_config.insulations,
+                material_dto=material_dto,
+                magnet_material_model=magnet_material_model,
 
-                reluctance_output: ReluctanceModelOutput = InductorOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_input)
+                temperature=local_config.temperature,
+                current_extracted_vec=target_and_fix_parameters.current_extracted_vec,
+                fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
+                fft_frequency_list=target_and_fix_parameters.fft_frequency_list,
+                fft_amplitude_list=target_and_fix_parameters.fft_amplitude_list,
+                fft_phases_list=target_and_fix_parameters.fft_phases_list
+            )
 
-                p_total = reluctance_output.p_hyst + fem_output.fem_eddy_core + fem_output.fem_p_loss_winding
+            reluctance_output: ReluctanceModelOutput = InductorOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_input)
 
-                if print_derivations:
-                    logger.info(f"Inductance reluctance: {local_config.target_inductance}")
-                    logger.info(f"Inductance FEM: {fem_output.fem_inductance}")
-                    logger.info(f"Inductance derivation: "
-                                f"{(fem_output.fem_inductance - local_config.target_inductance) / local_config.target_inductance * 100} %")
-                    logger.info(f"Volume reluctance: {reluctance_output.volume}")
-                    logger.info(f"Volume FEM: {fem_output.volume}")
-                    logger.info(f"Volume derivation: {(reluctance_output.volume - fem_output.volume) / reluctance_output.volume * 100} %")
-                    logger.info(f"P_winding reluctance: {reluctance_output.p_winding}")
-                    logger.info(f"P_winding FEM: {fem_output.fem_p_loss_winding}")
-                    logger.info(f"P_winding derivation: {(fem_output.fem_p_loss_winding - reluctance_output.p_winding) / fem_output.fem_p_loss_winding * 100}")
-                    logger.info(f"P_hyst reluctance: {reluctance_output.p_hyst}")
-                    logger.info(f"P_hyst FEM: {fem_output.fem_core_total}")
-                    logger.info(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.fem_core_total) / reluctance_output.p_hyst * 100}")
+            p_total = reluctance_output.p_hyst + fem_output.fem_eddy_core + fem_output.fem_p_loss_winding
 
-                return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink
+            if print_derivations:
+                logger.info(f"Inductance reluctance: {local_config.target_inductance}")
+                logger.info(f"Inductance FEM: {fem_output.fem_inductance}")
+                logger.info(f"Inductance derivation: "
+                            f"{(fem_output.fem_inductance - local_config.target_inductance) / local_config.target_inductance * 100} %")
+                logger.info(f"Volume reluctance: {reluctance_output.volume}")
+                logger.info(f"Volume FEM: {fem_output.volume}")
+                logger.info(f"Volume derivation: {(reluctance_output.volume - fem_output.volume) / reluctance_output.volume * 100} %")
+                logger.info(f"P_winding reluctance: {reluctance_output.p_winding}")
+                logger.info(f"P_winding FEM: {fem_output.fem_p_loss_winding}")
+                logger.info(f"P_winding derivation: {(fem_output.fem_p_loss_winding - reluctance_output.p_winding) / fem_output.fem_p_loss_winding * 100}")
+                logger.info(f"P_hyst reluctance: {reluctance_output.p_hyst}")
+                logger.info(f"P_hyst FEM: {fem_output.fem_core_total}")
+                logger.info(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.fem_core_total) / reluctance_output.p_hyst * 100}")
+
+            return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink
