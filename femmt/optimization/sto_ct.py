@@ -398,7 +398,7 @@ class StackedTransformerCenterTappedOptimization:
                                                load_if_exists=True, sampler=sampler)
 
         study_in_memory = optuna.create_study(directions=directions, study_name=study_name, sampler=sampler)
-        print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
+        logger.info(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
         study_in_memory.add_trials(study_in_storage.trials)
         study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True,
                                  callbacks=[femmt.StackedTransformerCenterTappedOptimization.run_garbage_collector])
