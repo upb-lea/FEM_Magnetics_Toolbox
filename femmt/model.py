@@ -34,6 +34,7 @@ class Conductor:
     conductor_radius: float | None = None
     winding_number: int
     thickness: float | None = None
+    width: float | None = None
     ff: float | None = None
     strand_radius: float | None = None
     n_strands: int = 0
@@ -76,12 +77,14 @@ class Conductor:
         else:
             raise Exception(f"Material {conductivity.name} not found in database")
 
-    def set_rectangular_conductor(self, thickness: float = None):
+    def set_rectangular_conductor(self, thickness: float = None, width: float = None):
         """
         Set a rectangular, solid conductor.
 
         :param thickness: thickness of the rectangular conductor in m
         :type thickness: float
+        :param width: width of the rectangular conductor in m
+        :type width: float
         """
         if self.conductor_is_set:
             raise Exception("Only one conductor can be set for each winding!")
@@ -89,6 +92,7 @@ class Conductor:
         self.conductor_is_set = True
         self.conductor_type = ConductorType.RectangularSolid
         self.thickness = thickness
+        self.width = width
         self.a_cell = None  # can only be set after the width is determined
         self.conductor_radius = 1  # Revisit
 

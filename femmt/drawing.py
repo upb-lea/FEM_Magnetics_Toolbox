@@ -811,7 +811,8 @@ class TwoDaxiSymmetric:
                                         center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3],
                                                                                self.p_conductor[num][-2], self.p_conductor[num][-1])
                                         self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
-
+                                elif virtual_winding_window.wrap_para == WrapParaType.CustomDimensions:
+                                    raise Exception('Not implemented yet')
                                 else:
                                     raise Exception(f"Unknown wrap para type {virtual_winding_window.wrap_para}")
                                 # Apply alignment
@@ -859,8 +860,8 @@ class TwoDaxiSymmetric:
                                             step_y_layer = start_y_layer - thickness_of_the_insulation_layer
                                             if round(y_move) < round(bot_bound):
                                                 break
-                                            # if round(step_y_layer, 6) < round(bot_bound, 6):
-                                            #     break
+                                            if round(step_y_layer, 6) < round(bot_bound, 6):
+                                                break
                                         # Foil
                                         # An Insulation delta is necessary when the window is divided into cells
                                         self.p_conductor[num].extend([
@@ -912,6 +913,92 @@ class TwoDaxiSymmetric:
                                         center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3],
                                                                                self.p_conductor[num][-2], self.p_conductor[num][-1])
                                         self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
+
+                                elif virtual_winding_window.wrap_para == WrapParaType.CustomDimensions:
+                                    winding.a_cell = winding.thickness * winding.width
+                                    insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
+                                    if foil_horizontal_placing_strategy == FoilHorizontalDistribution.VerticalUpward:
+                                        # x_dimensions
+                                        x_start = left_bound + insulation_delta
+                                        x_step = winding.width + self.insulation.cond_cond[num][num]
+                                        # y_dimensions
+                                        y_start = bot_bound + insulation_delta
+                                        y_step = winding.thickness + 2 * insulation_delta + thickness_of_the_insulation_layer
+                                        y_start_layer = y_start + winding.thickness + insulation_delta
+                                        y_step_layer = winding.thickness + thickness_of_the_insulation_layer + 2 * insulation_delta
+                                        i = 0
+                                        x = x_start
+                                        y = y_start
+                                        y_l = y_start_layer
+                                        while i < turns and y + winding.thickness + thickness_of_the_insulation_layer <= top_bound:
+                                            while i < turns and x + winding.width <= right_bound:
+                                                self.p_conductor[num].extend([
+                                                    [x, y, 0, self.mesh_data.c_center_conductor[num]],
+                                                    [x + winding.width, y, 0, self.mesh_data.c_center_conductor[num]],
+                                                    [x, y + winding.thickness, 0, self.mesh_data.c_center_conductor[num]],
+                                                    [x + winding.width, y + winding.thickness, 0, self.mesh_data.c_center_conductor[num]]
+                                                ])
+                                                # Find the center point of each turn
+                                                center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3],
+                                                                                       self.p_conductor[num][-2], self.p_conductor[num][-1])
+                                                self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
+
+                                                x += x_step
+                                                i += 1
+                                            layer_insulation_points = [
+                                                [left_bound + insulation_delta, y_l, 0, self.mesh_data.c_center_conductor[num]],
+                                                [right_bound - insulation_delta, y_l, 0, self.mesh_data.c_center_conductor[num]],
+                                                [right_bound - insulation_delta, y_l + thickness_of_the_insulation_layer, 0, self.mesh_data.c_center_conductor[num]],
+                                                [left_bound + insulation_delta, y_l + thickness_of_the_insulation_layer, 0, self.mesh_data.c_center_conductor[num]],
+                                            ]
+                                            if self.insulation.thickness_of_layer_insulation:
+                                                self.p_iso_layer.append(layer_insulation_points)
+                                            y_l += y_step_layer
+                                            x = x_start
+                                            y += y_step
+
+                                    elif foil_horizontal_placing_strategy == FoilHorizontalDistribution.VerticalDownward:
+                                        # x_dimensions
+                                        x_start = left_bound + insulation_delta
+                                        x_step = winding.width + self.insulation.cond_cond[num][num]
+                                        # y_dimensions
+                                        y_start = top_bound - insulation_delta
+                                        y_step = -(winding.thickness + 2 * insulation_delta + thickness_of_the_insulation_layer)
+                                        y_start_layer = y_start - winding.thickness - insulation_delta
+                                        y_step_layer = -(winding.thickness + thickness_of_the_insulation_layer + 2 * insulation_delta)
+                                        i = 0
+                                        x = x_start
+                                        y = y_start
+                                        y_l = y_start_layer
+                                        while i < turns and (y - winding.thickness - thickness_of_the_insulation_layer) >= bot_bound:
+                                            while i < turns and x + winding.width <= right_bound:
+                                                self.p_conductor[num].extend([
+                                                    [x, y, 0, self.mesh_data.c_center_conductor[num]],
+                                                    [x + winding.width, y, 0, self.mesh_data.c_center_conductor[num]],
+                                                    [x, y - winding.thickness, 0, self.mesh_data.c_center_conductor[num]],
+                                                    [x + winding.width, y - winding.thickness, 0, self.mesh_data.c_center_conductor[num]]
+                                                ])
+                                                center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3],
+                                                                                       self.p_conductor[num][-2], self.p_conductor[num][-1])
+                                                self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
+
+                                                x += x_step
+                                                i += 1
+                                            # layer insulation
+                                            layer_insulation_points = [
+                                                [left_bound + insulation_delta, y_l, 0, self.mesh_data.c_center_conductor[num]],
+                                                [right_bound - insulation_delta, y_l, 0, self.mesh_data.c_center_conductor[num]],
+                                                [right_bound - insulation_delta, y_l - thickness_of_the_insulation_layer, 0,
+                                                 self.mesh_data.c_center_conductor[num]],
+                                                [left_bound + insulation_delta, y_l - thickness_of_the_insulation_layer, 0,
+                                                 self.mesh_data.c_center_conductor[num]],
+                                            ]
+                                            if self.insulation.thickness_of_layer_insulation:
+                                                self.p_iso_layer.append(layer_insulation_points)
+                                            # move points
+                                            y_l += y_step_layer
+                                            x = x_start
+                                            y += y_step
 
                                 # Apply alignment
                                 if alignment == Align.ToEdges:

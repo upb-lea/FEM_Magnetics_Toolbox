@@ -300,7 +300,10 @@ class WrapParaType(IntEnum):
     The foils will have a dynamic thickness. The thickness is chosen in such way that the virtual winding window is
     fully occupied. The thickness parameter when creating the conductor is irrelevant.
     """
-
+    CustomDimensions = 3
+    """
+    The foils will have a given width and thickness. The virtual winding window may not be fully occupied..
+    """
 
 class Conductivity(IntEnum):
     """Sets the conductivity of the conductor."""

@@ -1,10 +1,33 @@
+"""
+Basic example to show how to simulate an inductor with vertical foil winding.
+
+After starting the program, the geometry dimensions are displayed. Verify this geometry, close the window, to continue the simulation.
+After a short time, B-Field and winding losses simulation results are shown. Winding losses are shown as a colormap.
+In the core, the magnitude B-Field in Tesla is shown. With the gmsh window, one can move the picture in the 3D way (not recommended).
+If you close this window, the thermal simulation will be continued, if programmed. If true, the thermal heat distribution will be displayed.
+To continue with the next simulation (or end the program), you need to close this window. All results are written to the result
+folder .../femmt/examples/example_results/simulation_file_name/results/log_electro_magnetic.json. and .../results_thermal.json.
+"""
 import femmt as fmt
 import os
+import logging
 
-from datetime import datetime
-Date = datetime.now().strftime("%Y%m%d-%H%M%S")
-def basic_example_transformer_foil(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
-    """Run the example code for the transformer."""
+# configure logging to show femmt terminal output
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+
+
+def basic_example_pcb(onelab_folder: str = None, show_visual_outputs: bool = True,
+                                         is_test: bool = False):
+    """
+    Run the example code for the PCB transformer
+
+    :param onelab_folder: onelab folder path
+    :type onelab_folder: str
+    :param show_visual_outputs: True to show visual outputs (simulation results)
+    :type show_visual_outputs: bool
+    :param is_test: True for pytest usage. Defaults to False.
+    :type is_test: bool
+    """
 
     def example_thermal_simulation(show_thermal_visual_outputs: bool = True, flag_insulation: bool = True):
         # Thermal simulation:
@@ -76,99 +99,66 @@ def basic_example_transformer_foil(onelab_folder: str = None, show_visual_output
         os.mkdir(example_results_folder)
 
     # Example for a transformer with multiple virtual winding windows.
-    working_directory = os.path.join(example_results_folder, "transformer" + Date)
+    working_directory = os.path.join(example_results_folder, os.path.splitext(os.path.basename(__file__))[0])
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
     # Choose wrap para type
     wrap_para_type = fmt.WrapParaType.FixedThickness
 
-    # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory, is_gui=is_test)
+    # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
+                                is_gui=is_test)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
     if onelab_folder is not None:
         geo.file_data.onelab_folder_path = onelab_folder
 
-    # 2. set core parameters
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=5e-3,
                                                     window_w=6e-3,
                                                     window_h=2e-3,
                                                     core_h=8e-3)
-
-
     core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
                     mu_r_abs=3100, phi_mu_deg=12,
                     sigma=0.6, permeability_datasource=fmt.MaterialDataSource.Custom,
                     permittivity_datasource=fmt.MaterialDataSource.Custom)
     geo.set_core(core)
 
-    # 3. set air gap parameters
-    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
     geo.set_air_gaps(air_gaps)
 
-    # 4. set insulation
-    prepeg_thickness = 0.00023
-    wind_insulation = prepeg_thickness / 2
-    insulation = fmt.Insulation(flag_insulation=True)
+    insulation = fmt.Insulation()
     insulation.add_core_insulations(0.0005, 0.0005, 0.0005, 0.0005)
-    insulation.add_insulation_between_layers(thickness=0.1e-3)
-    insulation.add_winding_insulations([[wind_insulation, wind_insulation],
-                                        [wind_insulation, wind_insulation]])
+    insulation.add_winding_insulations([[1.15e-4, 1.15e-4],
+                                        [1.15e-4, 1.15e-4]])
+    insulation.add_insulation_between_layers(thickness=0.01e-3)
     geo.set_insulation(insulation)
-    # 4 virtuelle Wicklungs fenster
-    # 5. create winding window and virtual winding windows (vww)
+
     winding_window = fmt.WindingWindow(core, insulation)
-    #vww_bot, vww_top = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit, split_distance=0.001)
-    vww_top_left, vww_top_right, vww_bot_left, vww_bot_right = winding_window.split_window(fmt.WindingWindowSplit.HorizontalAndVerticalSplit, split_distance=0.0001)
+    # vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+    vww_bot, vww_top = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit, split_distance=0.0001)
+
     # 6. create conductors and set parameters
     winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
-    winding1.set_rectangular_conductor(thickness=35e-6)
+    winding1.set_rectangular_conductor(thickness=35e-6, width=1.5e-3)
 
     winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
-    winding2.set_rectangular_conductor(thickness=35e-6)
+    winding2.set_rectangular_conductor(thickness=35e-6, width=4.8e-3)
     winding2.parallel = False
 
-    # 7. add conductor to vww and add winding window to MagneticComponent
-
-    #PlacingStrategy sorgt für Fehler: "Zu viele Leiter",
-    vww_top_left.set_winding(winding1, 1, fmt.WindingScheme.FoilHorizontal, wrap_para_type=wrap_para_type, foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalDownward)
-    vww_top_right.set_winding(winding1, 1, fmt.WindingScheme.FoilHorizontal, wrap_para_type=wrap_para_type, foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalDownward)
-    vww_bot_left.set_winding(winding2, 1, fmt.WindingScheme.FoilHorizontal, wrap_para_type=wrap_para_type, foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalDownward)
-    vww_bot_right.set_winding(winding2, 1, fmt.WindingScheme.FoilHorizontal, wrap_para_type=wrap_para_type, foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalDownward)
-
-    # Oben Wicklung 1, unten Wicklung 2
-    #vww_top_left.set_winding(winding1, 3, fmt.WindingScheme.FoilHorizontal,wrap_para_type=wrap_para_type,)
-    #vww_top_right.set_winding(winding1, 3, fmt.WindingScheme.FoilHorizontal,wrap_para_type=wrap_para_type)
-    #vww_bot_left.set_winding(winding2, 3, fmt.WindingScheme.FoilHorizontal, wrap_para_type=wrap_para_type)
-    #vww_bot_right.set_winding(winding2, 3, fmt.WindingScheme.FoilHorizontal, wrap_para_type=wrap_para_type)
-
-    #links Wicklung 1, rechts wicklung 2
-    #vww_top_left.set_winding(winding1, 3, fmt.WindingScheme.FoilHorizontal,wrap_para_type=wrap_para_type,)
-    #vww_top_right.set_winding(winding2, 3, fmt.WindingScheme.FoilHorizontal,wrap_para_type=wrap_para_type)
-    #vww_bot_left.set_winding(winding1, 3, fmt.WindingScheme.FoilHorizontal, wrap_para_type=wrap_para_type)
-    #vww_bot_right.set_winding(winding2, 3, fmt.WindingScheme.FoilHorizontal, wrap_para_type=wrap_para_type)
-
-
-    #Wicklungen Diagonal
-    #vww_top_left.set_winding(winding1, 3, fmt.WindingScheme.FoilHorizontal,wrap_para_type=wrap_para_type,)
-    #vww_top_right.set_winding(winding2, 3, fmt.WindingScheme.FoilHorizontal,wrap_para_type=wrap_para_type)
-    #vww_bot_left.set_winding(winding2, 3, fmt.WindingScheme.FoilHorizontal, wrap_para_type=wrap_para_type)
-    #vww_bot_right.set_winding(winding1, 3, fmt.WindingScheme.FoilHorizontal, wrap_para_type=wrap_para_type)
+    vww_bot.set_winding(winding1, 5, fmt.WindingScheme.FoilHorizontal, fmt.Align.ToEdges, wrap_para_type=wrap_para_type.CustomDimensions,
+                    foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalDownward)
+    vww_top.set_winding(winding2, 2, fmt.WindingScheme.FoilHorizontal, fmt.Align.ToEdges, wrap_para_type=wrap_para_type.CustomDimensions,
+                        foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalDownward)
     geo.set_winding_windows([winding_window])
 
-    # NxM Virtuelle Wicklungsfenster
-    #cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.33, 0.67],vertical_split_factors=[[1/6, 2/6, 3/6, 4/6, 5/6],[1/6, 2/6, 3/6, 4/6, 5/6], [1/6, 2/6, 3/6, 4/6, 5/6]])
+    geo.create_model(freq=1000000, pre_visualize_geometry=show_visual_outputs, save_png=False)
 
-
-    # 8. start simulation with given frequency, currents and phases
-    geo.create_model(freq=1000000, pre_visualize_geometry=show_visual_outputs)
-    geo.single_simulation(freq=1000000, current=[7, 6], phi_deg=[0, 180],
-                          show_fem_simulation_results=show_visual_outputs)
+    geo.single_simulation(freq=1000000, current=[3, 5], phi_deg=[0, 180], show_fem_simulation_results=show_visual_outputs)
 
     example_thermal_simulation(show_visual_outputs, flag_insulation=True)
 
 
 if __name__ == "__main__":
-    basic_example_transformer_foil(show_visual_outputs=True)
+    basic_example_pcb(show_visual_outputs=True)

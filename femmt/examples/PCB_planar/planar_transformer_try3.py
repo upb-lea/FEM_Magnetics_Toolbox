@@ -1,8 +1,10 @@
 import femmt as fmt
 import os
 from datetime import datetime
+import logging
 
 Date = datetime.now().strftime("%Y%m%d-%H%M%S")
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 def transformer_3x2(onelab_folder: str = None,
                     show_visual_outputs: bool = True,
@@ -59,7 +61,7 @@ def transformer_3x2(onelab_folder: str = None,
     ins.add_winding_insulations([[prep/2, prep/2],[prep/2, prep/2]])
     # Kapton material is added between every layer of turns
     layer_insulation = fmt.insulation_materials_database()["film_insulation"]["Kapton"]
-    ins.add_insulation_between_layers(thickness=2.6e-4, dielectric_constant=layer_insulation["dielectric_constant"])
+    ins.add_insulation_between_layers(thickness=2.8e-4, dielectric_constant=layer_insulation["dielectric_constant"])
     geo.set_insulation(ins)
 
     # 6) Split into 3 columns × 2 rows
