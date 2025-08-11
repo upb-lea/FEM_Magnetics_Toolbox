@@ -1,6 +1,4 @@
-"""
-Example: Planar matrix transformer with flexible split (3 columns × 2 rows) and interleaved windings
-"""
+"""Planar matrix transformer with flexible split (3 columns × 2 rows) and interleaved windings."""
 import femmt as fmt
 import os
 from datetime import datetime
@@ -10,9 +8,14 @@ Date = datetime.now().strftime("%Y%m%d-%H%M%S")
 def interleaved_flexible_split_transformer(onelab_folder: str = None,
                                            show_visual_outputs: bool = True,
                                            is_test: bool = False):
-    """
-    Create a planar matrix transformer using a flexible split into 3 columns × 2 rows
-    and interleave primary/secondary windings in the order: P-S-P on top row, S-P-S on bottom row.
+    """Create a planar matrix transformer using a flexible split.
+
+    :param onelab_folder: onelab folder path
+    :type onelab_folder: str
+    :param show_visual_outputs: True to show visual outputs (simulation results)
+    :type show_visual_outputs: bool
+    :param is_test: True for pytest usage. Defaults to False.
+    :type is_test: bool
     """
 
     def example_thermal_simulation(show_thermal_visual_outputs: bool = True, flag_insulation: bool = True):
@@ -171,6 +174,7 @@ def interleaved_flexible_split_transformer(onelab_folder: str = None,
                           phi_deg=[0, 180],
                           show_fem_simulation_results=show_visual_outputs)
     example_thermal_simulation(show_visual_outputs, flag_insulation=True)
+
 
 if __name__ == "__main__":
     interleaved_flexible_split_transformer(show_visual_outputs=True)

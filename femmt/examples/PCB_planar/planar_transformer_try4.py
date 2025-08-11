@@ -1,3 +1,4 @@
+"""Create a planar transformer with four turns using the virtual winding window."""
 import femmt as fmt
 import os
 from datetime import datetime
@@ -9,10 +10,14 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 def transformer_2x4(onelab_folder: str = None,
                     show_visual_outputs: bool = True,
                     is_test: bool = False):
-    """
-    Planar matrix transformer with:
-      - 2 columns (left, right)
-      - 4 rows    (from top to bottom: P, S, P, S)
+    """Planar matrix transformer with P, S, P, S.
+
+    :param onelab_folder: onelab folder path
+    :type onelab_folder: str
+    :param show_visual_outputs: True to show visual outputs (simulation results)
+    :type show_visual_outputs: bool
+    :param is_test: True for pytest usage. Defaults to False.
+    :type is_test: bool
     """
     # 1) Setup output folder
     base = os.path.dirname(__file__)
@@ -112,8 +117,8 @@ def transformer_2x4(onelab_folder: str = None,
         freq=1e6,
         current=[1, 1],
         phi_deg=[0, 180],
-        show_fem_simulation_results=show_visual_outputs
-    )
+        show_fem_simulation_results=show_visual_outputs)
+
 
 if __name__ == "__main__":
     transformer_2x4(show_visual_outputs=True)

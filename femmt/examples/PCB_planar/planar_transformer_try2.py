@@ -1,9 +1,4 @@
-"""
-Example: Planar matrix transformer with flexible split (2 columns × 3 rows) and custom winding positions:
-- Top Left & Right: Primary
-- Middle Left & Right: Secondary
-- Bottom Left  & Right: Primary
-"""
+"""Planar matrix transformer with flexible split (2 columns × 3 rows) and custom winding positions."""
 import femmt as fmt
 import os
 from datetime import datetime
@@ -13,13 +8,14 @@ Date = datetime.now().strftime("%Y%m%d-%H%M%S")
 def customized_split_transformer(onelab_folder: str = None,
                                  show_visual_outputs: bool = True,
                                  is_test: bool = False):
-    """
-    Create a planar matrix transformer with a 2×3 grid of virtual winding windows:
-    columns: left/right; rows: top/mid/bottom.
-    Assign:
-      - Top-left & top-right = Primary
-      - Mid-left & mid-right = Secondary
-      - Bot-left & bot-right = Primary
+    """Create a planar matrix transformer with a 2×3 grid of virtual winding windows.
+
+    :param onelab_folder: onelab folder path
+    :type onelab_folder: str
+    :param show_visual_outputs: True to show visual outputs (simulation results)
+    :type show_visual_outputs: bool
+    :param is_test: True for pytest usage. Defaults to False.
+    :type is_test: bool
     """
     # --- Prepare directories
     base_dir = os.path.dirname(__file__)
@@ -113,6 +109,6 @@ def customized_split_transformer(onelab_folder: str = None,
                           phi_deg=[0, 180],
                           show_fem_simulation_results=show_visual_outputs)
 
+
 if __name__ == "__main__":
     customized_split_transformer(show_visual_outputs=True)
-

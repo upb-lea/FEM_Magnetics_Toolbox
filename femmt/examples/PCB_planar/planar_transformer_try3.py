@@ -1,3 +1,4 @@
+"""Create a planar transformer with 2-4 turns using the virtual winding window."""
 import femmt as fmt
 import os
 from datetime import datetime
@@ -10,10 +11,14 @@ def transformer_3x2(onelab_folder: str = None,
                     show_visual_outputs: bool = True,
                     is_test: bool = False):
     """
-    Planar matrix transformer with:
-    - 3 columns (left, mid, right)
-    - 2 rows    (top, bottom)
-    In each row: P | S | P
+    Planar matrix transformer with: P | S | P.
+
+    :param onelab_folder: onelab folder path
+    :type onelab_folder: str
+    :param show_visual_outputs: True to show visual outputs (simulation results)
+    :type show_visual_outputs: bool
+    :param is_test: True for pytest usage. Defaults to False.
+    :type is_test: bool
     """
     # 1) Setup output folder
     base = os.path.dirname(__file__)
@@ -57,8 +62,8 @@ def transformer_3x2(onelab_folder: str = None,
     # 5) Insulation setup
     prep = 0.00023
     ins = fmt.Insulation(flag_insulation=True)
-    ins.add_core_insulations(0.0005,0.0005,0.0005,0.0005)
-    ins.add_winding_insulations([[prep/2, prep/2],[prep/2, prep/2]])
+    ins.add_core_insulations(0.0005, 0.0005, 0.0005, 0.0005)
+    ins.add_winding_insulations([[prep/2, prep/2], [prep/2, prep/2]])
     # Kapton material is added between every layer of turns
     layer_insulation = fmt.insulation_materials_database()["film_insulation"]["Kapton"]
     ins.add_insulation_between_layers(thickness=2.8e-4, dielectric_constant=layer_insulation["dielectric_constant"])
@@ -68,7 +73,7 @@ def transformer_3x2(onelab_folder: str = None,
     ww = fmt.WindingWindow(core, ins)
     cells = ww.flexible_split(
         horizontal_split_factors=[1/3, 2/3],      # cuts at 33% and 67% → 3 columns
-        vertical_split_factors=[[0.5],[0.5],[0.5]]  # each column splits at 50% → 2 rows
+        vertical_split_factors=[[0.5], [0.5], [0.5]]  # each column splits at 50% → 2 rows
     )
     # flexible_split returns flat list length=6:
     # [col0-row0, col0-row1,  col1-row0, col1-row1,  col2-row0, col2-row1]
@@ -108,10 +113,10 @@ def transformer_3x2(onelab_folder: str = None,
     geo.create_model(freq=1e6, pre_visualize_geometry=show_visual_outputs)
     geo.single_simulation(
         freq=1e6,
-        current=[7,7],
-        phi_deg=[0,180],
-        show_fem_simulation_results=show_visual_outputs
-    )
+        current=[7, 7],
+        phi_deg=[0, 180],
+        show_fem_simulation_results=show_visual_outputs)
+
 
 if __name__ == "__main__":
     transformer_3x2(show_visual_outputs=True)
