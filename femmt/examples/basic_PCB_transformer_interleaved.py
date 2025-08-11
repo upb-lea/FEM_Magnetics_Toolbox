@@ -142,10 +142,10 @@ def basic_example_pcb_interleaved(onelab_folder: str = None, show_visual_outputs
 
     winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
     winding2.set_rectangular_conductor(thickness=35e-6, width=4.8e-3)
-    winding2.parallel = True
+    winding2.parallel = False
 
     vww.set_interleaved_winding(winding1, 5, winding2, 2, fmt.InterleavedWindingScheme.VerticalAlternating,
-                                foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalUpward, group_size=2)
+                                foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalUpward, group_size=1)
     geo.set_winding_windows([winding_window])
     # Create Model
     geo.create_model(freq=1000000, pre_visualize_geometry=show_visual_outputs, save_png=False)
