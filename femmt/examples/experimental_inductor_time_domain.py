@@ -1,7 +1,6 @@
 """Basic example to show how to simulate an inductor in time domain."""
 import numpy as np
 import femmt as fmt
-import materialdatabase as mdb
 import os
 import logging
 

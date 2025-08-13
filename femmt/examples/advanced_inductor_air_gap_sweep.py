@@ -48,14 +48,12 @@ def basic_example_sweep(onelab_folder: str | None = None, show_visual_outputs: b
         core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"],
                                                         window_h=core_db["window_h"], core_h=core_db["core_h"])
 
-        core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N95,
+        core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
                                                         temperature=25,
                                                         permeability_datasource=fmt.MaterialDataSource.Measurement,
-                                                        permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                                                        permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
+                                                        permeability_measurement_setup=fmt.MeasurementSetup.TDK_MDT,
                                                         permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                                                        permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                                                        permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK,
+                                                        permittivity_measurement_setup=fmt.MeasurementSetup.LEA_MTB,
                                                         mdb_verbosity=fmt.Verbosity.Silent)
 
         core = fmt.Core(material=core_material,

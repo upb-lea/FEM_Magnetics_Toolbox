@@ -27,7 +27,6 @@ import femmt.examples.component_study.transformer_component_study
 import femmt.examples.basic_transformer_excitation_sweep
 import femmt.examples.basic_inductor_excitation_sweep
 import femmt.examples.basic_split_windings
-import materialdatabase as mdb
 
 
 def compare_result_logs(first_log_filepath: str, second_log_filepath: str, significant_digits: int = 6,
@@ -286,14 +285,12 @@ def fixture_inductor_core_material_database_measurement(temp_folder: pytest.fixt
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
 
-        core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N95,
+        core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
                                                         temperature=25,
                                                         permeability_datasource=fmt.MaterialDataSource.Measurement,
-                                                        permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                                                        permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
+                                                        permeability_measurement_setup=fmt.MeasurementSetup.TDK_MDT,
                                                         permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                                                        permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                                                        permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK,
+                                                        permittivity_measurement_setup=fmt.MeasurementSetup.LEA_MTB,
                                                         mdb_verbosity=fmt.Verbosity.Silent)
 
         core = fmt.Core(material=core_material,
@@ -948,7 +945,6 @@ def fixture_inductor_core_fixed_loss_angle_foil_horizontal(temp_folder: pytest.f
                         core_type=fmt.CoreType.Single,
                         core_dimensions=core_dimensions,
                         detailed_core_model=False)
-
 
         geo.set_core(core)
 
@@ -1645,14 +1641,12 @@ def fixture_transformer_5_windings(temp_folder: pytest.fixture):
         core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=16.1e-3, window_w=(22.5 - 12) / 2 * 1e-3,
                                                         core_inner_diameter=12e-3, core_h=22e-3)
 
-        core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N95,
+        core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
                                                         temperature=60,
                                                         permeability_datasource=fmt.MaterialDataSource.Measurement,
-                                                        permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                                                        permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
+                                                        permeability_measurement_setup=fmt.MeasurementSetup.TDK_MDT,
                                                         permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                                                        permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                                                        permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK,
+                                                        permittivity_measurement_setup=fmt.MeasurementSetup.LEA_MTB,
                                                         mdb_verbosity=fmt.Verbosity.Silent)
 
         core = fmt.Core(material=core_material,

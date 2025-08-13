@@ -25,7 +25,8 @@ import numpy as np
 import femmt.functions as ff
 from femmt.constants import *
 from femmt.mesh import Mesh
-from femmt.model import VirtualWindingWindow, WindingWindow, Core, Insulation, StrayPath, AirGaps, Conductor, LinearComplexCoreMaterial, ImportedComplexCoreMaterial
+from femmt.model import VirtualWindingWindow, WindingWindow, Core, Insulation, StrayPath, AirGaps, Conductor, LinearComplexCoreMaterial, \
+    ImportedComplexCoreMaterial
 from femmt.enumerations import *
 from femmt.data import FileData, MeshData
 from femmt.drawing import TwoDaxiSymmetric
@@ -3113,7 +3114,6 @@ class MagneticComponent:
         text_file.write("Freq = %s;\n" % self.frequency)
         text_file.write(f"delta = {self.delta};\n")
 
-
         # time domain parameters
         if self.simulation_type == SimulationType.TimeDomain:
             text_file.write(f"T = {self.time_period};\n")
@@ -3225,8 +3225,8 @@ class MagneticComponent:
                 "Flag_Fixed_Loss_Angle = 0;\n")  # loss angle for complex representation of hysteresis loss
 
         # Complex (equivalent) conductivity
-        self.core.material.complex_conductance = self.core.material.dc_conductivity + \
-                                   complex(0, 1) * 2 * np.pi * self.frequency * self.core.material.complex_permittivity
+        self.core.material.complex_conductance = \
+            self.core.material.dc_conductivity + complex(0, 1) * 2 * np.pi * self.frequency * self.core.material.complex_permittivity
         if self.core.material.complex_conductance != 0 and self.core.material.complex_conductance is not None:
             text_file.write("Flag_Conducting_Core = 1;\n")
             text_file.write(f"sigma_core_real = {self.core.material.complex_conductance.real};\n")
@@ -4545,14 +4545,14 @@ class MagneticComponent:
 
         logger.info(f"{self.core.material.permeability_type=}, {self.core.material.complex_conductance.real=}")
         if self.core.material.permeability_type == PermeabilityType.FixedLossAngle:
-            femm.mi_addmaterial('Ferrite', self.core.material.mu_r_abs, self.core.material.mu_r_abs, 0, 0, self.core.material.complex_conductance.real / 1e6, 0, 0, 1,
-                                0, self.core.material.phi_mu_deg, self.core.material.phi_mu_deg)
+            femm.mi_addmaterial('Ferrite', self.core.material.mu_r_abs, self.core.material.mu_r_abs, 0, 0, self.core.material.complex_conductance.real / 1e6,
+                                0, 0, 1, 0, self.core.material.phi_mu_deg, self.core.material.phi_mu_deg)
         elif self.core.material.permeability_type == PermeabilityType.RealValue:
-            femm.mi_addmaterial('Ferrite', self.core.material.mu_r_abs, self.core.material.mu_r_abs, 0, 0, self.core.material.complex_conductance.real / 1e6, 0, 0, 1,
-                                0, self.core.material.phi_mu_deg, self.core.material.phi_mu_deg)
+            femm.mi_addmaterial('Ferrite', self.core.material.mu_r_abs, self.core.material.mu_r_abs, 0, 0, self.core.material.complex_conductance.real / 1e6,
+                                0, 0, 1, 0, self.core.material.phi_mu_deg, self.core.material.phi_mu_deg)
         else:
-            femm.mi_addmaterial('Ferrite', self.core.material.mu_r_abs, self.core.material.mu_r_abs, 0, 0, self.core.material.complex_conductance.real / 1e6, 0, 0, 1,
-                                0, 0, 0)
+            femm.mi_addmaterial('Ferrite', self.core.material.mu_r_abs, self.core.material.mu_r_abs, 0, 0, self.core.material.complex_conductance.real / 1e6,
+                                0, 0, 1, 0, 0, 0)
         femm.mi_addmaterial('Air', 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0)
 
         for i in range(0, len(self.windings)):
@@ -5338,8 +5338,10 @@ class MagneticComponent:
                         alignment = Align[vww["alignment"]] if vww["alignment"] is not None else None
                         placing_strategy = ConductorDistribution[vww["placing_strategy"]] if vww["placing_strategy"] is not None else None
                         zigzag = vww["zigzag"] if vww["zigzag"] is not None else None
-                        foil_vertical_placing_strategy = FoilVerticalDistribution[vww["foil_vertical_placing_strategy"]] if vww["foil_vertical_placing_strategy"] is not None else None
-                        foil_horizontal_placing_strategy = FoilHorizontalDistribution[vww["foil_horizontal_placing_strategy"]] if vww["foil_horizontal_placing_strategy"] is not None else None
+                        foil_vertical_placing_strategy = FoilVerticalDistribution[vww["foil_vertical_placing_strategy"]] if \
+                            vww["foil_vertical_placing_strategy"] is not None else None
+                        foil_horizontal_placing_strategy = FoilHorizontalDistribution[vww["foil_horizontal_placing_strategy"]] if \
+                            vww["foil_horizontal_placing_strategy"] is not None else None
                         new_vww.set_winding(conductor=conductors[0],
                                             turns=turns[winding_number],
                                             winding_scheme=winding_scheme,

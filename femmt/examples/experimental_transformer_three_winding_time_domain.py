@@ -1,6 +1,5 @@
 """Basic example to show how to simulate a three winding transformer in time domain."""
 import femmt as fmt
-import materialdatabase as mdb
 import os
 # from matplotlib import pyplot as plt
 import numpy as np

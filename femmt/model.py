@@ -377,51 +377,56 @@ class ImportedComplexCoreMaterial:
         """
         self.mdb_verbosity = mdb_verbosity
 
-        # core material database
-        self.database = mdb.Data()
+        # for class ImportedComplexCoreMaterial, the model_type is fixed to "Imported"
+        self.model_type = CoreMaterialType.Imported
 
-        # path, where the material data is handed over to the FEM simulation as a .pro-file
+        # path where the material data is handed over to the FEM simulation as a .pro-file
         self.file_path_to_solver_folder: Optional[str] = None
 
-        # global core temperature
-        self.temperature = temperature
+        # core material database
+        self.database = mdb.Data()
 
         # name of the material
         self.material = Material(material)
 
+        # global core temperature
+        self.temperature = temperature
+
         # permeability meta information
-        self.model_type = CoreMaterialType.Imported
         self.magnetic_loss_approach = LossApproach.LossAngle
         self.permeability_type = PermeabilityType.FromData
         self.permeability_datasource = permeability_datasource  # FEMMT distinguishes MaterialDataSource(s) (MDB not)
 
-        # ComplexPermeability class which is imported from the material database
-        self.permeability = self.database.get_complex_permeability(material=material,
-                                                                   measurement_setup=permeability_measurement_setup,
-                                                                   pv_fit_function=mdb.FitFunction.enhancedSteinmetz)
+        # ComplexPermeability class from material database
+        self.permeability = self.database.get_complex_permeability(
+            material=material,
+            measurement_setup=permeability_measurement_setup,
+            pv_fit_function=mdb.FitFunction.enhancedSteinmetz
+        )
         self.permeability.fit_losses()
         self.permeability.fit_permeability_magnitude()
 
-        # (constant and lossless) initial permeability is used for reluctance calculations
+        # constant permeability (used in simplified reluctance circuit)
         self.mu_r_abs = self.database.get_material_attribute(
             material=self.material,
             attribute="initial_permeability"
         )
 
+        # permittivity meta information
         self.permittivity_datasource = permittivity_datasource  # FEMMT distinguishes MaterialDataSource(s) (MDB not)
-        self.permittivity = {
-            "datasource": MaterialDataSource(permittivity_datasource) if isinstance(permittivity_datasource, str) else permittivity_datasource,
-            "measurement_setup": MeasurementSetup(permittivity_measurement_setup) if isinstance(permittivity_measurement_setup,
-                                                                                                str) else permittivity_measurement_setup,
-        }
 
-        self.dc_conductivity = 0
-        self.eps_r_abs = 0
-        self.phi_eps_deg = 0
-        self.complex_permittivity = epsilon_0 * self.eps_r_abs * complex(
-            np.cos(np.deg2rad(self.phi_eps_deg)),
-            -np.sin(np.deg2rad(self.phi_eps_deg))
+        # ComplexPermittivity class from material database
+        self.permittivity = self.database.get_complex_permittivity(
+            material=material,
+            measurement_setup=permittivity_measurement_setup
         )
+        self.permittivity.fit_permittivity_magnitude()
+        self.permittivity.fit_loss_angle()
+
+        # initialize the permittivity with zeros, as it will be updated with the
+        # actual material data at the specific frequency directly before the simulation
+        self.dc_conductivity = 0
+        self.complex_permittivity = complex(0, 0)
 
     def update_permittivity(self, frequency: float) -> None:
         """Update permittivity and calculate equivalent conductivity at a given frequency.
@@ -431,29 +436,18 @@ class ImportedComplexCoreMaterial:
         :param frequency: Frequency in Hz.
         :type frequency: float
         """
-        # if self.permittivity["datasource"] == MaterialDataSource.Measurement:
-        #     epsilon_r, phi_epsilon_deg = self.material_database.get_permittivity(
-        #         temperature=self.temperature,
-        #         frequency=frequency,
-        #         material=self.material,
-        #         datasource=self.permittivity["datasource"],
-        #         measurement_setup=self.permittivity["measurement_setup"],
-        #         datatype=self.permittivity["datatype"]
-        #     )
-        #
-        #     self.complex_permittivity = epsilon_0 * epsilon_r * complex(
-        #         np.cos(np.deg2rad(phi_epsilon_deg)),
-        #         -np.sin(np.deg2rad(phi_epsilon_deg))
-        #     )
-        #
-        #     self.dc_conductivity = 0
-        #
-        # elif self.permittivity["datasource"] == MaterialDataSource.ManufacturerDatasheet:
-        #     self.dc_conductivity = 1 / self.material_database.get_material_attribute(
-        #         material=self.material,
-        #         attribute="resistivity"
-        #     )
-        print("upadate the permittivity")
+        if self.permittivity_datasource == MaterialDataSource.Measurement:
+            eps_real, eps_imag = self.permittivity.fit_real_and_imaginary_part_at_f_and_T(f=frequency, T=self.temperature)
+            self.complex_permittivity = epsilon_0 * complex(eps_real, -eps_imag)
+            self.dc_conductivity = 0
+        elif self.permittivity_datasource == MaterialDataSource.ManufacturerDatasheet:
+            self.complex_permittivity = complex(0, 0)
+            self.dc_conductivity = 1 / self.material_database.get_material_attribute(
+                material=self.material,
+                attribute="resistivity"
+            )
+
+    print("update the permittivity")
 
     def update_core_material_pro_file(self, frequency: int,
                                       folder: str,
@@ -497,7 +491,7 @@ class ImportedComplexCoreMaterial:
             "permeability_measurement_setup": self.permeability.measurement_setup,
             "permeability_datatype": MeasurementDataType.ComplexPermeability,
             "permittivity_datasource": self.permittivity_datasource,
-            "permittivity_measurement_setup": self.permittivity["measurement_setup"],
+            "permittivity_measurement_setup": self.permittivity.measurement_setup,
             "permittivity_datatype": MeasurementDataType.ComplexPermittivity
         }
 
@@ -545,10 +539,6 @@ class Core:
     def update_core_material_pro_file(self, plot_interpolation: bool = False) -> None:
         """Generate or update permeability profile files used by the solver.
 
-        :param frequency: Frequency for profile generation in Hz.
-        :type frequency: int
-        :param folder: Directory where the profile should be saved.
-        :type folder: str
         :param plot_interpolation: Whether to plot interpolation used for file generation.
         :type plot_interpolation: bool
         """

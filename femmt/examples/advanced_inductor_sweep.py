@@ -2,7 +2,6 @@
 import numpy as np
 
 import femmt as fmt
-import materialdatabase as mdb
 import os
 
 
@@ -42,14 +41,12 @@ def advanced_example_inductor_sweep(onelab_folder: str = None, show_visual_outpu
                                                     window_h=core_db["window_h"],
                                                     core_h=core_db["core_h"])
 
-    core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N95,
+    core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
                                                     temperature=30,
                                                     permeability_datasource=fmt.MaterialDataSource.Measurement,
-                                                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                                                    permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
+                                                    permeability_measurement_setup=fmt.MeasurementSetup.TDK_MDT,
                                                     permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                                                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                                                    permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK,
+                                                    permittivity_measurement_setup=fmt.MeasurementSetup.LEA_MTB,
                                                     mdb_verbosity=fmt.Verbosity.Silent)
 
     core = fmt.Core(material=core_material,
