@@ -145,7 +145,7 @@ def basic_example_pcb_interleaved(onelab_folder: str = None, show_visual_outputs
     winding2.parallel = True
 
     vww.set_interleaved_winding(winding1, 5, winding2, 2, fmt.InterleavedWindingScheme.VerticalAlternating,
-                                foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalUpward, group_size=1)
+                                foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalUpward, group_size=2)
     geo.set_winding_windows([winding_window])
     # Create Model
     geo.create_model(freq=1000000, pre_visualize_geometry=show_visual_outputs, save_png=False)

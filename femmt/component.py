@@ -1543,7 +1543,9 @@ class MagneticComponent:
             self.calculate_average_files()
             self.calculate_and_write_time_domain_log()  # TODO: reuse center tapped
             if show_fem_simulation_results:
-                self.visualize()
+                # self.visualize()
+                self.live_visualization_2d()
+                # self.live_visualization_2d_2()
             if show_rolling_average:
                 self.get_rolling_average(window_size=rolling_avg_window_size)
 
@@ -1560,7 +1562,9 @@ class MagneticComponent:
             self.calculate_and_write_time_domain_log()  # TODO: reuse center tapped
 
             if show_fem_simulation_results:
-                self.visualize()
+                # self.visualize()
+                self.live_visualization_2d()
+                # self.live_visualization_2d_2()
             if show_rolling_average:
                 self.get_rolling_average(window_size=rolling_avg_window_size)
 
@@ -4810,6 +4814,224 @@ class MagneticComponent:
 
         gmsh.fltk.run()
         # gmsh.finalize()
+
+    def live_visualization_2d(self):
+
+        logger.info("\n---\nVisualize fields in GMSH front end:\n")
+        gmsh.initialize()
+        epsilon = 1e-9
+        # Merge all .pos files in the results folder
+        # for fname in os.listdir(self.file_data.e_m_fields_folder_path):
+        #     if fname.endswith(".pos"):
+        #         gmsh.merge(os.path.join(self.file_data.e_m_fields_folder_path, fname))
+
+        # # Initialize GUI
+        # gmsh.fltk.initialize()
+        import sys
+        # Show the GUI:
+        if '-nopopup' not in sys.argv:
+            gmsh.fltk.initialize()
+
+        # merge view files
+        gmsh.merge(os.path.join(self.file_data.e_m_fields_folder_path, 'j2F_density.pos'))
+        gmsh.merge(os.path.join(self.file_data.e_m_fields_folder_path, 'j2H_density.pos'))
+        gmsh.merge(os.path.join(self.file_data.e_m_fields_folder_path, 'Magb.pos'))
+
+        v = gmsh.view.getTags()
+        # We set some options for each post-processing view:
+        # Mesh
+        gmsh.option.setNumber("Mesh.SurfaceEdges", 0)
+
+        if any(self.windings[i].conductor_type != ConductorType.RoundLitz for i in range(len(self.windings))):
+            # Ohmic losses (weighted effective value of current density)
+            # gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2F_density.pos"))
+            gmsh.option.setNumber(f"View[{v[0]}].ScaleType", 2)
+            gmsh.option.setNumber(f"View[{v[0]}].RangeType", 3)
+            gmsh.option.setNumber(f"View[{v[0]}].SaturateValues", 1)
+            gmsh.option.setNumber(f"View[{v[0]}].CustomMin", gmsh.option.getNumber(f"View[{v[0]}].Min") + epsilon)
+            gmsh.option.setNumber(f"View[{v[0]}].CustomMax", gmsh.option.getNumber(f"View[{v[0]}].Max"))
+            gmsh.option.setNumber(f"View[{v[0]}].ColormapNumber", 1)
+            gmsh.option.setNumber(f"View[{v[0]}].IntervalsType", 2)
+            gmsh.option.setNumber(f"View[{v[0]}].NbIso", 40)
+            gmsh.option.setNumber(f"View[{v[0]}].ShowTime", 4)
+            gmsh.option.setNumber(f"View[{v[0]}].TimeStep", 1)
+            gmsh.option.setNumber(f"View[{v[0]}].Time", 1)
+            gmsh.option.setNumber(f"View[{v[0]}].NbTimeStep", 1)
+
+            if any(self.windings[i].conductor_type == ConductorType.RoundLitz for i in range(len(self.windings))):
+                # Ohmic losses (weighted effective value of current density)
+                # gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2H_density.pos"))
+                gmsh.option.setNumber(f"View[{v[1]}].ScaleType", 2)
+                gmsh.option.setNumber(f"View[{v[1]}].RangeType", 3)
+                gmsh.option.setNumber(f"View[{v[1]}].SaturateValues", 1)
+                gmsh.option.setNumber(f"View[{v[1]}].CustomMin",
+                                      gmsh.option.getNumber(f"View[{v[1]}].Min") + epsilon)
+                gmsh.option.setNumber(f"View[{v[1]}].CustomMax", gmsh.option.getNumber(f"View[{v[1]}].Max"))
+                gmsh.option.setNumber(f"View[{v[1]}].ColormapNumber", 1)
+                gmsh.option.setNumber(f"View[{v[1]}].IntervalsType", 2)
+                gmsh.option.setNumber(f"View[{v[1]}].NbIso", 40)
+                gmsh.option.setNumber(f"View[{v[1]}].ShowTime", 4)
+                gmsh.option.setNumber(f"View[{v[1]}].TimeStep", 1)
+                gmsh.option.setNumber(f"View[{v[1]}].Time", 1)
+                gmsh.option.setNumber(f"View[{v[1]}].NbTimeStep", 1)
+
+            # Magnetic flux density
+            # gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Magb.pos"))
+            gmsh.option.setNumber(f"View[{v[2]}].ScaleType", 1)
+            gmsh.option.setNumber(f"View[{v[2]}].RangeType", 3)
+            gmsh.option.setNumber(f"View[{v[2]}].CustomMin", gmsh.option.getNumber(f"View[{v[2]}].Min") + epsilon)
+            gmsh.option.setNumber(f"View[{v[2]}].CustomMax", gmsh.option.getNumber(f"View[{v[2]}].Max"))
+            gmsh.option.setNumber(f"View[{v[2]}].ColormapNumber", 1)
+            gmsh.option.setNumber(f"View[{v[2]}].IntervalsType", 2)
+            gmsh.option.setNumber(f"View[{v[2]}].ShowTime", 4)
+            gmsh.option.setNumber(f"View[{v[2]}].NbIso", 40)
+            gmsh.option.setNumber(f"View[{v[2]}].TimeStep", 1)
+            gmsh.option.setNumber(f"View[{v[2]}].Time", 1)
+            gmsh.option.setNumber(f"View[{v[2]}].NbTimeStep", 1)
+
+        # Get all view tags
+        # v = gmsh.view.getTags()
+        if len(v) == 0:
+            print("No .pos views found in:", self.file_data.e_m_fields_folder_path)
+            gmsh.finalize()
+            return
+
+        # Configure views for 2D
+        for vt in v:
+            gmsh.view.option.setNumber(vt, "IntervalsType", 2)  # color shading
+            gmsh.view.option.setNumber(vt, "ShowScale", 1)  # colorbar
+            gmsh.view.option.setNumber(vt, "Visible", 1)  # ensure visible
+
+        # Animate through time steps
+        frames = int(gmsh.view.option.getNumber(v[0], "NbTimeStep"))
+        t = 0
+        while gmsh.fltk.isAvailable():
+            for vt in v:
+                gmsh.view.option.setNumber(vt, "TimeStep", t)
+            gmsh.graphics.draw()
+            time.sleep(0.3)  # seconds per frame
+            t = (t + 1) % frames
+        if '-nopopup' not in sys.argv:
+            gmsh.fltk.run()
+        gmsh.finalize()
+
+    # def live_visualization_2d_2(self):
+    #     """Just Try"""
+    #     import sys
+    #
+    #     logger.info("\n---\nVisualize fields in GMSH front end:\n")
+    #     gmsh.initialize()
+    #     epsilon = 1e-9
+    #
+    #     # Merge standard .pos field map files
+    #     pos_files = [
+    #         "j2F_density.pos",
+    #         "j2H_density.pos",
+    #         "Magb.pos"
+    #     ]
+    #
+    #     for fname in pos_files:
+    #         fpath = os.path.join(self.file_data.e_m_fields_folder_path, fname)
+    #         if os.path.exists(fpath):
+    #             gmsh.merge(fpath)
+    #
+    #     # Merge the b_grid file (graph mode)
+    #     b_grid_path = os.path.join(self.file_data.e_m_fields_folder_path, "b_grid.pos")
+    #     has_b_grid = os.path.exists(b_grid_path)
+    #     if has_b_grid:
+    #         gmsh.merge(b_grid_path)
+    #
+    #     # Initialize GUI
+    #     if '-nopopup' not in sys.argv:
+    #         gmsh.fltk.initialize()
+    #
+    #     v = gmsh.view.getTags()
+    #     if len(v) == 0:
+    #         print("No .pos views found in:", self.file_data.e_m_fields_folder_path)
+    #         gmsh.finalize()
+    #         return
+    #
+    #     # Mesh
+    #     gmsh.option.setNumber("Mesh.SurfaceEdges", 0)
+    #
+    #     if any(self.windings[i].conductor_type != ConductorType.RoundLitz for i in range(len(self.windings))):
+    #         # Ohmic losses (weighted effective value of current density)
+    #         # gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2F_density.pos"))
+    #         gmsh.option.setNumber(f"View[{v[0]}].ScaleType", 2)
+    #         gmsh.option.setNumber(f"View[{v[0]}].RangeType", 3)
+    #         gmsh.option.setNumber(f"View[{v[0]}].SaturateValues", 1)
+    #         gmsh.option.setNumber(f"View[{v[0]}].CustomMin", gmsh.option.getNumber(f"View[{v[0]}].Min") + epsilon)
+    #         gmsh.option.setNumber(f"View[{v[0]}].CustomMax", gmsh.option.getNumber(f"View[{v[0]}].Max"))
+    #         gmsh.option.setNumber(f"View[{v[0]}].ColormapNumber", 1)
+    #         gmsh.option.setNumber(f"View[{v[0]}].IntervalsType", 2)
+    #         gmsh.option.setNumber(f"View[{v[0]}].NbIso", 40)
+    #         gmsh.option.setNumber(f"View[{v[0]}].ShowTime", 4)
+    #         gmsh.option.setNumber(f"View[{v[0]}].TimeStep", 1)
+    #         gmsh.option.setNumber(f"View[{v[0]}].Time", 1)
+    #         gmsh.option.setNumber(f"View[{v[0]}].NbTimeStep", 1)
+    #
+    #         if any(self.windings[i].conductor_type == ConductorType.RoundLitz for i in range(len(self.windings))):
+    #             # Ohmic losses (weighted effective value of current density)
+    #             # gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2H_density.pos"))
+    #             gmsh.option.setNumber(f"View[{v[1]}].ScaleType", 2)
+    #             gmsh.option.setNumber(f"View[{v[1]}].RangeType", 3)
+    #             gmsh.option.setNumber(f"View[{v[1]}].SaturateValues", 1)
+    #             gmsh.option.setNumber(f"View[{v[1]}].CustomMin",
+    #                                   gmsh.option.getNumber(f"View[{v[1]}].Min") + epsilon)
+    #             gmsh.option.setNumber(f"View[{v[1]}].CustomMax", gmsh.option.getNumber(f"View[{v[1]}].Max"))
+    #             gmsh.option.setNumber(f"View[{v[1]}].ColormapNumber", 1)
+    #             gmsh.option.setNumber(f"View[{v[1]}].IntervalsType", 2)
+    #             gmsh.option.setNumber(f"View[{v[1]}].NbIso", 40)
+    #             gmsh.option.setNumber(f"View[{v[1]}].ShowTime", 4)
+    #             gmsh.option.setNumber(f"View[{v[1]}].TimeStep", 1)
+    #             gmsh.option.setNumber(f"View[{v[1]}].Time", 1)
+    #             gmsh.option.setNumber(f"View[{v[1]}].NbTimeStep", 1)
+    #
+    #         # Magnetic flux density
+    #         # gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Magb.pos"))
+    #         gmsh.option.setNumber(f"View[{v[2]}].ScaleType", 1)
+    #         gmsh.option.setNumber(f"View[{v[2]}].RangeType", 3)
+    #         gmsh.option.setNumber(f"View[{v[2]}].CustomMin", gmsh.option.getNumber(f"View[{v[2]}].Min") + epsilon)
+    #         gmsh.option.setNumber(f"View[{v[2]}].CustomMax", gmsh.option.getNumber(f"View[{v[2]}].Max"))
+    #         gmsh.option.setNumber(f"View[{v[2]}].ColormapNumber", 1)
+    #         gmsh.option.setNumber(f"View[{v[2]}].IntervalsType", 2)
+    #         gmsh.option.setNumber(f"View[{v[2]}].ShowTime", 4)
+    #         gmsh.option.setNumber(f"View[{v[2]}].NbIso", 40)
+    #         gmsh.option.setNumber(f"View[{v[2]}].TimeStep", 1)
+    #         gmsh.option.setNumber(f"View[{v[2]}].Time", 1)
+    #         gmsh.option.setNumber(f"View[{v[2]}].NbTimeStep", 1)
+    #
+    #
+    #     # Configure b_grid view in graph mode with fixed position
+    #     if has_b_grid:
+    #         bgrid_view = v[-1]  # last merged
+    #         gmsh.view.option.setString(bgrid_view, "Name", "Test...")
+    #         gmsh.view.option.setNumber(bgrid_view, "Axes", 1)
+    #         gmsh.view.option.setNumber(bgrid_view, "IntervalsType", 2)
+    #         gmsh.view.option.setNumber(bgrid_view, "Type", 2)  # graph mode
+    #         gmsh.view.option.setNumber(bgrid_view, "AutoPosition", 0)
+    #         gmsh.view.option.setNumber(bgrid_view, "PositionX", 50)
+    #         gmsh.view.option.setNumber(bgrid_view, "PositionY", 50)
+    #         gmsh.view.option.setNumber(bgrid_view, "Width", 350)
+    #         gmsh.view.option.setNumber(bgrid_view, "Height", 250)
+    #
+    #     # Ensure all views are visible
+    #     for vt in v:
+    #         gmsh.view.option.setNumber(vt, "Visible", 1)
+    #
+    #     # Animate through time steps for maps
+    #     frames = int(gmsh.view.option.getNumber(v[0], "NbTimeStep"))
+    #     t = 0
+    #     while gmsh.fltk.isAvailable():
+    #         for vt in v:
+    #             gmsh.view.option.setNumber(vt, "TimeStep", t)
+    #         gmsh.graphics.draw()
+    #         time.sleep(0.2)  # seconds per frame
+    #         t = (t + 1) % frames
+    #
+    #     if '-nopopup' not in sys.argv:
+    #         gmsh.fltk.run()
+    #     gmsh.finalize()
 
     def get_loss_data(self, last_n_values: int, loss_type: str = 'litz_loss'):
         """

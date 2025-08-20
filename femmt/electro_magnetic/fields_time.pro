@@ -39,7 +39,21 @@ PostOperation Map_local UsingPost MagDyn_a {
   //Print[ p_hyst_density,  OnElementsOf Domain,  File StrCat[DirResFields, "p_hyst_density", ExtGmsh],  LastTimeStepOnly ] ;
 
   // Magnetic Flux (Density)
-  //Print[ b,  OnElementsOf Domain,  File StrCat[DirResFields, "b", ExtGmsh],  LastTimeStepOnly ] ;
+  Print[ b,  OnElementsOf Domain,  File StrCat[DirResFields, "b", ExtGmsh],  LastTimeStepOnly ] ;
+  //Print[ Magb, OnGrid {Cos[$A], Sin[$A], 0} { 0:2*Pi:Pi/180, 0, 0 },
+             //File StrCat[DirResFields, "b_point.pos"], Format Gmsh ];
+  Print[ Magb,
+       OnGrid { $A, $B, 0 }
+              { 0.002, -0.02:0.02:0.001, 0 },
+       File StrCat[DirResFields, "Magb_grid.pos"],
+       Format Gmsh ];
+
+  Print[ b,
+       OnGrid { $A, $B, 0 }
+              { 0.002, -0.02:0.02:0.001, 0 },
+       File StrCat[DirResFields, "b_grid.pos"],
+       Format Gmsh ];
+
   //Print[ b_pol,  OnElementsOf Domain,  File StrCat[DirResFields, "b_pol", ExtGmsh],  LastTimeStepOnly ] ;
   //Print[ im_b_pol,  OnElementsOf Domain,  File StrCat[DirResFields, "im_b_pol", ExtGmsh],  LastTimeStepOnly ] ;
   //Print[ Mag_b_real,  OnElementsOf Domain,  File StrCat[DirResFields, "Mag_b_real", ExtGmsh],  LastTimeStepOnly] ;
