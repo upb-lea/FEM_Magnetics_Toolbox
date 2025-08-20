@@ -18,7 +18,6 @@ import ast
 
 # Third party libraries
 from onelab import onelab
-import materialdatabase as mdb
 import numpy as np
 
 # Local libraries
@@ -571,7 +570,6 @@ class MagneticComponent:
 
         if self.component_type in [ComponentType.Inductor, ComponentType.Transformer, ComponentType.IntegratedTransformer]:
             self.log_coordinates_description()
-
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Miscellaneous
@@ -1505,7 +1503,7 @@ class MagneticComponent:
                                            save_png=save_png)
             self.mesh.generate_electro_magnetic_mesh()
 
-            for count_frequency, value_frequency in enumerate(range(0, len(frequency_list))):
+            for count_frequency, _ in enumerate(range(0, len(frequency_list))):
                 self.excitation(frequency=frequency_list[count_frequency],
                                 amplitude_list=current_list_list[count_frequency],
                                 phase_deg_list=phi_deg_list_list[count_frequency])  # frequency and current

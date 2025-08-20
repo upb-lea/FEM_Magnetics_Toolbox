@@ -451,8 +451,15 @@ NbSteps
 
 
 
-
-
+# mdb
+mdb
+CoreMaterial
+CoreType
+CoreGeometry
+DataSource
+eps
+ListAlt
+InterpolationLinear
 
 
 
