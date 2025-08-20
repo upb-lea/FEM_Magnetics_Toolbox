@@ -120,10 +120,8 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
 
     core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
                                                     temperature=45,
-                                                    permeability_datasource=fmt.MaterialDataSource.Measurement,
-                                                    permeability_measurement_setup=fmt.MeasurementSetup.TDK_MDT,
-                                                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                                                    permittivity_measurement_setup=fmt.MeasurementSetup.LEA_MTB,
+                                                    permeability_datasource=fmt.DataSource.TDK_MDT,
+                                                    permittivity_datasource=fmt.DataSource.LEA_MTB,
                                                     mdb_verbosity=fmt.Verbosity.Silent)
 
     core = fmt.Core(material=core_material,

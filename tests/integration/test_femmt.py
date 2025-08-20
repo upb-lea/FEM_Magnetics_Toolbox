@@ -159,8 +159,8 @@ def fixture_inductor_core_material_database(temp_folder: pytest.fixture):
 
         core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N95,
                                                         temperature=25,
-                                                        permeability_datasource=fmt.MaterialDataSource.ManufacturerDatasheet,
-                                                        permittivity_datasource=fmt.MaterialDataSource.ManufacturerDatasheet,
+                                                        permeability_datasource=fmt.DataSource.Datasheet,
+                                                        permittivity_datasource=fmt.DataSource.Datasheet,
                                                         mdb_verbosity=fmt.Verbosity.Silent)
 
         core = fmt.Core(material=core_material,
@@ -287,10 +287,8 @@ def fixture_inductor_core_material_database_measurement(temp_folder: pytest.fixt
 
         core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
                                                         temperature=25,
-                                                        permeability_datasource=fmt.MaterialDataSource.Measurement,
-                                                        permeability_measurement_setup=fmt.MeasurementSetup.TDK_MDT,
-                                                        permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                                                        permittivity_measurement_setup=fmt.MeasurementSetup.LEA_MTB,
+                                                        permeability_datasource=fmt.DataSource.TDK_MDT,
+                                                        permittivity_datasource=fmt.DataSource.LEA_MTB,
                                                         mdb_verbosity=fmt.Verbosity.Silent)
 
         core = fmt.Core(material=core_material,
@@ -1643,10 +1641,8 @@ def fixture_transformer_5_windings(temp_folder: pytest.fixture):
 
         core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
                                                         temperature=60,
-                                                        permeability_datasource=fmt.MaterialDataSource.Measurement,
-                                                        permeability_measurement_setup=fmt.MeasurementSetup.TDK_MDT,
-                                                        permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                                                        permittivity_measurement_setup=fmt.MeasurementSetup.LEA_MTB,
+                                                        permeability_datasource=fmt.DataSource.TDK_MDT,
+                                                        permittivity_datasource=fmt.DataSource.LEA_MTB,
                                                         mdb_verbosity=fmt.Verbosity.Silent)
 
         core = fmt.Core(material=core_material,

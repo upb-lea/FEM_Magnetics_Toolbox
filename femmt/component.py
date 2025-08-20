@@ -572,65 +572,6 @@ class MagneticComponent:
         if self.component_type in [ComponentType.Inductor, ComponentType.Transformer, ComponentType.IntegratedTransformer]:
             self.log_coordinates_description()
 
-    def get_single_complex_permeability(self):
-        """
-        Read the complex permeability from the material database.
-
-        In case of amplitude dependent material definition, the initial permeability is used.
-        :return: complex
-        """
-        if self.core.material.permeability_type == PermeabilityType.FromData:
-            # take datasheet value from database
-            complex_permeability = mu_0 * mdb.MaterialDatabase(
-                self.verbosity == Verbosity.Silent).get_material_attribute(material_name=self.core.material.material,
-                                                                           attribute="initial_permeability")
-            logger.info(f"{complex_permeability=}")
-        if self.core.material.permeability_type == PermeabilityType.FixedLossAngle:
-            complex_permeability = mu_0 * self.core.material.mu_r_abs * complex(np.cos(np.deg2rad(self.core.material.phi_mu_deg)),
-                                                                                np.sin(np.deg2rad(self.core.material.phi_mu_deg)))
-        if self.core.material.permeability_type == PermeabilityType.RealValue:
-            complex_permeability = mu_0 * self.core.material.mu_r_abs
-        return complex_permeability
-
-    def check_model_mqs_condition(self) -> None:
-        """
-        Check the model for magneto-quasi-static condition for frequencies != 0.
-
-        Is called before a simulation.
-        Loads the permittivity from the material database (measurement or datasheet) and calculates the
-        resonance ratio = diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance
-        """
-        print("check_model_mqs_condition not implemented")
-        # if self.frequency != 0:
-        #     if self.core.material.permittivity["datasource"] == "measurements" or self.core.material.permittivity[
-        #             "datasource"] == "datasheet":
-        #         epsilon_r, epsilon_phi_deg = mdb.MaterialDatabase(self.verbosity == Verbosity.Silent).get_permittivity(
-        #             temperature=self.core.material.temperature, frequency=self.frequency,
-        #             material_name=self.core.material.material,
-        #             datasource=self.core.material.permittivity["datasource"],
-        #             datatype=self.core.material.permittivity["datatype"],
-        #             measurement_setup=self.core.material.permittivity["measurement_setup"],
-        #             interpolation_type="linear")
-        #
-        #         complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(epsilon_phi_deg)),
-        #                                                                -np.sin(np.deg2rad(epsilon_phi_deg)))
-        #         logger.info(f"{complex_permittivity=}\n"
-        #                     f"{epsilon_r=}\n"
-        #                     f"{epsilon_phi_deg=}")
-        #
-        #         ff.check_mqs_condition(radius=self.core.geometry.core_inner_diameter / 2, frequency=self.frequency,
-        #                                complex_permeability=self.get_single_complex_permeability(),
-        #                                complex_permittivity=complex_permittivity, conductivity=self.core.material.dc_conductivity,
-        #                                relative_margin_to_first_resonance=0.5)
-        #
-        #     else:
-        #         ff.check_mqs_condition(radius=self.core.geometry.core_inner_diameter / 2, frequency=self.frequency,
-        #                                complex_permeability=self.get_single_complex_permeability(),
-        #                                complex_permittivity=epsilon_0 * self.core.material.eps_r_abs *
-        #                                                     complex(np.cos(np.deg2rad(self.core.material.phi_eps_deg)),
-        #                                                             -np.sin(np.deg2rad(self.core.material.phi_eps_deg))),
-        #                                conductivity=self.core.material.dc_conductivity,
-        #                                relative_margin_to_first_resonance=0.5)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Miscellaneous
@@ -913,14 +854,12 @@ class MagneticComponent:
         density from the material database.
         """
         if self.core.material.material == 'custom':
-            volumetric_mass_density = 0
             warnings.warn("Volumetric mass density not implemented for custom cores. "
                           "Returns '0' in log-file: Core cost will also result to 0.",
                           stacklevel=2)
+            return float(0)
         else:
-            volumetric_mass_density = self.core.material.database.get_material_attribute(
-                material=self.core.material.material, attribute="volumetric_mass_density")
-        return self.calculate_core_volume() * volumetric_mass_density
+            return self.calculate_core_volume() * int(self.core.material.density)
 
     def get_wire_distances(self) -> list[list[float]]:
         """Return the distance (radius) of each conductor to the y-axis.
@@ -1357,7 +1296,6 @@ class MagneticComponent:
             self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg,
                             plot_interpolation=plot_interpolation)  # frequency and current
             self.check_create_empty_material_log()
-            self.check_model_mqs_condition()
             self.write_simulation_parameters_to_pro_files()
             self.generate_load_litz_approximation_parameters()
 
@@ -1380,7 +1318,6 @@ class MagneticComponent:
             self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg,
                             plot_interpolation=plot_interpolation)  # frequency and current
             self.check_create_empty_material_log()
-            self.check_model_mqs_condition()
             self.write_simulation_parameters_to_pro_files()
             self.generate_load_litz_approximation_parameters()
             self.simulate()
@@ -1425,7 +1362,6 @@ class MagneticComponent:
             self.excitation_time_domain(current_list=current_period_vec, time_list=time_period_vec,
                                         number_of_periods=number_of_periods, plot_interpolation=plot_interpolation)
 
-            self.check_model_mqs_condition()
             self.write_simulation_parameters_to_pro_files()
             self.generate_load_litz_approximation_parameters()
 
@@ -1449,7 +1385,6 @@ class MagneticComponent:
             self.mesh.generate_electro_magnetic_mesh()
             self.excitation_time_domain(current_list=current_period_vec, time_list=time_period_vec,
                                         number_of_periods=number_of_periods, plot_interpolation=plot_interpolation)
-            self.check_model_mqs_condition()
             self.write_simulation_parameters_to_pro_files()
             self.generate_load_litz_approximation_parameters()
             self.simulate()
@@ -1556,8 +1491,6 @@ class MagneticComponent:
                 self.excitation(frequency=frequency_list[count_frequency],
                                 amplitude_list=current_list_list[count_frequency],
                                 phase_deg_list=phi_deg_list_list[count_frequency])  # frequency and current
-                if count_frequency == 0:
-                    self.check_model_mqs_condition()
                 self.write_simulation_parameters_to_pro_files()
                 self.generate_load_litz_approximation_parameters()
                 self.simulate()
@@ -1572,14 +1505,10 @@ class MagneticComponent:
                                            save_png=save_png)
             self.mesh.generate_electro_magnetic_mesh()
 
-            check_model_mqs_condition_already_performed = False
             for count_frequency, value_frequency in enumerate(range(0, len(frequency_list))):
                 self.excitation(frequency=frequency_list[count_frequency],
                                 amplitude_list=current_list_list[count_frequency],
                                 phase_deg_list=phi_deg_list_list[count_frequency])  # frequency and current
-                if value_frequency != 0 and not check_model_mqs_condition_already_performed:
-                    self.check_model_mqs_condition()
-                    check_model_mqs_condition_already_performed = True
                 self.write_simulation_parameters_to_pro_files()
                 self.generate_load_litz_approximation_parameters()
                 self.simulate()
@@ -1650,7 +1579,6 @@ class MagneticComponent:
         self.generate_load_litz_approximation_parameters()
         self.excitation(frequency=hyst_frequency, amplitude_list=hyst_loss_amplitudes,
                         phase_deg_list=hyst_loss_phases_deg, plot_interpolation=False)  # frequency and current
-        self.check_model_mqs_condition()
         self.write_simulation_parameters_to_pro_files()
         self.generate_load_litz_approximation_parameters()
         self.simulate()
@@ -2593,15 +2521,11 @@ class MagneticComponent:
             # Magnetic flux density
             b_field = total_flux / core_cross_sectional_area
 
-            # Get saturation flux density from material database
-            saturation_flux_density = self.core.material.database.get_material_attribute(material=self.core.material.material,
-                                                                                         attribute="saturation_flux_density")
-
             # # Check for saturation and raise error if B-field exceeds threshold
-            if abs(b_field) > saturation_threshold * saturation_flux_density:
+            if abs(b_field) > saturation_threshold * self.core.material.b_sat:
                 raise ValueError(
                     f"Core saturation detected! B-field ({abs(b_field)} T) exceeds {saturation_threshold * 100}% of the saturation flux density"
-                    f" ({saturation_flux_density} T).")
+                    f" ({self.core.material.b_sat} T).")
 
             logger.info(f"B-field: {b_field:.4f} T")
             logger.info(f"Flux: {total_flux:.4f} Wb")
@@ -2679,24 +2603,20 @@ class MagneticComponent:
                 b_field_bot = flux_bot / core_cross_sectional_area
                 b_field_middle = flux_middle / core_cross_sectional_area
 
-                # Get saturation flux density from material database
-                database = mdb.MaterialDatabase()
-                saturation_flux_density = database.get_saturation_flux_density(self.core.material)
-
-                if abs(b_field_top) > saturation_threshold * saturation_flux_density:
+                if abs(b_field_top) > saturation_threshold * self.core.material.b_sat:
                     raise ValueError(
                         f"Core saturation detected in top section! B-field ({abs(b_field_top)} T) exceeds "
-                        f"{saturation_threshold * 100}% of the saturation flux density ({saturation_flux_density} T).")
+                        f"{saturation_threshold * 100}% of the saturation flux density ({self.core.material.b_sat} T).")
 
-                if abs(b_field_bot) > saturation_threshold * saturation_flux_density:
+                if abs(b_field_bot) > saturation_threshold * self.core.material.b_sat:
                     raise ValueError(
                         f"Core saturation detected in bottom section! B-field ({abs(b_field_bot)} T) exceeds "
-                        f"{saturation_threshold * 100}% of the saturation flux density ({saturation_flux_density} T).")
+                        f"{saturation_threshold * 100}% of the saturation flux density ({self.core.material.b_sat} T).")
 
-                if abs(b_field_middle) > saturation_threshold * saturation_flux_density:
+                if abs(b_field_middle) > saturation_threshold * self.core.material.b_sat:
                     raise ValueError(
                         f"Core saturation detected in middle section! B-field ({abs(b_field_middle)} T) exceeds "
-                        f"{saturation_threshold * 100}% of the saturation flux density ({saturation_flux_density} T).")
+                        f"{saturation_threshold * 100}% of the saturation flux density ({self.core.material.b_sat} T).")
 
                 logger.info(f"B-field Top: {b_field_top:.4f} T")
                 logger.info(f"B-field Bottom: {b_field_bot:.4f} T")
@@ -3077,7 +2997,6 @@ class MagneticComponent:
         # self.mesh.generate_mesh()
         self.excitation(frequency=f_switch, amplitude_list=peak_current,
                         phase_deg_list=[0, 180])  # frequency and current
-        self.check_model_mqs_condition()
         self.write_simulation_parameters_to_pro_files()
 
     def write_electro_magnetic_parameter_pro(self):

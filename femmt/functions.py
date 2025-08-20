@@ -1320,40 +1320,6 @@ def axial_wavelength(f: float, complex_permeability: float, complex_permittivity
     return 2 * np.pi / k.real
 
 
-def check_mqs_condition(radius: float, frequency: float, complex_permeability: float, complex_permittivity: float,
-                        conductivity: float, relative_margin_to_first_resonance: float = 0.5):
-    """
-    Check if the condition for a magnetoquasistatic simulation is fulfilled.
-
-    Calculates the ratio (core-diameter / wavelength) and includes a safety margin factor of 0.5.
-    In case of ratio > 1, the simulated frequency is too high. A magnetoquasistatic simulation will not lead to good
-    results. It is recommended to reduce the frequency or use a full-wave solver (not supported by FEMMT).
-
-    :param radius: core radius
-    :type radius: float
-    :param frequency: frequency in Hz
-    :type frequency: float
-    :param complex_permeability: complex permeability
-    :type complex_permeability: float
-    :param complex_permittivity: complex permittivity
-    :type complex_permittivity: float
-    :param conductivity: core conductivity
-    :type conductivity: float
-    :param relative_margin_to_first_resonance: relative margin to the first resonance. Defaults to 0.5.
-    :type relative_margin_to_first_resonance: float
-    """
-    if frequency == 0:
-        raise ValueError("check_mqs_condition() only works for frequencies != 0")
-
-    axial_lambda = axial_wavelength(frequency, complex_permeability, complex_permittivity, conductivity)
-    diameter_to_wavelength_ratio_of_first_resonance = 0.7655
-    diameter_to_wavelength_ratio = 2 * radius / axial_lambda
-    if diameter_to_wavelength_ratio > diameter_to_wavelength_ratio_of_first_resonance * relative_margin_to_first_resonance:
-        # raise Warning(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance} - "
-        #               f"1 means 1st resonance - should be kept well below 1 to ensure MQS approach to be correct! ")
-        logger.info(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance}")
-
-
 def create_open_circuit_excitation_sweep(I0: float, n: float, frequency: float) -> list[list[float]]:
     """
     Create a circuit excitation sweep with the other windings unloaded.

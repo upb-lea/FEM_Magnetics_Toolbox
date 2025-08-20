@@ -7,7 +7,7 @@ from magnethub.loss import LossModel
 
 # own libraries
 from materialdatabase.meta.data_classes import MaterialCurve
-from materialdatabase.meta.data_enums import MeasurementSetup
+from materialdatabase.meta.data_enums import DataSource
 from femmt.enumerations import *
 from femmt.optimization.ito_dtos import WorkingDirectories
 
@@ -15,12 +15,10 @@ from femmt.optimization.ito_dtos import WorkingDirectories
 class InductorMaterialDataSources:
     """Data sources for the FEM simulation."""
 
-    permeability_datasource: MaterialDataSource
+    permeability_datasource: DataSource
     permeability_datatype: MeasurementDataType
-    permeability_measurement_setup: MeasurementSetup
-    permittivity_datasource: MaterialDataSource
+    permittivity_datasource: DataSource
     permittivity_datatype: MeasurementDataType
-    permittivity_measurement_setup: MeasurementSetup
 
 @dataclasses.dataclass
 class InductorInsulationDTO:
