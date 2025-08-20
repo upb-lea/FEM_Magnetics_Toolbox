@@ -443,8 +443,6 @@ class ImportedComplexCoreMaterial:
             self.complex_permittivity = epsilon_0 * complex(eps_real, -eps_imag)
             self.dc_conductivity = 0
 
-    print("update the permittivity")
-
     def update_core_material_pro_file(self, frequency: int,
                                       folder: str,
                                       b_ref_vec: npt.NDArray[np.float64] = np.linspace(0, 0.3, 100),
