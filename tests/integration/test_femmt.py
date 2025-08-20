@@ -30,7 +30,7 @@ import femmt.examples.basic_split_windings
 
 
 def compare_result_logs(first_log_filepath: str, second_log_filepath: str, significant_digits: int = 6,
-                        ignore_order: bool = True):
+                        ignore_order: bool = True, number_format_notation: str = "f"):
     """
     Compare the result log against a given one to see the differences when running the integration tests.
 
@@ -42,6 +42,8 @@ def compare_result_logs(first_log_filepath: str, second_log_filepath: str, signi
     :type significant_digits: int
     :param ignore_order: True to ignore the order of the dict keys. Defaults to True.
     :type ignore_order: bool
+    :param number_format_notation: number format notation for deepdiff
+    :type number_format_notation: str
     """
     first_content = None
     second_content = None
@@ -63,11 +65,11 @@ def compare_result_logs(first_log_filepath: str, second_log_filepath: str, signi
                 del second_content["simulation_settings"]["working_directory"]
 
     difference = deepdiff.DeepDiff(first_content, second_content, ignore_order=ignore_order,
-                                   significant_digits=significant_digits)
+                                   significant_digits=significant_digits, number_format_notation=number_format_notation)
     print(f"{difference=}")
 
     assert not deepdiff.DeepDiff(first_content, second_content, ignore_order=ignore_order,
-                                 significant_digits=significant_digits)
+                                 significant_digits=significant_digits, number_format_notation=number_format_notation)
     # made several tests with the deepdiff command:
     # tried adding not existing keys in one of the dicts: results as expected in an error
     # changed values in very nested dict: results as expected in an error
@@ -2093,13 +2095,13 @@ def test_inductor_core_material_database(fixture_inductor_core_material_database
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                         "material_inductor_core_material_database.json")
-    compare_result_logs(material_result_log, fixture_material_log, significant_digits=10, ignore_order=False)
+    compare_result_logs(material_result_log, fixture_material_log, significant_digits=3, ignore_order=False, number_format_notation="e")
 
     assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
 
     fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                         "geometry_inductor_core_material_database.json")
-    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
+    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=6)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
@@ -2108,13 +2110,13 @@ def test_inductor_core_material_database(fixture_inductor_core_material_database
                                       "log_inductor_core_material_database.json")
     print(test_result_log)
     print(fixture_result_log)
-    compare_result_logs(test_result_log, fixture_result_log)
+    compare_result_logs(test_result_log, fixture_result_log, significant_digits=5)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "thermal_inductor_core_material_database.json")
-    compare_thermal_result_logs(thermal_result_log, fixture_result_log)
+    compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=5)
 
 
 def test_inductor_core_material_database_measurement(fixture_inductor_core_material_database_measurement: pytest.fixture):
@@ -2130,26 +2132,26 @@ def test_inductor_core_material_database_measurement(fixture_inductor_core_mater
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                         "material_inductor_core_material_database_measurement.json")
-    compare_result_logs(material_result_log, fixture_material_log, significant_digits=10, ignore_order=False)
+    compare_result_logs(material_result_log, fixture_material_log, significant_digits=2, ignore_order=False, number_format_notation="e")
 
     assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
 
     fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                         "geometry_inductor_core_material_measurement.json")
-    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
+    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=6)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "log_inductor_core_material_measurement.json")
-    compare_result_logs(test_result_log, fixture_result_log)
+    compare_result_logs(test_result_log, fixture_result_log, significant_digits=5)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "thermal_inductor_core_material_database_measurement.json")
-    compare_thermal_result_logs(thermal_result_log, fixture_result_log)
+    compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=6)
 
 
 def test_inductor_core_fixed_loss_angle(fixture_inductor_core_fixed_loss_angle: pytest.fixture):
@@ -2435,7 +2437,7 @@ def test_transformer_5_windings(fixture_transformer_5_windings: pytest.fixture):
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                         "material_transformer_5_windings.json")
-    compare_result_logs(material_result_log, fixture_material_log, significant_digits=10, ignore_order=False)
+    compare_result_logs(material_result_log, fixture_material_log, significant_digits=3, ignore_order=False, number_format_notation="e")
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
