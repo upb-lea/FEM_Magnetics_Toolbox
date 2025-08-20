@@ -78,7 +78,7 @@ def run_transformer_vvw_split_examples(num_windings: int, onelab_folder: str = N
              [iso_against, iso_against, iso_against, iso_self, iso_against, iso_against, iso_against],
              [iso_against, iso_against, iso_against, iso_against, iso_self, iso_against, iso_against],
              [iso_against, iso_against, iso_against, iso_against, iso_against, iso_self, iso_against],
-             [iso_against, iso_against, iso_against, iso_against, iso_against, iso_against, iso_self]])
+             [iso_against, iso_against, iso_against, iso_against, iso_against, iso_against, iso_self]], per_layer_of_turns=False)
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)

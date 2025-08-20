@@ -67,7 +67,7 @@ def basic_example_sweep(onelab_folder: str | None = None, show_visual_outputs: b
 
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
-        insulation.add_winding_insulations([[0.0005]])
+        insulation.add_winding_insulations([[0.0005]], per_layer_of_turns=False)
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)

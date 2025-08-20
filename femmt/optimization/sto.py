@@ -26,6 +26,8 @@ import magnethub as mh
 import pandas as pd
 import tqdm
 
+logger = logging.getLogger(__name__)
+
 class StackedTransformerOptimization:
     """Perform optimizations for the stacked transformer."""
 
@@ -227,7 +229,7 @@ class StackedTransformerOptimization:
 
             # as the window_h_top is adapted to the number of n_p_top, the top windings always fit into the top window.
             if total_area_windings_bot > window_bot_available_area:
-                logging.warning("Winding window too small for too many turns.")
+                logger.debug("Winding window too small for too many turns.")
                 return float('nan'), float('nan')
 
             reluctance_model_intput = ReluctanceModelInput(
@@ -270,7 +272,7 @@ class StackedTransformerOptimization:
             try:
                 reluctance_output = StackedTransformerOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_intput)
             except ValueError:
-                logging.warning("No fitting air gap length")
+                logger.debug("No fitting air gap length")
                 return float('nan'), float('nan')
 
             # set additional attributes
@@ -518,7 +520,7 @@ class StackedTransformerOptimization:
             :type sampler: optuna.sampler-object
             """
             if os.path.exists(f"{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.sqlite3"):
-                print("Existing study found. Proceeding.")
+                logger.info("Existing study found. Proceeding.")
 
             target_and_fixed_parameters = StackedTransformerOptimization.ReluctanceModel.calculate_fix_parameters(config)
 
@@ -548,26 +550,26 @@ class StackedTransformerOptimization:
                 if len(study_in_storage.trials) < target_number_trials:
                     study_in_memory = optuna.create_study(directions=['minimize', 'minimize'],
                                                           study_name=config.stacked_transformer_study_name, sampler=sampler)
-                    print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
+                    logger.info(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
                     study_in_memory.add_trials(study_in_storage.trials)
                     number_trials = target_number_trials - len(study_in_memory.trials)
                     study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
                     study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
-                    print(f"Finished {number_trials} trials.")
-                    print(f"current time: {datetime.datetime.now()}")
+                    logger.info(f"Finished {number_trials} trials.")
+                    logger.info(f"current time: {datetime.datetime.now()}")
                 else:
-                    print(f"Study has already {len(study_in_storage.trials)} trials, and target is {target_number_trials} trials.")
+                    logger.info(f"Study has already {len(study_in_storage.trials)} trials, and target is {target_number_trials} trials.")
 
             else:
                 # normal simulation with number_trials
                 study_in_memory = optuna.create_study(directions=['minimize', 'minimize'], study_name=config.stacked_transformer_study_name, sampler=sampler)
-                print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
+                logger.info(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
                 study_in_memory.add_trials(study_in_storage.trials)
                 study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
 
                 study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
-                print(f"Finished {number_trials} trials.")
-                print(f"current time: {datetime.datetime.now()}")
+                logger.info(f"Finished {number_trials} trials.")
+                logger.info(f"current time: {datetime.datetime.now()}")
             StackedTransformerOptimization.ReluctanceModel.save_config(config)
 
         @staticmethod
@@ -600,13 +602,13 @@ class StackedTransformerOptimization:
             """
             database_url = f'sqlite:///{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.sqlite3'
             if os.path.isfile(database_url.replace('sqlite:///', '')):
-                print("Existing study found.")
+                logger.info("Existing study found.")
             else:
                 raise ValueError(f"Can not find database: {database_url}")
             loaded_study = optuna.load_study(study_name=config.stacked_transformer_study_name, storage=database_url)
             df = loaded_study.trials_dataframe()
             df.to_csv(f'{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.csv')
-            logging.info(f"Exported study as .csv file: {config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.csv")
+            logger.info(f"Exported study as .csv file: {config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.csv")
             return df
 
         @staticmethod
@@ -773,6 +775,98 @@ class StackedTransformerOptimization:
             with open(config_pickle_filepath, 'rb') as pickle_file_data:
                 return pickle.load(pickle_file_data)
 
+        @staticmethod
+        def full_simulation(df_geometry: pd.DataFrame, current_waveform: list, stacked_transformer_config_filepath: str):
+            """
+            Reluctance model (hysteresis losses) and FEM simulation (winding losses and eddy current losses) for geometries from df_geometry.
+
+            :param df_geometry: Pandas dataframe with geometries
+            :type df_geometry: pd.DataFrame
+            :param current_waveform: Current waveform to simulate
+            :type current_waveform: list
+            :param stacked_transformer_config_filepath: Filepath of the inductor optimization configuration file
+            :type stacked_transformer_config_filepath: str
+            """
+            for index, _ in df_geometry.iterrows():
+
+                local_config = StackedTransformerOptimization.ReluctanceModel.load_config(stacked_transformer_config_filepath)
+
+                if local_config.core_name_list is not None:
+                    # using fixed core sizes from the database with flexible height.
+                    core_name = df_geometry['params_core_name'][index]
+                    core = ff.core_database()[core_name]
+                    core_inner_diameter = core["core_inner_diameter"]
+                    window_w = core["window_w"]
+                else:
+                    core_inner_diameter = df_geometry['params_core_inner_diameter'][index]
+                    window_w = df_geometry['params_window_w'][index]
+
+                # overwrite the old time-current vector with the new one
+                local_config.time_current_vec = current_waveform
+                target_and_fix_parameters = StackedTransformerOptimization.ReluctanceModel.calculate_fix_parameters(local_config)
+
+                litz_wire_primary_dict = ff.litz_database()[df_geometry['params_primary_litz_name'][index]]
+                litz_wire_diameter_primary = 2 * litz_wire_primary_dict["conductor_radii"]
+                litz_wire_secondary_dict = ff.litz_database()[df_geometry['params_secondary_litz_name'][index]]
+                litz_wire_diameter_secondary = 2 * litz_wire_secondary_dict["conductor_radii"]
+
+                # material properties
+                material_db = mdb.MaterialDatabase(is_silent=True)
+
+                material_dto: mdb.MaterialCurve = material_db.material_data_interpolation_to_dto(
+                    df_geometry['params_material_name'][index], target_and_fix_parameters.fundamental_frequency, local_config.temperature)
+                # instantiate material-specific model
+                magnet_material_model: mh.loss.LossModel = mh.loss.LossModel(material=df_geometry['params_material_name'][index], team="paderborn")
+
+                reluctance_model_input = ReluctanceModelInput(
+                    target_inductance_matrix=fr.calculate_inductance_matrix_from_ls_lh_n(local_config.l_s12_target, local_config.l_h_target,
+                                                                                         local_config.n_target),
+                    core_inner_diameter=core_inner_diameter,
+                    window_w=window_w,
+                    window_h_bot=df_geometry["params_window_h_bot"][index].item(),
+                    window_h_top=df_geometry["user_attrs_window_h_top"][index].item(),
+                    turns_1_top=int(df_geometry["params_n_p_top"][index].item()),
+                    turns_1_bot=int(df_geometry["params_n_p_bot"][index].item()),
+                    turns_2_bot=int(df_geometry["params_n_s_bot"][index].item()),
+                    litz_wire_name_1=df_geometry['params_primary_litz_name'][index],
+                    litz_wire_diameter_1=litz_wire_diameter_primary,
+                    litz_wire_name_2=df_geometry['params_secondary_litz_name'][index],
+                    litz_wire_diameter_2=litz_wire_diameter_secondary,
+
+                    insulations=local_config.insulations,
+                    material_dto=material_dto,
+                    magnet_material_model=magnet_material_model,
+
+                    temperature=local_config.temperature,
+                    time_extracted_vec=target_and_fix_parameters.time_extracted_vec,
+                    current_extracted_vec_1=target_and_fix_parameters.current_extracted_1_vec,
+                    current_extracted_vec_2=target_and_fix_parameters.current_extracted_2_vec,
+                    fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
+
+                    i_rms_1=target_and_fix_parameters.i_rms_1,
+                    i_rms_2=target_and_fix_parameters.i_rms_2,
+
+                    primary_litz_dict=litz_wire_primary_dict,
+                    secondary_litz_dict=litz_wire_secondary_dict,
+
+                    # winding 1
+                    fft_frequency_list_1=target_and_fix_parameters.fft_frequency_list_1,
+                    fft_amplitude_list_1=target_and_fix_parameters.fft_amplitude_list_1,
+                    fft_phases_list_1=target_and_fix_parameters.fft_phases_list_1,
+
+                    # winding 2
+                    fft_frequency_list_2=target_and_fix_parameters.fft_frequency_list_2,
+                    fft_amplitude_list_2=target_and_fix_parameters.fft_amplitude_list_2,
+                    fft_phases_list_2=target_and_fix_parameters.fft_phases_list_2
+                )
+
+                reluctance_output: ReluctanceModelOutput = StackedTransformerOptimization.ReluctanceModel.single_reluctance_model_simulation(
+                    reluctance_model_input)
+
+                p_total = reluctance_output.p_loss
+
+                return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink
+
     class FemSimulation:
         """Contains methods to perform FEM simulations or process their results."""
 
@@ -807,7 +901,7 @@ class StackedTransformerOptimization:
                     f'case_{index}.json')
 
                 if os.path.exists(destination_json_file):
-                    print(f'case_{index}.json already exists. Skip simulation.')
+                    logger.info(f'case_{index}.json already exists. Skip simulation.')
                 else:
 
                     try:
@@ -848,13 +942,13 @@ class StackedTransformerOptimization:
 
                         fem_output = StackedTransformerOptimization.FemSimulation.single_fem_simulation(fem_input, show_visual_outputs=show_visual_outputs)
 
-                        reluctance_df.at[index, 'n'] = fem_output.n_conc
-                        reluctance_df.at[index, 'l_s_conc'] = fem_output.l_s_conc
-                        reluctance_df.at[index, 'l_h_conc'] = fem_output.l_h_conc
-                        reluctance_df.at[index, 'p_loss_winding_1'] = fem_output.p_loss_winding_1
-                        reluctance_df.at[index, 'p_loss_winding_2'] = fem_output.p_loss_winding_2
-                        reluctance_df.at[index, 'eddy_core'] = fem_output.eddy_core
-                        reluctance_df.at[index, 'core'] = fem_output.core
+                        reluctance_df.loc[index, 'n'] = fem_output.n_conc
+                        reluctance_df.loc[index, 'l_s_conc'] = fem_output.l_s_conc
+                        reluctance_df.loc[index, 'l_h_conc'] = fem_output.l_h_conc
+                        reluctance_df.loc[index, 'p_loss_winding_1'] = fem_output.p_loss_winding_1
+                        reluctance_df.loc[index, 'p_loss_winding_2'] = fem_output.p_loss_winding_2
+                        reluctance_df.loc[index, 'eddy_core'] = fem_output.eddy_core
+                        reluctance_df.loc[index, 'core'] = fem_output.core
 
                         # copy result files to result-file folder
                         source_json_file = os.path.join(
@@ -865,13 +959,13 @@ class StackedTransformerOptimization:
 
                     except Exception as e:
                         print(f"The following exception was raised: {e}")
-                        reluctance_df.at[index, 'n'] = None
-                        reluctance_df.at[index, 'l_s_conc'] = None
-                        reluctance_df.at[index, 'l_h_conc'] = None
-                        reluctance_df.at[index, 'p_loss_winding_1'] = None
-                        reluctance_df.at[index, 'p_loss_winding_2'] = None
-                        reluctance_df.at[index, 'eddy_core'] = None
-                        reluctance_df.at[index, 'core'] = None
+                        reluctance_df.loc[index, 'n'] = None
+                        reluctance_df.loc[index, 'l_s_conc'] = None
+                        reluctance_df.loc[index, 'l_h_conc'] = None
+                        reluctance_df.loc[index, 'p_loss_winding_1'] = None
+                        reluctance_df.loc[index, 'p_loss_winding_2'] = None
+                        reluctance_df.loc[index, 'eddy_core'] = None
+                        reluctance_df.loc[index, 'core'] = None
             return reluctance_df
 
         @staticmethod
@@ -922,8 +1016,10 @@ class StackedTransformerOptimization:
 
             # 4. set insulations
             insulation = fmt.Insulation(flag_insulation=False)
-            insulation.add_core_insulations(fem_input.insulations.iso_window_bot_core_top, fem_input.insulations.iso_window_bot_core_bot,
-                                            fem_input.insulations.iso_window_bot_core_left, fem_input.insulations.iso_window_bot_core_right)
+            insulation.add_top_section_core_insulations(fem_input.insulations.iso_window_top_core_top, fem_input.insulations.iso_window_top_core_bot,
+                                                        fem_input.insulations.iso_window_top_core_left, fem_input.insulations.iso_window_top_core_right)
+            insulation.add_bottom_section_core_insulations(fem_input.insulations.iso_window_bot_core_top, fem_input.insulations.iso_window_bot_core_bot,
+                                                           fem_input.insulations.iso_window_bot_core_left, fem_input.insulations.iso_window_bot_core_right)
             insulation.add_winding_insulations([[fem_input.insulations.iso_primary_to_primary, fem_input.insulations.iso_secondary_to_secondary],
                                                 [fem_input.insulations.iso_secondary_to_secondary, fem_input.insulations.iso_primary_to_primary]])
             geo.set_insulation(insulation)
@@ -1013,8 +1109,8 @@ class StackedTransformerOptimization:
             :rtype: pd.DataFrame
             """
             files_in_folder = [f for f in os.listdir(fem_results_folder_path) if os.path.isfile(os.path.join(fem_results_folder_path, f))]
-            print(files_in_folder)
-            print(len(files_in_folder))
+            logger.info(files_in_folder)
+            logger.info(len(files_in_folder))
 
             # add new columns to the dataframe, init values with None
             reluctance_df['fem_inductance'] = None
@@ -1059,144 +1155,146 @@ class StackedTransformerOptimization:
             :param print_derivations: True to print derivation from FEM simulation to reluctance model
             :type print_derivations: bool
             """
-            for index, _ in df_geometry.iterrows():
+            index_number = df_geometry.first_valid_index()
 
-                local_config = StackedTransformerOptimization.ReluctanceModel.load_config(stacked_transformer_config_filepath)
+            if df_geometry.shape[0] > 1:
+                raise ValueError("df_geometry must have only one entry.")
 
-                if local_config.core_name_list is not None:
-                    # using fixed core sizes from the database with flexible height.
-                    core_name = df_geometry['params_core_name'][index]
-                    core = ff.core_database()[core_name]
-                    core_inner_diameter = core["core_inner_diameter"]
-                    window_w = core["window_w"]
-                else:
-                    core_inner_diameter = df_geometry['params_core_inner_diameter'][index]
-                    window_w = df_geometry['params_window_w'][index]
+            local_config = StackedTransformerOptimization.ReluctanceModel.load_config(stacked_transformer_config_filepath)
 
-                # overwrite the old time-current vector with the new one
-                local_config.time_current_vec = current_waveform
-                target_and_fix_parameters = StackedTransformerOptimization.ReluctanceModel.calculate_fix_parameters(local_config)
+            if local_config.core_name_list is not None:
+                # using fixed core sizes from the database with flexible height.
+                core_name = df_geometry['params_core_name'][index_number]
+                core = ff.core_database()[core_name]
+                core_inner_diameter = core["core_inner_diameter"]
+                window_w = core["window_w"]
+            else:
+                core_inner_diameter = df_geometry['params_core_inner_diameter'][index_number]
+                window_w = df_geometry['params_window_w'][index_number]
 
-                working_directory = target_and_fix_parameters.working_directories.fem_working_directory
-                if not os.path.exists(working_directory):
-                    os.mkdir(working_directory)
-                working_directory = os.path.join(
-                    target_and_fix_parameters.working_directories.fem_working_directory, f"process_{process_number}")
+            # overwrite the old time-current vector with the new one
+            local_config.time_current_vec = current_waveform
+            target_and_fix_parameters = StackedTransformerOptimization.ReluctanceModel.calculate_fix_parameters(local_config)
 
-                # fem_input = FemInput(
-                #    # general parameters
-                #    working_directory=working_directory,
-                #    simulation_name="xx",
+            working_directory = target_and_fix_parameters.working_directories.fem_working_directory
+            if not os.path.exists(working_directory):
+                os.mkdir(working_directory)
+            working_directory = os.path.join(
+                target_and_fix_parameters.working_directories.fem_working_directory, f"process_{process_number}")
 
-                #    # material and geometry parameters
-                #    material_name=df_geometry['params_material_name'][index],
-                #    primary_litz_wire_name=df_geometry['params_primary_litz_name'][index],
-                #    secondary_litz_wire_name=df_geometry['params_secondary_litz_name'][index],
-                #    core_inner_diameter=core_inner_diameter,
-                #    window_w=window_w,
-                #    window_h_top=df_geometry["user_attrs_window_h_top"][index].item(),
-                #    window_h_bot=df_geometry["params_window_h_bot"][index].item(),
-                #    air_gap_length_top=df_geometry["user_attrs_l_top_air_gap"][index].item(),
-                #    air_gap_length_bot=df_geometry["user_attrs_l_bot_air_gap"][index].item(),
-                #    turns_primary_top=int(df_geometry["params_n_p_top"][index].item()),
-                #    turns_primary_bot=int(df_geometry["params_n_p_bot"][index].item()),
-                #    turns_secondary_bot=int(df_geometry["params_n_s_bot"][index].item()),
-                #    insulations=local_config.insulations,
+            fem_input = FemInput(
+                # general parameters
+                working_directory=working_directory,
+                simulation_name="xx",
 
-                #    # data sources
-                #    material_data_sources=local_config.material_data_sources,
+                # material and geometry parameters
+                material_name=df_geometry['params_material_name'][index_number],
+                primary_litz_wire_name=df_geometry['params_primary_litz_name'][index_number],
+                secondary_litz_wire_name=df_geometry['params_secondary_litz_name'][index_number],
+                core_inner_diameter=core_inner_diameter,
+                window_w=window_w,
+                window_h_top=df_geometry["user_attrs_window_h_top"][index_number].item(),
+                window_h_bot=df_geometry["params_window_h_bot"][index_number].item(),
+                air_gap_length_top=df_geometry["user_attrs_l_top_air_gap"][index_number].item(),
+                air_gap_length_bot=df_geometry["user_attrs_l_bot_air_gap"][index_number].item(),
+                turns_primary_top=int(df_geometry["params_n_p_top"][index_number].item()),
+                turns_primary_bot=int(df_geometry["params_n_p_bot"][index_number].item()),
+                turns_secondary_bot=int(df_geometry["params_n_s_bot"][index_number].item()),
+                insulations=local_config.insulations,
 
-                #    # operating point conditions
-                #    temperature=local_config.temperature,
-                #    fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
-                #    time_current_1_vec=[list(target_and_fix_parameters.time_extracted_vec), list(target_and_fix_parameters.current_extracted_1_vec)],
-                #    time_current_2_vec=[list(target_and_fix_parameters.time_extracted_vec), list(target_and_fix_parameters.current_extracted_2_vec)]
-                # )
+                # data sources
+                material_data_sources=local_config.material_data_sources,
 
-                # pd.read_csv("~/Downloads/Pandas_trial.csv", header=0, index_col=0, delimiter=';')
-                # fem_output = StackedTransformerOptimization.FemSimulation.single_fem_simulation(fem_input, show_visual_outputs)
+                # operating point conditions
+                temperature=local_config.temperature,
+                fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
+                time_current_1_vec=[list(target_and_fix_parameters.time_extracted_vec), list(target_and_fix_parameters.current_extracted_1_vec)],
+                time_current_2_vec=[list(target_and_fix_parameters.time_extracted_vec), list(target_and_fix_parameters.current_extracted_2_vec)]
+            )
 
-                litz_wire_primary_dict = ff.litz_database()[df_geometry['params_primary_litz_name'][index]]
-                litz_wire_diameter_primary = 2 * litz_wire_primary_dict["conductor_radii"]
-                litz_wire_secondary_dict = ff.litz_database()[df_geometry['params_secondary_litz_name'][index]]
-                litz_wire_diameter_secondary = 2 * litz_wire_secondary_dict["conductor_radii"]
+            # pd.read_csv("~/Downloads/Pandas_trial.csv", header=0, index_col=0, delimiter=';')
+            fem_output = StackedTransformerOptimization.FemSimulation.single_fem_simulation(fem_input, show_visual_outputs)
 
-                # material properties
-                material_db = mdb.MaterialDatabase(is_silent=True)
+            litz_wire_primary_dict = ff.litz_database()[df_geometry['params_primary_litz_name'][index_number]]
+            litz_wire_diameter_primary = 2 * litz_wire_primary_dict["conductor_radii"]
+            litz_wire_secondary_dict = ff.litz_database()[df_geometry['params_secondary_litz_name'][index_number]]
+            litz_wire_diameter_secondary = 2 * litz_wire_secondary_dict["conductor_radii"]
 
-                material_dto: mdb.MaterialCurve = material_db.material_data_interpolation_to_dto(
-                    df_geometry['params_material_name'][index], target_and_fix_parameters.fundamental_frequency, local_config.temperature)
-                # instantiate material-specific model
-                magnet_material_model: mh.loss.LossModel = mh.loss.LossModel(material=df_geometry['params_material_name'][index], team="paderborn")
+            # material properties
+            material_db = mdb.MaterialDatabase(is_silent=True)
 
-                reluctance_model_input = ReluctanceModelInput(
-                    target_inductance_matrix=fr.calculate_inductance_matrix_from_ls_lh_n(local_config.l_s12_target, local_config.l_h_target,
-                                                                                         local_config.n_target),
-                    core_inner_diameter=core_inner_diameter,
-                    window_w=window_w,
-                    window_h_bot=df_geometry["params_window_h_bot"][index].item(),
-                    window_h_top=df_geometry["user_attrs_window_h_top"][index].item(),
-                    turns_1_top=int(df_geometry["params_n_p_top"][index].item()),
-                    turns_1_bot=int(df_geometry["params_n_p_bot"][index].item()),
-                    turns_2_bot=int(df_geometry["params_n_s_bot"][index].item()),
-                    litz_wire_name_1=df_geometry['params_primary_litz_name'][index],
-                    litz_wire_diameter_1=litz_wire_diameter_primary,
-                    litz_wire_name_2=df_geometry['params_secondary_litz_name'][index],
-                    litz_wire_diameter_2=litz_wire_diameter_secondary,
+            material_dto: mdb.MaterialCurve = material_db.material_data_interpolation_to_dto(
+                df_geometry['params_material_name'][index_number], target_and_fix_parameters.fundamental_frequency, local_config.temperature)
+            # instantiate material-specific model
+            magnet_material_model: mh.loss.LossModel = mh.loss.LossModel(material=df_geometry['params_material_name'][index_number], team="paderborn")
 
-                    insulations=local_config.insulations,
-                    material_dto=material_dto,
-                    magnet_material_model=magnet_material_model,
+            reluctance_model_input = ReluctanceModelInput(
+                target_inductance_matrix=fr.calculate_inductance_matrix_from_ls_lh_n(local_config.l_s12_target, local_config.l_h_target,
+                                                                                     local_config.n_target),
+                core_inner_diameter=core_inner_diameter,
+                window_w=window_w,
+                window_h_bot=df_geometry["params_window_h_bot"][index_number].item(),
+                window_h_top=df_geometry["user_attrs_window_h_top"][index_number].item(),
+                turns_1_top=int(df_geometry["params_n_p_top"][index_number].item()),
+                turns_1_bot=int(df_geometry["params_n_p_bot"][index_number].item()),
+                turns_2_bot=int(df_geometry["params_n_s_bot"][index_number].item()),
+                litz_wire_name_1=df_geometry['params_primary_litz_name'][index_number],
+                litz_wire_diameter_1=litz_wire_diameter_primary,
+                litz_wire_name_2=df_geometry['params_secondary_litz_name'][index_number],
+                litz_wire_diameter_2=litz_wire_diameter_secondary,
 
-                    temperature=local_config.temperature,
-                    time_extracted_vec=target_and_fix_parameters.time_extracted_vec,
-                    current_extracted_vec_1=target_and_fix_parameters.current_extracted_1_vec,
-                    current_extracted_vec_2=target_and_fix_parameters.current_extracted_2_vec,
-                    fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
+                insulations=local_config.insulations,
+                material_dto=material_dto,
+                magnet_material_model=magnet_material_model,
 
-                    i_rms_1=target_and_fix_parameters.i_rms_1,
-                    i_rms_2=target_and_fix_parameters.i_rms_2,
+                temperature=local_config.temperature,
+                time_extracted_vec=target_and_fix_parameters.time_extracted_vec,
+                current_extracted_vec_1=target_and_fix_parameters.current_extracted_1_vec,
+                current_extracted_vec_2=target_and_fix_parameters.current_extracted_2_vec,
+                fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
 
-                    primary_litz_dict=litz_wire_primary_dict,
-                    secondary_litz_dict=litz_wire_secondary_dict,
+                i_rms_1=target_and_fix_parameters.i_rms_1,
+                i_rms_2=target_and_fix_parameters.i_rms_2,
 
-                    # winding 1
-                    fft_frequency_list_1=target_and_fix_parameters.fft_frequency_list_1,
-                    fft_amplitude_list_1=target_and_fix_parameters.fft_amplitude_list_1,
-                    fft_phases_list_1=target_and_fix_parameters.fft_phases_list_1,
+                primary_litz_dict=litz_wire_primary_dict,
+                secondary_litz_dict=litz_wire_secondary_dict,
 
-                    # winding 2
-                    fft_frequency_list_2=target_and_fix_parameters.fft_frequency_list_2,
-                    fft_amplitude_list_2=target_and_fix_parameters.fft_amplitude_list_2,
-                    fft_phases_list_2=target_and_fix_parameters.fft_phases_list_2
-                )
+                # winding 1
+                fft_frequency_list_1=target_and_fix_parameters.fft_frequency_list_1,
+                fft_amplitude_list_1=target_and_fix_parameters.fft_amplitude_list_1,
+                fft_phases_list_1=target_and_fix_parameters.fft_phases_list_1,
 
-                reluctance_output: ReluctanceModelOutput = StackedTransformerOptimization.ReluctanceModel.single_reluctance_model_simulation(
-                    reluctance_model_input)
+                # winding 2
+                fft_frequency_list_2=target_and_fix_parameters.fft_frequency_list_2,
+                fft_amplitude_list_2=target_and_fix_parameters.fft_amplitude_list_2,
+                fft_phases_list_2=target_and_fix_parameters.fft_phases_list_2
+            )
 
-                # p_total = reluctance_output.p_hyst + fem_output.eddy_core + fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2
-                p_total = reluctance_output.p_loss
+            reluctance_output: ReluctanceModelOutput = StackedTransformerOptimization.ReluctanceModel.single_reluctance_model_simulation(
+                reluctance_model_input)
 
-                # if print_derivations:
-                #    print(f"Inductance l_h reluctance: {local_config.l_h_target}")
-                #    print(f"Inductance l_h FEM: {fem_output.l_h_conc}")
-                #    print(f"Inductance l_h derivation: {(fem_output.l_h_conc - local_config.l_h_target) / local_config.l_h_target * 100} %")
-                #    print(f"Inductance l_s reluctance: {local_config.l_s12_target}")
-                #    print(f"Inductance l_s FEM: {fem_output.l_s_conc}")
-                #    print(f"Inductance l_s derivation: {(fem_output.l_s_conc - local_config.l_s12_target) / local_config.l_s12_target * 100} %")
-                #    print(f"Volume reluctance: {reluctance_output.volume}")
-                #    print(f"Volume FEM: {fem_output.volume}")
-                #    print(f"Volume derivation: {(reluctance_output.volume - fem_output.volume) / reluctance_output.volume * 100} %")
+            p_total = reluctance_output.p_hyst + fem_output.eddy_core + fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2
 
-                #    print(f"P_winding_both reluctance: {reluctance_output.winding_1_loss + reluctance_output.winding_2_loss}")
-                #    print(f"P_winding_both FEM: {fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2}")
-                #    winding_derivation = ((fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2 - \
-                #                           (reluctance_output.winding_1_loss + reluctance_output.winding_2_loss)) / \
-                #                          (fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2) * 100)
-                #    print(f"P_winding_both derivation: "
-                #          f"{winding_derivation}")
-                #    print(f"P_hyst reluctance: {reluctance_output.p_hyst}")
-                #    print(f"P_hyst FEM: {fem_output.core}")
-                #    print(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.core) / reluctance_output.p_hyst * 100}")
+            if print_derivations:
+                logger.info(f"Inductance l_h reluctance: {local_config.l_h_target}")
+                logger.info(f"Inductance l_h FEM: {fem_output.l_h_conc}")
+                logger.info(f"Inductance l_h derivation: {(fem_output.l_h_conc - local_config.l_h_target) / local_config.l_h_target * 100} %")
+                logger.info(f"Inductance l_s reluctance: {local_config.l_s12_target}")
+                logger.info(f"Inductance l_s FEM: {fem_output.l_s_conc}")
+                logger.info(f"Inductance l_s derivation: {(fem_output.l_s_conc - local_config.l_s12_target) / local_config.l_s12_target * 100} %")
+                logger.info(f"Volume reluctance: {reluctance_output.volume}")
+                logger.info(f"Volume FEM: {fem_output.volume}")
+                logger.info(f"Volume derivation: {(reluctance_output.volume - fem_output.volume) / reluctance_output.volume * 100} %")
 
-                return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink
+                logger.info(f"P_winding_both reluctance: {reluctance_output.winding_1_loss + reluctance_output.winding_2_loss}")
+                logger.info(f"P_winding_both FEM: {fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2}")
+                winding_derivation = ((fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2 - \
+                                      (reluctance_output.winding_1_loss + reluctance_output.winding_2_loss)) / \
+                                      (fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2) * 100)
+                logger.info(f"P_winding_both derivation: "
+                            f"{winding_derivation}")
+                logger.info(f"P_hyst reluctance: {reluctance_output.p_hyst}")
+                logger.info(f"P_hyst FEM: {fem_output.core}")
+                logger.info(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.core) / reluctance_output.p_hyst * 100}")
+
+            return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink

@@ -1,7 +1,7 @@
 pandas
 numpy
 matplotlib
-gmsh>=4.13.1
+gmsh==4.13.1
 onelab>=1.0
 scipy
 pytest

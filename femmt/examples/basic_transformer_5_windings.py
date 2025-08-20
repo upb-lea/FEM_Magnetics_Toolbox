@@ -142,7 +142,7 @@ def basic_example_transformer_5_windings(onelab_folder: str = None, show_visual_
          [iso_against, iso_self, iso_against, iso_against, iso_against],
          [iso_against, iso_against, iso_self, iso_against, iso_against],
          [iso_against, iso_against, iso_self, iso_against, iso_against],
-         [iso_against, iso_against, iso_against, iso_against, iso_self]])
+         [iso_against, iso_against, iso_against, iso_against, iso_self]], per_layer_of_turns=False)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)

@@ -1,7 +1,16 @@
 """Different functions to describe a model."""
-from femmt.dtos import *
-import numpy as np
+
+# python libraries
+import logging
 import os
+
+# 3rd party libraries
+import numpy as np
+
+# own libraries
+from femmt.dtos import *
+
+logger = logging.getLogger(__name__)
 
 def write_permeability_pro_file(parent_directory,
                                 b_ref_vec: np.ndarray | list = None,
@@ -41,7 +50,7 @@ def write_permeability_pro_file(parent_directory,
             f"f_mu_real[] = f_mu_real_d[$1];\n }}  ")
 
     if not silent:
-        print(f"Data is exported to {parent_directory} in a .pro-file.")
+        logger.info(f"Data is exported to {parent_directory} in a .pro-file.")
 
 
 def define_center_tapped_insulation(primary_to_primary: float, secondary_to_secondary: float, primary_to_secondary: float):

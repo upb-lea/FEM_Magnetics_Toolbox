@@ -9,6 +9,7 @@ from femmt.dtos import *
 from femmt.model import WindingWindow, Conductor, Insulation, Core, VirtualWindingWindow
 from femmt.functions_drawing import *
 from femmt.functions_model import define_center_tapped_insulation
+from femmt.enumerations import CoreType, ConductorType, ConductorMaterial
 
 
 def create_stacked_winding_windows(core: Core, insulation: Insulation) -> (WindingWindow, WindingWindow):
@@ -27,18 +28,32 @@ def create_stacked_winding_windows(core: Core, insulation: Insulation) -> (Windi
     max_pos = core.geometry.window_h_bot / 2 + core.geometry.core_inner_diameter / 4  # TODO: could also be done arbitrarily
     min_pos = core.geometry.window_h_bot / 2
     distance = max_pos - min_pos
-    horizontal_split = min_pos + distance / 2
-    insulation.vww_insulations = distance + 2 * min(insulation.core_cond)  # TODO: enhance the insulations situation!!!
+    # horizontal_split = min_pos + distance / 2
+    if insulation.top_section_core_cond:
+        insulation_top = min(insulation.top_section_core_cond)
+    if insulation.bot_section_core_cond:
+        insulation_bot = min(insulation.bot_section_core_cond)
+    insulation.vww_insulations = distance + 2 * min(insulation_top, insulation_bot)
 
-    winding_window_top.max_bot_bound = horizontal_split + insulation.vww_insulations / 2
-    winding_window_top.max_top_bound = winding_window_top.max_top_bound
-    winding_window_top.max_left_bound = winding_window_top.max_left_bound
-    winding_window_top.max_right_bound = winding_window_top.max_right_bound
+    # winding_window_top.max_bot_bound = horizontal_split + insulation.vww_insulations / 2
+    # winding_window_top.max_top_bound = winding_window_top.max_top_bound
+    # winding_window_top.max_left_bound = winding_window_top.max_left_bound
+    # winding_window_top.max_right_bound = winding_window_top.max_right_bound
+
+    winding_window_top.max_bot_bound = winding_window_bot.max_bot_bound_top_section
+    winding_window_top.max_top_bound = winding_window_top.max_top_bound_top_section
+    winding_window_top.max_left_bound = winding_window_top.max_left_bound_top_section
+    winding_window_top.max_right_bound = winding_window_top.max_right_bound_top_section
+
+    # winding_window_bot.max_bot_bound = winding_window_bot.max_bot_bound
+    # winding_window_bot.max_top_bound = horizontal_split - insulation.vww_insulations / 2
+    # winding_window_bot.max_left_bound = winding_window_bot.max_left_bound
+    # winding_window_bot.max_right_bound = winding_window_bot.max_right_bound
 
     winding_window_bot.max_bot_bound = winding_window_bot.max_bot_bound
-    winding_window_bot.max_top_bound = horizontal_split - insulation.vww_insulations / 2
-    winding_window_bot.max_left_bound = winding_window_bot.max_left_bound
-    winding_window_bot.max_right_bound = winding_window_bot.max_right_bound
+    winding_window_bot.max_top_bound = winding_window_bot.max_top_bound_bot_section
+    winding_window_bot.max_left_bound = winding_window_bot.max_left_bound_bot_section
+    winding_window_bot.max_right_bound = winding_window_bot.max_right_bound_bot_section
 
     return winding_window_top, winding_window_bot
 
@@ -271,8 +286,12 @@ def set_center_tapped_windings(core: Core,
     :type foil_horizontal_placing_strategy: FoilHorizontalDistribution
     """
     def define_insulations():
-        insulation = Insulation(flag_insulation=False)
-        insulation.add_core_insulations(iso_top_core, iso_bot_core, iso_left_core, iso_right_core)
+        insulation = Insulation(flag_insulation=True)
+        if core.geometry.core_type == CoreType.Single:
+            insulation.add_core_insulations(iso_top_core, iso_bot_core, iso_left_core, iso_right_core)
+        elif core.geometry.core_type == CoreType.Stacked:
+            insulation.add_top_section_core_insulations(iso_top_core, iso_bot_core, iso_left_core, iso_right_core)
+            insulation.add_bottom_section_core_insulations(iso_top_core, iso_bot_core, iso_left_core, iso_right_core)
         insulation.add_winding_insulations([[iso_primary_to_primary, iso_primary_to_secondary, iso_primary_to_secondary],
                                             [iso_primary_to_secondary, iso_secondary_to_secondary, iso_primary_to_secondary],
                                             [iso_primary_to_secondary, iso_primary_to_secondary, iso_secondary_to_secondary]])
@@ -300,18 +319,32 @@ def set_center_tapped_windings(core: Core,
     winding1, winding2, winding3 = define_windings(winding_temperature)
 
     def define_rows():
-        primary_row = single_row(number_of_conds_per_winding=primary_turns,
-                                 window_width=core.geometry.window_w - insulation.core_cond[2] - insulation.core_cond[3],
-                                 winding_tag=WindingTag.Primary,
-                                 conductor_type=ConductorType.RoundLitz,
-                                 radius=primary_radius,
-                                 cond_cond_isolation=insulation.cond_cond[0][0])
+        if core.geometry.core_type == CoreType.Single:
+            primary_row = single_row(number_of_conds_per_winding=primary_turns,
+                                     window_width=core.geometry.window_w - insulation.core_cond[2] - insulation.core_cond[3],
+                                     winding_tag=WindingTag.Primary,
+                                     conductor_type=ConductorType.RoundLitz,
+                                     radius=primary_radius,
+                                     cond_cond_isolation=insulation.cond_cond[0][0])
 
-        secondary_row = single_row(number_of_conds_per_winding=secondary_parallel_turns,
-                                   window_width=core.geometry.window_w - insulation.core_cond[2] - insulation.core_cond[3],
-                                   winding_tag=WindingTag.Secondary,
-                                   conductor_type=ConductorType.RectangularSolid,
-                                   thickness=secondary_thickness_foil)
+            secondary_row = single_row(number_of_conds_per_winding=secondary_parallel_turns,
+                                       window_width=core.geometry.window_w - insulation.core_cond[2] - insulation.core_cond[3],
+                                       winding_tag=WindingTag.Secondary,
+                                       conductor_type=ConductorType.RectangularSolid,
+                                       thickness=secondary_thickness_foil)
+        elif core.geometry.core_type == CoreType.Stacked:
+            primary_row = single_row(number_of_conds_per_winding=primary_turns,
+                                     window_width=core.geometry.window_w - insulation.top_section_core_cond[2] - insulation.top_section_core_cond[3],
+                                     winding_tag=WindingTag.Primary,
+                                     conductor_type=ConductorType.RoundLitz,
+                                     radius=primary_radius,
+                                     cond_cond_isolation=insulation.cond_cond[0][0])
+
+            secondary_row = single_row(number_of_conds_per_winding=secondary_parallel_turns,
+                                       window_width=core.geometry.window_w - insulation.bot_section_core_cond[2] - insulation.bot_section_core_cond[3],
+                                       winding_tag=WindingTag.Secondary,
+                                       conductor_type=ConductorType.RectangularSolid,
+                                       thickness=secondary_thickness_foil)
 
         tertiary_row = copy.deepcopy(secondary_row)
         tertiary_row.winding_tag = WindingTag.Tertiary

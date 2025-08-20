@@ -6,6 +6,7 @@ import shutil
 import json
 import datetime
 import gc
+import logging
 
 # 3rd party libraries
 import optuna
@@ -20,6 +21,7 @@ import femmt.optimization.ito_functions as itof
 import femmt
 import materialdatabase as mdb
 
+logger = logging.getLogger(__name__)
 
 class StackedTransformerCenterTappedOptimization:
     """Optimize a stacked transformer."""
@@ -366,7 +368,7 @@ class StackedTransformerCenterTappedOptimization:
                 raise ValueError("Invalid objective number.")
 
         if os.path.exists(f"{config.working_directory}/study_{study_name}.sqlite3"):
-            print("Existing study found. Proceeding.")
+            logger.info("Existing study found. Proceeding.")
 
         target_and_fixed_parameters = femmt.optimization.StackedTransformerCenterTappedOptimization.calculate_fix_parameters(config)
 
@@ -396,14 +398,14 @@ class StackedTransformerCenterTappedOptimization:
                                                load_if_exists=True, sampler=sampler)
 
         study_in_memory = optuna.create_study(directions=directions, study_name=study_name, sampler=sampler)
-        print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
+        logger.info(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
         study_in_memory.add_trials(study_in_storage.trials)
         study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True,
                                  callbacks=[femmt.StackedTransformerCenterTappedOptimization.run_garbage_collector])
 
         study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
-        print(f"Finished {number_trials} trials.")
-        print(f"current time: {datetime.datetime.now()}")
+        logger.info(f"Finished {number_trials} trials.")
+        logger.info(f"current time: {datetime.datetime.now()}")
 
     @staticmethod
     def proceed_multi_core_study(study_name: str, config: StoCtSingleInputConfig, number_trials: int,

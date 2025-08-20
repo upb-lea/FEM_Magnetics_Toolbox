@@ -80,7 +80,7 @@ def basic_example_inductor_excitation_sweep(onelab_folder: str = None, show_visu
     # 4. set insulations
     insulation = fmt.Insulation()
     insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
-    insulation.add_winding_insulations([[0.0005]])
+    insulation.add_winding_insulations([[0.0005]], per_layer_of_turns=False)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)

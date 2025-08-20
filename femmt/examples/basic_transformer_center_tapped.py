@@ -159,7 +159,7 @@ def basic_example_transformer_center_tapped(onelab_folder: str = None, show_visu
     geo.create_model(freq=200000, pre_visualize_geometry=show_visual_outputs)
     geo.single_simulation(freq=200000, current=[20, 120, 120], phi_deg=[0, 180, 180],
                           show_fem_simulation_results=show_visual_outputs)
-    example_thermal_simulation(show_visual_outputs, flag_insulation=False)
+    example_thermal_simulation(show_visual_outputs, flag_insulation=True)
 
 
 if __name__ == "__main__":

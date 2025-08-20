@@ -136,7 +136,7 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     insulation = fmt.Insulation(flag_insulation=True)
     insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
     insulation.add_winding_insulations([[0.0002, 0.001],
-                                        [0.001, 0.0002]])
+                                        [0.001, 0.0002]], per_layer_of_turns=False)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -168,7 +168,11 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     geo.single_simulation(freq=200000, current=[2, 2], phi_deg=[0, 180],
                           show_fem_simulation_results=show_visual_outputs)
 
+    # thermal simulation
     example_thermal_simulation(show_visual_outputs, flag_insulation=True)
+    # geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
+    # Extract capacitance of transformer component
+    # geo.get_capacitance_of_transformer()
 
 
 if __name__ == "__main__":

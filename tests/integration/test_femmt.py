@@ -22,6 +22,8 @@ import femmt.examples.basic_transformer_6_windings
 import femmt.examples.experimental_inductor_time_domain
 import femmt.examples.experimental_transformer_time_domain
 import femmt.examples.experimental_transformer_three_winding_time_domain
+import femmt.examples.basic_inductor_electrostatic
+import femmt.examples.basic_transformer_electrostatic
 import femmt.examples.advanced_inductor_air_gap_sweep
 import femmt.examples.component_study.transformer_component_study
 import femmt.examples.basic_transformer_excitation_sweep
@@ -179,7 +181,7 @@ def fixture_inductor_core_material_database(temp_folder: pytest.fixture):
 
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
-        insulation.add_winding_insulations([[0.0005]])
+        insulation.add_winding_insulations([[0.0005]], per_layer_of_turns=False)
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)
@@ -307,7 +309,7 @@ def fixture_inductor_core_material_database_measurement(temp_folder: pytest.fixt
 
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
-        insulation.add_winding_insulations([[0.0005]])
+        insulation.add_winding_insulations([[0.0005]], per_layer_of_turns=False)
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)
@@ -436,7 +438,7 @@ def fixture_inductor_core_fixed_loss_angle(temp_folder: pytest.fixture):
 
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
-        insulation.add_winding_insulations([[0.0005]])
+        insulation.add_winding_insulations([[0.0005]], per_layer_of_turns=False)
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)
@@ -564,7 +566,7 @@ def fixture_inductor_core_fixed_loss_angle_dc(temp_folder: pytest.fixture):
 
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
-        insulation.add_winding_insulations([[0.0005]])
+        insulation.add_winding_insulations([[0.0005]], per_layer_of_turns=False)
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)
@@ -691,7 +693,7 @@ def fixture_inductor_core_fixed_loss_angle_litz_wire(temp_folder: pytest.fixture
 
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
-        insulation.add_winding_insulations([[0.0005]])
+        insulation.add_winding_insulations([[0.0005]], per_layer_of_turns=False)
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)
@@ -1085,7 +1087,7 @@ def fixture_transformer_core_fixed_loss_angle(temp_folder: pytest.fixture):
         # 4. set insulation
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
-        insulation.add_winding_insulations([[0.0002, 0.0002], [0.0002, 0.0002]])
+        insulation.add_winding_insulations([[0.0002, 0.0002], [0.0002, 0.0002]], per_layer_of_turns=False)
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
@@ -1222,7 +1224,7 @@ def fixture_transformer_interleaved_core_fixed_loss_angle(temp_folder: pytest.fi
         # 4. set insulations
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
-        insulation.add_winding_insulations([[0.0002, 0.0005], [0.0005, 0.0002]])
+        insulation.add_winding_insulations([[0.0002, 0.0005], [0.0005, 0.0002]], per_layer_of_turns=False)
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
@@ -1361,9 +1363,10 @@ def fixture_transformer_integrated_core_fixed_loss_angle(temp_folder: pytest.fix
         geo.set_air_gaps(air_gaps)
 
         # 4. set insulations
-        insulation = fmt.Insulation()
-        insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
-        insulation.add_winding_insulations([[0.0002, 0.0005], [0.0005, 0.0002]])
+        insulation = fmt.Insulation(flag_insulation=False)
+        insulation.add_top_section_core_insulations(0.001, 0.001, 0.002, 0.001)
+        insulation.add_bottom_section_core_insulations(0.0005, 0.001, 0.002, 0.001)
+        insulation.add_winding_insulations([[0.0002, 0.0005], [0.0005, 0.0002]], per_layer_of_turns=False)
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
@@ -1599,7 +1602,7 @@ def fixture_transformer_stacked_center_tapped(temp_folder: pytest.fixture):
                                case_gap_right, case_gap_bot, show_thermal_simulation_results=False,
                                color_scheme=fmt.colors_ba_jonas,
                                colors_geometry=fmt.colors_geometry_ba_jonas,
-                               flag_insulation=False)
+                               flag_insulation=True)
 
     except Exception as e:
         print("An error occurred while creating the femmt mesh files:", e)
@@ -1669,7 +1672,7 @@ def fixture_transformer_5_windings(temp_folder: pytest.fixture):
              [iso_against, iso_self, iso_against, iso_against, iso_against],
              [iso_against, iso_against, iso_self, iso_against, iso_against],
              [iso_against, iso_against, iso_self, iso_against, iso_against],
-             [iso_against, iso_against, iso_against, iso_against, iso_self]])
+             [iso_against, iso_against, iso_against, iso_against, iso_self]], per_layer_of_turns=False)
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
@@ -1834,7 +1837,7 @@ def fixture_inductor_time_domain(temp_folder: pytest.fixture):
         # 4. set insulations
         insulation = fmt.Insulation(flag_insulation=True)
         insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
-        insulation.add_winding_insulations([[0.0005]])
+        insulation.add_winding_insulations([[0.0005]], per_layer_of_turns=False)
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
@@ -1927,7 +1930,7 @@ def fixture_transformer_time_domain(temp_folder: pytest.fixture):
         insulation = fmt.Insulation(flag_insulation=True)
         insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
         insulation.add_winding_insulations([[0.0002, 0.001],
-                                            [0.001, 0.0002]])
+                                            [0.001, 0.0002]], per_layer_of_turns=False)
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
@@ -2025,7 +2028,7 @@ def fixture_transformer_3_windings_time_domain(temp_folder: pytest.fixture):
         insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
         insulation.add_winding_insulations([[0.0002, 0.0004, 0.0004],
                                             [0.0004, 0.0002, 0.0004],
-                                            [0.0004, 0.0004, 0.0002]])
+                                            [0.0004, 0.0004, 0.0002]], per_layer_of_turns=False)
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
@@ -2080,6 +2083,223 @@ def fixture_transformer_3_windings_time_domain(temp_folder: pytest.fixture):
     geometry_result = os.path.join(temp_folder_path, "results", "log_coordinates_description.json")
 
     return electromagnetoquasistatic_result, material_result, geometry_result
+
+@pytest.fixture
+def fixture_inductor_electrostatic(temp_folder: pytest.fixture):
+    """
+    Integration test to the basic example file.
+
+    :param temp_folder: temporary folder path and onelab filepath
+    :type temp_folder: pytest.fixture
+    """
+    temp_folder_path, onelab_folder = temp_folder
+
+    # Create new temp folder, build model and simulate
+    try:
+        working_directory = temp_folder_path
+        if not os.path.exists(working_directory):
+            os.mkdir(working_directory)
+
+        # 1. chose simulation type
+        geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.ElectroStatic, component_type=fmt.ComponentType.Inductor,
+                                    working_directory=working_directory, onelab_verbosity=fmt.Verbosity.Silent, is_gui=True)
+        # Set onelab path manually
+        geo.file_data.onelab_folder_path = onelab_folder
+
+        # 2. set core parameters
+        core_db = fmt.core_database()["PQ 40/40"]
+        core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
+                                                        window_w=core_db["window_w"],
+                                                        window_h=core_db["window_h"],
+                                                        core_h=core_db["core_h"])
+        core = fmt.Core(core_type=fmt.CoreType.Single,
+                        core_dimensions=core_dimensions,
+                        detailed_core_model=False,
+                        material=fmt.Material.N49, temperature=45, frequency=2700000,
+                        # permeability_datasource="manufacturer_datasheet",
+                        permeability_datasource=fmt.MaterialDataSource.Measurement,
+                        permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                        permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
+                        permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                        permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                        permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+
+        geo.set_core(core)
+
+        # 3. set air gap parameters
+        air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.001, 50)
+        # air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0002, 90)
+        geo.set_air_gaps(air_gaps)
+
+        # 4. set insulation and the materials of insulation (optional)
+        bobbin_db = fmt.bobbin_database()["PQ 40/40"]
+        bobbin_dimensions = fmt.dtos.BobbinDimensions(bobbin_inner_diameter=bobbin_db["bobbin_inner_diameter"],
+                                                      bobbin_window_w=bobbin_db["bobbin_window_w"],
+                                                      bobbin_window_h=bobbin_db["bobbin_window_h"],
+                                                      bobbin_h=bobbin_db["bobbin_h"])
+        insulation = fmt.Insulation(flag_insulation=True, bobbin_dimensions=bobbin_dimensions)
+        bobbin_material = fmt.insulation_materials_database()["core_insulation"]["bobbins"]["Thermoset"]["Phenolic"]
+        insulation.add_core_insulations(0.2e-3, 0.2e-3, 0.2e-3, 0.2e-3,
+                                        dielectric_constant=bobbin_material["dielectric_constant"])
+        turn_insulation_material = fmt.insulation_materials_database()["wire_insulation"]["plastic_insulation"]["Plenum Polyvinyl Chloride (Plenum PVC)"]
+        insulation.add_turn_insulation([0.2e-3], dielectric_constant=[turn_insulation_material["dielectric_constant"]])
+        # This is an air between turns if needed
+        insulation.add_winding_insulations([[1e-3, 1e-3]], per_layer_of_turns=True)
+        # Kapton material is added between every layer of turns
+        layer_insulation = fmt.insulation_materials_database()["film_insulation"]["Kapton"]
+        insulation.add_insulation_between_layers(thickness=0.6e-3, dielectric_constant=layer_insulation["dielectric_constant"])
+        geo.set_insulation(insulation)
+
+        # 5. create winding window and virtual winding windows (vww)
+        winding_window = fmt.WindingWindow(core, insulation)
+        vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+
+        # 6. create conductor and set parameters: use solid wires
+        winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=45)
+        winding.set_solid_round_conductor(conductor_radius=1.1506e-3, conductor_arrangement=fmt.ConductorArrangement.Square)
+        winding.parallel = False  # set True to make the windings parallel, currently only for solid conductors
+        # 7. add conductor to vww and add winding window to MagneticComponent
+        vww.set_winding(winding, 7, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.VerticalUpward_HorizontalRightward,
+                        zigzag=True)
+        geo.set_winding_windows([winding_window])
+
+        # 8. create the model
+        geo.create_model(freq=2700000, pre_visualize_geometry=False, save_png=False, skin_mesh_factor=0.5)
+
+        # 8. run electrostatic simulation
+        num_turns_w1 = 7
+        V_A = 1
+        V_B = 0
+        voltages_winding_1 = [
+            V_A - (V_A - V_B) * i / (num_turns_w1 - 1)
+            for i in range(num_turns_w1)
+        ]
+        geo.electrostatic_simulation(voltage=[voltages_winding_1], ground_outer_boundary=False, core_voltage=0,
+                                     show_fem_simulation_results=False, save_to_excel_file=False)
+
+    except Exception as e:
+        print("An error occurred while creating the femmt mesh files:", e)
+    except KeyboardInterrupt:
+        print("Keyboard interrupt..")
+
+    electrostaticquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_static.json")
+    geometry_result = os.path.join(temp_folder_path, "results", "log_coordinates_description.json")
+    material_result = os.path.join(temp_folder_path, "results", "log_material.json")
+
+    return electrostaticquasistatic_result, geometry_result, material_result
+
+@pytest.fixture
+def fixture_transformer_electrostatic(temp_folder: pytest.fixture):
+    """
+    Integration test to the basic example file.
+
+    :param temp_folder: temporary folder path and onelab filepath
+    :type temp_folder: pytest.fixture
+    """
+    temp_folder_path, onelab_folder = temp_folder
+
+    # Create new temp folder, build model and simulate
+    try:
+        working_directory = temp_folder_path
+        if not os.path.exists(working_directory):
+            os.mkdir(working_directory)
+
+        # 1. chose simulation type
+        geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.ElectroStatic, component_type=fmt.ComponentType.Transformer,
+                                    working_directory=working_directory, onelab_verbosity=fmt.Verbosity.Silent, is_gui=True)
+        # Set onelab path manually
+        geo.file_data.onelab_folder_path = onelab_folder
+
+        # geo.set_core(core)
+        core_db = fmt.core_database()["PQ 40/40"]
+        core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
+                                                        window_w=core_db["window_w"],
+                                                        window_h=core_db["window_h"],
+                                                        core_h=core_db["core_h"])
+        core = fmt.Core(core_type=fmt.CoreType.Single,
+                        core_dimensions=core_dimensions,
+                        detailed_core_model=False,
+                        material=fmt.Material.N49, temperature=45, frequency=0,
+                        # permeability_datasource="manufacturer_datasheet",
+                        permeability_datasource=fmt.MaterialDataSource.Measurement,
+                        permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                        permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
+                        permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                        permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                        permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+
+        geo.set_core(core)
+
+        # 3. set air gap parameters
+        air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
+        geo.set_air_gaps(air_gaps)
+
+        # 4. set insulation
+        bobbin_db = fmt.bobbin_database()["PQ 40/40"]
+        bobbin_dimensions = fmt.dtos.BobbinDimensions(bobbin_inner_diameter=bobbin_db["bobbin_inner_diameter"],
+                                                      bobbin_window_w=bobbin_db["bobbin_window_w"],
+                                                      bobbin_window_h=bobbin_db["bobbin_window_h"],
+                                                      bobbin_h=bobbin_db["bobbin_h"])
+        insulation = fmt.Insulation(flag_insulation=True, bobbin_dimensions=bobbin_dimensions)
+        bobbin_material = fmt.insulation_materials_database()["core_insulation"]["bobbins"]["Thermoset"]["Phenolic"]
+        insulation.add_core_insulations(1.55e-3, 1.55e-3, 0.9e-3, 1.5e-4,
+                                        dielectric_constant=bobbin_material["dielectric_constant"])
+        insulation.add_winding_insulations([[0.0002, 0.095e-3],
+                                            [0.095e-3, 0.0002]], per_layer_of_turns=True)
+        turn_insulation_material = fmt.insulation_materials_database()["wire_insulation"]["plastic_insulation"]["Plenum Polyvinyl Chloride (Plenum PVC)"]
+        # insulation.add_turn_insulation([0.25e-5, 0.25e-5],
+        #                                dielectric_constant=[turn_insulation_material["dielectric_constant"], turn_insulation_material["dielectric_constant"]])
+        layer_insulation = fmt.insulation_materials_database()["film_insulation"]["Kapton"]
+        insulation.add_insulation_between_layers(thickness=0.5e-3, dielectric_constant=layer_insulation["dielectric_constant"])
+        geo.set_insulation(insulation)
+
+        # 5. create winding window and virtual winding windows (vww)
+        winding_window = fmt.WindingWindow(core, insulation)
+        cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.29],
+                                                           vertical_split_factors=None)
+        # 6. create conductors and set parameters
+        winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+        winding1.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
+
+        winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+        # winding2.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
+        winding2.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
+        winding2.parallel = False
+
+        # 7. add conductor to vww and add winding window to MagneticComponent
+        cells[1].set_winding(winding2, 10, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
+        cells[0].set_winding(winding1, 10, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=True)
+        geo.set_winding_windows([winding_window])
+
+        # 8. create model and run the simulation
+        geo.create_model(freq=0, pre_visualize_geometry=False)
+        # Number of turns in each winding
+        num_turns_w1 = 10
+        num_turns_w2 = 10
+
+        V_A = 1
+        V_B = 0
+        voltages_winding_1 = [
+            V_A - (V_A - V_B) * i / (num_turns_w1 - 1)
+            for i in range(num_turns_w1)
+        ]
+        voltages_winding_2 = [1] * num_turns_w2
+
+        geo.electrostatic_simulation(voltage=[voltages_winding_1, voltages_winding_2], core_voltage=0, ground_outer_boundary=False,
+                                     show_fem_simulation_results=False, save_to_excel_file=False)
+
+    except Exception as e:
+        print("An error occurred while creating the femmt mesh files:", e)
+    except KeyboardInterrupt:
+        print("Keyboard interrupt..")
+
+    electrostaticquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_static.json")
+    geometry_result = os.path.join(temp_folder_path, "results", "log_coordinates_description.json")
+    material_result = os.path.join(temp_folder_path, "results", "log_material.json")
+
+    return electrostaticquasistatic_result, geometry_result, material_result
 
 
 def test_inductor_core_material_database(fixture_inductor_core_material_database: pytest.fixture):
@@ -2521,6 +2741,50 @@ def test_transformer_3_windings_time_domain(fixture_transformer_3_windings_time_
                                       "log_transformer_3_windings_time_domain.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
+def test_simulation_inductor_electrostatic(fixture_inductor_electrostatic: pytest.fixture):
+    """
+    Integration test to validate the electrostatic simulation.
+
+    :param fixture_inductor_electrostatic: fixture for the inductor electrostatic  simulation
+    :type fixture_inductor_electrostatic: pytest.fixture
+    """
+    test_result_log, geometry_result_log, material_result_log = fixture_inductor_electrostatic
+
+    assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
+
+    fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                        "geometry_inductor_electrostatic.json")
+    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
+
+    assert os.path.exists(test_result_log), "Electro static simulation did not work!"
+
+    # e_s mesh
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                      "inductor_electrostatic.json")
+    compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
+
+def test_simulation_transformer_electrostatic(fixture_transformer_electrostatic: pytest.fixture):
+    """
+    Integration test to validate the electrostatic simulation.
+
+    :param fixture_transformer_electrostatic: fixture for the transformer electrostatic  simulation
+    :type fixture_transformer_electrostatic: pytest.fixture
+    """
+    test_result_log, geometry_result_log, material_result_log = fixture_transformer_electrostatic
+
+    assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
+
+    fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                        "geometry_transformer_electrostatic.json")
+    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
+
+    assert os.path.exists(test_result_log), "Electro static simulation did not work!"
+
+    # e_s mesh
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                      "transformer_electrostatic.json")
+    compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
+
 
 def test_load_files(temp_folder: pytest.fixture, fixture_inductor_core_material_database: pytest.fixture,
                     fixture_inductor_core_fixed_loss_angle: pytest.fixture, fixture_inductor_core_fixed_loss_angle_dc: pytest.fixture,
@@ -2800,6 +3064,30 @@ def test_basic_transformer_time_domain(temp_folder: pytest.fixture):
     femmt.examples.experimental_transformer_time_domain.basic_example_transformer_time_domain(onelab_folder=onelab_folder,
                                                                                               show_visual_outputs=False,
                                                                                               is_test=True)
+
+def test_basic_inductor_electrostatic(temp_folder: pytest.fixture):
+    """
+    Integration test to the basic example file.
+
+    :param temp_folder: temporary folder path and onelab filepath
+    :type temp_folder: pytest.fixture
+    """
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_inductor_electrostatic.basic_example_inductor_electrostatic(onelab_folder=onelab_folder,
+                                                                                     show_visual_outputs=False,
+                                                                                     is_test=True)
+
+def test_basic_transformer_electrostatic(temp_folder: pytest.fixture):
+    """
+    Integration test to the basic example file.
+
+    :param temp_folder: temporary folder path and onelab filepath
+    :type temp_folder: pytest.fixture
+    """
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_transformer_electrostatic.basic_example_transformer_electrostatic(onelab_folder=onelab_folder,
+                                                                                           show_visual_outputs=False,
+                                                                                           is_test=True)
 
 
 def test_basic_transformer_3_windings_time_domain(temp_folder: pytest.fixture):

@@ -644,7 +644,7 @@ class IntegratedTransformerOptimization:
             :type sampler: optuna.sampler-object
             """
             if os.path.exists(f"{config.integrated_transformer_optimization_directory}/{config.integrated_transformer_study_name}.sqlite3"):
-                print("Existing study found. Proceeding.")
+                logger.info("Existing study found. Proceeding.")
 
             target_and_fixed_parameters = IntegratedTransformerOptimization.calculate_fix_parameters(config)
 
@@ -674,26 +674,26 @@ class IntegratedTransformerOptimization:
                 if len(study_in_storage.trials) < target_number_trials:
                     study_in_memory = optuna.create_study(directions=['minimize', 'minimize'],
                                                           study_name=config.integrated_transformer_study_name, sampler=sampler)
-                    print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
+                    logger.info(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
                     study_in_memory.add_trials(study_in_storage.trials)
                     number_trials = target_number_trials - len(study_in_memory.trials)
                     study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
                     study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
-                    print(f"Finished {number_trials} trials.")
-                    print(f"current time: {datetime.datetime.now()}")
+                    loger.info(f"Finished {number_trials} trials.")
+                    logger.info(f"current time: {datetime.datetime.now()}")
                 else:
-                    print(f"Study has already {len(study_in_storage.trials)} trials, and target is {target_number_trials} trials.")
+                    logger.info(f"Study has already {len(study_in_storage.trials)} trials, and target is {target_number_trials} trials.")
 
             else:
                 # normal simulation with number_trials
                 study_in_memory = optuna.create_study(directions=['minimize', 'minimize'], study_name=config.integrated_transformer_study_name, sampler=sampler)
-                print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
+                logger.info(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
                 study_in_memory.add_trials(study_in_storage.trials)
                 study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
 
                 study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
-                print(f"Finished {number_trials} trials.")
-                print(f"current time: {datetime.datetime.now()}")
+                logger.info(f"Finished {number_trials} trials.")
+                logger.info(f"current time: {datetime.datetime.now()}")
             IntegratedTransformerOptimization.ReluctanceModel.save_config(config)
 
         @staticmethod
@@ -708,7 +708,7 @@ class IntegratedTransformerOptimization:
             """
             database_url = f'sqlite:///{config.integrated_transformer_optimization_directory}/{config.integrated_transformer_study_name}.sqlite3'
             if os.path.isfile(database_url.replace('sqlite:///', '')):
-                print("Existing study found.")
+                logger.info("Existing study found.")
             else:
                 raise ValueError(f"Can not find database: {database_url}")
             loaded_study = optuna.load_study(study_name=config.integrated_transformer_study_name, storage=database_url)

@@ -61,6 +61,7 @@ class SimulationType(IntEnum):
 
     FreqDomain = 1
     TimeDomain = 2
+    ElectroStatic = 3
 
 class CoreType(IntEnum):
     """Sets the core type for the whole simulation. Needs to be given to the MagneticComponent on creation."""

@@ -63,7 +63,7 @@ def basic_example_transformer_time_domain(onelab_folder: str = None, show_visual
     insulation = fmt.Insulation(flag_insulation=True)
     insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
     insulation.add_winding_insulations([[0.0002, 0.001],
-                                        [0.001, 0.0002]])
+                                        [0.001, 0.0002]], per_layer_of_turns=False)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)

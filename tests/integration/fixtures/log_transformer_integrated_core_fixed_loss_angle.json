@@ -4,123 +4,123 @@
       "f": 250000,
       "winding1": {
         "turn_losses": [
-          0.1135081056802822,
-          0.1444146377111986,
-          0.2003486440622806,
-          0.1067468661712989
+          0.1134576669650905,
+          0.1444667120553273,
+          0.2003717536388314,
+          0.1067469894011036
         ],
         "flux": [
-          2.277404992971649e-06,
-          3.045754510226697e-06
+          2.277346113954454e-06,
+          3.045236714832435e-06
         ],
         "flux_over_current": [
-          2.846697690303972e-07,
-          3.796164249212653e-07
+          2.846624081549981e-07,
+          3.7955170159876204e-07
         ],
         "V": [
-          -4.770400686858673,
-          3.577265820339996
+          -4.769587349600704,
+          3.577173320851685
         ],
         "number_turns": 4,
         "I": [
           8.0,
           0.0
         ],
-        "winding_losses": 0.5650182536250606,
-        "P": -19.08160274743469,
-        "Q": 14.309063281359984,
-        "S": 23.85072022813717
+        "winding_losses": 0.5650431220603522,
+        "P": -19.078349398402818,
+        "Q": 14.30869328340674,
+        "S": 23.84789548882975
       },
       "winding2": {
         "turn_losses": [
-          0.09745506979790194,
-          0.1387262624985962,
-          0.2122058757610394,
-          0.1630949068296944,
-          0.07547404013316682,
-          0.02479140566657879,
-          0.07213551211029122,
-          0.0198605377375708
+          0.09742785257526586,
+          0.1388000569535205,
+          0.2122414345017233,
+          0.1631528311473069,
+          0.07547467244378885,
+          0.02479176844102583,
+          0.07213601346782147,
+          0.019877024500876
         ],
         "flux": [
-          1.59878819450061e-06,
-          6.388935545261728e-06
+          1.598736161715866e-06,
+          6.387958217280245e-06
         ],
         "flux_over_current": [
-          -2.589397409627959e-07,
-          -1.6280104732053145e-06
+          -2.589480812505686e-07,
+          -1.6277659382349862e-06
         ],
         "V": [
-          -10.04836724091611,
-          2.512299343632037
+          -10.04683206179966,
+          2.512217636609595
         ],
         "number_turns": 8,
         "I": [
           -3.984778792366982,
           0.3486229709906328
         ],
-        "winding_losses": 0.8037436105348378,
-        "P": 20.458182970356233,
-        "Q": -3.2539327517246543,
-        "S": 20.71534042204762
+        "winding_losses": 0.8039016540313306,
+        "P": 20.455110053290916,
+        "Q": -3.254037558871837,
+        "S": 20.712322122997016
       },
-      "core_eddy_losses": 0.0008511982534886338,
-      "core_hyst_losses": 0.007747676090119198,
+      "core_eddy_losses": 0.0008509802999280218,
+      "core_hyst_losses": 0.00774551546892332,
       "core_parts": {
         "core_part_1": {
-          "eddy_losses": 0.0007617879336550398,
-          "hyst_losses": 0.007432570411158138,
-          "total_core_part_1": 0.008194358344813179
+          "eddy_losses": 0.0007615865718568936,
+          "hyst_losses": 0.00743057319809222,
+          "total_core_part_1": 0.008192159769949114
         },
         "core_part_2": {
-          "eddy_losses": 8.941031983359225e-05,
-          "hyst_losses": 0.0003151056789610563,
-          "total_core_part_2": 0.0004045159987946486
+          "eddy_losses": 8.939372807112787e-05,
+          "hyst_losses": 0.0003149422708311003,
+          "total_core_part_2": 0.00040433599890222816
         }
       },
-      "all_winding_losses": 1.3687618641598984
+      "all_winding_losses": 1.3689447760916829
     }
   ],
   "total_losses": {
     "winding1": {
-      "total": 0.5650182536250603,
+      "total": 0.5650431220603528,
       "turns": [
-        0.1135081056802822,
-        0.1444146377111986,
-        0.2003486440622806,
-        0.1067468661712989
+        0.1134576669650905,
+        0.1444667120553273,
+        0.2003717536388314,
+        0.1067469894011036
       ]
     },
     "winding2": {
-      "total": 0.8037436105348396,
+      "total": 0.8039016540313287,
       "turns": [
-        0.09745506979790194,
-        0.1387262624985962,
-        0.2122058757610394,
-        0.1630949068296944,
-        0.07547404013316682,
-        0.02479140566657879,
-        0.07213551211029122,
-        0.0198605377375708
+        0.09742785257526586,
+        0.1388000569535205,
+        0.2122414345017233,
+        0.1631528311473069,
+        0.07547467244378885,
+        0.02479176844102583,
+        0.07213601346782147,
+        0.019877024500876
       ]
     },
-    "all_windings": 1.3687618641598984,
-    "eddy_core": 0.0008511982534886338,
-    "hyst_core_fundamental_freq": 0.007747676090119198,
-    "total_core_part_1": 0.008194358344813179,
-    "total_eddy_core_part_1": 0.0007617879336550398,
-    "total_hyst_core_part_1": 0.007432570411158138,
-    "total_core_part_2": 0.0004045159987946486,
-    "total_eddy_core_part_2": 8.941031983359225e-05,
-    "total_hyst_core_part_2": 0.0003151056789610563,
-    "core": 0.008598874343607833,
-    "total_losses": 1.3773607385035063
+    "all_windings": 1.3689447760916829,
+    "eddy_core": 0.0008509802999280218,
+    "hyst_core_fundamental_freq": 0.00774551546892332,
+    "total_core_part_1": 0.008192159769949114,
+    "total_eddy_core_part_1": 0.0007615865718568936,
+    "total_hyst_core_part_1": 0.00743057319809222,
+    "total_core_part_2": 0.00040433599890222816,
+    "total_eddy_core_part_2": 8.939372807112787e-05,
+    "total_hyst_core_part_2": 0.0003149422708311003,
+    "core": 0.008596495768851341,
+    "total_losses": 1.3775412718605342
   },
   "simulation_settings": {
     "simulation_name": null,
-    "date": "2025-06-17 13:36:18",
+    "date": "2025-08-20 16:33:41",
     "component_type": "IntegratedTransformer",
-    "working_directory": "C:\\Users\\tpiepe\\Repositories\\FEM_Magnetics_Toolbox\\tests\\integration\\temp",
+    "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/tests/integration/temp",
     "core": {
       "core_type": 1,
       "core_inner_diameter": 0.02,
@@ -144,17 +144,17 @@
         "max_right_bound": 0.019999999999999997,
         "virtual_winding_windows": [
           {
-            "bot_bound": -0.002999999999999999,
+            "bot_bound": -0.0024999999999999988,
             "top_bound": 0.013999999999999999,
             "left_bound": 0.012,
             "right_bound": 0.019999999999999997,
             "winding_type": "TwoInterleaved",
+            "winding_scheme": "HorizontalAlternating",
             "alignment": null,
             "zigzag": null,
             "foil_horizontal_placing_strategy": null,
             "foil_vertical_placing_strategy": null,
             "placing_strategy": null,
-            "winding_scheme": "HorizontalAlternating",
             "wrap_para": null,
             "windings": [
               {
@@ -193,12 +193,12 @@
             "left_bound": 0.012,
             "right_bound": 0.019999999999999997,
             "winding_type": "TwoInterleaved",
+            "winding_scheme": "HorizontalAlternating",
             "alignment": null,
             "zigzag": null,
             "foil_horizontal_placing_strategy": null,
             "foil_vertical_placing_strategy": null,
             "placing_strategy": null,
-            "winding_scheme": "HorizontalAlternating",
             "wrap_para": null,
             "windings": [
               {
@@ -263,8 +263,14 @@
           0.0002
         ]
       ],
-      "core_insulations": [
+      "top_section_core_insulations": [
         0.001,
+        0.001,
+        0.002,
+        0.001
+      ],
+      "bottom_section_core_insulations": [
+        0.0005,
         0.001,
         0.002,
         0.001

@@ -234,6 +234,8 @@ class CoreGeometry:
             h_outer = (h_meas * 4 * alpha * (self.core_inner_diameter / 2 + self.window_w)) / (2 * np.pi * (self.core_inner_diameter / 2 + self.window_w))
             self.core_h: float = self.window_w + 2 * h_outer
         else:
+            # set r_outer, so cross-section of outer leg has same cross-section as inner leg
+            # this is the default-case
             self.r_outer: float = fr.calculate_r_outer(self.core_inner_diameter, self.window_w)
 
     def to_dict(self) -> Dict[str, Union[float, CoreType, bool]]:
@@ -534,7 +536,7 @@ class Core:
         :param plot_interpolation: Whether to plot interpolation used for file generation.
         :type plot_interpolation: bool
         """
-        self.core.material.update_core_material_pro_file(frequency=self.frequency,
+        self.material.update_core_material_pro_file(frequency=self.frequency,
                                                          folder=self.file_data.electro_magnetic_folder_path,
                                                          plot_interpolation=plot_interpolation)
 
@@ -690,15 +692,25 @@ class Insulation:
     In general, it is not necessary to add an insulation object at all when no insulation is needed.
     """
 
-    cond_cond: list[list[
-        float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
-    core_cond: list[
-        float]  # list with size 4x1, with respectively isolation of cond_n -> [top_core, bot_core, left_core, right_core]
-
+    conductor_type: ConductorType  # it is needed here tempoarily
+    cond_cond: list[list[float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
+    core_cond: list[float] = None  # list with size 4x1, with respectively isolation of cond_n -> [top_core, bot_core, left_core, right_core]
+    top_section_core_cond: list[float] = None  # Top section insulations for integrated transformers, initially None
+    bot_section_core_cond: list[float] = None  # Bottom section insulations for integrated transformers, initially None
+    turn_ins: list[float]   # list of turn insulation of every winding -> [turn_ins_of_winding_1, turn_ins_of_winding_2, ...]
+    cond_air_cond: list[list[float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
+    er_turn_insulation: list[float]
+    er_layer_insulation: float = None
+    er_bobbin: float = None
+    bobbin_dimensions: None
+    thickness_of_layer_insulation: float
+    consistent_ins: bool = True
+    draw_insulation_between_layers: bool = True
     flag_insulation: bool = True
+    add_turn_insulations: bool = True
     max_aspect_ratio: float
 
-    def __init__(self, max_aspect_ratio: float = 10, flag_insulation: bool = True):
+    def __init__(self, max_aspect_ratio: float = 10, flag_insulation: bool = True, bobbin_dimensions: None = None):
         """Create an insulation object.
 
         Sets an insulation_delta value. In order to simplify the drawing of the isolations between core and winding window the isolation rectangles
@@ -709,6 +721,16 @@ class Insulation:
         # If the gaps between insulations and core (or windings) are to big/small just change this value
         self.flag_insulation = flag_insulation
         self.max_aspect_ratio = max_aspect_ratio
+        self.bobbin_dimensions = bobbin_dimensions
+        # As there is a gap between the core and the bobbin, the definition of bobbin parameters is needed in electrostatic simulation
+        if bobbin_dimensions is not None:
+            self.bobbin_inner_diameter = bobbin_dimensions.bobbin_inner_diameter
+            self.bobbin_window_w = bobbin_dimensions.bobbin_window_w
+            self.bobbin_window_h = bobbin_dimensions.bobbin_window_h
+            self.bobbin_h = bobbin_dimensions.bobbin_h
+
+        self.turn_ins = []
+        self.thickness_of_layer_insulation = 0.0
 
     def set_flag_insulation(self, flag: bool):  # to differentiate between the simulation with and without insulation
         """
@@ -719,21 +741,59 @@ class Insulation:
         """
         self.flag_insulation = flag
 
-    def add_winding_insulations(self, inner_winding_insulation: list[list[float]]):
-        """Add insulations between turns of one winding and insulation between virtual winding windows.
+    def add_winding_insulations(self, inner_winding_insulation: list[list[float]], per_layer_of_turns: bool = False):
+        """Add a consistent insulation between turns of one winding and insulation between virtual winding windows.
 
         Insulation between virtual winding windows is not always needed.
         :param inner_winding_insulation: List of floats which represent the insulations between turns of the same winding. This does not correspond to
         the order conductors are added to the winding! Instead, the winding number is important. The conductors are sorted by ascending winding number.
         The lowest winding number therefore is combined with index 0. The second lowest with index 1 and so on.
         :type inner_winding_insulation: list[list[float]]
+        :param per_layer_of_turns: If it is enabled, the insulation will be added between turns for every layer in every winding.
+        :type per_layer_of_turns: bool.
         """
         if inner_winding_insulation == [[]]:
             raise Exception("Inner winding insulations list cannot be empty.")
 
         self.cond_cond = inner_winding_insulation
 
-    def add_core_insulations(self, top_core: float, bot_core: float, left_core: float, right_core: float):
+        if per_layer_of_turns:
+            self.consistent_ins = False
+        else:
+            self.consistent_ins = True
+
+    def add_turn_insulation(self, insulation_thickness: list[float], dielectric_constant: list[float] = None):
+        """Add insulation for turns in every winding.
+
+        :param insulation_thickness: List of floats which represent the insulation around every winding.
+        :type insulation_thickness: list[[float]]
+        :param dielectric_constant: relative permittivity of the insulation of the winding
+        :type dielectric_constant list[[float]]
+        """
+        # Check for negative values
+        for t in insulation_thickness:
+            if t < 0:
+                raise ValueError(f"Turn insulation thickness must be positive, got {t}")
+        self.turn_ins = insulation_thickness
+        self.er_turn_insulation = dielectric_constant or [1.0] * len(insulation_thickness)
+
+    def add_insulation_between_layers(self, thickness: float = 0.0, dielectric_constant: float = None):
+        """
+        Add an insulation (thickness_of_layer_insulation or tape insulation) between layers.
+
+        :param thickness: the thickness of the insulation between the layers of turns
+        :type thickness: float
+        :param dielectric_constant: relative permittivity of the insulation between the layers
+        :type dielectric_constant: float
+        """
+        if thickness <= 0:
+            raise ValueError("insulation thickness must be greater than zero.")
+        else:
+            self.thickness_of_layer_insulation = thickness
+
+        self.er_layer_insulation = dielectric_constant if dielectric_constant is not None else 1.0
+
+    def add_core_insulations(self, top_core: float, bot_core: float, left_core: float, right_core: float, dielectric_constant: float = None):
         """Add insulations between the core and the winding window. Creating those will draw real rectangles in the model.
 
         :param top_core: Insulation between winding window and top core
@@ -744,6 +804,8 @@ class Insulation:
         :type left_core: float
         :param right_core: Insulation between winding window and right core
         :type right_core: float
+        :param dielectric_constant: relative permittivity of the core insulation
+        :type dielectric_constant: float
         """
         if top_core is None:
             top_core = 0
@@ -754,18 +816,80 @@ class Insulation:
         if right_core is None:
             right_core = 0
 
+        self.er_bobbin = dielectric_constant if dielectric_constant is not None else 1.0
         self.core_cond = [top_core, bot_core, left_core, right_core]
         self.core_cond = [top_core, bot_core, left_core, right_core]
+
+    def add_top_section_core_insulations(self, top_core: float, bot_core: float, left_core: float, right_core: float, dielectric_constant: float = None):
+        """
+        Add insulations for the top section for integrated transformers.
+
+        :param top_core: Insulation between winding window and top section of the top section core
+        :type top_core: float
+        :param bot_core: Insulation between winding window and the bottom section of the top section core
+        :type bot_core: float
+        :param left_core: Insulation between winding window and left of the top section core
+        :type left_core: float
+        :param right_core: Insulation between winding window and right of the top section core
+        :type right_core: float
+        :param dielectric_constant: relative permittivity of the core insulation
+        :type dielectric_constant: float
+        """
+        if top_core is None:
+            top_core = 0
+        if bot_core is None:
+            bot_core = 0
+        if left_core is None:
+            left_core = 0
+        if right_core is None:
+            right_core = 0
+
+        self.er_bobbin = dielectric_constant if dielectric_constant is not None else 1.0
+        self.top_section_core_cond = [top_core, bot_core, left_core, right_core]
+
+    def add_bottom_section_core_insulations(self, top_core: float, bot_core: float, left_core: float, right_core: float, dielectric_constant: float = None):
+        """
+        Add insulations for the top section for integrated transformers.
+
+        :param top_core: Insulation between winding window and top section of the bot section core
+        :type top_core: float
+        :param bot_core: Insulation between winding window and the bottom section of the bot section core
+        :type bot_core: float
+        :param left_core: Insulation between winding window and left of the bot section core
+        :type left_core: float
+        :param right_core: Insulation between winding window and right of the bot section core
+        :type right_core: float
+        :param dielectric_constant: relative permittivity of the core insulation
+        :type dielectric_constant: float
+        """
+        if top_core is None:
+            top_core = 0
+        if bot_core is None:
+            bot_core = 0
+        if left_core is None:
+            left_core = 0
+        if right_core is None:
+            right_core = 0
+
+        self.er_bobbin = dielectric_constant if dielectric_constant is not None else 1.0
+        self.bot_section_core_cond = [top_core, bot_core, left_core, right_core]
 
     def to_dict(self):
-        """Transfer object parameters to a dictionary. Important method to create the final result-log."""
-        if len(self.cond_cond) == 0:
-            return {}
-
-        return {
-            "inner_winding_insulations": self.cond_cond,
-            "core_insulations": self.core_cond
+        """Transfer object parameters to a dictionary."""
+        result = {
+            "inner_winding_insulations": self.cond_cond
         }
+
+        if self.core_cond:
+            result["core_insulations"] = self.core_cond
+
+        if self.top_section_core_cond:
+            result["top_section_core_insulations"] = self.top_section_core_cond
+
+        if self.bot_section_core_cond:
+            result["bottom_section_core_insulations"] = self.bot_section_core_cond
+
+        return result
 
 
 @dataclass
@@ -1054,17 +1178,79 @@ class WindingWindow:
         self.core: Core = core
         self.stray_path: StrayPath = stray_path
         self.air_gaps: AirGaps = air_gaps
+        self.insulations: Insulation = insulations
 
         if self.core.geometry.core_type == CoreType.Single:
-            self.max_bot_bound = -core.geometry.window_h / 2 + insulations.core_cond[1]
-            self.max_top_bound = core.geometry.window_h / 2 - insulations.core_cond[0]
-            self.max_left_bound = core.geometry.core_inner_diameter / 2 + insulations.core_cond[2]
-            self.max_right_bound = core.geometry.r_inner - insulations.core_cond[3]
+            if self.insulations.bobbin_dimensions:
+                if self.stray_path:
+                    raise ValueError("The bobbin calculation is not implemented yet")
+                else:
+                    # top - bot
+                    bobbin_height = self.insulations.bobbin_window_h
+                    insulation_delta_top_bot = (self.core.geometry.window_h - bobbin_height) / 2
+                    # left
+                    bobbin_inner_radius = self.insulations.bobbin_inner_diameter / 2
+                    core_inner_radius = self.core.geometry.core_inner_diameter / 2
+                    insulation_delta_left = bobbin_inner_radius - core_inner_radius
+                    # insulation_delta_left = 3e-4
+                    # dimensions
+                    self.max_bot_bound = -core.geometry.window_h / 2 + insulations.core_cond[1] + insulation_delta_top_bot
+                    self.max_top_bound = core.geometry.window_h / 2 - insulations.core_cond[0] - insulation_delta_top_bot
+                    self.max_left_bound = (core.geometry.core_inner_diameter / 2 + insulations.core_cond[2] + insulation_delta_left + 1.5e-5)
+                    self.max_right_bound = core.geometry.r_inner - insulations.core_cond[3]
+            else:
+                if self.stray_path:
+                    # needed for legnths
+                    air_gap_1_position = self.air_gaps.midpoints[self.stray_path.start_index][1]
+                    air_gap_1_height = self.air_gaps.midpoints[self.stray_path.start_index][2]
+                    air_gap_2_position = self.air_gaps.midpoints[self.stray_path.start_index + 1][1]
+                    air_gap_2_height = self.air_gaps.midpoints[self.stray_path.start_index + 1][2]
+                    y_top_stray_path = air_gap_2_position - (air_gap_2_height / 2)
+                    y_bot_stray_path = air_gap_1_position + (air_gap_1_height / 2)
+                    # top section
+                    self.max_bot_bound_top_section = y_top_stray_path + insulations.top_section_core_cond[1]
+                    self.max_top_bound_top_section = core.geometry.window_h / 2 - insulations.top_section_core_cond[0]
+                    self.max_left_bound_top_section = core.geometry.core_inner_diameter / 2 + insulations.top_section_core_cond[2]
+                    self.max_right_bound_top_section = core.geometry.r_inner - insulations.top_section_core_cond[3]
+
+                    # bot section
+                    self.max_bot_bound_bot_section = -core.geometry.window_h / 2 + insulations.bot_section_core_cond[1]
+                    self.max_top_bound_bot_section = y_bot_stray_path - insulations.bot_section_core_cond[0]
+                    self.max_left_bound_bot_section = core.geometry.core_inner_diameter / 2 + insulations.bot_section_core_cond[2]
+                    self.max_right_bound_bot_section = core.geometry.r_inner - insulations.bot_section_core_cond[3]
+
+                    # General
+                    self.max_bot_bound = min(self.max_bot_bound_top_section, self.max_bot_bound_bot_section)
+                    self.max_top_bound = max(self.max_top_bound_top_section, self.max_top_bound_bot_section)
+                    self.max_left_bound = min(self.max_left_bound_top_section, self.max_left_bound_bot_section)
+                    self.max_right_bound = max(self.max_right_bound_top_section, self.max_right_bound_bot_section)
+                else:
+                    self.max_bot_bound = -core.geometry.window_h / 2 + insulations.core_cond[1]
+                    self.max_top_bound = core.geometry.window_h / 2 - insulations.core_cond[0]
+                    self.max_left_bound = core.geometry.core_inner_diameter / 2 + insulations.core_cond[2]
+                    self.max_right_bound = core.geometry.r_inner - insulations.core_cond[3]
+
         elif self.core.geometry.core_type == CoreType.Stacked:  # top, bot, left, right
-            self.max_bot_bound = -core.geometry.window_h_bot / 2 + insulations.core_cond[1]
-            self.max_top_bound = core.geometry.window_h_bot / 2 + core.geometry.window_h_top + core.geometry.core_thickness - insulations.core_cond[0]
-            self.max_left_bound = core.geometry.core_inner_diameter / 2 + insulations.core_cond[2]
-            self.max_right_bound = core.geometry.r_inner - insulations.core_cond[3]
+            if self.insulations.bobbin_dimensions:
+                raise ValueError("The bobbin calculation is not implemented yet")
+            else:
+                # top section
+                self.max_bot_bound_top_section = core.geometry.window_h_bot / 2 + core.geometry.core_thickness + insulations.top_section_core_cond[1]
+                self.max_top_bound_top_section = core.geometry.window_h_bot / 2 + core.geometry.window_h_top + core.geometry.core_thickness - insulations.top_section_core_cond[0]
+                self.max_left_bound_top_section = core.geometry.core_inner_diameter / 2 + insulations.top_section_core_cond[2]
+                self.max_right_bound_top_section = core.geometry.r_inner - insulations.top_section_core_cond[3]
+
+                # bot section
+                self.max_bot_bound_bot_section = -core.geometry.window_h_bot / 2 + insulations.bot_section_core_cond[1]
+                self.max_top_bound_bot_section = core.geometry.window_h_bot / 2 - insulations.bot_section_core_cond[0]
+                self.max_left_bound_bot_section = core.geometry.core_inner_diameter / 2 + insulations.bot_section_core_cond[2]
+                self.max_right_bound_bot_section = core.geometry.r_inner - insulations.bot_section_core_cond[3]
+
+                # general
+                self.max_bot_bound = -core.geometry.window_h_bot / 2 + insulations.bot_section_core_cond[1]
+                self.max_top_bound = core.geometry.window_h_bot / 2 + core.geometry.window_h_top + core.geometry.core_thickness - insulations.top_section_core_cond[0]
+                self.max_left_bound = core.geometry.core_inner_diameter / 2 + insulations.top_section_core_cond[2]
+                self.max_right_bound = core.geometry.r_inner - insulations.top_section_core_cond[3]
 
         # Insulations
         self.insulations = insulations
@@ -1125,13 +1311,8 @@ class WindingWindow:
 
         # Calculate split lengths
         if self.stray_path is not None and self.air_gaps is not None and self.air_gaps.number > self.stray_path.start_index:
-            air_gap_1_position = self.air_gaps.midpoints[self.stray_path.start_index][1]
-            air_gap_2_position = self.air_gaps.midpoints[self.stray_path.start_index + 1][1]
-            max_pos = max(air_gap_2_position, air_gap_1_position)
-            min_pos = min(air_gap_2_position, air_gap_1_position)
-            distance = max_pos - min_pos  # TODO: this is set in accordance to the midpoint of the air gap:
-            # TODO: should be changed to the core-cond isolation
-            horizontal_split = min_pos + distance / 2
+            distance = self.max_bot_bound_top_section - self.max_top_bound_bot_section
+            horizontal_split = self.max_top_bound_bot_section + distance / 2
             vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
             split_distance = distance  # here, the distance between the two vwws is set automatically
         else:
@@ -1153,8 +1334,8 @@ class WindingWindow:
         elif split_type == WindingWindowSplit.NoSplitWithBobbin:
             bobbin_def = [top_bobbin, bot_bobbin, left_bobbin, right_bobbin]
             for index, element in enumerate(bobbin_def):
-                if element is not None and element > self.insulations.core_cond[index]:
-                    bobbin_def[index] = self.insulations.core_cond[index] - element
+                if element is not None and element > self.insulations.top_section_core_cond[index]:
+                    bobbin_def[index] = self.insulations.top_section_core_cond[index] - element
                 else:
                     bobbin_def[index] = 0
 
@@ -1185,14 +1366,14 @@ class WindingWindow:
             top = VirtualWindingWindow(
                 bot_bound=horizontal_split + split_distance / 2,
                 top_bound=self.max_top_bound,
-                left_bound=self.max_left_bound,
-                right_bound=self.max_right_bound)
+                left_bound=self.max_left_bound if not self.stray_path else self.max_left_bound_top_section,
+                right_bound=self.max_right_bound if not self.stray_path else self.max_right_bound_top_section)
 
             bot = VirtualWindingWindow(
                 bot_bound=self.max_bot_bound,
                 top_bound=horizontal_split - split_distance / 2,
-                left_bound=self.max_left_bound,
-                right_bound=self.max_right_bound)
+                left_bound=self.max_left_bound if not self.stray_path else self.max_left_bound_bot_section,
+                right_bound=self.max_right_bound if not self.stray_path else self.max_right_bound_bot_section)
 
             self.virtual_winding_windows = [top, bot]
             return top, bot
@@ -1240,13 +1421,8 @@ class WindingWindow:
         # Convert horizontal_split_factors to a numpy array
         horizontal_split_factors = np.array(horizontal_split_factors)
         if self.stray_path is not None and self.air_gaps is not None and self.air_gaps.number > self.stray_path.start_index:
-            air_gap_1_position = self.air_gaps.midpoints[self.stray_path.start_index][1]
-            air_gap_2_position = self.air_gaps.midpoints[self.stray_path.start_index + 1][1]
-            max_pos = max(air_gap_2_position, air_gap_1_position)
-            min_pos = min(air_gap_2_position, air_gap_1_position)
-            distance = max_pos - min_pos  # TODO: this is set in accordance to the midpoint of the air gap:
-            # TODO: should be changed to the core-cond isolation
-            horizontal_splits = min_pos + distance / 2
+            distance = self.max_bot_bound_top_section - self.max_top_bound_bot_section
+            horizontal_splits = self.max_top_bound_bot_section + distance / 2
             vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
             split_distance = distance  # here, the distance between the two vwws is set automatically
         else:
@@ -1326,13 +1502,8 @@ class WindingWindow:
             vertical_split_factors = [[]]
 
         if self.stray_path is not None and self.air_gaps is not None and self.air_gaps.number > self.stray_path.start_index:
-            air_gap_1_position = self.air_gaps.midpoints[self.stray_path.start_index][1]
-            air_gap_2_position = self.air_gaps.midpoints[self.stray_path.start_index + 1][1]
-            max_pos = max(air_gap_2_position, air_gap_1_position)
-            min_pos = min(air_gap_2_position, air_gap_1_position)
-            distance = max_pos - min_pos  # TODO: this is set in accordance to the midpoint of the air gap:
-            # TODO: should be changed to the core-cond isolation
-            horizontal_splits = min_pos + distance / 2
+            distance = self.max_bot_bound_top_section - self.max_top_bound_bot_section
+            horizontal_splits = self.max_top_bound_bot_section + distance / 2
             vertical_splits = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factors
             split_distance = distance  # here, the distance between the two vwws is set automatically
         else:
@@ -1466,13 +1637,8 @@ class WindingWindow:
         # Convert horizontal_split_factors to a numpy array
         horizontal_split_factors = np.array(horizontal_split_factors)
         if self.stray_path is not None and self.air_gaps is not None and self.air_gaps.number > self.stray_path.start_index:
-            air_gap_1_position = self.air_gaps.midpoints[self.stray_path.start_index][1]
-            air_gap_2_position = self.air_gaps.midpoints[self.stray_path.start_index + 1][1]
-            max_pos = max(air_gap_2_position, air_gap_1_position)
-            min_pos = min(air_gap_2_position, air_gap_1_position)
-            distance = max_pos - min_pos  # TODO: this is set in accordance to the midpoint of the air gap:
-            # TODO: should be changed to the core-cond isolation
-            horizontal_splits = min_pos + distance / 2
+            distance = self.max_bot_bound_top_section - self.max_top_bound_bot_section
+            horizontal_splits = self.max_top_bound_bot_section + distance / 2
             vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factors
             split_distance = distance  # here, the distance between the two vwws is set automatically
         else:

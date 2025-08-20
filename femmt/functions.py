@@ -1,5 +1,6 @@
 """Contains different functions, used by the whole FEMMT functions."""
 # Python standard libraries
+# Python standard libraries
 import json
 import pkg_resources
 import subprocess
@@ -32,7 +33,8 @@ colors_femmt_default = {"blue": (28, 113, 216),
                         "gray": (119, 118, 123),
                         "yellow": (245, 194, 17),
                         "black": (0, 0, 0),
-                        "white": (255, 255, 255)
+                        "white": (255, 255, 255),
+                        "teal": (0, 128, 128)
                         }
 
 colors_geometry_femmt_default = {
@@ -41,6 +43,7 @@ colors_geometry_femmt_default = {
     "winding": ["orange", "brown", "yellow", "green", "red", "black", "gray", "blue", "orange", "purple", "gray",
                 "blue", "orange", "purple"],
     "insulation": "blue",
+    "layer_insulation": "teal",
     "potting_inner": "gray",
     "potting_outer": "gray",
 }
@@ -241,6 +244,329 @@ def core_database() -> dict:
         "window_w": (67.1 - 31.7) / 2 * 1e-3,
     }
     return core_dict
+
+def bobbin_database() -> dict:
+    """
+    Return a dictionary containing bobbin dimensions for various core structures.
+
+    :return: Dictionary containing bobbin dimensions from Datasheet.
+    :rtype: Dict
+    """
+    bobbin_dict = {}
+
+    # -----------------------
+    # PQ Bobbins
+    # -----------------------
+
+    # bobbin_dict["PQ 16/11.6"] = {
+    #     "bobbin_h": None,
+    #     "bobbin_inner_diameter": None,
+    #     "bobbin_window_h": None,
+    #     "bobbin_window_w": None
+    # }
+    bobbin_dict["PQ 20/16"] = {
+        "bobbin_h": 18.3e-3,
+        "bobbin_inner_diameter": 10.95e-3,
+        "bobbin_window_h": 9.8e-3,
+        "bobbin_window_w": (23.3 - 9.15) / 2 * 1e-3
+    }
+    bobbin_dict["PQ 20/20"] = {
+        "bobbin_h": 22.3e-3,
+        "bobbin_inner_diameter": 10.9e-3,
+        "bobbin_window_h": 13.9e-3,
+        "bobbin_window_w": (23.3 - 9.2) / 2 * 1e-3
+    }
+    bobbin_dict["PQ 26/25"] = {
+        "bobbin_h": 29.3e-3,
+        "bobbin_inner_diameter": 14.2e-3,
+        "bobbin_window_h": 15.5e-3,
+        "bobbin_window_w": (26.5 - 14.2) / 2 * 1e-3
+    }
+    bobbin_dict["PQ 32/20"] = {
+        "bobbin_h": 18.8e-3,
+        "bobbin_inner_diameter": 16.2e-3,
+        "bobbin_window_h": 10.7e-3,
+        "bobbin_window_w": (32.3 - 16.2) / 2 * 1e-3,
+    }
+    bobbin_dict["PQ 32/30"] = {
+        "bobbin_h": 32.8e-3,
+        "bobbin_inner_diameter": 15.9e-3,
+        "bobbin_window_h": 20.7e-3,
+        "bobbin_window_w": (26.4 - 15.9) / 2 * 1e-3
+    }
+    bobbin_dict["PQ 40/40"] = {
+        "bobbin_h": 45.3e-3,
+        "bobbin_inner_diameter": 15.55e-3,
+        "bobbin_window_h": 28.75e-3,
+        "bobbin_window_w": (40.3 - 15.55) / 2 * 1e-3
+    }
+    bobbin_dict["PQ 50/50"] = {
+        "bobbin_h": 51.5e-3,
+        "bobbin_inner_diameter": 23.2e-3,
+        "bobbin_window_h": 35.2e-3,
+        "bobbin_window_w": (51.3 - 23.2) / 2 * 1e-3
+    }
+    bobbin_dict["PQ 65/60"] = {
+        "bobbin_h": 65.5e-3,
+        "bobbin_inner_diameter": 27.3e-3,
+        "bobbin_window_h": 40.7e-3,
+        "bobbin_window_w": (66.5 - 27.3) / 2 * 1e-3
+    }
+
+    # -----------------------
+    # PM Bobbins
+    # -----------------------
+
+    bobbin_dict["PM 114/93"] = {
+        "bobbin_h": 91 * 1e-3,
+        "bobbin_inner_diameter": 44e-3,
+        "bobbin_window_h": 62.3e-3,
+        "bobbin_window_w": (91 - 44) / 2 * 1e-3,
+    }
+    bobbin_dict["PM 50/39"] = {
+        "bobbin_h": 33.8 * 1e-3,
+        "bobbin_inner_diameter": 20.4e-3,
+        "bobbin_window_h": 25.9e-3,
+        "bobbin_window_w": (38.5 - 20.4) / 2 * 1e-3,
+    }
+    bobbin_dict["PM 62/49"] = {
+        "bobbin_h": 48 * 1e-3,
+        "bobbin_inner_diameter": 25.7e-3,
+        "bobbin_window_h": 33.0e-3,
+        "bobbin_window_w": (48 - 25.7) / 2 * 1e-3,
+    }
+    bobbin_dict["PM 74/59"] = {
+        "bobbin_h": 57.8 * 1e-3,
+        "bobbin_inner_diameter": 30e-3,
+        "bobbin_window_h": 40.3e-3,
+        "bobbin_window_w": (57.3 - 30) / 2 * 1e-3,
+    }
+    bobbin_dict["PM 87/70"] = {
+        "bobbin_h": 68.2 * 1e-3,
+        "bobbin_inner_diameter": 32.5e-3,
+        "bobbin_window_h": 47.2e-3,
+        "bobbin_window_w": (66.2 - 32.5) / 2 * 1e-3,
+    }
+    return bobbin_dict
+
+def insulation_materials_database() -> dict:
+    """
+    Return insulation properties for different type of materials.
+
+    :return: Dict including insulation parameters
+    :rtype: dict
+    """
+    # To see the shape and the properties of these materials of the wire insulation, review this website:
+    # https://www.awcwire.com/customersupport/techinfo/insulation-materials?srsltid=AfmBOoqXkVrB6ITF-R9nL_UlgGVpzX2xB2ENjMNQQHmczLRcf0-y6YwG
+
+    insulation_materials = {
+        # wire_insulation materials
+        "wire_insulation": {
+            # Plastic materials
+            "plastic_insulation": {
+                # PVC
+                # 1.a PVC (pure)
+                "Polyvinyl Chloride (PVC)": {"dielectric_constant": 4.0, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: Huang, J., Zhang, X., Liu, R., Ding, Y., & Guo, D. (2023). Polyvinyl chloride-based dielectric elastomer with high permittivity
+                # and low viscoelasticity for actuation and sensing. Nature communications, 14(1), 1483."""
+
+                # 1.b Semi-Rigid PVC (SR-PVC). it is from 2.7 to 6.5
+                "Semi-Rigid PVC (SR-PVC)": {"dielectric_constant": 3.6, "thermal_conductivity": None, "max_temperature": None},
+                # 1.c Plenum Polyvinyl Chloride (Plenum PVC)
+                "Plenum Polyvinyl Chloride (Plenum PVC)": {"dielectric_constant": 3.5, "thermal_conductivity": None, "max_temperature": None},
+                #  """Reference: https://www.anixter.com/content/dam/Anixter/Guide/7H0011X0_W&C_Tech_Handbook_Sec_03.pdf"""
+
+                # 2. Polyethylene (PE): it ranges from 2.7 to 2.8 (30% glass fiber)
+                "Polyethylene (PE)": {"dielectric_constant": 2.7, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: https://passive-components.eu/what-is-dielectric-constant-of-plastic-materials/"""
+                #     """Reference:
+                #      https://www.awcwire.com/customersupport/techinfo/insulation-materials#:~:text=Semi%2DRigid%20PVC%20(SR%2DPVC)%20is%20mainly%20used,
+                #      degrees%20Celsius%2C%20300%20volts)."""
+
+                # 3.Polypropylene (PP) 10-20 glass fiber 2.2 - 2.3
+                "Polypropylene (PP)": {"dielectric_constant": 2.3, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference:
+                #          https://www.awcwire.com/customersupport/techinfo/insulation-materials#:~:text=Semi%2DRigid%20PVC%20(SR%2DPVC)%20is%20mainly%20used,
+                #          degrees%20Celsius%2C%20300%20volts)."""
+
+                # 4.Polyurethane (PUR): the permittivity differs from 1.065 to 3.35 based on the density (kg/m^3). (need to be reviewed)
+                "Polyurethane (PUR)": {"dielectric_constant": 3.35, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: Beverte, I. (2025).
+                # Investigation of the Partial Permittivity of Rigid Polyurethane Foams by a Circular One-Side-Access Capacitive Sensor.
+                # Polymers, 17(5), 602."""
+                # """https://www.anixter.com/content/dam/Anixter/Guide/7H0011X0_W&C_Tech_Handbook_Sec_03.pdf"""
+
+                # 5. Chlorinated Polyethylene (CPE)
+                "Chlorinated Polyethylene (CPE)": {"dielectric_constant": 2.3, "thermal_conductivity": None, "max_temperature": None},
+                # """https://www.anixter.com/content/dam/Anixter/Guide/7H0011X0_W&C_Tech_Handbook_Sec_03.pdf"""
+
+                # 6. Nylon : 3.2 - 5
+                "Nylon": {"dielectric_constant": 5, "thermal_conductivity": None, "max_temperature": None},
+                # """https://www.anixter.com/content/dam/Anixter/Guide/7H0011X0_W&C_Tech_Handbook_Sec_03.pdf"""
+            },
+            # Rubber Materials
+            "rubber_insulation": {
+                # 1. Thermoplastic Rubber (TPR) 3.30 - 5.10. It can be called Thermoplastic Elastomer (TPE)
+                "Thermoplastic Rubber(TPR)": {"dielectric_constant": 5.10, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: https://www.matweb.com/search/datasheet.aspx?matguid=0619837e5f584a1f8c5e6f692952898a"""
+
+                # 2. Neoprene (Polychloroprene): 4-6.7
+                "Neoprene (Polychloroprene)": {"dielectric_constant": 6.7, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: https://hep.physics.illinois.edu/home/serrede/p435/lecture_notes/dielectric_constants.pdf"""
+
+                # 3. Styrene-Butadiene Rubber (SBR): 2.5 - 3
+                "Styrene-Butadiene Rubber (SBR)": {"dielectric_constant": 3.0, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: https://www.azom.com/properties.aspx?ArticleID=1844"""
+
+                # 4. Silicone: 2.9 - 4
+                "Silicone": {"dielectric_constant": 4.0, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: https://en.wikipedia.org/wiki/Relative_permittivity"""
+
+                # 5. Fiberglass 3.0 - 4.0
+                "Fiberglass": {"dielectric_constant": 4.0, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: https://passive-components.eu/what-is-dielectric-constant-of-plastic-materials/"""
+
+                # 6. Ethylene Propylene Rubber (EPR): 2.4 and  can reach 4
+                "Ethylene Propylene Rubber (EPR)": {"dielectric_constant": 2.4, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: https://passive-components.eu/what-is-dielectric-constant-of-plastic-materials/"""
+
+                # 7. Rubber ( refers to natural rubber and SBR compounds.)
+                # 7.a: natural rubber: 2.7 – 4.0 (low freq); 2.4–2.7 (GHz range)
+                "Natural Rubber": {"dielectric_constant": 2.7, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: Al-Hartomy, O. A., Al-Ghamdi, A., Dishovsky, N., Shtarkova, R., Iliev, V., Mutlay, I., & El-Tantawy, F. (2012).
+                #    Dielectric and microwave properties of natural rubber based nanocomposites containing graphene."""
+
+                # 7.b: SBR: 2.5 to 3 (low freq); up to 6.6 (Ghz freq)
+                "Rubber (SBR)": {"dielectric_constant": 3, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: Gunasekaran,S.,Natarajan, R. K., Kala, A., & Jagannathan, R. (2008).
+                # Dielectric studies of some rubber materials at microwave frequencies."""
+
+                # 8. Chlorosulfonated Polyethylene (CSPE): Measured dielectric constant: 8-10
+                "Chlorosulfonated Polyethylene (CSPE)": {"dielectric_constant": 8.5, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: Ganguly, S., & Das, N. C. (2015). Chlorosulphonated polyethylene and its composites for electronic applications.
+                # In Flexible and stretchable electronic composites (pp. 229-259). Cham: Springer International Publishing."""
+            },
+            # Fluoropolymer Insulation Types
+            "fluoropolymer_insulation": {
+                # 1. Perfluoroalkoxy (PFA):  dielectric constant: 2.06 to 2.10:
+                "Perfluoroalkoxy (PFA)": {"dielectric_constant": 2.06, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: https://adtech.co.uk/application/files/1816/0500/0871/Adtech_PFA_General_Properties_2020.pdf"""
+                # """Reference: https://www.fluorotherm.com/technical-information/materials-overview/pfa-properties/"""
+
+                # 2. Polytetrafluoroethylene (PTFE):  dielectric constant: 2.12 to 2.01
+                "Polytetrafluoroethylene (PTFE)": {"dielectric_constant": 2.12, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: Li, L., Bowler, N., Kessler, M. R., & Yoon, S. H. (2010).
+                #  Dielectric response of PTFE and ETFE wiring insulation to thermal exposure.
+                #  IEEE Transactions on Dielectrics and Electrical Insulation, 17(4), 1234-1241."""
+
+                # 3. Fluorinated Ethylene Propylene (FEP):  dielectric constant is about 2.2
+                "Fluorinated Ethylene Propylene (FEP)": {"dielectric_constant": 2.2, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: Lv, X., Yv, J., Wang, X., & Huang, P. (2022).
+                # Flexible low dielectric polyimide/fluorinated ethylene propylene composite films for
+                # flexible integrated circuits. Polymer Science, Series B, 64(2), 219-228.."""
+
+                # 4. Ethylene Tetrafluoroethylene (ETFE) :  dielectric constant is about 2.2 to 2.6
+                "Ethylene Tetrafluoroethylene (ETFE)": {"dielectric_constant": 2.6, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: Wang, M., He, Y., Yang, X., Hou, X., Li, W., Tan, S., & Zhang, Z. (2024). Optimizing thermal and dielectric properties of
+                # ethylene-tetrafluoroethylene (ETFE)/h-BN composites via interface engineering: activation of C–F bonds on ETFE for surface grafting.
+                # Journal of Materials Chemistry A, 12(45), 31424-31431."""
+
+                # 5. Ethylenechlorotrifluoroethylene (ECTFE) :  dielectric constant is 2.5
+                # Note 4. and 5. have approximately the same properties
+                "Ethylenechlorotrifluoroethylene (ECTFE)": {"dielectric_constant": 2.5, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: https://www.polyfluor.nl/assets/files/datasheet-ectfe-uk.pdf"""
+
+                # 6. Polyvinylidene Fluoride (PVDF) :  dielectric constant is 8.5 at 1MHz
+                "Polyvinylidene Fluoride (PVDF)": {"dielectric_constant": 8.5, "thermal_conductivity": None, "max_temperature": None},
+                # """Reference: https://www.ipolymer.com/pdf/PVDF.pdf"""
+
+                # 7.Thermoplastic Elastomers (TPE) :  dielectric constant is 3.3 to 5.1
+                "Thermoplastic Elastomers (TPE)": {"dielectric_constant": 4.5, "thermal_conductivity": None, "max_temperature": None},
+                # """https://www.matweb.com/search/datasheet.aspx?matguid=0619837e5f584a1f8c5e6f692952898a&"""
+
+            }
+        },
+
+        # Bobbin materials is based on these references:
+        # 1. https://www.cosmocorp.com/docs/en/cosmo-bcat-en-mdres.pdf
+        # 2. https://pearl-hifi.com/06_Lit_Archive/06_Mchy_Methods_Catalogues/Coil_Winding/Transformer_Bobbin_and_Core_Selection.pdf
+
+        "core_insulation": {
+            "bobbins": {
+                "Thermoplastic": {
+                    "Polyamide (Nylon 66)": {
+                        "dielectric_constant": 3.8,
+                        "thermal_conductivity": 0.25,
+                        "max_temperature": 130
+                    },
+                    "Polybutylene Terephthalate (PBT)": {
+                        "dielectric_constant": 3.7,
+                        "thermal_conductivity": 0.25,
+                        "max_temperature": 155
+                    },
+                    "Polyphenylene Sulfide (PPS)": {
+                        "dielectric_constant": 3.8,
+                        "thermal_conductivity": 0.30,
+                        "max_temperature": 200
+                    },
+                    "Liquid Crystal Polymer (LCP)": {
+                        "dielectric_constant": 3.6,
+                        "thermal_conductivity": 0.50,
+                        "max_temperature": 240
+                    },
+                    "Polyethylene Terephthalate (PET)": {
+                        "dielectric_constant": 3.6,
+                        "thermal_conductivity": 0.15,
+                        "max_temperature": 150
+                    }
+                },
+                "Thermoset": {
+                    "Diallyl Phthalate (DAP)": {
+                        "dielectric_constant": 4.4,
+                        "thermal_conductivity": 0.20,
+                        "max_temperature": 200
+                    },
+                    "Phenolic": {
+                        "dielectric_constant": 4.5,
+                        "thermal_conductivity": 0.20,
+                        "max_temperature": 220
+                    }
+                }
+            }
+        },
+
+        # The kapton has different types, but the dielectric constant is approximately around 3.4-3.5
+        # Reference: https://www.dupont.com/content/dam/electronics/amer/us/en/electronics/public/documents/en/EI-10167-Kapton-General-Specifications.pdf
+        "film_insulation": {
+            "Kapton": {
+                "dielectric_constant": 3.5,
+                "thermal_conductivity": None,
+                "max_temperature": None,
+            },
+            "Nomex 410": {
+                "dielectric_constant": 1.6,
+                "thermal_conductivity": None,
+                "max_temperature": None,
+            },
+            "Mylar": {
+                "dielectric_constant": 3.2,
+                "thermal_conductivity": None,
+                "max_temperature": None,
+            },
+            "PET / bOPET": {
+                "dielectric_constant": 3.3,
+                "thermal_conductivity": None,
+                "max_temperature": None,
+            },
+            "PVC Tape": {
+                "dielectric_constant": 4.0,
+                "max_temperature": None,
+                "thermal_conductivity": None
+            }
+        }
+    }
+
+    return insulation_materials
 
 
 def litz_database() -> dict:
@@ -1777,6 +2103,513 @@ def hysteresis_current_excitation(input_time_current_vectors: list[list[list[flo
         hyst_phases_deg.append(
             fr.phases_deg_from_time_current(time_current_vector[0], time_current_vector[1])[0])
     return hyst_frequency, hyst_current_amplitudes, hyst_phases_deg
+
+def get_defined_potentials(component_type: str) -> list[list[float]]:
+    """
+    Define of  different potentials to be applied in the simulation.
+
+     It is needed to save the energies with every simulation based on the number of the capacitors in the equivalent
+     circuit and to calculate the voltage matrix.
+
+    :param component_type : the type of the component to be solved
+    :type component_type: str
+    """
+    if component_type == 'inductor':
+        return [[1, 0, 0],  # Scenario 1
+                [1, 1, 0],  # Scenario 2
+                [1, 0, 1]]  # Scenario 3
+    if component_type == 'transformer':
+        return [[1, 0, 0, 0],  # Simulation 1
+                [0, 0, 1, 0],  # Simulation 2
+                [0, 0, 1, 1],  # Simulation 3
+                [1, 1, 1, 1],  # Simulation 4
+                [1, 0, 1, 0],  # Simulation 5
+                [1, 0, 1, 1],  # Simulation 6
+                [2, 1, 1, 1],  # Simulation 7
+                [0, 0, 2, 1],  # Simulation 8
+                [1, 1, 2, 1],  # Simulation 9
+                [1, 1, 2, 2]]  # Simulation 10
+    else:
+        raise ValueError(f"Unknown component_type: {component_type}")
+
+def generate_voltage_matrix(component_type: str, potentials: list[list[float]], flip_the_sec_terminal: bool = False) -> np.ndarray:
+    r"""
+    Generate the voltage matrix from the potentials.
+
+    W = 0.5 (M^2) * C. M represents the voltage matrix derived from the applied potentials.
+    Equivalent circuit of inductor:
+    A--.------.---A
+           |      |
+           |      |
+    v_1    |      c1
+           |      |
+           |      |
+    B--|------.---B
+       |      |
+    v_2   c2     c3
+       |      |
+    E--.-----.----E
+    Equivalent circuit of transformer:
+    A--.------.-----c4--------.------.------C
+       |      |  \          / |      |
+       |      |    c5   c6    |      |
+    v1 |      c1     \/       c2     |      v2
+       |      |     /    \    |      |
+       |      |  /         \  |      |
+    B--|------.-----c3--------.------|------D
+       |      |       v3      |      |
+       c7     c8 v4          c10    c9
+       |      |               |      |
+    E--.-----.-----------------------.------E
+
+    :param component_type : the type of the component to be solved.
+    :type component_type: str
+    :param potentials: list of potentials
+    :type potentials: list[list[float]]
+    :param flip_the_sec_terminal: flip the sec voltage. v2 will be negative.
+    :type flip_the_sec_terminal: bool
+    """
+    diffs = []
+    for vs in potentials:
+        if component_type == 'inductor':
+            a, b, e = vs
+            # Potentials are a, b, e, where the voltage matrix is derived from these potentials.
+            diffs.append([a - b,
+                          a - e,
+                          b - e])
+        elif component_type == 'transformer':
+            # Core is always grounded
+            # a, b, c, d are potentials (terminals). The voltage matrix is derived from these potentials.
+            # see the equivalent circuit of transformer in the description
+            e = 0
+            a, b, c, d = vs
+            if not flip_the_sec_terminal:
+                diffs.append([a - b,
+                              c - d,
+                              d - b,
+                              a - b - (d - b) - (c - d),
+                              d - b + c - d,
+                              a - b - (d - b),
+                              a - b + b - e,
+                              b - e,
+                              c - d + d - b + b - e,
+                              d - b + b - e
+                              ])
+            elif flip_the_sec_terminal:
+                diffs.append([a - b,
+                              d - c,
+                              d - b,
+                              a - b - (d - b) - (d - c),
+                              d - b + d - c,
+                              a - b - (d - b),
+                              a - b + b - e,
+                              b - e,
+                              d - c + d - b + b - e,
+                              d - b + b - e
+                              ])
+
+    return np.array(diffs)
+
+def solve_capacitance(m: np.ndarray, energies: np.ndarray) -> np.ndarray:
+    """
+    Solve the capacitance from the voltage matrix and the energy matrix saved from the simulation.
+
+    :param m: voltage matrix
+    :type: array
+    :param energies: energies solved from the simulations
+    :type energies: byte array
+    """
+    m_squared = m ** 2
+    if np.isclose(np.linalg.det(m_squared), 0):
+        raise ValueError("Singular matrix!")
+    return (2 * np.linalg.inv(m_squared) @ energies.reshape(-1, 1)).flatten()
+
+def distribute_potential_linearly(v_start: float, v_end: float, num_turns: int) -> list[float]:
+    """
+    Linearly distribute potentials between v_start and v_end over the turns.
+
+    :param v_start: the voltage on the first turn
+    :type v_start: float
+    :param v_end: the voltage on the last turn
+    :type v_end: float
+    :param num_turns: number of turns
+    :type num_turns: int
+    """
+    if v_start == v_end or num_turns == 1:
+        return [v_start] * num_turns
+    return [v_start + (v_end - v_start) * j / (num_turns - 1) for j in range(num_turns)]
+
+def get_open_circuit_capacitance(c_vec: np.ndarray, num_turns_w1: int, num_turns_w2: int) -> float:
+    """
+    Get the capacitance when the secondary is open.
+
+    :param c_vec: the calculated capacitance from the simulation.
+    :type c_vec: byte array
+    :param num_turns_w1: number of turns of the first winding
+    :type num_turns_w1: int
+    :param num_turns_w2: number of turns of the second winding
+    :type num_turns_w2: int
+    """
+    c_1, c_2, c_3, c_4, c_5, c_6, c_7, c_8, c_9, c_10 = c_vec
+    n_sym = num_turns_w1 / num_turns_w2
+    den = c_3 * c_7 + c_3 * c_8 + c_4 * c_7 + c_3 * c_9 + c_4 * c_8 + c_5 * c_7 + c_3 * c_10 + c_4 * c_9 + \
+        c_5 * c_8 + c_6 * c_7 + c_4 * c_10 + c_5 * c_9 + c_6 * c_8 + c_5 * c_10 + c_6 * c_9 + c_6 * c_10 + \
+        c_7 * c_9 + c_7 * c_10 + c_8 * c_9 + c_8 * c_10
+
+    num1 = (c_2 * c_3 * c_7 + c_2 * c_3 * c_8 + c_2 * c_4 * c_7 + c_2 * c_3 * c_9 + c_2 * c_4 * c_8 + c_2 * c_5 * c_7 + c_3 * c_4 * c_7 + c_2 * c_3 * c_10 + \
+            c_2 * c_4 * c_9 + c_2 * c_5 * c_8 + c_2 * c_6 * c_7 + c_3 * c_4 * c_8 + c_3 * c_5 * c_7 + c_2 * c_4 * c_10 + c_2 * c_5 * c_9 + c_2 * c_6 * c_8 + \
+            c_3 * c_4 * c_9 + c_3 * c_5 * c_8 + c_2 * c_5 * c_10 + c_2 * c_6 * c_9 + c_3 * c_4 * c_10 + c_3 * c_5 * c_9 + c_4 * c_6 * c_7 + \
+            c_2 * c_6 * c_10 + c_2 * c_7 * c_9 + c_3 * c_5 * c_10 + c_4 * c_6 * c_8 + c_5 * c_6 * c_7 + c_2 * c_7 * c_10 + c_2 * c_8 * c_9 + \
+            c_3 * c_7 * c_9 + c_4 * c_6 * c_9 + c_5 * c_6 * c_8 + c_2 * c_8 * c_10 + c_3 * c_8 * c_9 + c_4 * c_6 * c_10 + c_5 * c_6 * c_9 + \
+            c_4 * c_7 * c_10 + c_5 * c_6 * c_10 + c_3 * c_9 * c_10 + c_4 * c_8 * c_10 + c_5 * c_7 * c_10 + c_6 * c_7 * c_9 + c_4 * c_9 * c_10 + \
+            c_5 * c_8 * c_10 + c_6 * c_8 * c_9 + c_5 * c_9 * c_10 + c_6 * c_9 * c_10 + c_7 * c_9 * c_10 + c_8 * c_9 * c_10) * n_sym ** 2
+
+    num2 = (-2 * c_3 * c_4 * c_7 - 2 * c_3 * c_4 * c_8 - 2 * c_3 * c_4 * c_9 - 2 * c_3 * c_4 * c_10 + 2 * c_5 * c_6 * c_7 + 2 * c_3 * c_7 * c_9 - \
+            2 * c_5 * c_6 * c_8 - 2 * c_5 * c_6 * c_9 - 2 * c_5 * c_6 * c_10 + 2 * c_4 * c_8 * c_10 - 2 * c_5 * c_7 * c_10 - 2 * c_6 * c_8 * c_9) * n_sym
+
+    num3 = (c_1 * c_3 * c_7 + c_1 * c_3 * c_8 + c_1 * c_4 * c_7 + c_1 * c_3 * c_9 + c_1 * c_4 * c_8 + c_1 * c_5 * c_7 + c_1 * c_3 * c_10 + c_1 * c_4 * c_9 + \
+            c_1 * c_5 * c_8 + c_1 * c_6 * c_7 + c_3 * c_4 * c_7 + c_1 * c_4 * c_10 + c_1 * c_5 * c_9 + c_1 * c_6 * c_8 + c_3 * c_4 * c_8 + c_1 * c_5 * c_10 + \
+            c_1 * c_6 * c_9 + c_3 * c_4 * c_9 + c_3 * c_6 * c_7 + c_4 * c_5 * c_7 + c_1 * c_6 * c_10 + c_1 * c_7 * c_9 + c_3 * c_4 * c_10 + c_3 * c_6 * c_8 + \
+            c_4 * c_5 * c_8 + c_1 * c_7 * c_10 + c_1 * c_8 * c_9 + c_3 * c_6 * c_9 + c_3 * c_7 * c_8 + c_4 * c_5 * c_9 + c_5 * c_6 * c_7 + c_1 * c_8 * c_10 + \
+            c_3 * c_6 * c_10 + c_3 * c_7 * c_9 + c_4 * c_5 * c_10 + c_4 * c_7 * c_8 + c_5 * c_6 * c_8 + c_3 * c_7 * c_10 + c_5 * c_6 * c_9 + c_5 * c_7 * c_8 + \
+            c_4 * c_8 * c_9 + c_5 * c_6 * c_10 + c_5 * c_7 * c_9 + c_6 * c_7 * c_8 + c_4 * c_8 * c_10 + c_5 * c_7 * c_10 + c_6 * c_8 * c_9 + \
+            c_6 * c_8 * c_10 + c_7 * c_8 * c_9 + c_7 * c_8 * c_10)
+    return (num1 - num2 + num3) / den
+
+def get_short_circuit_capacitance(c_vec: np.ndarray) -> float:
+    """
+    Get the capacitance when the secondary is shorted.
+
+    :param c_vec: the calculated capacitance from the simulation.
+    :type c_vec: byte array
+    """
+    c_1, c_2, c_3, c_4, c_5, c_6, c_7, c_8, c_9, c_10 = c_vec
+    num = c_3 * c_4 * c_7 + c_3 * c_4 * c_8 + c_3 * c_4 * c_9 + c_3 * c_6 * c_7 + c_4 * c_5 * c_7 + c_3 * c_4 * c_10 + \
+        c_3 * c_6 * c_8 + c_4 * c_5 * c_8 + c_3 * c_6 * c_9 + c_3 * c_7 * c_8 + c_4 * c_5 * c_9 + c_5 * c_6 * c_7 + \
+        c_3 * c_6 * c_10 + c_3 * c_7 * c_9 + c_4 * c_5 * c_10 + c_4 * c_7 * c_8 + c_5 * c_6 * c_8 + c_3 * c_7 * c_10 + \
+        c_5 * c_6 * c_9 + c_5 * c_7 * c_8 + c_4 * c_8 * c_9 + c_5 * c_6 * c_10 + c_5 * c_7 * c_9 + c_6 * c_7 * c_8 + \
+        c_4 * c_8 * c_10 + c_5 * c_7 * c_10 + c_6 * c_8 * c_9 + c_6 * c_8 * c_10 + c_7 * c_8 * c_9 + c_7 * c_8 * c_10
+    den = c_3 * c_7 + c_3 * c_8 + c_4 * c_7 + c_3 * c_9 + c_4 * c_8 + c_5 * c_7 + c_3 * c_10 + c_4 * c_9 + c_5 * c_8 + \
+        c_6 * c_7 + c_4 * c_10 + c_5 * c_9 + c_6 * c_8 + c_5 * c_10 + c_6 * c_9 + c_6 * c_10 + c_7 * c_9 + c_7 * c_10 + \
+        c_8 * c_9 + c_8 * c_10
+    c_sim_short = (c_1 + (num / den))
+    return c_sim_short
+
+def compare_and_plot_connection_capacitance_of_transformer(c_vec: np.ndarray, measured_capacitance: list[float | None] | None = None, show_plot: bool = True):
+    """
+    Compare the connection capacitance applied in the measurement. The capacitors C1,...C10 can not be compared directly to the measurement results.
+
+    For every connection, we look to the behavior of the equivalent circuit. For example; AB vs CDE will result in C3 + C4 + C5 + C6 + C7 + C8
+    :param c_vec: the calculated capacitance from the simulation.
+    :type c_vec: byte array
+    :param measured_capacitance: represent the measured capacitance of all the connections
+    :type measured_capacitance: list[float | None]
+    :param show_plot: to show the comparison between the simulation and measurement results in a figure.
+    :type show_plot: bool
+    """
+    connection_keys = [
+        'C_ABvsCDE', 'C_ABCDvsE', 'C_ABEvsCD', 'C_AvsBCDE', 'C_BvsACDE',
+        'C_CvsABDE', 'C_DvsABCE', 'C_ACvsBDE', 'C_ADvsBCE', 'C_BC_ADE'
+    ]
+    connection_sums = {
+        'C_ABvsCDE': lambda C: C[2] + C[3] + C[4] + C[5] + C[6] + C[7],
+        'C_ABCDvsE': lambda C: C[6] + C[7] + C[8] + C[9],
+        'C_ABEvsCD': lambda C: C[2] + C[3] + C[4] + C[5] + C[8] + C[9],
+        'C_AvsBCDE': lambda C: C[0] + C[3] + C[5] + C[6],
+        'C_BvsACDE': lambda C: C[0] + C[2] + C[4] + C[7],
+        'C_CvsABDE': lambda C: C[1] + C[3] + C[4] + C[8],
+        'C_DvsABCE': lambda C: C[1] + C[2] + C[5] + C[9],
+        'C_ACvsBDE': lambda C: C[0] + C[1] + C[4] + C[5] + C[6] + C[8],
+        'C_ADvsBCE': lambda C: C[0] + C[1] + C[2] + C[3] + C[6] + C[9],
+        'C_BC_ADE': lambda C: C[0] + C[1] + C[2] + C[3] + C[7] + C[8],
+    }
+
+    if measured_capacitance is not None:
+        if len(measured_capacitance) != 10:
+            raise ValueError("measured_capacitances must be a sequence of 10 numbers (float or None).")
+
+        # build simulated connection sums
+        sim_sums = [connection_sums[k](c_vec) for k in connection_keys]
+
+        logger.info("\n---  Simulated vs Measured Capacitance  (pF) -------------")
+        logger.info(f"{'Connection':<12}{'Measured':>12}{'Simulated':>12}{'Error %':>10}")
+        logger.info("-" * 46)
+
+        # prepare data for optional plot
+        idx_used, meas_pf_used, calc_pf_used, ratio_used = [], [], [], []
+
+        for i, (k, meas, sim) in enumerate(zip(connection_keys,
+                                               measured_capacitance,
+                                               sim_sums)):
+            sim_pf = sim * 1e12
+            if meas is None or (isinstance(meas, float) and np.isnan(meas)):
+                logger.info(f"{k:<12}{'---':>12}{sim_pf:12.2f}{'---':>10}")
+                # still plot simulated value
+                idx_used.append(i)
+                meas_pf_used.append(None)
+                calc_pf_used.append(sim_pf)
+                ratio_used.append(None)
+            else:
+                meas_pf = meas * 1e12
+                error_percentage = 100 * (sim - meas) / meas
+                logger.info(f"{k:<12}{meas_pf:12.2f}{sim_pf:12.2f}{error_percentage:10.2f}")
+
+                idx_used.append(i)
+                meas_pf_used.append(meas_pf)
+                calc_pf_used.append(sim_pf)
+                ratio_used.append(sim_pf / meas_pf)
+
+        if show_plot:
+
+            idx = np.arange(10)
+            plt.figure(figsize=(14, 6))
+
+            # plot all simulated points
+            plt.scatter(idx, [s for s in calc_pf_used],
+                        label="Simulated", color="C0", marker="o")
+
+            # plot only measured values that exist
+            idx_meas = [i for i, m in zip(idx_used, meas_pf_used) if m is not None]
+            meas_pf_ok = [m for m in meas_pf_used if m is not None]
+            plt.scatter(idx_meas, meas_pf_ok,
+                        label="Measured", color="C3", marker="x")
+
+            # annotate ratio where both values exist
+            for i, sim_pf, ratio in zip(idx_used, calc_pf_used, ratio_used):
+                if ratio is not None:
+                    plt.text(i, sim_pf, f"{ratio:.2f}×",
+                             ha="center", va="bottom", fontsize=8)
+
+            label_txt = [k.replace('vs', ' vs ') for k in connection_keys]
+            plt.xticks(idx, label_txt, rotation=45, ha="right")
+            plt.xlabel("Capacitance Connections")
+            plt.ylabel("Capacitance / pF]")
+            plt.title("Simulated vs Measured Capacitance")
+            plt.grid(True, linestyle=":")
+            plt.legend()
+            plt.tight_layout()
+            plt.show()
+
+def plot_open_and_short_comparison(c_sim_open: float, c_sim_short: float, c_meas_open: float | None, c_meas_short: float | None):
+    """
+    Plot horizontal bar comparison for open-circuit capacitance and short-circuit capacitance.
+
+    :param c_sim_open: simulated open‑circuit capacitance (F)
+    :param c_sim_short: simulated short‑circuit capacitance (F)
+    :param c_meas_open: measured open‑circuit capacitance (F) or None
+    :param c_meas_short: measured short‑circuit capacitance (F) or None
+    """
+    labels, sim_bar, meas_bar = [], [], []
+    if c_meas_open is not None:
+        labels.append("A‑B  (CD open)")
+        sim_bar.append(c_sim_open * 1e12)
+        meas_bar.append(c_meas_open * 1e12)
+    if c_meas_short is not None:
+        labels.append("A‑B  (CD short)")
+        sim_bar.append(c_sim_short * 1e12)
+        meas_bar.append(c_meas_short * 1e12)
+
+    if not labels:
+        return  # nothing to plot
+
+    y = np.arange(len(labels))
+    h = 0.3
+    plt.figure(figsize=(10, 3.5))
+    plt.barh(y - h/2, sim_bar, height=h, color='tab:blue', label="Simulated")
+    plt.barh(y + h/2, meas_bar, height=h, color='tab:red', label="Measured")
+
+    for i, (s, m) in enumerate(zip(sim_bar, meas_bar)):
+        if m != 0:
+            plt.text(s * 1.01, i - h/2, f"{s/m:.2f}×", va='center', fontsize=9, color='blue')
+
+    plt.yticks(y, labels)
+    plt.xlabel("Capacitance / pF")
+    plt.grid(axis='x', linestyle='--', alpha=0.6)
+    plt.title("Simulated vs Measured Open / Short Capacitance")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+
+def close_excel_file_if_open(filepath):
+    """
+    Close the specified Excel file if it is currently open.
+
+    :param filepath: The path to the Excel file to close.
+    :type filepath: str
+    """
+    # Get the absolute path
+    filepath = os.path.abspath(filepath)
+
+    try:
+        excel = win32com.client.Dispatch("Excel.Application")
+        for workbook in excel.Workbooks:
+            if workbook.FullName.lower() == filepath.lower():
+                workbook.Close(SaveChanges=False)
+                return
+        excel.Quit()
+    except Exception as e:
+        print(f"Unable to close Excel. Error: {e}")
+
+def json_to_excel(json_file_path: str, output_excel_path: str) -> None:
+    """
+    Extract data from the electrostatic simulation and write it into a log file.
+
+    :param json_file_path: Path to the JSON input file containing simulation results.
+    :type json_file_path: str
+    :param output_excel_path: Path where the Excel (.xlsx) file will be saved.
+    :type output_excel_path: str
+    """
+    # Trying to close the Excel file if it's open
+    close_excel_file_if_open(output_excel_path)
+    # Load the JSON data from the file
+    with open(json_file_path, 'r') as json_file:
+        data = json.load(json_file)
+
+    # Prepare the different data sections
+    charges_data = []
+    energy_data = []
+    average_voltages_data = []
+    capacitances_within_data = []
+    capacitances_between_data = []
+    capacitances_between_turns_core_data = []
+
+    # Extract charges
+    charge_value = data.get("charges", None)
+    if charge_value is not None:
+        charges_data.append({"Charge Type": "Total Charge", "Value (Coulombs)": charge_value})
+
+    # Extract energy
+    for key, value in data.get("energy", {}).items():
+        energy_data.append({"Energy Type": key, "Value (Joules)": value})
+
+    # Extract average voltages
+    for region, voltage in data.get("average_voltages", {}).items():
+        average_voltages_data.append({"Region": region, "Average Voltage (V)": voltage})
+
+    # Extract capacitance within windings
+    for winding, turns in data.get("capacitances", {}).get("within_winding", {}).items():
+        for turn, connections in turns.items():
+            for target_turn, capacitance_value in connections.items():
+                capacitances_within_data.append({
+                    "Winding": winding,
+                    "Turn": turn,
+                    "To Turn": target_turn,
+                    "Capacitance (F)": capacitance_value
+                })
+
+    # Extract capacitance between windings
+    for winding1, windings in data.get("capacitances", {}).get("between_windings", {}).items():
+        for winding2, turns in windings.items():
+            for turn1, connections in turns.items():
+                for turn2, capacitance_value in connections.items():
+                    capacitances_between_data.append({
+                        "Winding 1": winding1,
+                        "Turn 1": turn1,
+                        "Winding 2": winding2,
+                        "Turn 2": turn2,
+                        "Capacitance (F)": capacitance_value
+                    })
+    # Extract capacitance between turns and core
+    for winding, turns in data.get("capacitances", {}).get("between_turns_core", {}).items():
+        for turn, capacitance_value in turns.items():
+            capacitances_between_turns_core_data.append({
+                "Winding": winding,
+                "Turn": turn,
+                "Capacitance to Core (F)": capacitance_value
+            })
+
+    # Create DataFrames for each section
+    charges_df = pd.DataFrame(charges_data)
+    energy_df = pd.DataFrame(energy_data)
+    average_voltages_df = pd.DataFrame(average_voltages_data)
+    capacitances_within_df = pd.DataFrame(capacitances_within_data)
+    capacitances_between_df = pd.DataFrame(capacitances_between_data)
+    capacitances_between_turns_core_df = pd.DataFrame(capacitances_between_turns_core_data)
+
+    # Write to Excel file with multiple sheets
+    with pd.ExcelWriter(output_excel_path) as writer:
+        if not charges_df.empty:
+            charges_df.to_excel(writer, sheet_name='Charges', index=False)
+            worksheet = writer.sheets['Charges']
+            worksheet.set_column('A:B', 30)
+        if not energy_df.empty:
+            energy_df.to_excel(writer, sheet_name='Energy', index=False)
+            worksheet = writer.sheets['Energy']
+            worksheet.set_column('A:B', 30)
+        if not average_voltages_df.empty:
+            average_voltages_df.to_excel(writer, sheet_name='Average_Voltages', index=False)
+            worksheet = writer.sheets['Average_Voltages']
+            worksheet.set_column('A:E', 30)
+        if not capacitances_within_df.empty:
+            capacitances_within_df.to_excel(writer, sheet_name='Capacitances_Within', index=False)
+            worksheet = writer.sheets['Capacitances_Within']
+            worksheet.set_column('A:D', 30)
+        if not capacitances_between_df.empty:
+            capacitances_between_df.to_excel(writer, sheet_name='Capacitances_Between', index=False)
+            worksheet = writer.sheets['Capacitances_Between']
+            worksheet.set_column('A:E', 30)
+        if not capacitances_between_turns_core_df.empty:
+            capacitances_between_turns_core_df.to_excel(writer, sheet_name='Turns_Core', index=False)
+            worksheet = writer.sheets['Turns_Core']
+            worksheet.set_column('A:C', 30)
+
+def compare_excel_files(femmt_excel_path: str, femm_excel_path: str, comparison_output_path: str) -> None:
+    """
+    Compare two Excel files (FEMMT and FEMM) and generate a new Excel file with comparison results.
+
+    This function loads two Excel files, one generated by FEMMT and the other by FEMM, compares the data across
+    all common sheets, and calculates the differences between corresponding values. The results include:
+    - Absolute Difference
+    - Relative Error
+    - Relative Error Percentage
+
+    The comparison is saved into a new Excel file, with each comparison in a separate sheet named after
+    the original sheet with the "_Comparison" suffix.
+
+    :param femmt_excel_path: Path to the Excel file generated by FEMMT.
+    :type femmt_excel_path: str
+    :param femm_excel_path: Path to the Excel file generated by FEMM.
+    :type femm_excel_path: str
+    :param comparison_output_path: Path to save the resulting comparison Excel file.
+    :type comparison_output_path: str
+    """
+    # Trying to close the Excel file if it's open
+    close_excel_file_if_open(comparison_output_path)
+    # Load both Excel files, get all sheets
+    femmt_sheets = pd.read_excel(femmt_excel_path, sheet_name=None)
+    femm_sheets = pd.read_excel(femm_excel_path, sheet_name=None)
+
+    # Define sheets to compare
+    sheets_to_compare = femmt_sheets.keys()
+
+    # Create an Excel writer for the output
+    with pd.ExcelWriter(comparison_output_path, engine='xlsxwriter') as writer:
+        # Iterate through each sheet to compare
+        for sheet_name in sheets_to_compare:
+            if sheet_name in femm_sheets:
+                # Load DataFrames for the current sheet
+                femmt_df = femmt_sheets[sheet_name]
+                femm_df = femm_sheets[sheet_name]
+                # Rename columns (FEMMT and FEMM)
+                femmt_df.columns = [f"{col}_FEMMT" for col in femmt_df.columns]
+                femm_df.columns = [f"{col}_FEMM" for col in femm_df.columns]
+
+                # Concatenate both DataFrames side by side
+                comparison_df = pd.concat([femmt_df, femm_df], axis=1)
+
+                # Calculating difference, relative error, and relative error in percentage for columns
+                for femmt_col, femm_col in zip(femmt_df.columns, femm_df.columns):
+                    col_name = femmt_col.replace("_FEMMT", "")
+                    if np.issubdtype(comparison_df[femmt_col].dtype, np.number) and np.issubdtype(comparison_df[femm_col].dtype, np.number):
+                        comparison_df[f"{col_name}_Difference"] = comparison_df[femmt_col] - comparison_df[femm_col]
+                        comparison_df[f"{col_name}_Relative_Error"] = comparison_df[f"{col_name}_Difference"] / comparison_df[femmt_col].replace(0, np.nan)
+                        comparison_df[f"{col_name}_Error_Percent"] = comparison_df[f"{col_name}_Relative_Error"] * 100
+
+                # Writing to the Excel output file
+                comparison_df.to_excel(writer, sheet_name=f"{sheet_name}_Comparison", index=False)
+                worksheet = writer.sheets[f"{sheet_name}_Comparison"]
+                worksheet.set_column('A:Z', 35)
 
 
 if __name__ == '__main__':
