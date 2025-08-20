@@ -2609,7 +2609,7 @@ def test_load_files(temp_folder: pytest.fixture, fixture_inductor_core_material_
 ##############################
 
 
-def test_basic_examples(temp_folder: pytest.fixture):
+def test_basic_example_inductor(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
     
