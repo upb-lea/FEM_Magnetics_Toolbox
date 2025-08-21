@@ -1,5 +1,5 @@
 // ----------------------
-Include "Parameter.pro";
+Include "ElectrostaticParameter.pro";
 Include "postquantities.pro";
 // All Variables - remove or create in python
 // ----------------------
@@ -180,7 +180,7 @@ Function {
   SurfCore[] = SurfaceArea[]{CORE_PN} ;
   // Materials
   er_air = 1;
-  er_core = 100000;
+  er_core = er_core;
   //er_cond_insulation = 3;
   For n In {1:n_windings}
       epsilon[#{Cond_Insulation~{n}}] = e0 * er_turns_insulation~{n};
