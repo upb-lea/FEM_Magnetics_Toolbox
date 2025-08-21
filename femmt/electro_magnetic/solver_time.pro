@@ -127,14 +127,6 @@ Formulation {
       // Nabla x ( 1/mu Nabla x A)
       Galerkin { [ nu[{d a}] * Dof{d a}  , {d a} ] ;
         In Domain ; Jacobian Vol ; Integration II ; }
-      //Galerkin { [ nu[Norm[{d a}], Freq] * Dof{d a} , {d a} ]  ;
-        //In Domain_Lin ; Jacobian Vol ; Integration II ; }
-      If(Flag_NL)
-        Galerkin { [ nu[{d a}, Freq] * Dof{d a} , {d a} ]  ;
-          In Domain_NonLin ; Jacobian Vol ; Integration II ; }
-        Galerkin { JacNL [ dhdb_NL[{d a}] * Dof{d a} , {d a} ] ;
-          In Domain_NonLin ; Jacobian Vol ; Integration II ; }
-      EndIf
 
       // sigma d/dt A
       // technical current direction can be applied with neg. sigma (right hand rule)

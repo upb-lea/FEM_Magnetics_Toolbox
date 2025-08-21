@@ -172,9 +172,9 @@ class Mesh:
         self.plane_surface_cond = []
         for _ in range(len(self.windings)):
             self.plane_surface_cond.append([])
-        if self.core.core_type == CoreType.Single:
+        if self.core.geometry.core_type == CoreType.Single:
             self.plane_surface_air = []
-        elif self.core.core_type == CoreType.Stacked:
+        elif self.core.geometry.core_type == CoreType.Stacked:
             self.plane_surface_air_top = []
             self.plane_surface_air_bot = []
         self.plane_surface_outer_air = []
@@ -235,13 +235,13 @@ class Mesh:
 
         # [1]
         p_core.append(gmsh.model.geo.addPoint(0,
-                                              -self.core.core_h_center_leg / 2,
+                                              -self.core.geometry.core_h_center_leg / 2,
                                               self.model.p_outer[1][2],
                                               self.model.p_outer[1][3]))
 
         # [2]
-        p_core.append(gmsh.model.geo.addPoint(self.model.core.core_inner_diameter / 2,
-                                              -self.core.core_h_center_leg / 2,
+        p_core.append(gmsh.model.geo.addPoint(self.model.core.geometry.core_inner_diameter / 2,
+                                              -self.core.geometry.core_h_center_leg / 2,
                                               self.model.p_outer[1][2],
                                               self.model.p_outer[1][3]))
 
@@ -258,14 +258,14 @@ class Mesh:
                                               self.model.p_outer[3][3]))
 
         # [5]
-        p_core.append(gmsh.model.geo.addPoint(self.model.core.core_inner_diameter / 2,
-                                              self.core.core_h_center_leg / 2,
+        p_core.append(gmsh.model.geo.addPoint(self.model.core.geometry.core_inner_diameter / 2,
+                                              self.core.geometry.core_h_center_leg / 2,
                                               self.model.p_outer[1][2],
                                               self.model.p_outer[1][3]))
 
         # [6]
         p_core.append(gmsh.model.geo.addPoint(0,
-                                              self.core.core_h_center_leg / 2,
+                                              self.core.geometry.core_h_center_leg / 2,
                                               self.model.p_outer[3][2],
                                               self.model.p_outer[3][3]))
 
@@ -546,13 +546,13 @@ class Mesh:
 
         # 9 top right
         p_core.append(gmsh.model.geo.addPoint(self.model.p_outer[3][0],
-                                              self.model.p_outer[3][1] + self.core.window_h_top + self.core.core_thickness,
+                                              self.model.p_outer[3][1] + self.core.geometry.window_h_top + self.core.geometry.core_thickness,
                                               self.model.p_outer[3][2],
                                               self.model.p_outer[1][3]))  # TODO accuracy of mesh
 
         # 10 top left
         p_core.append(gmsh.model.geo.addPoint(0,
-                                              self.model.p_outer[3][1] + self.core.window_h_top + self.core.core_thickness,
+                                              self.model.p_outer[3][1] + self.core.geometry.window_h_top + self.core.geometry.core_thickness,
                                               self.model.p_outer[3][2],
                                               self.model.p_outer[1][3]))  # TODO accuracy of mesh
 
@@ -1178,7 +1178,7 @@ class Mesh:
         Create the boundary of the simulation region.
 
         Default case is for air gaps in the inner core.
-        The else-case, for outer air gaps is unused for air gaps in the inner core.
+        The else-case, for outer air gaps is unused for air gaps in the inner core.geometry.
 
         :param p_core: points of the core
         :type p_core: list
@@ -1192,7 +1192,7 @@ class Mesh:
         :type l_region: list
         """
         # Boundary
-        if self.core.core_type == CoreType.Single:
+        if self.core.geometry.core_type == CoreType.Single:
             if self.region is None:
                 # For inner air gaps.
                 self.l_bound_tmp = l_bound_core[:7]
@@ -1254,7 +1254,7 @@ class Mesh:
                 curve_loop_outer_air = gmsh.model.geo.addCurveLoop(l_region + l_bound_core[1:4])
                 self.plane_surface_outer_air.append(gmsh.model.geo.addPlaneSurface([curve_loop_outer_air]))
 
-        elif self.core.core_type == CoreType.Stacked:
+        elif self.core.geometry.core_type == CoreType.Stacked:
             if self.region is None:
                 self.l_bound_tmp = l_bound_core[:8]
                 for i in range(len(l_bound_air)):
@@ -1290,11 +1290,11 @@ class Mesh:
                                     recursive=True)
 
         # air/potting-material inside core window
-        if self.model.core.core_type == CoreType.Single:
+        if self.model.core.geometry.core_type == CoreType.Single:
             gmsh.model.setColor([(2, self.plane_surface_air[0])], color_scheme[colors_geometry["potting_inner"]][0],
                                 color_scheme[colors_geometry["potting_inner"]][1], color_scheme[colors_geometry["potting_inner"]][2],
                                 recursive=True)
-        elif self.model.core.core_type == CoreType.Stacked:
+        elif self.model.core.geometry.core_type == CoreType.Stacked:
             gmsh.model.setColor([(2, self.plane_surface_air_bot[0])], color_scheme[colors_geometry["potting_inner"]][0],
                                 color_scheme[colors_geometry["potting_inner"]][1], color_scheme[colors_geometry["potting_inner"]][2],
                                 recursive=True)
@@ -1321,7 +1321,7 @@ class Mesh:
                                     color_scheme[colors_geometry["winding"][winding_number]][2], recursive=True)
 
         # insulation color (inner insulation / bobbin)
-        if self.core.core_type == CoreType.Single and not self.stray_path:
+        if self.core.geometry.core_type == CoreType.Single and not self.stray_path:
             gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core],
                                 color_scheme[colors_geometry["insulation"]][0], color_scheme[colors_geometry["insulation"]][1],
                                 color_scheme[colors_geometry["insulation"]][2], recursive=True)
@@ -1384,11 +1384,11 @@ class Mesh:
         gmsh.model.add(os.path.join(self.e_m_mesh_file, "geometry"))
 
         # Define mesh for core
-        if self.core.core_type == CoreType.Single:
+        if self.core.geometry.core_type == CoreType.Single:
             self.single_core(p_core, p_island,
                              l_bound_core, l_core_air, l_bound_air, l_air_gaps_air,
                              curve_loop_island, curve_loop_air_gaps)
-        if self.core.core_type == CoreType.Stacked:
+        if self.core.geometry.core_type == CoreType.Stacked:
             self.modular_stacked_core(p_core, l_bound_core, l_core_air, l_bound_air, l_core_core)
         # Define mesh for conductors
         self.conductors(p_cond, l_cond, curve_loop_cond)
@@ -1411,10 +1411,10 @@ class Mesh:
         curve_loop_iso_cond = self.conductor_insulation(p_iso_cond, l_iso_cond, curve_loop_iso_cond)
 
         # Define mesh for air
-        if self.core.core_type == CoreType.Single:
+        if self.core.geometry.core_type == CoreType.Single:
             self.air_single(l_core_air, l_air_gaps_air, curve_loop_air, curve_loop_cond, curve_loop_iso_core, curve_loop_iso_top_core, curve_loop_iso_bot_core,
                             curve_loop_iso_cond, curve_loop_iso_layer)
-        if self.core.core_type == CoreType.Stacked:
+        if self.core.geometry.core_type == CoreType.Stacked:
             self.air_stacked(l_core_air, l_bound_air, curve_loop_cond, curve_loop_iso_top_core, curve_loop_iso_bot_core)
 
         # Define mesh for boundary
@@ -1527,7 +1527,7 @@ class Mesh:
 
         def set_physical_surface_air():
             if self.simulation_type == SimulationType.ElectroStatic:
-                if self.model.core.core_type == CoreType.Single:
+                if self.model.core.geometry.core_type == CoreType.Single:
                     # These three areas self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
                     # must be
                     air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps
@@ -1537,12 +1537,12 @@ class Mesh:
                     self.ps_layer_insulation = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_iso_layer, tag=self.PN_Insulation_Layer)
 
                     # ps_air_ext = gmsh.model.geo.addPhysicalGroup(2, plane_surface_outer_air, tag=1001)
-                elif self.model.core.core_type == CoreType.Stacked:
+                elif self.model.core.geometry.core_type == CoreType.Stacked:
                     air_total = self.plane_surface_air_bot + self.plane_surface_air_top + self.plane_surface_iso_top_core + self.plane_surface_iso_bot_core
                     self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_total, tag=self.PN_AIR)
                     # to do, after merging the branch into main, the insulation here should be defined
             else:
-                if self.model.core.core_type == CoreType.Single:
+                if self.model.core.geometry.core_type == CoreType.Single:
                     # These three areas self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
                     # must be
                     self.ps_insulation_cond = []
@@ -1553,7 +1553,7 @@ class Mesh:
                     air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps + surface_core_insulation + tags + self.plane_surface_iso_layer
                     self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_and_air_gaps, tag=self.PN_AIR)
                     # ps_air_ext = gmsh.model.geo.addPhysicalGroup(2, plane_surface_outer_air, tag=1001)
-                elif self.model.core.core_type == CoreType.Stacked:
+                elif self.model.core.geometry.core_type == CoreType.Stacked:
                     air_total = self.plane_surface_air_bot + self.plane_surface_air_top + self.plane_surface_iso_top_core + self.plane_surface_iso_bot_core
                     self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_total, tag=self.PN_AIR)
 
@@ -1561,7 +1561,7 @@ class Mesh:
 
         def set_physical_line_bound():
             if self.simulation_type == SimulationType.ElectroStatic:
-                if self.core.core_type == CoreType.Single:
+                if self.core.geometry.core_type == CoreType.Single:
                     values_to_exclude = [3, 4, 5, 6, 7]
                 elif self.core.core_type == CoreType.Stacked:
                     values_to_exclude = [2, 3, 4, 5, 6]
@@ -1648,7 +1648,7 @@ class Mesh:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
         # Create case around the core
-        if self.model.core.core_type == CoreType.Single:
+        if self.model.core.geometry.core_type == CoreType.Single:
 
             # Core point and line tags
             core_point_tags = []
@@ -1722,7 +1722,7 @@ class Mesh:
             bottom_case_curve_loop = gmsh.model.geo.addCurveLoop([bottom_case_bottom_line, bottom_case_left_line, bottom_right_case_left_line] + bottom_lines)
             bottom_case_surface = gmsh.model.geo.addPlaneSurface([bottom_case_curve_loop])
 
-        elif self.model.core.core_type == CoreType.Stacked:
+        elif self.model.core.geometry.core_type == CoreType.Stacked:
             # Core point and line tags
             core_point_tags = []
             core_line_tags = []
@@ -1840,20 +1840,17 @@ class Mesh:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # air and Air gaps
-        if self.model.core.core_type == CoreType.Single:
+        if self.model.core.geometry.core_type == CoreType.Single:
             self.ps_air = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air, tag=110000)
             self.ps_air_gaps = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air_gaps, tag=110001)
-        elif self.model.core.core_type == CoreType.Stacked:
-            # air_total = self.plane_surface_air_bot + self.plane_surface_air_top
-            # self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_total, tag=110000)
-            # self.ps_air_gaps = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air_gaps, tag=110001)
+        elif self.model.core.geometry.core_type == CoreType.Stacked:
             air_total = self.plane_surface_air_bot + self.plane_surface_air_top + self.plane_surface_air_gaps
             self.ps_air_gaps = gmsh.model.geo.addPhysicalGroup(2, air_total, tag=110001)
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # insulations
         # TODO Currently insulations can only have the same material
-        if self.model.core.core_type == CoreType.Single:
+        if self.model.core.geometry.core_type == CoreType.Single:
             if self.stray_path:
                 insulation_total = self.plane_surface_iso_top_core + self.plane_surface_iso_bot_core
                 self.ps_insulation = gmsh.model.geo.addPhysicalGroup(2, insulation_total)
@@ -1922,21 +1919,21 @@ class Mesh:
             gmsh.model.setColor([(2, self.plane_surface_core[i])], color_core[0], color_core[1], color_core[2], recursive=True)
 
         # air gap color
-        if self.model.core.core_type == CoreType.Single:
+        if self.model.core.geometry.core_type == CoreType.Single:
             # only colorize air-gap in case of air gaps
             if self.plane_surface_air_gaps:
                 gmsh.model.setColor([(2, self.plane_surface_air[0]), (2, self.plane_surface_air_gaps[0])], color_air_gap[0], color_air_gap[1],
                                     color_air_gap[2], recursive=True)
-        elif self.model.core.core_type == CoreType.Stacked:
+        elif self.model.core.geometry.core_type == CoreType.Stacked:
             # Stacked core: color both top and bottom air surfaces
             air_surfaces = self.plane_surface_air_top + self.plane_surface_air_bot
             for air_surface in air_surfaces:
                 gmsh.model.setColor([(2, air_surface)], color_air_gap[0], color_air_gap[1], color_air_gap[2], recursive=True)
 
         # air/potting-material inside core window
-        if self.model.core.core_type == CoreType.Single:
+        if self.model.core.geometry.core_type == CoreType.Single:
             gmsh.model.setColor([(2, self.plane_surface_air[0])], color_background[0], color_background[1], color_background[2], recursive=True)
-        elif self.model.core.core_type == CoreType.Stacked:
+        elif self.model.core.geometry.core_type == CoreType.Stacked:
             # For stacked core type - handle both top and bottom air surfaces
             air_surfaces = self.plane_surface_air_top + self.plane_surface_air_bot
             for air_surface in air_surfaces:
@@ -1952,7 +1949,7 @@ class Mesh:
                                     color_scheme[colors_geometry["winding"][color_index]][2], recursive=True)
 
         # insulation color (inner insulation / bobbin)
-        if self.model.core.core_type == CoreType.Single and not self.stray_path:
+        if self.model.core.geometry.core_type == CoreType.Single and not self.stray_path:
             gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core], color_insulation[0], color_insulation[1],
                                 color_insulation[2], recursive=True)
         else:
@@ -2139,7 +2136,7 @@ class Mesh:
                     continue
 
                 # Check if point is in stray_path, skip if yes
-                if self.component_type == ComponentType.IntegratedTransformer and self.core.core_type == CoreType.Single:
+                if self.component_type == ComponentType.IntegratedTransformer and self.core.geometry.core_type == CoreType.Single:
                     start_index = self.stray_path.start_index
                     stray_path_top_bound = self.air_gaps.midpoints[start_index + 1][1] - self.air_gaps.midpoints[start_index + 1][2] / 2
                     stray_path_bot_bound = self.air_gaps.midpoints[start_index][1] + self.air_gaps.midpoints[start_index][2] / 2
@@ -2185,7 +2182,7 @@ class Mesh:
 
             return air
 
-        if self.core.core_type == CoreType.Single:
+        if self.core.geometry.core_type == CoreType.Single:
             # Inter Conductors
             self.inter_conductor_meshing(p_cond)
 
@@ -2198,7 +2195,7 @@ class Mesh:
                             continue
                         gmsh.model.mesh.embed(0, air_tags, 2, self.plane_surface_air[0])
 
-        if self.core.core_type == CoreType.Stacked:
+        if self.core.geometry.core_type == CoreType.Stacked:
             # Inter Conductors
             self.inter_conductor_meshing(p_cond)
 

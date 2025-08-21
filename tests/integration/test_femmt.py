@@ -29,11 +29,10 @@ import femmt.examples.component_study.transformer_component_study
 import femmt.examples.basic_transformer_excitation_sweep
 import femmt.examples.basic_inductor_excitation_sweep
 import femmt.examples.basic_split_windings
-import materialdatabase as mdb
 
 
 def compare_result_logs(first_log_filepath: str, second_log_filepath: str, significant_digits: int = 6,
-                        ignore_order: bool = True):
+                        ignore_order: bool = True, number_format_notation: str = "f"):
     """
     Compare the result log against a given one to see the differences when running the integration tests.
 
@@ -45,6 +44,8 @@ def compare_result_logs(first_log_filepath: str, second_log_filepath: str, signi
     :type significant_digits: int
     :param ignore_order: True to ignore the order of the dict keys. Defaults to True.
     :type ignore_order: bool
+    :param number_format_notation: number format notation for deepdiff
+    :type number_format_notation: str
     """
     first_content = None
     second_content = None
@@ -66,11 +67,11 @@ def compare_result_logs(first_log_filepath: str, second_log_filepath: str, signi
                 del second_content["simulation_settings"]["working_directory"]
 
     difference = deepdiff.DeepDiff(first_content, second_content, ignore_order=ignore_order,
-                                   significant_digits=significant_digits)
+                                   significant_digits=significant_digits, number_format_notation=number_format_notation)
     print(f"{difference=}")
 
     assert not deepdiff.DeepDiff(first_content, second_content, ignore_order=ignore_order,
-                                 significant_digits=significant_digits)
+                                 significant_digits=significant_digits, number_format_notation=number_format_notation)
     # made several tests with the deepdiff command:
     # tried adding not existing keys in one of the dicts: results as expected in an error
     # changed values in very nested dict: results as expected in an error
@@ -160,10 +161,17 @@ def fixture_inductor_core_material_database(temp_folder: pytest.fixture):
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
 
-        core = fmt.Core(core_type=fmt.CoreType.Single,
-                        core_dimensions=core_dimensions, material=mdb.Material.N95, temperature=25, frequency=100000,
-                        permeability_datasource=fmt.MaterialDataSource.ManufacturerDatasheet,
-                        permittivity_datasource=fmt.MaterialDataSource.ManufacturerDatasheet)
+        core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N95,
+                                                        temperature=25,
+                                                        permeability_datasource=fmt.DataSource.Datasheet,
+                                                        permittivity_datasource=fmt.DataSource.Datasheet,
+                                                        mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
+                        core_dimensions=core_dimensions,
+                        detailed_core_model=False)
+
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
@@ -179,7 +187,7 @@ def fixture_inductor_core_material_database(temp_folder: pytest.fixture):
         winding_window = fmt.WindingWindow(core, insulation)
         vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
-        winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
+        winding = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=25)
         winding.set_solid_round_conductor(conductor_radius=0.0013,
                                           conductor_arrangement=fmt.ConductorArrangement.Square)
 
@@ -281,14 +289,17 @@ def fixture_inductor_core_material_database_measurement(temp_folder: pytest.fixt
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
 
-        core = fmt.Core(core_type=fmt.CoreType.Single,
-                        core_dimensions=core_dimensions, material=mdb.Material.N95, temperature=25, frequency=100000,
-                        permeability_datasource=fmt.MaterialDataSource.Measurement,
-                        permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                        permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
-                        permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                        permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                        permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK)
+        core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
+                                                        temperature=25,
+                                                        permeability_datasource=fmt.DataSource.TDK_MDT,
+                                                        permittivity_datasource=fmt.DataSource.LEA_MTB,
+                                                        mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
+                        core_dimensions=core_dimensions,
+                        detailed_core_model=False)
+
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
@@ -304,7 +315,7 @@ def fixture_inductor_core_material_database_measurement(temp_folder: pytest.fixt
         winding_window = fmt.WindingWindow(core, insulation)
         vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
-        winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
+        winding = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=25)
         winding.set_solid_round_conductor(conductor_radius=0.0013,
                                           conductor_arrangement=fmt.ConductorArrangement.Square)
 
@@ -406,10 +417,18 @@ def fixture_inductor_core_fixed_loss_angle(temp_folder: pytest.fixture):
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
 
-        core = fmt.Core(core_type=fmt.CoreType.Single,
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3000,
+                                                      phi_mu_deg=10,
+                                                      dc_conductivity=0.5,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
                         core_dimensions=core_dimensions,
-                        mu_r_abs=3000, phi_mu_deg=10, sigma=0.5, permeability_datasource=fmt.MaterialDataSource.Custom,
-                        permittivity_datasource=fmt.MaterialDataSource.Custom)
+                        detailed_core_model=False)
+
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
@@ -425,7 +444,7 @@ def fixture_inductor_core_fixed_loss_angle(temp_folder: pytest.fixture):
         winding_window = fmt.WindingWindow(core, insulation)
         vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
-        winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
+        winding = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=25)
         winding.set_solid_round_conductor(conductor_radius=0.0013,
                                           conductor_arrangement=fmt.ConductorArrangement.Square)
 
@@ -526,10 +545,18 @@ def fixture_inductor_core_fixed_loss_angle_dc(temp_folder: pytest.fixture):
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
 
-        core = fmt.Core(core_type=fmt.CoreType.Single,
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3000,
+                                                      phi_mu_deg=10,
+                                                      dc_conductivity=0.5,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
                         core_dimensions=core_dimensions,
-                        mu_r_abs=3000, phi_mu_deg=10, sigma=0.5, permeability_datasource=fmt.MaterialDataSource.Custom,
-                        permittivity_datasource=fmt.MaterialDataSource.Custom)
+                        detailed_core_model=False)
+
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
@@ -545,7 +572,7 @@ def fixture_inductor_core_fixed_loss_angle_dc(temp_folder: pytest.fixture):
         winding_window = fmt.WindingWindow(core, insulation)
         vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
-        winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
+        winding = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=25)
         winding.set_solid_round_conductor(conductor_radius=0.0013,
                                           conductor_arrangement=fmt.ConductorArrangement.Square)
 
@@ -645,9 +672,18 @@ def fixture_inductor_core_fixed_loss_angle_litz_wire(temp_folder: pytest.fixture
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
 
-        core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
-                        mu_r_abs=3000, phi_mu_deg=10, sigma=0.5, permeability_datasource=fmt.MaterialDataSource.Custom,
-                        permittivity_datasource=fmt.MaterialDataSource.Custom)
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3000,
+                                                      phi_mu_deg=10,
+                                                      dc_conductivity=0.5,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
+                        core_dimensions=core_dimensions,
+                        detailed_core_model=False)
+
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
@@ -663,7 +699,7 @@ def fixture_inductor_core_fixed_loss_angle_litz_wire(temp_folder: pytest.fixture
         winding_window = fmt.WindingWindow(core, insulation)
         vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
-        winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
+        winding = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=25)
         winding.set_litz_round_conductor(None, 100, 70e-6, 0.5, fmt.ConductorArrangement.Square)
 
         vww.set_winding(winding, 9, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward)
@@ -768,10 +804,18 @@ def fixture_inductor_core_fixed_loss_angle_foil_vertical(temp_folder: pytest.fix
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
 
-        core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
-                        mu_r_abs=3100, phi_mu_deg=12,
-                        sigma=0.6, permeability_datasource=fmt.MaterialDataSource.Custom,
-                        permittivity_datasource=fmt.MaterialDataSource.Custom)
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3100,
+                                                      phi_mu_deg=12,
+                                                      dc_conductivity=0.6,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
+                        core_dimensions=core_dimensions,
+                        detailed_core_model=False)
+
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
@@ -786,7 +830,7 @@ def fixture_inductor_core_fixed_loss_angle_foil_vertical(temp_folder: pytest.fix
         winding_window = fmt.WindingWindow(core, insulation)
         vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
-        winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
+        winding = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=25)
         winding.set_rectangular_conductor(thickness=1e-3)
 
         vww.set_winding(winding, 5, fmt.WindingScheme.FoilVertical, fmt.Align.ToEdges, wrap_para_type=wrap_para_type,
@@ -892,10 +936,18 @@ def fixture_inductor_core_fixed_loss_angle_foil_horizontal(temp_folder: pytest.f
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
 
-        core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
-                        mu_r_abs=3100, phi_mu_deg=12,
-                        sigma=0.6, permeability_datasource=fmt.MaterialDataSource.Custom,
-                        permittivity_datasource=fmt.MaterialDataSource.Custom)
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3100,
+                                                      phi_mu_deg=12,
+                                                      dc_conductivity=0.6,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
+                        core_dimensions=core_dimensions,
+                        detailed_core_model=False)
+
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
@@ -910,7 +962,7 @@ def fixture_inductor_core_fixed_loss_angle_foil_horizontal(temp_folder: pytest.f
         winding_window = fmt.WindingWindow(core, insulation)
         vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
-        winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
+        winding = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=25)
         winding.set_rectangular_conductor(thickness=1e-3)
 
         vww.set_winding(winding, 12, fmt.WindingScheme.FoilHorizontal, fmt.Align.ToEdges, wrap_para_type=wrap_para_type,
@@ -1007,16 +1059,24 @@ def fixture_transformer_core_fixed_loss_angle(temp_folder: pytest.fixture):
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
 
+        # 2. set core parameters
         core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015,
                                                         window_w=0.012,
                                                         window_h=0.0295,
                                                         core_h=0.05)
 
-        # 2. set core parameters
-        core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
-                        mu_r_abs=3100, phi_mu_deg=12,
-                        sigma=1.2, permeability_datasource=fmt.MaterialDataSource.Custom,
-                        permittivity_datasource=fmt.MaterialDataSource.Custom)
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3100,
+                                                      phi_mu_deg=12,
+                                                      dc_conductivity=1.2,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
+                        core_dimensions=core_dimensions,
+                        detailed_core_model=False)
+
         geo.set_core(core)
 
         # 3. set air gap parameters
@@ -1035,10 +1095,10 @@ def fixture_transformer_core_fixed_loss_angle(temp_folder: pytest.fixture):
         left, right = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit, 0.0005)
 
         # 6. create conductors and set parameters
-        winding1 = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
+        winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=25)
         winding1.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
-        winding2 = fmt.Conductor(1, fmt.Conductivity.Copper, winding_material_temperature=25)
+        winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper, temperature=25)
         winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
         # 7. add conductor to vww and add winding window to MagneticComponent
@@ -1136,16 +1196,24 @@ def fixture_transformer_interleaved_core_fixed_loss_angle(temp_folder: pytest.fi
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
 
+        # 2. set core parameters
         core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015,
                                                         window_w=0.012,
                                                         window_h=0.0295,
                                                         core_h=0.05)
 
-        # 2. set core parameters
-        core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
-                        non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10,
-                        permeability_datasource=fmt.MaterialDataSource.Custom,
-                        permittivity_datasource=fmt.MaterialDataSource.Custom)
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3000,
+                                                      phi_mu_deg=10,
+                                                      dc_conductivity=1,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
+                        core_dimensions=core_dimensions,
+                        detailed_core_model=False)
+
         geo.set_core(core)
 
         # 3. set air gap parameters
@@ -1164,10 +1232,10 @@ def fixture_transformer_interleaved_core_fixed_loss_angle(temp_folder: pytest.fi
         vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
         # 6. create conductors and set parameters
-        winding1 = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
+        winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=25)
         winding1.set_solid_round_conductor(0.0011, None)
 
-        winding2 = fmt.Conductor(1, fmt.Conductivity.Copper, winding_material_temperature=25)
+        winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper, temperature=25)
         winding2.set_solid_round_conductor(0.0011, None)
 
         # 7. add conductor to vww and add winding window to MagneticComponent
@@ -1270,14 +1338,22 @@ def fixture_transformer_integrated_core_fixed_loss_angle(temp_folder: pytest.fix
                                                         core_h=0.05)
 
         # 2. set core parameters
-        core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
-                        mu_r_abs=3100, phi_mu_deg=12,
-                        sigma=0.6, permeability_datasource=fmt.MaterialDataSource.Custom,
-                        permittivity_datasource=fmt.MaterialDataSource.Custom)
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3100,
+                                                      phi_mu_deg=12,
+                                                      dc_conductivity=0.6,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
+                        core_dimensions=core_dimensions,
+                        detailed_core_model=False)
+
         geo.set_core(core)
 
         # 2.1 set stray path parameters
-        stray_path = fmt.StrayPath(start_index=0, length=geo.core.core_inner_diameter / 2 + geo.core.window_w - 0.001)
+        stray_path = fmt.StrayPath(start_index=0, length=geo.core.geometry.core_inner_diameter / 2 + geo.core.geometry.window_w - 0.001)
         geo.set_stray_path(stray_path)
 
         # 3. set air gap parameters
@@ -1300,10 +1376,10 @@ def fixture_transformer_integrated_core_fixed_loss_angle(temp_folder: pytest.fix
         top, bot = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit, 0.0001)
 
         # 6. set conductor parameters
-        winding1 = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
+        winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=25)
         winding1.set_solid_round_conductor(0.0011, None)
 
-        winding2 = fmt.Conductor(1, fmt.Conductivity.Copper, winding_material_temperature=25)
+        winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper, temperature=25)
         winding2.set_solid_round_conductor(0.0011, None)
 
         # 7. add conductor to vww and add winding window to MagneticComponent
@@ -1405,10 +1481,19 @@ def fixture_transformer_stacked_center_tapped(temp_folder: pytest.fixture):
 
         core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=0.02, window_w=0.015, window_h_top=0.005,
                                                          window_h_bot=0.017)
-        core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12,
-                        sigma=1.2,
-                        permeability_datasource=fmt.MaterialDataSource.Custom,
-                        permittivity_datasource=fmt.MaterialDataSource.Custom)
+
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3100,
+                                                      phi_mu_deg=12,
+                                                      dc_conductivity=1.2,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Stacked,
+                        core_dimensions=core_dimensions,
+                        detailed_core_model=False)
+
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Stacked, core)
@@ -1558,14 +1643,18 @@ def fixture_transformer_5_windings(temp_folder: pytest.fixture):
         # 2. set core parameters
         core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=16.1e-3, window_w=(22.5 - 12) / 2 * 1e-3,
                                                         core_inner_diameter=12e-3, core_h=22e-3)
-        core = fmt.Core(core_dimensions=core_dimensions, material=fmt.Material.N95, temperature=60, frequency=100000,
-                        # permeability_datasource="manufacturer_datasheet",
-                        permeability_datasource=fmt.MaterialDataSource.Measurement,
-                        permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                        permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
-                        permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                        permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                        permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK)
+
+        core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
+                                                        temperature=60,
+                                                        permeability_datasource=fmt.DataSource.TDK_MDT,
+                                                        permittivity_datasource=fmt.DataSource.LEA_MTB,
+                                                        mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
+                        core_dimensions=core_dimensions,
+                        detailed_core_model=False)
+
         geo.set_core(core)
 
         # 3. set air gap parameters
@@ -1592,19 +1681,19 @@ def fixture_transformer_5_windings(temp_folder: pytest.fixture):
                                                            vertical_split_factors=[None, [0.5, 0.85], None])
 
         # 6. create windings and assign conductors
-        winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+        winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
         winding1.set_litz_round_conductor(0.85e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
 
-        winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+        winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
         winding2.set_litz_round_conductor(1.0e-3 / 2, 60, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
 
-        winding3 = fmt.Conductor(2, fmt.Conductivity.Copper)
+        winding3 = fmt.Conductor(2, fmt.ConductorMaterial.Copper)
         winding3.set_litz_round_conductor(0.75e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
 
-        winding4 = fmt.Conductor(3, fmt.Conductivity.Copper)
+        winding4 = fmt.Conductor(3, fmt.ConductorMaterial.Copper)
         winding4.set_litz_round_conductor(0.95e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
 
-        winding5 = fmt.Conductor(4, fmt.Conductivity.Copper)
+        winding5 = fmt.Conductor(4, fmt.ConductorMaterial.Copper)
         winding5.set_litz_round_conductor(0.75e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
 
         # 7. assign windings to virtual winding windows (cells)
@@ -1725,15 +1814,19 @@ def fixture_inductor_time_domain(temp_folder: pytest.fixture):
                                                         window_w=core_db["window_w"],
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
-        inductor_frequency = 270000
-        core = fmt.Core(core_type=fmt.CoreType.Single,
+
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3000,
+                                                      phi_mu_deg=0,
+                                                      dc_conductivity=1,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
                         core_dimensions=core_dimensions,
-                        material=mdb.Material.N49, temperature=45, frequency=inductor_frequency,
-                        permeability_datasource=fmt.MaterialDataSource.Custom,
-                        mu_r_abs=3000, phi_mu_deg=0,
-                        permittivity_datasource=fmt.MaterialDataSource.Custom,
-                        mdb_verbosity=fmt.Verbosity.Silent,
-                        sigma=1)
+                        detailed_core_model=False)
+
         geo.set_core(core)
 
         # 3. set air gap parameters
@@ -1752,7 +1845,7 @@ def fixture_inductor_time_domain(temp_folder: pytest.fixture):
         vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
         # 6. create conductor and set parameters: use solid wires
-        winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=45)
+        winding = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=45)
         winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
         winding.parallel = False
 
@@ -1761,7 +1854,8 @@ def fixture_inductor_time_domain(temp_folder: pytest.fixture):
         geo.set_winding_windows([winding_window])
 
         # 8. create the model
-        geo.create_model(freq=270000, pre_visualize_geometry=False, save_png=False)
+        inductor_frequency = 270000
+        geo.create_model(freq=inductor_frequency, pre_visualize_geometry=False, save_png=False)
 
         # 6.a. start simulation
         # time value list
@@ -1812,14 +1906,19 @@ def fixture_transformer_time_domain(temp_folder: pytest.fixture):
 
         # 2. set core parameters
         core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295, core_h=0.04)
-        core = fmt.Core(core_type=fmt.CoreType.Single,
+
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3000,
+                                                      phi_mu_deg=0,
+                                                      dc_conductivity=1,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
                         core_dimensions=core_dimensions,
-                        material=mdb.Material.N49, temperature=45, frequency=200000,
-                        permeability_datasource=fmt.MaterialDataSource.Custom,
-                        mu_r_abs=3000, phi_mu_deg=0,
-                        permittivity_datasource=fmt.MaterialDataSource.Custom,
-                        mdb_verbosity=fmt.Verbosity.Silent,
-                        sigma=1)
+                        detailed_core_model=False)
+
         geo.set_core(core)
 
         # 3. set air gap parameters
@@ -1839,10 +1938,10 @@ def fixture_transformer_time_domain(temp_folder: pytest.fixture):
         bot, top = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit, split_distance=0.001)
 
         # 6. create conductors and set parameters
-        winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+        winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
         winding1.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
-        winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+        winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
         winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
         winding2.parallel = False
 
@@ -1904,14 +2003,19 @@ def fixture_transformer_3_windings_time_domain(temp_folder: pytest.fixture):
 
         # 2. set core parameters
         core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.06, window_w=0.03, core_inner_diameter=0.015, core_h=0.08)
-        core = fmt.Core(core_type=fmt.CoreType.Single,
+
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3000,
+                                                      phi_mu_deg=0,
+                                                      dc_conductivity=1,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0,
+                                                      mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
                         core_dimensions=core_dimensions,
-                        material=mdb.Material.N49, temperature=45, frequency=200000,
-                        permeability_datasource=fmt.MaterialDataSource.Custom,
-                        mu_r_abs=3000, phi_mu_deg=0,
-                        permittivity_datasource=fmt.MaterialDataSource.Custom,
-                        mdb_verbosity=fmt.Verbosity.Silent,
-                        sigma=1)
+                        detailed_core_model=False)
+
         geo.set_core(core)
 
         # 3. set air gap parameters
@@ -1933,13 +2037,13 @@ def fixture_transformer_3_windings_time_domain(temp_folder: pytest.fixture):
         top_left = winding_window.combine_vww(top_left, bot_left)
 
         # 6. create conductors and set parameters
-        winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+        winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
         winding1.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
-        winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+        winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
         winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
-        winding3 = fmt.Conductor(2, fmt.Conductivity.Copper)
+        winding3 = fmt.Conductor(2, fmt.ConductorMaterial.Copper)
         winding3.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
         # 7. add conductor to vww and add winding window to MagneticComponent
@@ -2008,17 +2112,16 @@ def fixture_inductor_electrostatic(temp_folder: pytest.fixture):
                                                         window_w=core_db["window_w"],
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
-        core = fmt.Core(core_type=fmt.CoreType.Single,
+        core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
+                                                        temperature=45,
+                                                        permeability_datasource=fmt.DataSource.TDK_MDT,
+                                                        permittivity_datasource=fmt.DataSource.LEA_MTB,
+                                                        mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
                         core_dimensions=core_dimensions,
-                        detailed_core_model=False,
-                        material=fmt.Material.N49, temperature=45, frequency=2700000,
-                        # permeability_datasource="manufacturer_datasheet",
-                        permeability_datasource=fmt.MaterialDataSource.Measurement,
-                        permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                        permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
-                        permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                        permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                        permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+                        detailed_core_model=False)
 
         geo.set_core(core)
 
@@ -2052,7 +2155,7 @@ def fixture_inductor_electrostatic(temp_folder: pytest.fixture):
         vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
         # 6. create conductor and set parameters: use solid wires
-        winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=45)
+        winding = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=45)
         winding.set_solid_round_conductor(conductor_radius=1.1506e-3, conductor_arrangement=fmt.ConductorArrangement.Square)
         winding.parallel = False  # set True to make the windings parallel, currently only for solid conductors
         # 7. add conductor to vww and add winding window to MagneticComponent
@@ -2113,17 +2216,17 @@ def fixture_transformer_electrostatic(temp_folder: pytest.fixture):
                                                         window_w=core_db["window_w"],
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
-        core = fmt.Core(core_type=fmt.CoreType.Single,
+
+        core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
+                                                        temperature=45,
+                                                        permeability_datasource=fmt.DataSource.TDK_MDT,
+                                                        permittivity_datasource=fmt.DataSource.LEA_MTB,
+                                                        mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
                         core_dimensions=core_dimensions,
-                        detailed_core_model=False,
-                        material=fmt.Material.N49, temperature=45, frequency=0,
-                        # permeability_datasource="manufacturer_datasheet",
-                        permeability_datasource=fmt.MaterialDataSource.Measurement,
-                        permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                        permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
-                        permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                        permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                        permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+                        detailed_core_model=False)
 
         geo.set_core(core)
 
@@ -2156,10 +2259,10 @@ def fixture_transformer_electrostatic(temp_folder: pytest.fixture):
         cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.29],
                                                            vertical_split_factors=None)
         # 6. create conductors and set parameters
-        winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+        winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
         winding1.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
 
-        winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+        winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
         # winding2.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
         winding2.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
         winding2.parallel = False
@@ -2211,28 +2314,28 @@ def test_inductor_core_material_database(fixture_inductor_core_material_database
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                         "material_inductor_core_material_database.json")
-    compare_result_logs(material_result_log, fixture_material_log, significant_digits=10, ignore_order=False)
+    compare_result_logs(material_result_log, fixture_material_log, significant_digits=3, ignore_order=False, number_format_notation="e")
 
     assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
 
     fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                         "geometry_inductor_core_material_database.json")
-    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
+    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=6)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "inductor_core_material_database.json")
+                                      "log_inductor_core_material_database.json")
     print(test_result_log)
     print(fixture_result_log)
-    compare_result_logs(test_result_log, fixture_result_log)
+    compare_result_logs(test_result_log, fixture_result_log, significant_digits=5)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "thermal_inductor_core_material_database.json")
-    compare_thermal_result_logs(thermal_result_log, fixture_result_log)
+    compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=5)
 
 
 def test_inductor_core_material_database_measurement(fixture_inductor_core_material_database_measurement: pytest.fixture):
@@ -2248,26 +2351,26 @@ def test_inductor_core_material_database_measurement(fixture_inductor_core_mater
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                         "material_inductor_core_material_database_measurement.json")
-    compare_result_logs(material_result_log, fixture_material_log, significant_digits=10, ignore_order=False)
+    compare_result_logs(material_result_log, fixture_material_log, significant_digits=2, ignore_order=False, number_format_notation="e")
 
     assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
 
     fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                         "geometry_inductor_core_material_measurement.json")
-    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
+    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=6)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "inductor_core_material_measurement.json")
-    compare_result_logs(test_result_log, fixture_result_log)
+                                      "log_inductor_core_material_measurement.json")
+    compare_result_logs(test_result_log, fixture_result_log, significant_digits=5)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "thermal_inductor_core_material_database_measurement.json")
-    compare_thermal_result_logs(thermal_result_log, fixture_result_log)
+    compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=6)
 
 
 def test_inductor_core_fixed_loss_angle(fixture_inductor_core_fixed_loss_angle: pytest.fixture):
@@ -2289,7 +2392,7 @@ def test_inductor_core_fixed_loss_angle(fixture_inductor_core_fixed_loss_angle: 
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "inductor_core_fixed_loss_angle.json")
+                                      "log_inductor_core_fixed_loss_angle.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
@@ -2297,6 +2400,7 @@ def test_inductor_core_fixed_loss_angle(fixture_inductor_core_fixed_loss_angle: 
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "thermal_inductor_core_fixed_loss_angle.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log)
+
 
 def test_inductor_core_fixed_loss_angle_dc(fixture_inductor_core_fixed_loss_angle_dc: pytest.fixture):
     """
@@ -2318,7 +2422,7 @@ def test_inductor_core_fixed_loss_angle_dc(fixture_inductor_core_fixed_loss_angl
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "inductor_core_fixed_loss_angle_dc.json")
+                                      "log_inductor_core_fixed_loss_angle_dc.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
@@ -2347,7 +2451,7 @@ def test_inductor_core_fixed_loss_angle_litz_wire(fixture_inductor_core_fixed_lo
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "inductor_core_fixed_loss_angle_litz_wire.json")
+                                      "log_inductor_core_fixed_loss_angle_litz_wire.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=3)
 
     # check thermal simulation results
@@ -2376,7 +2480,7 @@ def test_inductor_core_fixed_loss_angle_foil_vertical(fixture_inductor_core_fixe
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "inductor_core_fixed_loss_angle_foil_vertical.json")
+                                      "log_inductor_core_fixed_loss_angle_foil_vertical.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
@@ -2407,7 +2511,7 @@ def test_inductor_core_fixed_loss_angle_foil_horizontal(
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "inductor_core_fixed_loss_angle_foil_horizontal.json")
+                                      "log_inductor_core_fixed_loss_angle_foil_horizontal.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
@@ -2436,7 +2540,7 @@ def test_transformer_core_fixed_loss_angle(fixture_transformer_core_fixed_loss_a
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "transformer_core_fixed_loss_angle.json")
+                                      "log_transformer_core_fixed_loss_angle.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
@@ -2465,7 +2569,7 @@ def test_transformer_interleaved_core_fixed_loss_angle(fixture_transformer_inter
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "transformer_interleaved_core_fixed_loss_angle.json")
+                                      "log_transformer_interleaved_core_fixed_loss_angle.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
@@ -2494,7 +2598,7 @@ def test_transformer_integrated_core_fixed_loss_angle(fixture_transformer_integr
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "transformer_integrated_core_fixed_loss_angle.json")
+                                      "log_transformer_integrated_core_fixed_loss_angle.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
@@ -2523,7 +2627,7 @@ def test_transformer_stacked_center_tapped(fixture_transformer_stacked_center_ta
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "transformer_stacked_center_tapped.json")
+                                      "log_transformer_stacked_center_tapped.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
     # check thermal simulation results
@@ -2552,13 +2656,13 @@ def test_transformer_5_windings(fixture_transformer_5_windings: pytest.fixture):
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                         "material_transformer_5_windings.json")
-    compare_result_logs(material_result_log, fixture_material_log, significant_digits=10, ignore_order=False)
+    compare_result_logs(material_result_log, fixture_material_log, significant_digits=3, ignore_order=False, number_format_notation="e")
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "transformer_5_windings.json")
+                                      "log_transformer_5_windings.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
     # check thermal simulation results
@@ -2566,6 +2670,7 @@ def test_transformer_5_windings(fixture_transformer_5_windings: pytest.fixture):
     # fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
     #                                   "thermal_transformer_5_windings.json")
     # compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=2)
+
 
 def test_simulation_inductor_time_domain(fixture_inductor_time_domain: pytest.fixture):
     """
@@ -2586,7 +2691,7 @@ def test_simulation_inductor_time_domain(fixture_inductor_time_domain: pytest.fi
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "inductor_time_domain.json")
+                                      "log_inductor_time_domain.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
 
@@ -2609,7 +2714,7 @@ def test_transformer_time_domain(fixture_transformer_time_domain: pytest.fixture
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "transformer_time_domain.json")
+                                      "log_transformer_time_domain.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
 
@@ -2632,7 +2737,7 @@ def test_transformer_3_windings_time_domain(fixture_transformer_3_windings_time_
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "transformer_3_windings_time_domain.json")
+                                      "log_transformer_3_windings_time_domain.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
 def test_simulation_inductor_electrostatic(fixture_inductor_electrostatic: pytest.fixture):
@@ -2767,7 +2872,7 @@ def test_load_files(temp_folder: pytest.fixture, fixture_inductor_core_material_
 ##############################
 
 
-def test_basic_examples(temp_folder: pytest.fixture):
+def test_basic_example_inductor(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
     
@@ -2933,6 +3038,7 @@ def test_basic_example_transformer_6_windings(temp_folder: pytest.fixture):
                                                                                      show_visual_outputs=False,
                                                                                      is_test=True)
 
+
 def test_basic_inductor_time_domain(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
@@ -2944,6 +3050,7 @@ def test_basic_inductor_time_domain(temp_folder: pytest.fixture):
     femmt.examples.experimental_inductor_time_domain.basic_example_inductor_time_domain(onelab_folder=onelab_folder,
                                                                                         show_visual_outputs=False,
                                                                                         is_test=True)
+
 
 def test_basic_transformer_time_domain(temp_folder: pytest.fixture):
     """
@@ -2993,6 +3100,8 @@ def test_basic_transformer_3_windings_time_domain(temp_folder: pytest.fixture):
     femmt.examples.experimental_transformer_three_winding_time_domain.basic_example_transformer_three_windings_time_domain(onelab_folder=onelab_folder,
                                                                                                                            show_visual_outputs=False,
                                                                                                                            is_test=True)
+
+
 def test_advanced_example_inductor_sweep(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
@@ -3018,6 +3127,7 @@ def test_advanced_example_inductor_air_gap_sweep(temp_folder: pytest.fixture):
                                                                        show_visual_outputs=False,
                                                                        is_test=True)
 
+
 def test_transformer_component_study(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
@@ -3030,6 +3140,7 @@ def test_transformer_component_study(temp_folder: pytest.fixture):
                                                                                            show_visual_outputs=False,
                                                                                            is_test=True)
 
+
 def test_inductor_excitation_sweep(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
@@ -3041,6 +3152,8 @@ def test_inductor_excitation_sweep(temp_folder: pytest.fixture):
     femmt.examples.basic_inductor_excitation_sweep.basic_example_inductor_excitation_sweep(onelab_folder=onelab_folder,
                                                                                            show_visual_outputs=False,
                                                                                            is_test=True)
+
+
 def test_transformer_excitation_sweep(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
@@ -3052,6 +3165,7 @@ def test_transformer_excitation_sweep(temp_folder: pytest.fixture):
     femmt.examples.basic_transformer_excitation_sweep.basic_example_transformer_excitation_sweep(onelab_folder=onelab_folder,
                                                                                                  show_visual_outputs=False,
                                                                                                  is_test=True)
+
 
 def test_split_windings(temp_folder: pytest.fixture):
     """

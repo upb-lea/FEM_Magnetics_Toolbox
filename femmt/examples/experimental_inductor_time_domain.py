@@ -1,7 +1,6 @@
 """Basic example to show how to simulate an inductor in time domain."""
 import numpy as np
 import femmt as fmt
-import materialdatabase as mdb
 import os
 import logging
 
@@ -46,28 +45,18 @@ def basic_example_inductor_time_domain(onelab_folder: str = None, show_visual_ou
                                                     window_h=core_db["window_h"],
                                                     core_h=core_db["core_h"])
 
-    # core = fmt.Core(core_type=fmt.CoreType.Single,
-    #                 core_dimensions=core_dimensions,
-    #                 detailed_core_model=False,
-    #                 material=mdb.Material.N49, temperature=45, frequency=inductor_frequency,
-    #                 # permeability_datasource="manufacturer_datasheet",
-    #                 permeability_datasource=fmt.MaterialDataSource.Measurement,
-    #                 permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-    #                 permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
-    #                 permittivity_datasource=fmt.MaterialDataSource.Measurement,
-    #                 permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-    #                 permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+    core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3100,
+                                                  phi_mu_deg=0,
+                                                  dc_conductivity=1,
+                                                  eps_r_abs=0,
+                                                  phi_eps_deg=0,
+                                                  mdb_verbosity=fmt.Verbosity.Silent)
 
-    core = fmt.Core(core_type=fmt.CoreType.Single,
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
-                    material=mdb.Material.N49, temperature=45, frequency=inductor_frequency,
-                    permeability_datasource=fmt.MaterialDataSource.Custom,
-                    mu_r_abs=3000, phi_mu_deg=0,
-                    permittivity_datasource=fmt.MaterialDataSource.Custom,
-                    mdb_verbosity=fmt.Verbosity.Silent,
-                    sigma=1)
-    # mu_rel=3000, phi_mu_deg=10,
-    # sigma=0.5)
+                    detailed_core_model=False)
+
     geo.set_core(core)
 
     # 3. set air gap parameters
@@ -87,7 +76,7 @@ def basic_example_inductor_time_domain(onelab_folder: str = None, show_visual_ou
     vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
     # 6. create conductor and set parameters: use solid wires
-    winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=45)
+    winding = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=45)
     winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
     winding.parallel = False  # set True to make the windings parallel, currently only for solid conductors
     # winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,

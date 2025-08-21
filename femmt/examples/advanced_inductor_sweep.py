@@ -2,7 +2,6 @@
 import numpy as np
 
 import femmt as fmt
-import materialdatabase as mdb
 import os
 
 
@@ -42,15 +41,16 @@ def advanced_example_inductor_sweep(onelab_folder: str = None, show_visual_outpu
                                                     window_h=core_db["window_h"],
                                                     core_h=core_db["core_h"])
 
-    core = fmt.Core(core_type=fmt.CoreType.Single,
+    core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
+                                                    temperature=30,
+                                                    permeability_datasource=fmt.DataSource.TDK_MDT,
+                                                    permittivity_datasource=fmt.DataSource.LEA_MTB,
+                                                    mdb_verbosity=fmt.Verbosity.Silent)
+
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
-                    material=mdb.Material.N95, temperature=30, frequency=inductor_frequency,
-                    permeability_datasource=fmt.MaterialDataSource.Measurement,
-                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                    permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
-                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                    permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK)
+                    detailed_core_model=False)
 
     geo.set_core(core)
 
@@ -71,7 +71,7 @@ def advanced_example_inductor_sweep(onelab_folder: str = None, show_visual_outpu
     vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
     # 6. create conductor and set parameters: use solid wires
-    winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=30)
+    winding = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=30)
     winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
     # winding.parallel = False  # set True to make the windings parallel, currently only for solid conductors
     # winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,

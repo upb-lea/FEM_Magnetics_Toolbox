@@ -49,10 +49,17 @@ def basic_example_inductor_foil_vertical_electrostatic(onelab_folder: str = None
                                                     window_h=core_db["window_h"],
                                                     core_h=core_db["core_h"])
 
-    core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
-                    mu_r_abs=3100, phi_mu_deg=12,
-                    sigma=0.6, permeability_datasource=fmt.MaterialDataSource.Custom,
-                    permittivity_datasource=fmt.MaterialDataSource.Custom)
+    core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
+                                                    temperature=45,
+                                                    permeability_datasource=fmt.DataSource.TDK_MDT,
+                                                    permittivity_datasource=fmt.DataSource.LEA_MTB,
+                                                    mdb_verbosity=fmt.Verbosity.Silent)
+
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Single,
+                    core_dimensions=core_dimensions,
+                    detailed_core_model=False)
+
     geo.set_core(core)
 
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
@@ -68,13 +75,13 @@ def basic_example_inductor_foil_vertical_electrostatic(onelab_folder: str = None
     insulation = fmt.Insulation(flag_insulation=True, bobbin_dimensions=bobbin_dimensions)
     insulation.add_core_insulations(0.001, 0.001, 0.001, 0.001)
     insulation.add_winding_insulations([[0.025e-3]])
-    insulation.add_turn_insulation([0.25e-5], add_turn_insulations=False)
+
     geo.set_insulation(insulation)
 
     winding_window = fmt.WindingWindow(core, insulation)
     vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
-    winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
+    winding = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=25)
     winding.set_rectangular_conductor(thickness=1e-3)
 
     vww.set_winding(winding, 3, fmt.WindingScheme.FoilHorizontal, fmt.Align.ToEdges, wrap_para_type=wrap_para_type,

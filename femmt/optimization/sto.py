@@ -1030,12 +1030,12 @@ class StackedTransformerOptimization:
             vww_bot = winding_window_bot.split_window(fmt.WindingWindowSplit.NoSplit)
 
             # 6. set conductor parameters
-            winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+            winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
             primary_litz_wire = fmt.litz_database()[fem_input.primary_litz_wire_name]
             winding1.set_litz_round_conductor(primary_litz_wire['conductor_radii'], primary_litz_wire['strands_numbers'],
                                               primary_litz_wire['strand_radii'], None, fmt.ConductorArrangement.Square)
 
-            winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+            winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
             secondary_litz_wire = fmt.litz_database()[fem_input.secondary_litz_wire_name]
             winding2.set_litz_round_conductor(secondary_litz_wire['conductor_radii'], secondary_litz_wire['strands_numbers'],
                                               secondary_litz_wire['strand_radii'], None, fmt.ConductorArrangement.Square)

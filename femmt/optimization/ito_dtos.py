@@ -4,7 +4,8 @@ from dataclasses import dataclass
 
 # 3rd party libraries
 import numpy as np
-from materialdatabase.dtos import MaterialCurve
+from materialdatabase.meta.data_classes import MaterialCurve
+from materialdatabase.meta.data_enums import DataSource
 from magnethub.loss import LossModel
 from femmt.enumerations import *
 
@@ -32,11 +33,9 @@ class IntegratedTransformerMaterialDataSources:
     """Data sources for the FEM simulation."""
 
     permeability_datasource: MaterialDataSource
-    permeability_datatype: MeasurementDataType
-    permeability_measurement_setup: MeasurementSetup
+    permeability_datatype: DataSource
     permittivity_datasource: MaterialDataSource
-    permittivity_datatype: MeasurementDataType
-    permittivity_measurement_setup: MeasurementSetup
+    permittivity_datatype: DataSource
 
 @dataclass
 class ItoSingleInputConfig:

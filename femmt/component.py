@@ -18,14 +18,14 @@ import ast
 
 # Third party libraries
 from onelab import onelab
-import materialdatabase as mdb
 import numpy as np
 
 # Local libraries
 import femmt.functions as ff
 from femmt.constants import *
 from femmt.mesh import Mesh
-from femmt.model import VirtualWindingWindow, WindingWindow, Core, Insulation, StrayPath, AirGaps, Conductor
+from femmt.model import VirtualWindingWindow, WindingWindow, Core, Insulation, StrayPath, AirGaps, Conductor, LinearComplexCoreMaterial, \
+    ImportedComplexCoreMaterial
 from femmt.enumerations import *
 from femmt.data import FileData, MeshData
 from femmt.drawing import TwoDaxiSymmetric
@@ -98,7 +98,9 @@ class MagneticComponent:
 
         self.wwr_enabled = wwr_enabled
 
-        logger.info(f"Initialized a new Magnetic Component of type {component_type.name}")
+        logger.info(f"\n"
+                    f"Initialized a new Magnetic Component of type {component_type.name}\n"
+                    f"--- --- --- ---")
 
         # To make sure femm is only imported once
         self.femm_is_imported = False
@@ -325,7 +327,7 @@ class MagneticComponent:
             "core_area": core_area,
             "conductor_radii": wire_radii,
             "wire_distances": self.get_wire_distances(),
-            "case_volume": self.core.r_outer * case_gap_top + self.core.core_h * case_gap_right + self.core.r_outer * case_gap_bot,
+            "case_volume": self.core.geometry.r_outer * case_gap_top + self.core.geometry.core_h * case_gap_right + self.core.geometry.r_outer * case_gap_bot,
             "show_thermal_fem_results": show_thermal_simulation_results,
             "print_sensor_values": False,
             "silent": self.verbosity == Verbosity.Silent,  # Add verbosity for thermal simulation
@@ -399,7 +401,7 @@ class MagneticComponent:
         :type skin_mesh_factor: float, optional
         """
         # Default values for global_accuracy and padding
-        self.mesh_data.update_spatial_data(self.core.core_inner_diameter, self.core.window_w, self.windings)
+        self.mesh_data.update_spatial_data(self.core.geometry.core_inner_diameter, self.core.geometry.window_w, self.windings)
 
         # Update mesh data
         self.mesh_data.update_data(frequency, skin_mesh_factor)
@@ -411,9 +413,9 @@ class MagneticComponent:
         self.two_d_axi.draw_model()
 
         # Create mesh
-        self.mesh = Mesh(self.two_d_axi, self.windings, self.winding_windows, self.core.correct_outer_leg,
+        self.mesh = Mesh(self.two_d_axi, self.windings, self.winding_windows, self.core.geometry.correct_outer_leg,
                          self.file_data, self.verbosity, None, self.wwr_enabled)
-        # self.mesh = Mesh(self.two_d_axi, self.windings, self.core.correct_outer_leg, self.file_data, None, ff.silent)
+        # self.mesh = Mesh(self.two_d_axi, self.windings, self.core.geometry.correct_outer_leg, self.file_data, None, ff.silent)
 
     def mesh(self, frequency: float = None, skin_mesh_factor: float = None):
         """Generate model and mesh.
@@ -582,62 +584,6 @@ class MagneticComponent:
         if self.component_type in [ComponentType.Inductor, ComponentType.Transformer, ComponentType.IntegratedTransformer]:
             self.log_coordinates_description()
 
-    def get_single_complex_permeability(self):
-        """
-        Read the complex permeability from the material database.
-
-        In case of amplitude dependent material definition, the initial permeability is used.
-        :return: complex
-        """
-        if self.core.permeability_type == PermeabilityType.FromData:
-            # take datasheet value from database
-            complex_permeability = mu_0 * mdb.MaterialDatabase(
-                self.verbosity == Verbosity.Silent).get_material_attribute(material_name=self.core.material,
-                                                                           attribute="initial_permeability")
-            logger.info(f"{complex_permeability=}")
-        if self.core.permeability_type == PermeabilityType.FixedLossAngle:
-            complex_permeability = mu_0 * self.core.mu_r_abs * complex(np.cos(np.deg2rad(self.core.phi_mu_deg)),
-                                                                       np.sin(np.deg2rad(self.core.phi_mu_deg)))
-        if self.core.permeability_type == PermeabilityType.RealValue:
-            complex_permeability = mu_0 * self.core.mu_r_abs
-        return complex_permeability
-
-    def check_model_mqs_condition(self) -> None:
-        """
-        Check the model for magneto-quasi-static condition for frequencies != 0.
-
-        Is called before a simulation.
-        Loads the permittivity from the material database (measurement or datasheet) and calculates the
-        resonance ratio = diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance
-        """
-        if self.frequency != 0:
-            if self.core.permittivity["datasource"] == "measurements" or self.core.permittivity[
-                    "datasource"] == "datasheet":
-                epsilon_r, epsilon_phi_deg = mdb.MaterialDatabase(self.verbosity == Verbosity.Silent).get_permittivity(
-                    temperature=self.core.temperature, frequency=self.frequency,
-                    material_name=self.core.material,
-                    datasource=self.core.permittivity["datasource"],
-                    datatype=self.core.permittivity["datatype"],
-                    measurement_setup=self.core.permittivity["measurement_setup"],
-                    interpolation_type="linear")
-
-                complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(epsilon_phi_deg)),
-                                                                       np.sin(np.deg2rad(epsilon_phi_deg)))
-                logger.info(f"{complex_permittivity=}\n"
-                            f"{epsilon_r=}\n"
-                            f"{epsilon_phi_deg=}")
-
-                ff.check_mqs_condition(radius=self.core.core_inner_diameter / 2, frequency=self.frequency,
-                                       complex_permeability=self.get_single_complex_permeability(),
-                                       complex_permittivity=complex_permittivity, conductivity=self.core.sigma,
-                                       relative_margin_to_first_resonance=0.5)
-
-            else:
-                ff.check_mqs_condition(radius=self.core.core_inner_diameter / 2, frequency=self.frequency,
-                                       complex_permeability=self.get_single_complex_permeability(),
-                                       complex_permittivity=0, conductivity=self.core.sigma,
-                                       relative_margin_to_first_resonance=0.5)
-
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Miscellaneous
     def calculate_core_cross_sectional_area(self):
@@ -648,7 +594,7 @@ class MagneticComponent:
         :rtype: float
         """
         # Calculate the cross-sectional area using the inner diameter of the core
-        width = self.core.core_inner_diameter / 2
+        width = self.core.geometry.core_inner_diameter / 2
         cross_sectional_area = np.pi * (width ** 2)
         return cross_sectional_area
 
@@ -658,13 +604,13 @@ class MagneticComponent:
         :return: Volume of the core
         :rtype: float
         """
-        if self.core.core_type == CoreType.Single:
-            core_height = self.core.window_h + self.core.core_inner_diameter / 2
-        elif self.core.core_type == CoreType.Stacked:
-            core_height = self.core.window_h_bot + self.core.window_h_top + self.core.core_inner_diameter * 3 / 4
+        if self.core.geometry.core_type == CoreType.Single:
+            core_height = self.core.geometry.window_h + self.core.geometry.core_inner_diameter / 2
+        elif self.core.geometry.core_type == CoreType.Stacked:
+            core_height = self.core.geometry.window_h_bot + self.core.geometry.window_h_top + self.core.geometry.core_inner_diameter * 3 / 4
             # TODO: could also be done arbitrarily
 
-        core_width = self.core.r_outer
+        core_width = self.core.geometry.r_outer
 
         return np.pi * core_width ** 2 * core_height
 
@@ -676,33 +622,33 @@ class MagneticComponent:
         """
         core_height = None
         winding_height = None
-        if self.core.core_type == CoreType.Single:
-            core_height = self.core.window_h + self.core.core_inner_diameter / 2
-            winding_height = self.core.window_h
-        elif self.core.core_type == CoreType.Stacked:
-            core_height = self.core.window_h_bot + self.core.window_h_top + self.core.core_inner_diameter * 3 / 4
+        if self.core.geometry.core_type == CoreType.Single:
+            core_height = self.core.geometry.window_h + self.core.geometry.core_inner_diameter / 2
+            winding_height = self.core.geometry.window_h
+        elif self.core.geometry.core_type == CoreType.Stacked:
+            core_height = self.core.geometry.window_h_bot + self.core.geometry.window_h_top + self.core.geometry.core_inner_diameter * 3 / 4
             # TODO: could also be done arbitrarily
-            winding_height = self.core.window_h_bot + self.core.window_h_top  # TODO: could also be done arbitrarily
+            winding_height = self.core.geometry.window_h_bot + self.core.geometry.window_h_top  # TODO: could also be done arbitrarily
 
-        core_width = self.core.r_outer
+        core_width = self.core.geometry.r_outer
 
-        winding_width = self.core.window_w
+        winding_width = self.core.geometry.window_w
 
         air_gap_volume = 0
-        inner_leg_width = self.core.r_inner - winding_width
+        inner_leg_width = self.core.geometry.r_inner - winding_width
 
         for leg_position, _, height in self.air_gaps.midpoints:
             if leg_position == AirGapLegPosition.LeftLeg.value:
                 # left leg
                 # TODO this is wrong since the air gap is not centered on the y axis
-                width = core_width - self.core.r_inner
+                width = core_width - self.core.geometry.r_inner
             elif leg_position == AirGapLegPosition.CenterLeg.value:
                 # center leg
                 width = inner_leg_width
             elif leg_position == AirGapLegPosition.RightLeg.value:
                 # right leg
                 # TODO this is wrong since the air gap is not centered on the y axis
-                width = core_width - self.core.r_inner
+                width = core_width - self.core.geometry.r_inner
             else:
                 raise Exception(f"Invalid leg position tag {leg_position} used for an air gap.")
 
@@ -734,7 +680,7 @@ class MagneticComponent:
             """
             if self.stray_path and part_number == self.stray_path.start_index + 2:
                 return self.stray_path.length
-            return self.core.core_inner_diameter / 2
+            return self.core.geometry.core_inner_diameter / 2
 
         if self.air_gaps.midpoints:
             # # Sorting air gaps from lower to upper
@@ -747,35 +693,35 @@ class MagneticComponent:
             topmost_airgap_height = sorted_midpoints[-1][2]
 
         # if single core
-        if self.core.core_type == CoreType.Single:
+        if self.core.geometry.core_type == CoreType.Single:
             # if Airgap is existed
             if self.air_gaps.midpoints:
                 # For single core and more than one core_part, volume for every core part is calculated
                 # core_part_1 is divided into parts cores
                 # # subpart1: bottom left subpart
-                subpart1_1_height = bottommost_airgap_position + self.core.window_h / 2 - bottommost_airgap_height / 2
-                subpart1_1_width = self.core.core_inner_diameter / 2
+                subpart1_1_height = bottommost_airgap_position + self.core.geometry.window_h / 2 - bottommost_airgap_height / 2
+                subpart1_1_width = self.core.geometry.core_inner_diameter / 2
                 subpart1_1_volume = np.pi * subpart1_1_width ** 2 * subpart1_1_height
 
                 # # subpart2: bottom mid subpart
-                subpart1_2_height = self.core.core_inner_diameter / 4
-                subpart1_2_width = self.core.r_outer
+                subpart1_2_height = self.core.geometry.core_inner_diameter / 4
+                subpart1_2_width = self.core.geometry.r_outer
                 subpart1_2_volume = np.pi * subpart1_2_width ** 2 * subpart1_2_height
 
                 # subpart3: right subpart
-                subpart1_3_height = self.core.window_h
-                subpart1_3_width = self.core.r_outer
+                subpart1_3_height = self.core.geometry.window_h
+                subpart1_3_width = self.core.geometry.r_outer
                 subpart1_3_volume = np.pi * subpart1_3_width ** 2 * subpart1_3_height - \
-                    (np.pi * (self.core.window_w + self.core.core_inner_diameter / 2) ** 2 * self.core.window_h)
+                    (np.pi * (self.core.geometry.window_w + self.core.geometry.core_inner_diameter / 2) ** 2 * self.core.geometry.window_h)
 
                 # subpart4: top mid-subpart
-                subpart1_4_height = self.core.core_inner_diameter / 4
-                subpart1_4_width = self.core.r_outer
+                subpart1_4_height = self.core.geometry.core_inner_diameter / 4
+                subpart1_4_width = self.core.geometry.r_outer
                 subpart1_4_volume = np.pi * subpart1_4_width ** 2 * subpart1_4_height
 
                 # subpart5: top left subpart
-                subpart1_5_height = self.core.window_h / 2 - topmost_airgap_position - topmost_airgap_height / 2
-                subpart1_5_width = self.core.core_inner_diameter / 2
+                subpart1_5_height = self.core.geometry.window_h / 2 - topmost_airgap_position - topmost_airgap_height / 2
+                subpart1_5_width = self.core.geometry.core_inner_diameter / 2
                 subpart1_5_volume = np.pi * subpart1_5_width ** 2 * subpart1_5_height
 
                 # Calculate the volume of core part 1 by summing up subpart volumes
@@ -798,24 +744,24 @@ class MagneticComponent:
 
             else:
                 # subpart1: left subpart
-                subpart1_1_height = self.core.window_h
-                subpart1_1_width = self.core.core_inner_diameter / 2
+                subpart1_1_height = self.core.geometry.window_h
+                subpart1_1_width = self.core.geometry.core_inner_diameter / 2
                 subpart1_1_volume = np.pi * subpart1_1_width ** 2 * subpart1_1_height
 
                 # subpart2: top subpart
-                subpart1_2_height = self.core.core_inner_diameter / 4
-                subpart1_2_width = self.core.r_outer
+                subpart1_2_height = self.core.geometry.core_inner_diameter / 4
+                subpart1_2_width = self.core.geometry.r_outer
                 subpart1_2_volume = np.pi * subpart1_2_width ** 2 * subpart1_2_height
 
                 # subpart3: right subpart
-                subpart1_3_height = self.core.window_h
-                subpart1_3_width = self.core.r_outer
+                subpart1_3_height = self.core.geometry.window_h
+                subpart1_3_width = self.core.geometry.r_outer
                 subpart1_3_volume = np.pi * subpart1_3_width ** 2 * subpart1_3_height - \
-                    (np.pi * (self.core.window_w + self.core.core_inner_diameter / 2) ** 2 * self.core.window_h)
+                    (np.pi * (self.core.geometry.window_w + self.core.geometry.core_inner_diameter / 2) ** 2 * self.core.geometry.window_h)
 
                 # subpart4: bottom subpart
-                subpart1_4_height = self.core.core_inner_diameter / 4
-                subpart1_4_width = self.core.r_outer
+                subpart1_4_height = self.core.geometry.core_inner_diameter / 4
+                subpart1_4_width = self.core.geometry.r_outer
                 subpart1_4_volume = np.pi * subpart1_4_width ** 2 * subpart1_4_height
 
                 # Calculate the volume of core part 1 by summing up subpart volumes
@@ -825,68 +771,68 @@ class MagneticComponent:
             # Return the total core part volume
             # return core_parts_volumes
 
-        elif self.core.core_type == CoreType.Stacked:
+        elif self.core.geometry.core_type == CoreType.Stacked:
 
             # For stacked core types, the volume is divided into different core  * parts, each of which is further
             # divided into parts to calculate the total volume of each core part.
 
             # core_part_2 : core part between the bottom air gap and subpart_1 of core_part_1
-            core_part_1_height = self.core.window_h_bot / 2 - heights[0] / 2
-            core_part_1_width = self.core.core_inner_diameter / 2
+            core_part_1_height = self.core.geometry.window_h_bot / 2 - heights[0] / 2
+            core_part_1_width = self.core.geometry.core_inner_diameter / 2
             core_part_1_volume = np.pi * core_part_1_width ** 2 * core_part_1_height
             core_parts_volumes.append(core_part_1_volume)
 
             # Core Part 1 Calculation
             # Core part 1 is calculated as the sum of three different parts
             # subpart_1: bottom left subpart
-            subpart2_1_height = self.core.window_h_bot / 2 - heights[0] / 2
-            subpart2_1_width = self.core.core_inner_diameter / 2
+            subpart2_1_height = self.core.geometry.window_h_bot / 2 - heights[0] / 2
+            subpart2_1_width = self.core.geometry.core_inner_diameter / 2
             subpart2_1_volume = np.pi * subpart2_1_width ** 2 * subpart2_1_height
 
             # subpart_2 : bottom mid subpart
-            subpart2_2_height = self.core.core_inner_diameter / 4
-            subpart2_2_width = self.core.r_outer
+            subpart2_2_height = self.core.geometry.core_inner_diameter / 4
+            subpart2_2_width = self.core.geometry.r_outer
             subpart2_2_volume = np.pi * subpart2_2_width ** 2 * subpart2_2_height
 
             # subpart_3: bottom right subpart
-            subpart2_3_height = self.core.window_h_bot
-            subpart2_3_width = self.core.r_outer
+            subpart2_3_height = self.core.geometry.window_h_bot
+            subpart2_3_width = self.core.geometry.r_outer
             subpart2_3_volume = np.pi * (subpart2_3_width ** 2 * subpart2_3_height) - \
-                np.pi * ((self.core.window_w + self.core.core_inner_diameter/2) ** 2 * self.core.window_h_bot)
+                np.pi * ((self.core.geometry.window_w + self.core.geometry.core_inner_diameter/2) ** 2 * self.core.geometry.window_h_bot)
 
             # Summing up the volumes of the parts to get the total volume of core part 1
             core_part_2_volume = subpart2_1_volume + subpart2_2_volume + subpart2_3_volume
             core_parts_volumes.append(core_part_2_volume)
 
             # core_part_3 : left mid core part (stacked)
-            core_part_3_height = self.core.core_inner_diameter / 4
-            core_part_3_width = self.core.r_inner
+            core_part_3_height = self.core.geometry.core_inner_diameter / 4
+            core_part_3_width = self.core.geometry.r_inner
             core_part_3_volume = np.pi * core_part_3_width ** 2 * core_part_3_height
             core_parts_volumes.append(core_part_3_volume)
 
             # core_part_4: right mid core part
-            core_part_4_height = self.core.core_inner_diameter / 4
-            core_part_4_width = self.core.r_outer
+            core_part_4_height = self.core.geometry.core_inner_diameter / 4
+            core_part_4_width = self.core.geometry.r_outer
             core_part_4_volume = np.pi * core_part_4_width ** 2 * core_part_4_height - core_part_3_volume
             core_parts_volumes.append(core_part_4_volume)
 
             # core_part_5
             # core_part_5 is divided into 3 parts
             # subpart_1: left top subpart
-            subpart5_1_height = self.core.window_h_top - heights[1] / 2
-            subpart5_1_width = self.core.core_inner_diameter / 2
+            subpart5_1_height = self.core.geometry.window_h_top - heights[1] / 2
+            subpart5_1_width = self.core.geometry.core_inner_diameter / 2
             subpart5_1_volume = np.pi * subpart5_1_width ** 2 * subpart5_1_height
 
             # subpart_2: mid top subpart
-            subpart5_2_height = self.core.core_inner_diameter / 4
-            subpart5_2_width = self.core.r_outer
+            subpart5_2_height = self.core.geometry.core_inner_diameter / 4
+            subpart5_2_width = self.core.geometry.r_outer
             subpart5_2_volume = np.pi * subpart5_2_width ** 2 * subpart5_2_height
 
             # subpart 3: top right subpart
-            subpart5_3_height = self.core.window_h_top
-            subpart5_3_width = self.core.r_outer
+            subpart5_3_height = self.core.geometry.window_h_top
+            subpart5_3_width = self.core.geometry.r_outer
             subpart5_3_volume = np.pi * (subpart5_3_width ** 2 * subpart5_3_height) - \
-                np.pi * ((self.core.window_w + self.core.core_inner_diameter / 2) ** 2 * self.core.window_h_top)
+                np.pi * ((self.core.geometry.window_w + self.core.geometry.core_inner_diameter / 2) ** 2 * self.core.geometry.window_h_top)
 
             # Summing up the volumes of the parts to get the total volume of core_part_5
             core_part_5_volume = subpart5_1_volume + subpart5_2_volume + subpart5_3_volume
@@ -918,15 +864,13 @@ class MagneticComponent:
         This method is using the core volume from for an ideal rotation-symmetric core and the volumetric mass
         density from the material database.
         """
-        if self.core.material == 'custom':
-            volumetric_mass_density = 0
+        if self.core.material.material == 'custom':
             warnings.warn("Volumetric mass density not implemented for custom cores. "
                           "Returns '0' in log-file: Core cost will also result to 0.",
                           stacklevel=2)
+            return float(0)
         else:
-            volumetric_mass_density = self.core.material_database.get_material_attribute(
-                material_name=self.core.material, attribute="volumetric_mass_density")
-        return self.calculate_core_volume() * volumetric_mass_density
+            return self.calculate_core_volume() * int(self.core.material.density)
 
     def get_wire_distances(self) -> list[list[float]]:
         """Return the distance (radius) of each conductor to the y-axis.
@@ -989,14 +933,14 @@ class MagneticComponent:
                             if vww_winding.winding_number == index:
                                 if winding_type == WindingType.Single:
                                     if winding_scheme == WindingScheme.Full:
-                                        cross_section_area = self.core.window_h * self.core.window_w
+                                        cross_section_area = self.core.geometry.window_h * self.core.geometry.window_w
                                     elif winding_scheme == WindingScheme.FoilHorizontal:
-                                        cross_section_area = self.core.window_w * winding.thickness
+                                        cross_section_area = self.core.geometry.window_w * winding.thickness
                                     elif winding_scheme == WindingScheme.FoilVertical:
                                         if wrap_para_type == WrapParaType.FixedThickness:
-                                            cross_section_area = self.core.window_h * winding.thickness
+                                            cross_section_area = self.core.geometry.window_h * winding.thickness
                                         elif wrap_para_type == WrapParaType.Interpolate:
-                                            cross_section_area = self.core.window_h * self.core.window_w / vww.turns[
+                                            cross_section_area = self.core.geometry.window_h * self.core.geometry.window_w / vww.turns[
                                                 vww_index]
                                         else:
                                             raise Exception(f"Unknown wrap para type {wrap_para_type}")
@@ -1007,7 +951,7 @@ class MagneticComponent:
                                     # supports round conductors this can be left empty.
                                     pass
                                 elif winding_type == WindingType.CenterTappedGroup:
-                                    cross_section_area = self.core.window_w * winding.thickness
+                                    cross_section_area = self.core.geometry.window_w * winding.thickness
                                 else:
                                     raise Exception(f"Unknown winding type {winding_type}")
             else:
@@ -1065,11 +1009,12 @@ class MagneticComponent:
 
         # -- Excitation --
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
-        if self.core.permeability["datasource"] != MaterialDataSource.Custom:
-            self.core.update_core_material_pro_file(frequency, self.file_data.electro_magnetic_folder_path,
-                                                    plot_interpolation)  # frequency update to core class
-        if self.core.permittivity["datasource"] != MaterialDataSource.Custom:
-            self.core.update_sigma(frequency)
+        if isinstance(self.core.material, ImportedComplexCoreMaterial):
+            self.core.material.update_core_material_pro_file(frequency,
+                                                             self.file_data.electro_magnetic_folder_path,
+                                                             plot_interpolation=plot_interpolation)
+            self.core.material.update_permittivity(frequency)
+
         # Has the user provided a list of phase angles?
         phase_deg_list = phase_deg_list or []
         # phase_deg_list = np.asarray(phase_deg_list)
@@ -1130,7 +1075,7 @@ class MagneticComponent:
                 self.red_freq[num] = 0
 
         # check the core saturation ( It does not work for custom)
-        if self.core.material != "custom":
+        if self.core.material.material != "custom":
             self.reluctance_model_pre_check()
 
     def excitation_time_domain(self, current_list: list[list[float]], time_list: list[float],
@@ -1163,12 +1108,10 @@ class MagneticComponent:
         self.frequency = 1/time_list[-1]
         # -- Excitation --
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
-        if self.core.permeability["datasource"] != MaterialDataSource.Custom:
-            self.core.update_core_material_pro_file(self.frequency,
-                                                    self.file_data.electro_magnetic_folder_path,
-                                                    plot_interpolation)  # frequency update to core class
-        if self.core.permittivity["datasource"] != MaterialDataSource.Custom:
-            self.core.update_sigma(self.frequency)
+
+        if isinstance(self.core.material, ImportedComplexCoreMaterial):
+            raise NotImplementedError("Time domain simulation is only valid for custom material")
+
         # time simulation parameters
         self.initial_time = 0  # defined 0
         self.step_time = time_list[1]  # convention!!! for fixed time steps
@@ -1289,11 +1232,6 @@ class MagneticComponent:
 
         # Set the excitation type (voltage or charge)
         self.flag_excitation_type = excitation_type
-
-        # Update material permittivity for the electrostatic analysis if not custom defined
-        if self.core.permittivity["datasource"] != MaterialDataSource.Custom:
-            self.core.update_core_material_pro_file(0, self.file_data.electro_magnetic_folder_path,
-                                                    plot_interpolation)  # No frequency is used in electrostatics
 
         # Apply the excitation to each turn in each winding
         num_windings = len(self.windings)
@@ -1461,7 +1399,6 @@ class MagneticComponent:
             self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg,
                             plot_interpolation=plot_interpolation)  # frequency and current
             self.check_create_empty_material_log()
-            self.check_model_mqs_condition()
             self.write_simulation_parameters_to_pro_files()
             self.generate_load_litz_approximation_parameters()
 
@@ -1484,7 +1421,6 @@ class MagneticComponent:
             self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg,
                             plot_interpolation=plot_interpolation)  # frequency and current
             self.check_create_empty_material_log()
-            self.check_model_mqs_condition()
             self.write_simulation_parameters_to_pro_files()
             self.generate_load_litz_approximation_parameters()
             self.simulate()
@@ -1528,7 +1464,6 @@ class MagneticComponent:
             self.excitation_time_domain(current_list=current_period_vec, time_list=time_period_vec,
                                         number_of_periods=number_of_periods, plot_interpolation=plot_interpolation)
 
-            self.check_model_mqs_condition()
             self.write_simulation_parameters_to_pro_files()
             self.generate_load_litz_approximation_parameters()
 
@@ -1552,7 +1487,6 @@ class MagneticComponent:
             self.mesh.generate_electro_magnetic_mesh()
             self.excitation_time_domain(current_list=current_period_vec, time_list=time_period_vec,
                                         number_of_periods=number_of_periods, plot_interpolation=plot_interpolation)
-            self.check_model_mqs_condition()
             self.write_simulation_parameters_to_pro_files()
             self.generate_load_litz_approximation_parameters()
             self.simulate()
@@ -1739,8 +1673,6 @@ class MagneticComponent:
                 self.excitation(frequency=frequency_list[count_frequency],
                                 amplitude_list=current_list_list[count_frequency],
                                 phase_deg_list=phi_deg_list_list[count_frequency])  # frequency and current
-                if count_frequency == 0:
-                    self.check_model_mqs_condition()
                 self.write_simulation_parameters_to_pro_files()
                 self.generate_load_litz_approximation_parameters()
                 self.simulate()
@@ -1755,14 +1687,10 @@ class MagneticComponent:
                                            save_png=save_png)
             self.mesh.generate_electro_magnetic_mesh()
 
-            check_model_mqs_condition_already_performed = False
-            for count_frequency, value_frequency in enumerate(range(0, len(frequency_list))):
+            for count_frequency, _ in enumerate(range(0, len(frequency_list))):
                 self.excitation(frequency=frequency_list[count_frequency],
                                 amplitude_list=current_list_list[count_frequency],
                                 phase_deg_list=phi_deg_list_list[count_frequency])  # frequency and current
-                if value_frequency != 0 and not check_model_mqs_condition_already_performed:
-                    self.check_model_mqs_condition()
-                    check_model_mqs_condition_already_performed = True
                 self.write_simulation_parameters_to_pro_files()
                 self.generate_load_litz_approximation_parameters()
                 self.simulate()
@@ -1833,7 +1761,6 @@ class MagneticComponent:
         self.generate_load_litz_approximation_parameters()
         self.excitation(frequency=hyst_frequency, amplitude_list=hyst_loss_amplitudes,
                         phase_deg_list=hyst_loss_phases_deg, plot_interpolation=False)  # frequency and current
-        self.check_model_mqs_condition()
         self.write_simulation_parameters_to_pro_files()
         self.generate_load_litz_approximation_parameters()
         self.simulate()
@@ -2257,7 +2184,7 @@ class MagneticComponent:
             pass
             # Correct the hysteresis loss for the triangular shaped flux density waveform
             # alpha_from_db, beta_from_db, k_from_db = mdb.MaterialDatabase(ff.silent).get_steinmetz(
-            # temperature=self.core.temperature, material_name=self.core.material, datasource="measurements",
+            # temperature=self.core.material.temperature, material_name=self.core.material.material, datasource="measurements",
             # datatype=mdb.MeasurementDataType.Steinmetz, measurement_setup="LEA_LK",interpolation_type="linear")
             # p_hyst_core_parts = factor_triangular_hysteresis_loss_iGSE(D=0.5, alpha=alpha_from_db) * p_hyst_core_parts
 
@@ -2300,27 +2227,27 @@ class MagneticComponent:
         core_parts_middle_reluctance = []
         sorted_midpoints = sorted(self.air_gaps.midpoints, key=lambda x: x[1]) if self.air_gaps.midpoints else []
 
-        if self.core.core_type == CoreType.Single:
+        if self.core.geometry.core_type == CoreType.Single:
 
             # If no air gaps, calculate reluctance for the whole left part
             if not sorted_midpoints:
-                core_part_length = self.core.window_h
-                core_part_reluctance = fr.r_core_tablet_2(core_part_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
+                core_part_length = self.core.geometry.window_h
+                core_part_reluctance = fr.r_core_tablet_2(core_part_length, self.core.geometry.core_inner_diameter / 2, self.core.material.mu_r_abs)
                 core_parts_reluctance.append(core_part_reluctance)
                 length.append(core_part_length)
             else:
                 # Calculate the subpart lengths and reluctance
                 # subpart 1: bot left part
-                core_part1_length = sorted_midpoints[0][1] + self.core.window_h / 2 - sorted_midpoints[0][2] / 2
+                core_part1_length = sorted_midpoints[0][1] + self.core.geometry.window_h / 2 - sorted_midpoints[0][2] / 2
                 length.append(core_part1_length)
-                core_part1_reluctance = fr.r_core_tablet_2(core_part1_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
+                core_part1_reluctance = fr.r_core_tablet_2(core_part1_length, self.core.geometry.core_inner_diameter / 2, self.core.material.mu_r_abs)
                 core_parts_reluctance.append(core_part1_reluctance)
                 # append this also to the bottom part reluctance for the integrated transformer
                 core_parts_bot_reluctance.append(core_part1_reluctance)
                 # subpart 2: top left part
-                core_part2_length = self.core.window_h / 2 - sorted_midpoints[-1][1] - sorted_midpoints[-1][2] / 2
+                core_part2_length = self.core.geometry.window_h / 2 - sorted_midpoints[-1][1] - sorted_midpoints[-1][2] / 2
                 length.append(core_part2_length)
-                core_part2_reluctance = fr.r_core_tablet_2(core_part2_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
+                core_part2_reluctance = fr.r_core_tablet_2(core_part2_length, self.core.geometry.core_inner_diameter / 2, self.core.material.mu_r_abs)
                 core_parts_reluctance.append(core_part2_reluctance)
                 # append this also to the bottom part reluctance for the integrated transformer
                 core_parts_top_reluctance.append(core_part2_reluctance)
@@ -2334,19 +2261,21 @@ class MagneticComponent:
                     # Dynamic Radius Calculation based on the current segment
                     if self.stray_path and i + 2 == self.stray_path.start_index + 2:
                         # First part (center leg section). It can be handled as an inner corner
-                        s_1 = (self.core.core_inner_diameter / 2) - (self.core.core_inner_diameter / (2 * np.sqrt(2)))
+                        s_1 = (self.core.geometry.core_inner_diameter / 2) - (self.core.geometry.core_inner_diameter / (2 * np.sqrt(2)))
                         core_inner_stray = (np.pi / 4) * (s_1 + (core_part_length / 2))
-                        core_inner_stray_reluctance = fr.r_core_round(self.core.core_inner_diameter, core_inner_stray, self.core.mu_r_abs)
+                        core_inner_stray_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter, core_inner_stray, self.core.material.mu_r_abs)
 
                         # second part (outer leg). It can be handled as outer corner
-                        s_2 = np.sqrt(((self.core.r_inner ** 2) + (self.core.r_outer ** 2)) / 2) - self.core.r_inner
+                        s_2 = np.sqrt(((self.core.geometry.r_inner ** 2) + (self.core.geometry.r_outer ** 2)) / 2) - self.core.geometry.r_inner
                         core_outer_stray_length = (np.pi / 4) * (s_2 + (core_part_length / 2))
-                        core_outer_stray_reluctance = fr.r_core_round(self.core.core_inner_diameter, core_outer_stray_length, self.core.mu_r_abs) * 2
+                        core_outer_stray_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter,
+                                                                      core_outer_stray_length,
+                                                                      self.core.material.mu_r_abs) * 2
                         # third part (window section). it can be handled as winding window section
-                        radius_center_leg = self.core.core_inner_diameter / 2
+                        radius_center_leg = self.core.geometry.core_inner_diameter / 2
                         radius_window_section = self.stray_path.length - radius_center_leg
-                        core_window_stray_reluctance = fr.r_core_top_bot_radiant(self.core.core_inner_diameter, radius_window_section,
-                                                                                 self.core.mu_r_abs, core_part_length)
+                        core_window_stray_reluctance = fr.r_core_top_bot_radiant(self.core.geometry.core_inner_diameter, radius_window_section,
+                                                                                 self.core.material.mu_r_abs, core_part_length)
                         # total
                         core_part_reluctance = core_inner_stray_reluctance + core_outer_stray_reluctance + core_window_stray_reluctance
                         core_parts_reluctance.append(core_part_reluctance)
@@ -2354,8 +2283,8 @@ class MagneticComponent:
                         core_parts_middle_reluctance.append(core_part_reluctance)
 
                     else:
-                        core_part_radius = self.core.core_inner_diameter / 2
-                        core_part_reluctance = fr.r_core_tablet_2(core_part_length, core_part_radius, self.core.mu_r_abs)
+                        core_part_radius = self.core.geometry.core_inner_diameter / 2
+                        core_part_reluctance = fr.r_core_tablet_2(core_part_length, core_part_radius, self.core.material.mu_r_abs)
                         core_parts_reluctance.append(core_part_reluctance)
                         length.append(core_part_length)
                         # Add this condition to check if the segment is over the stray path
@@ -2369,19 +2298,22 @@ class MagneticComponent:
             # The length over the area of the winding window section will be approximated to log(r_inner/core_inner_diameter/2) / 2 *pi * core_inner_diameter/4
             # This is taken from Appendix B of book "E. C. Snelling. Soft Ferrites, Properties and Applications. 2nd edition. Butterworths, 1988"
             # inner corners
-            s_1 = (self.core.core_inner_diameter / 2) - (self.core.core_inner_diameter / (2 * np.sqrt(2)))
-            length_inner = (np.pi / 4) * (s_1 + (self.core.core_inner_diameter / 8))
-            inner_reluctance = fr.r_core_round(self.core.core_inner_diameter, length_inner, self.core.mu_r_abs) * 2
+            s_1 = (self.core.geometry.core_inner_diameter / 2) - (self.core.geometry.core_inner_diameter / (2 * np.sqrt(2)))
+            length_inner = (np.pi / 4) * (s_1 + (self.core.geometry.core_inner_diameter / 8))
+            inner_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter, length_inner, self.core.material.mu_r_abs) * 2
             # outer corners
-            s_2 = np.sqrt(((self.core.r_inner ** 2) + (self.core.r_outer ** 2)) / 2) - self.core.r_inner
-            length_outer = (np.pi / 4) * (s_2 + (self.core.core_inner_diameter / 8))
-            outer_reluctance = fr.r_core_round(self.core.core_inner_diameter, length_outer, self.core.mu_r_abs) * 2
+            s_2 = np.sqrt(((self.core.geometry.r_inner ** 2) + (self.core.geometry.r_outer ** 2)) / 2) - self.core.geometry.r_inner
+            length_outer = (np.pi / 4) * (s_2 + (self.core.geometry.core_inner_diameter / 8))
+            outer_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter, length_outer, self.core.material.mu_r_abs) * 2
             # corners reluctance
             corner_reluctance = inner_reluctance + outer_reluctance
             # winding window
-            length_window = self.core.window_w
+            length_window = self.core.geometry.window_w
             window_reluctance = (fr.r_core_top_bot_radiant
-                                 (self.core.core_inner_diameter, length_window, self.core.mu_r_abs, self.core.core_inner_diameter / 4) * 2)
+                                 (self.core.geometry.core_inner_diameter,
+                                  length_window,
+                                  self.core.material.mu_r_abs,
+                                  self.core.geometry.core_inner_diameter / 4) * 2)
             core_part3_reluctance = corner_reluctance + window_reluctance
             # if it is integrated transformer, half will be to the top part and half to the bottom part
             if self.stray_path:
@@ -2396,21 +2328,21 @@ class MagneticComponent:
             # subpart 4: right subpart (outer leg)
             if self.stray_path:  # Integrated transformer
                 start_index = self.stray_path.start_index
-                core_part4_radius_eff = np.sqrt(self.core.r_outer ** 2 - self.core.r_inner ** 2)
+                core_part4_radius_eff = np.sqrt(self.core.geometry.r_outer ** 2 - self.core.geometry.r_inner ** 2)
 
                 # Segment above the stray path (top)
-                air_gap_top_position = sorted_midpoints[start_index + 1][1] + self.core.window_h / 2
+                air_gap_top_position = sorted_midpoints[start_index + 1][1] + self.core.geometry.window_h / 2
                 air_gap_top_height = sorted_midpoints[start_index + 1][2]
-                core_part4_top_length = self.core.window_h - air_gap_top_position + air_gap_top_height / 2
-                core_part4_top_reluctance = fr.r_core_tablet_2(core_part4_top_length, core_part4_radius_eff, self.core.mu_r_abs)
+                core_part4_top_length = self.core.geometry.window_h - air_gap_top_position + air_gap_top_height / 2
+                core_part4_top_reluctance = fr.r_core_tablet_2(core_part4_top_length, core_part4_radius_eff, self.core.material.mu_r_abs)
                 core_parts_top_reluctance.append(core_part4_top_reluctance)
                 length.append(core_part4_top_length)
 
                 # Segment below the stray path (bottom)
-                air_gap_bot_position = sorted_midpoints[start_index][1] + self.core.window_h / 2
+                air_gap_bot_position = sorted_midpoints[start_index][1] + self.core.geometry.window_h / 2
                 air_gap_bot_height = sorted_midpoints[start_index][2]
                 core_part4_bot_length = air_gap_bot_position + air_gap_bot_height / 2
-                core_part4_bot_reluctance = fr.r_core_tablet_2(core_part4_bot_length, core_part4_radius_eff, self.core.mu_r_abs)
+                core_part4_bot_reluctance = fr.r_core_tablet_2(core_part4_bot_length, core_part4_radius_eff, self.core.material.mu_r_abs)
                 core_parts_bot_reluctance.append(core_part4_bot_reluctance)
                 length.append(core_part4_bot_length)
 
@@ -2420,9 +2352,9 @@ class MagneticComponent:
                 core_parts_reluctance.append(core_part4_total_reluctance)
                 length.append(core_part4_total_length)
             else:
-                core_part4_length = self.core.window_h
-                core_part4_radius_eff = np.sqrt(self.core.r_outer ** 2 - self.core.r_inner ** 2)
-                core_part4_reluctance = fr.r_core_tablet_2(core_part4_length, core_part4_radius_eff, self.core.mu_r_abs)
+                core_part4_length = self.core.geometry.window_h
+                core_part4_radius_eff = np.sqrt(self.core.geometry.r_outer ** 2 - self.core.geometry.r_inner ** 2)
+                core_part4_reluctance = fr.r_core_tablet_2(core_part4_length, core_part4_radius_eff, self.core.material.mu_r_abs)
                 core_parts_reluctance.append(core_part4_reluctance)
                 length.append(core_part4_length)
 
@@ -2436,43 +2368,43 @@ class MagneticComponent:
                     core_middle_reluctance, core_parts_middle_reluctance, total_length)
 
         # Stacked core
-        elif self.core.core_type == CoreType.Stacked:
+        elif self.core.geometry.core_type == CoreType.Stacked:
             # Core parts lie in the center leg (bottom window)
             # first part (top left in the bottom window)
-            core_part1_length = self.core.window_h_bot / 2 - sorted_midpoints[0][2] / 2
+            core_part1_length = self.core.geometry.window_h_bot / 2 - sorted_midpoints[0][2] / 2
             length.append(core_part1_length)
-            core_part1_reluctance = fr.r_core_tablet_2(core_part1_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
+            core_part1_reluctance = fr.r_core_tablet_2(core_part1_length, self.core.geometry.core_inner_diameter / 2, self.core.material.mu_r_abs)
             core_parts_bot_reluctance.append(core_part1_reluctance)
             core_parts_reluctance.append(core_part1_reluctance)
             # second part (top left in the bottom window)
-            core_part2_length = self.core.window_h_bot / 2 - sorted_midpoints[0][2] / 2
+            core_part2_length = self.core.geometry.window_h_bot / 2 - sorted_midpoints[0][2] / 2
             length.append(core_part2_length)
-            core_part2_reluctance = fr.r_core_tablet_2(core_part2_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
+            core_part2_reluctance = fr.r_core_tablet_2(core_part2_length, self.core.geometry.core_inner_diameter / 2, self.core.material.mu_r_abs)
             core_parts_bot_reluctance.append(core_part2_reluctance)
             core_parts_reluctance.append(core_part2_reluctance)
             # third part (top left of the top winding window)
-            core_part3_length = self.core.window_h_top - sorted_midpoints[1][2]
+            core_part3_length = self.core.geometry.window_h_top - sorted_midpoints[1][2]
             length.append(core_part3_length)
-            core_part3_reluctance = fr.r_core_tablet_2(core_part3_length, self.core.core_inner_diameter / 2, self.core.mu_r_abs)
+            core_part3_reluctance = fr.r_core_tablet_2(core_part3_length, self.core.geometry.core_inner_diameter / 2, self.core.material.mu_r_abs)
             core_parts_top_reluctance.append(core_part3_reluctance)
             core_parts_reluctance.append(core_part3_reluctance)
             # core part 4 (inner and outer corners and window section)
             # In stacked core, there are inner corners, outer corners , and window sections above and below the bottom and top windows
             # So it is multiplied by 3
             # inner corners
-            s_1 = (self.core.core_inner_diameter / 2) - (self.core.core_inner_diameter / (2 * np.sqrt(2)))
-            length_inner = (np.pi / 4) * (s_1 + (self.core.core_inner_diameter / 8))
-            inner_reluctance = fr.r_core_round(self.core.core_inner_diameter, length_inner, self.core.mu_r_abs) * 3
+            s_1 = (self.core.geometry.core_inner_diameter / 2) - (self.core.geometry.core_inner_diameter / (2 * np.sqrt(2)))
+            length_inner = (np.pi / 4) * (s_1 + (self.core.geometry.core_inner_diameter / 8))
+            inner_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter, length_inner, self.core.material.mu_r_abs) * 3
             # outer corners
-            s_2 = np.sqrt(((self.core.r_inner ** 2) + (self.core.r_outer ** 2)) / 2) - self.core.r_inner
-            length_outer = (np.pi / 4) * (s_2 + (self.core.core_inner_diameter / 8))
-            outer_reluctance = fr.r_core_round(self.core.core_inner_diameter, length_outer, self.core.mu_r_abs) * 3
+            s_2 = np.sqrt(((self.core.geometry.r_inner ** 2) + (self.core.geometry.r_outer ** 2)) / 2) - self.core.geometry.r_inner
+            length_outer = (np.pi / 4) * (s_2 + (self.core.geometry.core_inner_diameter / 8))
+            outer_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter, length_outer, self.core.material.mu_r_abs) * 3
             # corners reluctance
             corner_reluctance = inner_reluctance + outer_reluctance
             # winding window
-            length_window = self.core.window_w
-            window_reluctance = (fr.r_core_top_bot_radiant(self.core.core_inner_diameter, length_window,
-                                                           self.core.mu_r_abs, self.core.core_inner_diameter / 4) * 3)
+            length_window = self.core.geometry.window_w
+            window_reluctance = (fr.r_core_top_bot_radiant(self.core.geometry.core_inner_diameter, length_window,
+                                                           self.core.material.mu_r_abs, self.core.geometry.core_inner_diameter / 4) * 3)
             core_part4_reluctance = corner_reluctance + window_reluctance
             # top , bot, and middle parts
             core_parts_top_reluctance.append(core_part4_reluctance / 3)
@@ -2485,17 +2417,17 @@ class MagneticComponent:
             length.append(core_part4_length)
 
             # core part 5: right part of the bottom window
-            core_part5_length = self.core.window_h_bot
-            core_part5_radius_eff = np.sqrt(self.core.r_outer ** 2 - self.core.r_inner ** 2)
-            core_part5_reluctance = fr.r_core_tablet_2(core_part5_length, core_part5_radius_eff, self.core.mu_r_abs)
+            core_part5_length = self.core.geometry.window_h_bot
+            core_part5_radius_eff = np.sqrt(self.core.geometry.r_outer ** 2 - self.core.geometry.r_inner ** 2)
+            core_part5_reluctance = fr.r_core_tablet_2(core_part5_length, core_part5_radius_eff, self.core.material.mu_r_abs)
             core_parts_bot_reluctance.append(core_part5_reluctance)
             core_parts_reluctance.append(core_part5_reluctance)
             length.append(core_part5_length)
 
             # core part 6: right part of the top window
-            core_part6_length = self.core.window_h_top
-            core_part6_radius_eff = np.sqrt(self.core.r_outer ** 2 - self.core.r_inner ** 2)
-            core_part6_reluctance = fr.r_core_tablet_2(core_part6_length, core_part6_radius_eff, self.core.mu_r_abs)
+            core_part6_length = self.core.geometry.window_h_top
+            core_part6_radius_eff = np.sqrt(self.core.geometry.r_outer ** 2 - self.core.geometry.r_inner ** 2)
+            core_part6_reluctance = fr.r_core_tablet_2(core_part6_length, core_part6_radius_eff, self.core.material.mu_r_abs)
             core_parts_top_reluctance.append(core_part6_reluctance)
             core_parts_reluctance.append(core_part6_reluctance)
             length.append(core_part6_length)
@@ -2535,8 +2467,8 @@ class MagneticComponent:
                 air_gap_2_position = self.air_gaps.midpoints[start_index + 1][1]
                 air_gap_2_height = self.air_gaps.midpoints[start_index + 1][2]
                 tablet_height = air_gap_2_position - air_gap_2_height / 2 - (air_gap_1_position + air_gap_1_height / 2)
-            airgap_height = self.core.r_inner - self.stray_path.length
-            radial_reluctance = fr.r_air_gap_tablet_cyl(tablet_height, airgap_height, self.core.core_inner_diameter, self.core.window_w)
+            airgap_height = self.core.geometry.r_inner - self.stray_path.length
+            radial_reluctance = fr.r_air_gap_tablet_cyl(tablet_height, airgap_height, self.core.geometry.core_inner_diameter, self.core.geometry.window_w)
             air_gap_radial_reluctance.append(radial_reluctance)
             air_gaps_reluctance.append(radial_reluctance)
         # Other air gaps (Type A and Type B)
@@ -2547,10 +2479,10 @@ class MagneticComponent:
             core_height_upper = 0
             core_height_lower = 0
             # If the core is single
-            if self.core.core_type == CoreType.Single:
-                position = air_gap[1] + self.core.window_h / 2
+            if self.core.geometry.core_type == CoreType.Single:
+                position = air_gap[1] + self.core.geometry.window_h / 2
                 # upper and lower core parts of the air gap
-                core_height_upper = self.core.window_h - position - (height / 2)
+                core_height_upper = self.core.geometry.window_h - position - (height / 2)
                 core_height_lower = position - (height / 2)
 
                 core_height_upper = max(core_height_upper, 0)
@@ -2563,39 +2495,39 @@ class MagneticComponent:
                 if self.stray_path and self.stray_path.start_index <= idx < self.stray_path.start_index + 2:
                     # Handle air gaps around the stray path
                     if idx == self.stray_path.start_index:
-                        reluctance = fr.r_air_gap_round_inf(height, self.core.core_inner_diameter, core_height_lower)
+                        reluctance = fr.r_air_gap_round_inf(height, self.core.geometry.core_inner_diameter, core_height_lower)
                         air_gaps_bot_reluctance.append(reluctance)
                         air_gaps_reluctance.append(reluctance)
                     elif idx == self.stray_path.start_index + 1:
-                        reluctance = fr.r_air_gap_round_inf(height, self.core.core_inner_diameter, core_height_upper)
+                        reluctance = fr.r_air_gap_round_inf(height, self.core.geometry.core_inner_diameter, core_height_upper)
                         air_gaps_top_reluctance.append(reluctance)
                         air_gaps_reluctance.append(reluctance)
                 else:
                     # If there is no stray path (not integrated transformer), but the airgap is at corner (not fully presented yet)
                     if core_height_upper == 0 or core_height_lower == 0:
-                        reluctance = fr.r_air_gap_round_inf(height, self.core.core_inner_diameter, core_height_lower + core_height_upper)
+                        reluctance = fr.r_air_gap_round_inf(height, self.core.geometry.core_inner_diameter, core_height_lower + core_height_upper)
                         if idx >= self.stray_path.start_index + 1:
                             air_gaps_top_reluctance.append(reluctance)
                         else:
                             air_gaps_bot_reluctance.append(reluctance)
                         air_gaps_reluctance.append(reluctance)
                     else:
-                        reluctance = fr.r_air_gap_round_round(height, self.core.core_inner_diameter, core_height_upper, core_height_lower)
+                        reluctance = fr.r_air_gap_round_round(height, self.core.geometry.core_inner_diameter, core_height_upper, core_height_lower)
                         if self.stray_path and idx >= self.stray_path.start_index + 1:
                             air_gaps_top_reluctance.append(reluctance)
                         else:
                             air_gaps_bot_reluctance.append(reluctance)
                         air_gaps_reluctance.append(reluctance)
             # iIf the core is stacked
-            elif self.core.core_type == CoreType.Stacked:
+            elif self.core.geometry.core_type == CoreType.Stacked:
                 # air gap in the bottom window
                 if air_gap == self.air_gaps.midpoints[0]:
-                    position = air_gap[1] + self.core.window_h_bot / 2
-                    core_height_upper = self.core.window_h_bot - position - (height / 2)
+                    position = air_gap[1] + self.core.geometry.window_h_bot / 2
+                    core_height_upper = self.core.geometry.window_h_bot - position - (height / 2)
                     core_height_lower = position - (height / 2)
                 # air gap in the top window
                 elif air_gap == self.air_gaps.midpoints[1]:
-                    core_height_upper = self.core.window_h_top - height
+                    core_height_upper = self.core.geometry.window_h_top - height
                     core_height_lower = 0
 
                 core_height_upper = max(core_height_upper, 0)
@@ -2607,10 +2539,10 @@ class MagneticComponent:
 
                 # Calculate reluctance based on whether core heights are zero
                 if core_height_upper == 0 or core_height_lower == 0:
-                    reluctance = fr.r_air_gap_round_inf(height, self.core.core_inner_diameter, core_height_lower + core_height_upper)
+                    reluctance = fr.r_air_gap_round_inf(height, self.core.geometry.core_inner_diameter, core_height_lower + core_height_upper)
                     air_gaps_top_reluctance.append(reluctance)
                 else:
-                    reluctance = fr.r_air_gap_round_round(height, self.core.core_inner_diameter, core_height_upper, core_height_lower)
+                    reluctance = fr.r_air_gap_round_round(height, self.core.geometry.core_inner_diameter, core_height_upper, core_height_lower)
                     air_gaps_bot_reluctance.append(reluctance)
 
                 air_gaps_reluctance.append(reluctance)
@@ -2642,7 +2574,7 @@ class MagneticComponent:
         (total_core_reluctance, core_part_reluctance, core_top_reluctance, core_part_top_reluctances, core_bot_reluctance, core_part_bot_reluctances,
          core_middle_reluctance, core_parts_middle_reluctance, total_length) = self.calculate_core_reluctance()
 
-        if not (self.stray_path or self.core.core_type == CoreType.Stacked):
+        if not (self.stray_path or self.core.geometry.core_type == CoreType.Stacked):
             reluctance_log["core_sections"] = []
             for i, rel in enumerate(core_part_reluctance):
                 reluctance_log["core_sections"].append({
@@ -2683,7 +2615,7 @@ class MagneticComponent:
         (total_air_gap_reluctance, air_gaps_reluctance, total_airgap_top_reluctance, air_gaps_top_reluctance, total_airgap_bot_reluctance,
          air_gaps_bot_reluctance, total_air_gap_radial_reluctance, air_gap_radial_reluctance) = self.air_gaps_reluctance()
 
-        if not (self.stray_path or self.core.core_type == CoreType.Stacked):
+        if not (self.stray_path or self.core.geometry.core_type == CoreType.Stacked):
             reluctance_log["air_gaps"] = []
             for i, rel in enumerate(air_gaps_reluctance):
                 reluctance_log["air_gaps"].append({
@@ -2752,7 +2684,7 @@ class MagneticComponent:
         (total_airgap_reluctance, airgap_reluctance, total_airgap_top_reluctance, air_gaps_top_reluctance, total_airgap_bot_reluctance, air_gaps_bot_reluctance,
          total_air_gap_radial_reluctance, air_gap_radial_reluctance) = self.air_gaps_reluctance()
         # Single core and no stray path
-        if self.core.core_type == CoreType.Single and not self.stray_path:
+        if self.core.geometry.core_type == CoreType.Single and not self.stray_path:
             # Calculate the total reluctance
             reluctance = core_reluctance + total_airgap_reluctance
 
@@ -2771,15 +2703,11 @@ class MagneticComponent:
             # Magnetic flux density
             b_field = total_flux / core_cross_sectional_area
 
-            # Get saturation flux density from material database
-            database = mdb.MaterialDatabase()
-            saturation_flux_density = database.get_saturation_flux_density(self.core.material)
-
             # # Check for saturation and raise error if B-field exceeds threshold
-            if abs(b_field) > saturation_threshold * saturation_flux_density:
+            if abs(b_field) > saturation_threshold * self.core.material.b_sat:
                 raise ValueError(
                     f"Core saturation detected! B-field ({abs(b_field)} T) exceeds {saturation_threshold * 100}% of the saturation flux density"
-                    f" ({saturation_flux_density} T).")
+                    f" ({self.core.material.b_sat} T).")
 
             logger.info(f"Reluctance model pre-check:\n"
                         f"    B-field: {b_field:.4f} T\n"
@@ -2789,14 +2717,14 @@ class MagneticComponent:
         else:
             # single core with stray path
             if len(self.windings) == 2:
-                if self.core.core_type == CoreType.Single and self.stray_path:
+                if self.core.geometry.core_type == CoreType.Single and self.stray_path:
                     # Values for the reluctance matrix
                     r1 = core_top_reluctance + core_middle_reluctance + total_airgap_top_reluctance + total_air_gap_radial_reluctance
                     r2 = -1 * (core_middle_reluctance + total_air_gap_radial_reluctance)
                     r3 = -1 * (core_middle_reluctance + total_air_gap_radial_reluctance)
                     r4 = core_bot_reluctance + core_middle_reluctance + total_airgap_bot_reluctance + total_air_gap_radial_reluctance
                 # stacked core
-                elif self.core.core_type == CoreType.Stacked:
+                elif self.core.geometry.core_type == CoreType.Stacked:
                     # Values for the reluctance matrix
                     r1 = core_top_reluctance + core_middle_reluctance + total_airgap_top_reluctance
                     r2 = -1 * core_middle_reluctance
@@ -2858,30 +2786,26 @@ class MagneticComponent:
                 b_field_bot = flux_bot / core_cross_sectional_area
                 b_field_middle = flux_middle / core_cross_sectional_area
 
-                # Get saturation flux density from material database
-                database = mdb.MaterialDatabase()
-                saturation_flux_density = database.get_saturation_flux_density(self.core.material)
-
-                if abs(b_field_top) > saturation_threshold * saturation_flux_density:
+                if abs(b_field_top) > saturation_threshold * self.core.material.b_sat:
                     raise ValueError(
                         f"Core saturation detected in top section! B-field ({abs(b_field_top)} T) exceeds "
-                        f"{saturation_threshold * 100}% of the saturation flux density ({saturation_flux_density} T).")
+                        f"{saturation_threshold * 100}% of the saturation flux density ({self.core.material.b_sat} T).")
 
-                if abs(b_field_bot) > saturation_threshold * saturation_flux_density:
+                if abs(b_field_bot) > saturation_threshold * self.core.material.b_sat:
                     raise ValueError(
                         f"Core saturation detected in bottom section! B-field ({abs(b_field_bot)} T) exceeds "
-                        f"{saturation_threshold * 100}% of the saturation flux density ({saturation_flux_density} T).")
+                        f"{saturation_threshold * 100}% of the saturation flux density ({self.core.material.b_sat} T).")
 
-                if abs(b_field_middle) > saturation_threshold * saturation_flux_density:
+                if abs(b_field_middle) > saturation_threshold * self.core.material.b_sat:
                     raise ValueError(
                         f"Core saturation detected in middle section! B-field ({abs(b_field_middle)} T) exceeds "
-                        f"{saturation_threshold * 100}% of the saturation flux density ({saturation_flux_density} T).")
+                        f"{saturation_threshold * 100}% of the saturation flux density ({self.core.material.b_sat} T).")
 
                 logger.info(f"B-field Top: {b_field_top:.4f} T")
                 logger.info(f"B-field Bottom: {b_field_bot:.4f} T")
                 logger.info(f"B-field Middle: {b_field_middle:.4f} T")
             else:
-                if self.core.core_type == CoreType.Stacked or self.stray_path:
+                if self.core.geometry.core_type == CoreType.Stacked or self.stray_path:
                     # Raise a warning if there are more than 2 windings in a stacked core with stray path
                     raise Warning("Warning: More than two windings detected in a stacked core with a stray path. "
                                   "This configuration is not fully supported.")
@@ -2901,7 +2825,7 @@ class MagneticComponent:
          air_gaps_bot_reluctance,
          total_air_gap_radial_reluctance, air_gap_radial_reluctance) = self.air_gaps_reluctance()
         # Single core Inductance (no stray path)
-        if self.core.core_type == CoreType.Single and not self.stray_path:
+        if self.core.geometry.core_type == CoreType.Single and not self.stray_path:
             # Calculate the total reluctance
             reluctance = core_reluctance + total_airgap_reluctance
             # Initialize the inductance matrix
@@ -2941,7 +2865,7 @@ class MagneticComponent:
             turns_top = [0] * num_windings
             turns_bottom = [0] * num_windings
             # stacked core
-            if self.core.core_type == CoreType.Stacked:
+            if self.core.geometry.core_type == CoreType.Stacked:
                 # Distribute turns across the top and bottom windows based on their order
                 for ww_index, ww in enumerate(self.winding_windows):
                     for vww in ww.virtual_winding_windows:
@@ -2952,7 +2876,7 @@ class MagneticComponent:
                             elif ww_index == 1:  # Second window is the bottom
                                 turns_bottom[index] += turns
             # single core with stray path
-            elif self.core.core_type == CoreType.Single and self.stray_path:
+            elif self.core.geometry.core_type == CoreType.Single and self.stray_path:
                 vww_index = 0
                 for ww in self.winding_windows:
                     for vww in ww.virtual_winding_windows:
@@ -3503,7 +3427,6 @@ class MagneticComponent:
         # self.mesh.generate_mesh()
         self.excitation(frequency=f_switch, amplitude_list=peak_current,
                         phase_deg_list=[0, 180])  # frequency and current
-        self.check_model_mqs_condition()
         self.write_simulation_parameters_to_pro_files()
 
     def write_electro_magnetic_parameter_pro(self):
@@ -3549,39 +3472,16 @@ class MagneticComponent:
             text_file.write("Freq = %s;\n" % self.frequency)
             text_file.write(f"delta = {self.delta};\n")
 
-            # Core Loss
-            text_file.write(f"Flag_Steinmetz_loss = {self.core.steinmetz_loss};\n")
-            text_file.write(f"Flag_Generalized_Steinmetz_loss = {self.core.generalized_steinmetz_loss};\n")
-
-            if self.core.sigma != 0 and self.core.sigma is not None:
-                text_file.write("Flag_Conducting_Core = 1;\n")
-                if isinstance(self.core.sigma, str):
-                    # TODO: Make following definition general
-                    # self.core.sigma = 2 * np.pi * self.frequency * epsilon_0 * f_N95_er_imag(f=self.frequency) + 1 / 6
-                    self.core.sigma = 1 / 6
-                text_file.write(f"sigma_core = {self.core.sigma.real};\n")
-                text_file.write(f"sigma_core_imag = {self.core.sigma.imag};\n")
-            else:
-                text_file.write("Flag_Conducting_Core = 0;\n")
-
-            if self.core.steinmetz_loss:
-                text_file.write(f"ki = {self.core.ki};\n")
-                text_file.write(f"alpha = {self.core.alpha};\n")
-                text_file.write(f"beta = {self.core.beta};\n")
-            if self.core.generalized_steinmetz_loss:
-                text_file.write(f"t_rise = {self.t_rise};\n")
-                text_file.write(f"t_fall = {self.t_fall};\n")
-                text_file.write(f"f_switch = {self.f_switch};\n")
-            # time domain parameters
-            if self.simulation_type == SimulationType.TimeDomain:
-                text_file.write(f"T = {self.time_period};\n")
-                text_file.write(f"time0 = {self.initial_time};\n")
-                text_file.write(f"timemax = {self.max_time};\n")
-                text_file.write(f"NbStepsPerPeriod = {self.nb_steps_per_period};\n")
-                text_file.write(f"NbSteps = {self.nb_steps};\n")
-                text_file.write(f"delta_t = {self.step_time};\n")
-                time_values_str = ', '.join(map(str, self.time))
-                text_file.write(f"TimeList = {{{time_values_str}}};\n")  # TimeList is interpolated with current lists in the solver
+        # time domain parameters
+        if self.simulation_type == SimulationType.TimeDomain:
+            text_file.write(f"T = {self.time_period};\n")
+            text_file.write(f"time0 = {self.initial_time};\n")
+            text_file.write(f"timemax = {self.max_time};\n")
+            text_file.write(f"NbStepsPerPeriod = {self.nb_steps_per_period};\n")
+            text_file.write(f"NbSteps = {self.nb_steps};\n")
+            text_file.write(f"delta_t = {self.step_time};\n")
+            time_values_str = ', '.join(map(str, self.time))
+            text_file.write(f"TimeList = {{{time_values_str}}};\n")  # TimeList is interpolated with current lists in the solver
 
         # Conductor specific definitions
         for winding_number in range(len(self.windings)):
@@ -3691,8 +3591,6 @@ class MagneticComponent:
             # Conductor Material
             text_file.write(f"sigma_winding_{winding_number + 1} = {self.windings[winding_number].cond_sigma};\n")
 
-        # -- Materials --
-
         # Nature Constants
         text_file.write("mu0 = 4.e-7 * Pi;\n")
         text_file.write("nu0 = 1 / mu0;\n")
@@ -3703,39 +3601,34 @@ class MagneticComponent:
             text_file.write("er_layer_insulation = 1.0;\n")
         text_file.write(f"er_bobbin = {self.insulation.er_bobbin};\n")
 
-        # Material Properties
-
-        # Core Material
-        # if self.frequency == 0:
-        if self.core.non_linear:
-            text_file.write("Flag_NL = 1;\n")
-            text_file.write(
-                f"Core_Material = {self.core.material};\n")  # relative permeability is defined at simulation runtime
-            # text_file.write(f"Flag_NL = 0;\n")
-        else:
-            text_file.write("Flag_NL = 0;\n")
-            text_file.write(f"mur = {self.core.mu_r_abs};\n")  # mur is predefined to a fixed value
-            if self.core.permeability_type == PermeabilityType.FromData:
+        if not self.simulation_type == SimulationType.ElectroStatic:
+            # Core Material
+            text_file.write(f"mur = {self.core.material.mu_r_abs};\n")  # mur is predefined to a fixed value
+            if self.core.material.permeability_type == PermeabilityType.FromData:
                 text_file.write("Flag_Permeability_From_Data = 1;\n")  # mur is predefined to a fixed value
             else:
                 text_file.write("Flag_Permeability_From_Data = 0;\n")  # mur is predefined to a fixed value
-            if self.core.permeability_type == PermeabilityType.FixedLossAngle:
-                # loss angle for complex representation of hysteresis loss
-                text_file.write(f"phi_mu_deg = {self.core.phi_mu_deg};\n")
+            if self.core.material.permeability_type == PermeabilityType.FixedLossAngle:
                 # Real part of complex permeability
-                text_file.write(f"mur_real = {self.core.mu_r_abs * np.cos(np.deg2rad(self.core.phi_mu_deg))};\n")
+                text_file.write(f"mur_real = {self.core.material.mu_r_abs * np.cos(np.deg2rad(self.core.material.phi_mu_deg))};\n")
                 # Imaginary part of complex permeability
                 text_file.write(
-                    f"mur_imag = {self.core.mu_r_abs * np.sin(np.deg2rad(self.core.phi_mu_deg))};\n")
+                    f"mur_imag = {self.core.material.mu_r_abs * np.sin(np.deg2rad(self.core.material.phi_mu_deg))};\n")
                 # loss angle for complex representation of hysteresis loss
                 text_file.write("Flag_Fixed_Loss_Angle = 1;\n")
             else:
                 text_file.write(
                     "Flag_Fixed_Loss_Angle = 0;\n")  # loss angle for complex representation of hysteresis loss
 
-        # if self.frequency != 0:
-        #    text_file.write(f"Flag_NL = 0;\n")
-        #    text_file.write(f"mur = {self.core.mu_rel};\n")
+            # Complex (equivalent) conductivity
+            self.core.material.complex_conductance = \
+                self.core.material.dc_conductivity + complex(0, 1) * 2 * np.pi * self.frequency * self.core.material.complex_permittivity
+            if self.core.material.complex_conductance != 0 and self.core.material.complex_conductance is not None:
+                text_file.write("Flag_Conducting_Core = 1;\n")
+                text_file.write(f"sigma_core_real = {self.core.material.complex_conductance.real};\n")
+                text_file.write(f"sigma_core_imag = {self.core.material.complex_conductance.imag};\n")
+            else:
+                text_file.write("Flag_Conducting_Core = 0;\n")
 
         text_file.close()
 
@@ -4485,10 +4378,10 @@ class MagneticComponent:
             "lengths_air_gap": []
         }
 
-        if self.core.core_type == CoreType.Stacked:
+        if self.core.geometry.core_type == CoreType.Stacked:
             coordinates_dict["core_type"] = "Stacked"
 
-        if self.core.core_type == CoreType.Single:
+        if self.core.geometry.core_type == CoreType.Single:
             coordinates_dict["core_type"] = "Single"
 
         # Obtain coordinates data from component
@@ -4496,12 +4389,12 @@ class MagneticComponent:
         coordinates_dict["p_outer"][0][0], coordinates_dict["p_outer"][2][0] = 0, 0  # 2d axi symmetric: description only of right half
         # Obtain airgap center points and length
         # Single core
-        if self.core.core_type == CoreType.Single:
+        if self.core.geometry.core_type == CoreType.Single:
             coordinates_dict["p_ww"] = self.two_d_axi.p_window[4:, :2].tolist()  # cut first 4 rows (left winding window) and last 2 columns ("-")
             coordinates_dict["p_air_gap_center"], coordinates_dict["lengths_air_gap"] = \
                 ff.convert_air_gap_corner_points_to_center_and_distance(self.two_d_axi.p_air_gaps.tolist())  # transform to center points and extract heights
         # Stacked core
-        elif self.core.core_type == CoreType.Stacked:
+        elif self.core.geometry.core_type == CoreType.Stacked:
             coordinates_dict["p_ww"] = {
                 "bot": self.two_d_axi.p_window_bot[:, :2].tolist(),  # cut last 2 columns (bot window)
                 "top": self.two_d_axi.p_window_top[:, :2].tolist()  # cut last 2 columns (top window)
@@ -4570,9 +4463,9 @@ class MagneticComponent:
                 material_dict = json.loads(fd.read())
 
             # Frequency/Temperature in operation point
-            material_dict[f"T_{self.core.temperature}__f_{self.frequency}"] = {
-                "sigma_core_real": self.core.sigma.real,
-                "sigma_core_imag": self.core.sigma.imag,
+            material_dict[f"T_{self.core.material.temperature}__f_{self.frequency}"] = {
+                "sigma_core_real": self.core.material.complex_conductance.real,
+                "sigma_core_imag": self.core.material.complex_conductance.imag,
                 "magnetic_flux_density": magnetic_flux_density,
                 "permeability_real": permeability_real,
                 "permeability_imag": permeability_imag
@@ -5231,22 +5124,17 @@ class MagneticComponent:
         femm.mi_probdef(freq, 'meters', 'axi', 1.e-8, 0, 30)
 
         # == Materials ==
-        if self.core.sigma != 0:
-            if isinstance(self.core.sigma, str):
-                # TODO: Make following definition general
-                # self.core.sigma = 2 * np.pi * self.frequency * epsilon_0 * f_N95_er_imag(f=self.frequency) + 1 / 6
-                self.core.sigma = 1 / 6
 
-        logger.info(f"{self.core.permeability_type=}, {self.core.sigma=}")
-        if self.core.permeability_type == PermeabilityType.FixedLossAngle:
-            femm.mi_addmaterial('Ferrite', self.core.mu_r_abs, self.core.mu_r_abs, 0, 0, self.core.sigma / 1e6, 0, 0, 1,
-                                0, self.core.phi_mu_deg, self.core.phi_mu_deg)
-        elif self.core.permeability_type == PermeabilityType.RealValue:
-            femm.mi_addmaterial('Ferrite', self.core.mu_r_abs, self.core.mu_r_abs, 0, 0, self.core.sigma / 1e6, 0, 0, 1,
-                                0, self.core.phi_mu_deg, self.core.phi_mu_deg)
+        logger.info(f"{self.core.material.permeability_type=}, {self.core.material.complex_conductance.real=}")
+        if self.core.material.permeability_type == PermeabilityType.FixedLossAngle:
+            femm.mi_addmaterial('Ferrite', self.core.material.mu_r_abs, self.core.material.mu_r_abs, 0, 0, self.core.material.complex_conductance.real / 1e6,
+                                0, 0, 1, 0, self.core.material.phi_mu_deg, self.core.material.phi_mu_deg)
+        elif self.core.material.permeability_type == PermeabilityType.RealValue:
+            femm.mi_addmaterial('Ferrite', self.core.material.mu_r_abs, self.core.material.mu_r_abs, 0, 0, self.core.material.complex_conductance.real / 1e6,
+                                0, 0, 1, 0, self.core.material.phi_mu_deg, self.core.material.phi_mu_deg)
         else:
-            femm.mi_addmaterial('Ferrite', self.core.mu_r_abs, self.core.mu_r_abs, 0, 0, self.core.sigma / 1e6, 0, 0, 1,
-                                0, 0, 0)
+            femm.mi_addmaterial('Ferrite', self.core.material.mu_r_abs, self.core.material.mu_r_abs, 0, 0, self.core.material.complex_conductance.real / 1e6,
+                                0, 0, 1, 0, 0, 0)
         femm.mi_addmaterial('Air', 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0)
 
         for i in range(0, len(self.windings)):
@@ -6667,28 +6555,27 @@ class MagneticComponent:
             else:
                 raise ValueError("unknown core_type for decoding from result_log.")
 
-            if isinstance(settings["core"]["sigma"], list):
-                # in case of sigma is a complex number, it is given as a list and needs to translated to complex.
-                settings["core"]["sigma"] = complex(settings["core"]["sigma"][0], settings["core"]["sigma"][1])
+            if settings["core"]["material_model_type"] == CoreMaterialType.Linear:
+                core_material = LinearComplexCoreMaterial(mu_r_abs=settings["core"]["mu_r_abs"],
+                                                          phi_mu_deg=settings["core"]["phi_mu_deg"],
+                                                          dc_conductivity=settings["core"]["dc_conductivity"],
+                                                          eps_r_abs=settings["core"]["eps_r_abs"],
+                                                          phi_eps_deg=settings["core"]["phi_eps_deg"])
 
-            if settings["core"]["material"] != 'custom':
-                # a custom core does not need a material, measurement_setup and _datatype
-                settings["core"]["material"] = Material(settings["core"]["material"])
-                settings["core"]["permeability_measurement_setup"] = \
-                    MeasurementSetup(settings["core"]["permeability_measurement_setup"])
-                settings["core"]["permeability_datatype"] = \
-                    MeasurementDataType(settings["core"]["permeability_datatype"])
-                settings["core"]["permittivity_measurement_setup"] = \
-                    MeasurementSetup(settings["core"]["permittivity_measurement_setup"])
-                settings["core"]["permittivity_datatype"] = \
-                    MeasurementDataType(settings["core"]["permittivity_datatype"])
+            elif settings["core"]["material_model_type"] == CoreMaterialType.Imported:
+                core_material = ImportedComplexCoreMaterial(material=settings["core"]["material"],
+                                                            temperature=settings["core"]["temperature"],
+                                                            permeability_datasource=settings["core"]["permeability_datasource"],
+                                                            permeability_datatype=settings["core"]["permeability_datatype"],
+                                                            permeability_measurement_setup=settings["core"]["permeability_measurement_setup"],
+                                                            permittivity_datasource=settings["core"]["permittivity_datasource"],
+                                                            permittivity_datatype=settings["core"]["permittivity_datatype"],
+                                                            permittivity_measurement_setup=settings["core"]["permittivity_measurement_setup"])
 
-            settings["core"]["permeability_datasource"] = \
-                MaterialDataSource(settings["core"]["permeability_datasource"])
-            settings["core"]["permittivity_datasource"] = \
-                MaterialDataSource(settings["core"]["permittivity_datasource"])
-
-            core = Core(core_dimensions=core_dimensions, **settings["core"])
+            core = Core(core_type=settings["core"]["core_type"],
+                        core_dimensions=core_dimensions,
+                        material=core_material,
+                        detailed_core_model=settings["core"]["correct_outer_leg"])
             geo.set_core(core)
 
             if "air_gaps" in settings:
@@ -6717,7 +6604,9 @@ class MagneticComponent:
                     conductors = []
                     for winding in vww["windings"]:
                         winding_number = winding["winding_number"]
-                        conductor = Conductor(winding["winding_number"], Conductivity[winding["conductivity"]])
+                        conductor = Conductor(winding["winding_number"],
+                                              material=ConductorMaterial[winding["material"]],
+                                              temperature=winding["temperature"])
                         conductor_type = ConductorType[winding["conductor_type"]]
                         if conductor_type == ConductorType.RectangularSolid:
                             conductor.set_rectangular_conductor(winding["thickness"])
@@ -6743,7 +6632,22 @@ class MagneticComponent:
                         winding_scheme = WindingScheme[vww["winding_scheme"]] if vww["winding_scheme"] \
                             is not None else None
                         wrap_para_type = WrapParaType[vww["wrap_para"]] if vww["wrap_para"] is not None else None
-                        new_vww.set_winding(conductors[0], turns[winding_number], winding_scheme, wrap_para_type)
+                        alignment = Align[vww["alignment"]] if vww["alignment"] is not None else None
+                        placing_strategy = ConductorDistribution[vww["placing_strategy"]] if vww["placing_strategy"] is not None else None
+                        zigzag = vww["zigzag"] if vww["zigzag"] is not None else None
+                        foil_vertical_placing_strategy = FoilVerticalDistribution[vww["foil_vertical_placing_strategy"]] if \
+                            vww["foil_vertical_placing_strategy"] is not None else None
+                        foil_horizontal_placing_strategy = FoilHorizontalDistribution[vww["foil_horizontal_placing_strategy"]] if \
+                            vww["foil_horizontal_placing_strategy"] is not None else None
+                        new_vww.set_winding(conductor=conductors[0],
+                                            turns=turns[winding_number],
+                                            winding_scheme=winding_scheme,
+                                            alignment=alignment,
+                                            placing_strategy=placing_strategy,
+                                            zigzag=zigzag,
+                                            wrap_para_type=wrap_para_type,
+                                            foil_vertical_placing_strategy=foil_vertical_placing_strategy,
+                                            foil_horizontal_placing_strategy=foil_horizontal_placing_strategy)
                         logger.info(turns[0])
                     elif winding_type == WindingType.TwoInterleaved:
                         new_vww.set_interleaved_winding(conductors[0], turns[0], conductors[1], turns[1],

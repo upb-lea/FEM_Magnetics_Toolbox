@@ -52,17 +52,16 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
                                                     window_h=core_db["window_h"],
                                                     core_h=core_db["core_h"])
 
-    core = fmt.Core(core_type=fmt.CoreType.Single,
+    core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
+                                                    temperature=45,
+                                                    permeability_datasource=fmt.DataSource.TDK_MDT,
+                                                    permittivity_datasource=fmt.DataSource.LEA_MTB,
+                                                    mdb_verbosity=fmt.Verbosity.Silent)
+
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
-                    detailed_core_model=False,
-                    material=fmt.Material.N49, temperature=45, frequency=inductor_frequency,
-                    # permeability_datasource="manufacturer_datasheet",
-                    permeability_datasource=fmt.MaterialDataSource.Measurement,
-                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                    permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
-                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                    permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+                    detailed_core_model=False)
 
     geo.set_core(core)
     # 3. set air gap parameters
@@ -95,7 +94,7 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
     vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
     # 6. create conductor and set parameters: use solid wires
-    winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=45)
+    winding = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=45)
     winding.set_solid_round_conductor(conductor_radius=1.1506e-3, conductor_arrangement=fmt.ConductorArrangement.Hexagonal)
     winding.parallel = False  # set True to make the windings parallel, currently only for solid conductors
     # 7. add conductor to vww and add winding window to MagneticComponent

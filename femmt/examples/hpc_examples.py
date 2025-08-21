@@ -24,9 +24,16 @@ def create_parallel_example_transformer() -> fmt.MagneticComponent:
     """Create an example model which is used for the parallel execution example. This does implement a simple transformer."""
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory, onelab_verbosity=fmt.Verbosity.ToFile)
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295, core_h=0.015/2)
-    core = fmt.Core(core_dimensions=core_dimensions, non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10,
-                    permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom,
-                    mdb_verbosity=fmt.Verbosity.Silent)
+    core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3200,
+                                                  phi_mu_deg=10,
+                                                  dc_conductivity=1,
+                                                  eps_r_abs=0,
+                                                  phi_eps_deg=0,
+                                                  mdb_verbosity=fmt.Verbosity.Silent)
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Single,
+                    core_dimensions=core_dimensions,
+                    detailed_core_model=False)
     geo.set_core(core)
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
@@ -38,9 +45,9 @@ def create_parallel_example_transformer() -> fmt.MagneticComponent:
     geo.set_insulation(insulation)
     winding_window = fmt.WindingWindow(core, insulation)
     vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
-    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
     winding1.set_solid_round_conductor(0.0011, None)
-    winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
     winding2.set_solid_round_conductor(0.0011, None)
     vww.set_interleaved_winding(winding1, 21, winding2, 7, fmt.InterleavedWindingScheme.HorizontalAlternating)
     geo.set_winding_windows([winding_window])
@@ -83,7 +90,7 @@ def create_parallel_example_inductor(inductor_frequency: int, air_gap_height: fl
     geo.set_insulation(insulation)
     winding_window = fmt.WindingWindow(core, insulation)
     vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
-    winding = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
     winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
     # winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,fill_factor=None,
     # conductor_arrangement=fmt.ConductorArrangement.Square)

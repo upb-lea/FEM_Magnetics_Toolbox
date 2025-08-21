@@ -449,9 +449,6 @@ timemax
 NbSetpsPerPeriod
 NbSteps
 
-
-
-
 # electrostatic
 Kapton
 Capacitances
@@ -525,6 +522,18 @@ bOPET
 xlsxwriter
 Thermoset
 Polyphenylene
+
+# mdb
+mdb
+CoreMaterial
+CoreType
+CoreGeometry
+DataSource
+eps
+ListAlt
+InterpolationLinear
+
+
 
 # logging
 FEMMTLogger

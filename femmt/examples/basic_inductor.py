@@ -109,7 +109,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     if onelab_folder is not None:
         geo.file_data.onelab_folder_path = onelab_folder
 
-    inductor_frequency = 270000
+    inductor_frequency = 270_000
 
     # 2.1a set core parameters
     core_db = fmt.core_database()["PQ 40/40"]
@@ -118,17 +118,16 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
                                                     window_h=core_db["window_h"],
                                                     core_h=core_db["core_h"])
 
-    core = fmt.Core(core_type=fmt.CoreType.Single,
+    core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
+                                                    temperature=45,
+                                                    permeability_datasource=fmt.DataSource.TDK_MDT,
+                                                    permittivity_datasource=fmt.DataSource.LEA_MTB,
+                                                    mdb_verbosity=fmt.Verbosity.Silent)
+
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
-                    detailed_core_model=False,
-                    material=fmt.Material.N49, temperature=45, frequency=inductor_frequency,
-                    # permeability_datasource="manufacturer_datasheet",
-                    permeability_datasource=fmt.MaterialDataSource.Measurement,
-                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                    permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
-                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                    permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+                    detailed_core_model=False)
 
     geo.set_core(core)
 
@@ -156,7 +155,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
     # 6. create conductor and set parameters: use solid wires
-    winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=45)
+    winding = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=45)
     winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
     winding.parallel = False  # set True to make the windings parallel, currently only for solid conductors
     # winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
@@ -184,12 +183,12 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # 9. start simulation
 
     # 7. prepare and start thermal simulation
-    example_thermal_simulation(show_visual_outputs, flag_insulation=True)
+    # example_thermal_simulation(show_visual_outputs, flag_insulation=True)
 
     # Extract the capacitance of inductor component
-    geo.get_capacitance_of_inductor_component(show_fem_simulation_results=False)
+#     geo.get_capacitance_of_inductor_component(show_fem_simulation_results=False)
     # geo.get_inductor_stray_capacitance(show_visual_outputs=True)
 
 
 if __name__ == "__main__":
-    basic_example_inductor(show_visual_outputs=True)
+    basic_example_inductor(show_visual_outputs=False)

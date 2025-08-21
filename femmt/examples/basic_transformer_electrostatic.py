@@ -55,17 +55,16 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
                                                     window_w=core_db["window_w"],
                                                     window_h=core_db["window_h"],
                                                     core_h=core_db["core_h"])
-    core = fmt.Core(core_type=fmt.CoreType.Single,
+    # core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
+    #                                                 temperature=45,
+    #                                                 permeability_datasource=fmt.DataSource.TDK_MDT,
+    #                                                 permittivity_datasource=fmt.DataSource.LEA_MTB,
+    #                                                 mdb_verbosity=fmt.Verbosity.Silent)
+
+    core = fmt.Core(material=None,
+                    core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
-                    detailed_core_model=False,
-                    material=fmt.Material.N49, temperature=45, frequency=0,
-                    # permeability_datasource="manufacturer_datasheet",
-                    permeability_datasource=fmt.MaterialDataSource.Measurement,
-                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                    permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
-                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                    permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+                    detailed_core_model=False)
 
     geo.set_core(core)
 
@@ -104,7 +103,7 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     #                                                    vertical_split_factors=None)
 
     # 6. create conductors and set parameters
-    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
     # winding1.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
     # winding1.set_solid_round_conductor(0.35e-3, fmt.ConductorArrangement.Square)
     winding1.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
@@ -115,7 +114,7 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
     # winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
     # winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
-    winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
     # winding2.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
     winding2.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
     winding2.parallel = False
