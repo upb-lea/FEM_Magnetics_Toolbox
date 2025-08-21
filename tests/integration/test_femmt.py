@@ -2112,17 +2112,16 @@ def fixture_inductor_electrostatic(temp_folder: pytest.fixture):
                                                         window_w=core_db["window_w"],
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
-        core = fmt.Core(core_type=fmt.CoreType.Single,
+        core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
+                                                        temperature=45,
+                                                        permeability_datasource=fmt.DataSource.TDK_MDT,
+                                                        permittivity_datasource=fmt.DataSource.LEA_MTB,
+                                                        mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
                         core_dimensions=core_dimensions,
-                        detailed_core_model=False,
-                        material=fmt.Material.N49, temperature=45, frequency=2700000,
-                        # permeability_datasource="manufacturer_datasheet",
-                        permeability_datasource=fmt.MaterialDataSource.Measurement,
-                        permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                        permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
-                        permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                        permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                        permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+                        detailed_core_model=False)
 
         geo.set_core(core)
 
@@ -2156,7 +2155,7 @@ def fixture_inductor_electrostatic(temp_folder: pytest.fixture):
         vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
         # 6. create conductor and set parameters: use solid wires
-        winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=45)
+        winding = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=45)
         winding.set_solid_round_conductor(conductor_radius=1.1506e-3, conductor_arrangement=fmt.ConductorArrangement.Square)
         winding.parallel = False  # set True to make the windings parallel, currently only for solid conductors
         # 7. add conductor to vww and add winding window to MagneticComponent
@@ -2217,17 +2216,17 @@ def fixture_transformer_electrostatic(temp_folder: pytest.fixture):
                                                         window_w=core_db["window_w"],
                                                         window_h=core_db["window_h"],
                                                         core_h=core_db["core_h"])
-        core = fmt.Core(core_type=fmt.CoreType.Single,
+
+        core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
+                                                        temperature=45,
+                                                        permeability_datasource=fmt.DataSource.TDK_MDT,
+                                                        permittivity_datasource=fmt.DataSource.LEA_MTB,
+                                                        mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
                         core_dimensions=core_dimensions,
-                        detailed_core_model=False,
-                        material=fmt.Material.N49, temperature=45, frequency=0,
-                        # permeability_datasource="manufacturer_datasheet",
-                        permeability_datasource=fmt.MaterialDataSource.Measurement,
-                        permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                        permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
-                        permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                        permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                        permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+                        detailed_core_model=False)
 
         geo.set_core(core)
 
@@ -2260,10 +2259,10 @@ def fixture_transformer_electrostatic(temp_folder: pytest.fixture):
         cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.29],
                                                            vertical_split_factors=None)
         # 6. create conductors and set parameters
-        winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+        winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
         winding1.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
 
-        winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+        winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
         # winding2.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
         winding2.set_solid_round_conductor(1.1506e-3, fmt.ConductorArrangement.Square)
         winding2.parallel = False

@@ -52,7 +52,6 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
                                                     window_h=core_db["window_h"],
                                                     core_h=core_db["core_h"])
 
-
     core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
                                                     temperature=45,
                                                     permeability_datasource=fmt.DataSource.TDK_MDT,

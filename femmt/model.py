@@ -537,8 +537,8 @@ class Core:
         :type plot_interpolation: bool
         """
         self.material.update_core_material_pro_file(frequency=self.frequency,
-                                                         folder=self.file_data.electro_magnetic_folder_path,
-                                                         plot_interpolation=plot_interpolation)
+                                                    folder=self.file_data.electro_magnetic_folder_path,
+                                                    plot_interpolation=plot_interpolation)
 
     def to_dict(self) -> Dict[str, Union[str, float, bool]]:
         """Return combined dictionary of core geometry and material properties.
@@ -1236,7 +1236,8 @@ class WindingWindow:
             else:
                 # top section
                 self.max_bot_bound_top_section = core.geometry.window_h_bot / 2 + core.geometry.core_thickness + insulations.top_section_core_cond[1]
-                self.max_top_bound_top_section = core.geometry.window_h_bot / 2 + core.geometry.window_h_top + core.geometry.core_thickness - insulations.top_section_core_cond[0]
+                self.max_top_bound_top_section = (core.geometry.window_h_bot / 2 + core.geometry.window_h_top + core.geometry.core_thickness - \
+                                                  insulations.top_section_core_cond[0])
                 self.max_left_bound_top_section = core.geometry.core_inner_diameter / 2 + insulations.top_section_core_cond[2]
                 self.max_right_bound_top_section = core.geometry.r_inner - insulations.top_section_core_cond[3]
 
@@ -1248,7 +1249,8 @@ class WindingWindow:
 
                 # general
                 self.max_bot_bound = -core.geometry.window_h_bot / 2 + insulations.bot_section_core_cond[1]
-                self.max_top_bound = core.geometry.window_h_bot / 2 + core.geometry.window_h_top + core.geometry.core_thickness - insulations.top_section_core_cond[0]
+                self.max_top_bound = core.geometry.window_h_bot / 2 + core.geometry.window_h_top + core.geometry.core_thickness - \
+                    insulations.top_section_core_cond[0]
                 self.max_left_bound = core.geometry.core_inner_diameter / 2 + insulations.top_section_core_cond[2]
                 self.max_right_bound = core.geometry.r_inner - insulations.top_section_core_cond[3]
 
