@@ -111,10 +111,19 @@ def basic_example_transformer_stacked(onelab_folder: str = None, show_visual_out
     # 2. set core parameters
     core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=0.02, window_w=0.02, window_h_top=0.01,
                                                      window_h_bot=0.03)
-    core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12,
-                    sigma=0.6,
-                    permeability_datasource=fmt.MaterialDataSource.Custom,
-                    permittivity_datasource=fmt.MaterialDataSource.Custom)
+
+    core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3100,
+                                                  phi_mu_deg=12,
+                                                  dc_conductivity=1.2,
+                                                  eps_r_abs=0,
+                                                  phi_eps_deg=0,
+                                                  mdb_verbosity=fmt.Verbosity.Silent)
+
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Stacked,
+                    core_dimensions=core_dimensions,
+                    detailed_core_model=False)
+
     geo.set_core(core)
 
     # 3. set air gap parameters
@@ -138,10 +147,10 @@ def basic_example_transformer_stacked(onelab_folder: str = None, show_visual_out
     vww_bot = winding_window_bot.split_window(fmt.WindingWindowSplit.NoSplit)
 
     # 6. set conductor parameters
-    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
     winding1.set_litz_round_conductor(None, 100, 70e-6, 0.5, fmt.ConductorArrangement.Square)
 
-    winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
     winding2.set_solid_round_conductor(1e-3, fmt.ConductorArrangement.Square)
     # winding2.set_litz_round_conductor(None, 120, 70e-6, 0.5, fmt.ConductorArrangement.Square)
 

@@ -1018,7 +1018,7 @@ class AutomatedDesign:
                 self.data_matrix_fem[count, self.param["litz_fill_factor"]] = np.NAN
 
             # 6. create conductor and set parameters: use solid wires
-            winding = fmt.Conductor(0, fmt.Conductivity.Copper)
+            winding = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
             if np.isnan(self.data_matrix_fem[count, self.param["solid_conductor_r"]]):
                 winding.set_litz_round_conductor(
                     conductor_radius=None if np.isnan(

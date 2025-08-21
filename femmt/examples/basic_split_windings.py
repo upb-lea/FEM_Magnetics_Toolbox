@@ -49,13 +49,18 @@ def run_transformer_vvw_split_examples(num_windings: int, onelab_folder: str = N
 
         core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=16.1e-3, window_w=(22.5 - 12) / 2 * 1e-3,
                                                         core_inner_diameter=12e-3, core_h=22e-3)
-        core = fmt.Core(core_dimensions=core_dimensions, material=fmt.Material.N95, temperature=60, frequency=100000,
-                        permeability_datasource=fmt.MaterialDataSource.Measurement,
-                        permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                        permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
-                        permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                        permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                        permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK)
+
+        core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
+                                                        temperature=60,
+                                                        permeability_datasource=fmt.DataSource.TDK_MDT,
+                                                        permittivity_datasource=fmt.DataSource.LEA_MTB,
+                                                        mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
+                        core_dimensions=core_dimensions,
+                        detailed_core_model=False)
+
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
@@ -85,7 +90,7 @@ def run_transformer_vvw_split_examples(num_windings: int, onelab_folder: str = N
 
         windings = []
         for i in range(num_windings):
-            winding = fmt.Conductor(i, fmt.Conductivity.Copper)
+            winding = fmt.Conductor(i, fmt.ConductorMaterial.Copper)
             winding.set_litz_round_conductor(0.85e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
             windings.append(winding)
 

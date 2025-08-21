@@ -1,6 +1,5 @@
 """Basic example to show how to simulate a three winding transformer in time domain."""
 import femmt as fmt
-import materialdatabase as mdb
 import os
 # from matplotlib import pyplot as plt
 import numpy as np
@@ -40,17 +39,19 @@ def basic_example_transformer_three_windings_time_domain(onelab_folder: str = No
 
     # 2. set core parameters
     core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.06, window_w=0.03, core_inner_diameter=0.015, core_h=0.08)
-    # core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
-    #                 permeability_datasource=fmt.MaterialDataSource.Custom,
-    #                 permittivity_datasource=fmt.MaterialDataSource.Custom)
-    core = fmt.Core(core_type=fmt.CoreType.Single,
+
+    core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3100,
+                                                  phi_mu_deg=0,
+                                                  dc_conductivity=1,
+                                                  eps_r_abs=0,
+                                                  phi_eps_deg=0,
+                                                  mdb_verbosity=fmt.Verbosity.Silent)
+
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
-                    material=mdb.Material.N49, temperature=45, frequency=200000,
-                    permeability_datasource=fmt.MaterialDataSource.Custom,
-                    mu_r_abs=3000, phi_mu_deg=0,
-                    permittivity_datasource=fmt.MaterialDataSource.Custom,
-                    mdb_verbosity=fmt.Verbosity.Silent,
-                    sigma=1)
+                    detailed_core_model=False)
+
     geo.set_core(core)
 
     # 3. set air gap parameters
@@ -72,11 +73,11 @@ def basic_example_transformer_three_windings_time_domain(onelab_folder: str = No
     top_left = winding_window.combine_vww(top_left, bot_left)
 
     # 6. create conductors and set parameters
-    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
     winding1.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
-    winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
     winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
-    winding3 = fmt.Conductor(2, fmt.Conductivity.Copper)
+    winding3 = fmt.Conductor(2, fmt.ConductorMaterial.Copper)
     winding3.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent

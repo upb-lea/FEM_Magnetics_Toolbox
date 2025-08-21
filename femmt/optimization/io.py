@@ -890,7 +890,7 @@ class InductorOptimization:
             vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
             # 6. create conductor and set parameters: use solid wires
-            winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=fem_input.temperature)
+            winding = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=fem_input.temperature)
 
             primary_litz_wire = fmt.litz_database()[fem_input.litz_wire_name]
             winding.set_litz_round_conductor(primary_litz_wire['conductor_radii'], primary_litz_wire['strands_numbers'],

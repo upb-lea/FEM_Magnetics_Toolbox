@@ -119,21 +119,12 @@ Group{
   DomainCC          += Region[{DomainS}] ;
    //  the linear and non linear domains to air and all windings
 
-  If(Flag_NL)
-    Domain_Lin      = Region[{Air}];
-    For n In {1:n_windings}
-        Domain_Lin += Region[{Winding~{n}, StrandedWinding~{n}}];
-    EndFor
-    Domain_Lin_NoJs = Region[{Air}];
-    Domain_NonLin   = Region[{Core}];
-  Else
-    Domain_Lin      = Region[{Air, Core}];
-    For n In {1:n_windings}
-        Domain_Lin += Region[{Winding~{n}, StrandedWinding~{n}}];
-    EndFor
-    Domain_Lin_NoJs = Region[{Air, Core}];
-    Domain_NonLin   = Region[{}];
-  EndIf
+  Domain_Lin      = Region[{Air, Core}];
+  For n In {1:n_windings}
+      Domain_Lin += Region[{Winding~{n}, StrandedWinding~{n}}];
+  EndFor
+  Domain_Lin_NoJs = Region[{Air, Core}];
+  Domain_NonLin   = Region[{}];
   // Initialize the main domain to the core and core-shell domains
   Domain = Region[{DomainC, DomainCC}] ;
 
@@ -232,7 +223,7 @@ Function {
   EndFor
 
   If(Flag_Conducting_Core)
-    sigma[#{Core}] = Complex[sigma_core, sigma_core_imag];
+    sigma[#{Core}] = Complex[sigma_core_real, sigma_core_imag];
     sigma[#{Air}] = 0.;
   EndIf
   If(!Flag_Conducting_Core)
@@ -251,33 +242,16 @@ Function {
 
   // Hysteresis Loss
   // Imaginary Part Of Permeability
-  // Liste von Lukas hinterlegen
-  //mu_imag[ #{Core} ] = mu0 * f_mu_imag[$1, $2];
 
-  If(!Flag_NL)
-    If(Flag_Fixed_Loss_Angle) //should be changed here for time_domain
-        mu[#{Core}]   = mu0*mur_real;
-        nu[#{Core}]   = 1/mu[$1] ;
-    ElseIf(Flag_Permeability_From_Data) //should be changed here for time_domain
-        mu[#{Core}]   = mu0*f_mu_real[$1];
-        nu[#{Core]   = 1/mu[$1] ;
-    Else
-        mu[#{Core}]   = mu0*mur ;
-        nu[#{Core}]   = 1/mu[] ;
-    EndIf
-
+  If(Flag_Fixed_Loss_Angle) //should be changed here for time_domain
+      mu[#{Core}]   = mu0*mur_real;
+      nu[#{Core}]   = 1/mu[$1] ;
+  ElseIf(Flag_Permeability_From_Data) //should be changed here for time_domain
+      mu[#{Core}]   = mu0*f_mu_real[$1];
+      nu[#{Core]   = 1/mu[$1] ;
   Else
-    //nu[ #{Core} ] = nu_3kW[$1] ;
-    //h[ #{Core} ]  = h_3kW[$1];
-    //dhdb_NL[ #{Core} ]= dhdb_3kW_NL[$1] ;
-    //dhdb[ #{Core} ]   = dhdb_3kW[$1] ;
-
-    //nu[ #{Core} ] = nu_N95[$1] ;
-    nu[ #{Core} ] = nu~{Core_Material}[$1] ;
-    h[ #{Core} ]  = h~{Core_Material}[$1];
-    //dhdb_NL[ #{Core} ]= dhdb_95_NL[$1] ;
-    dhdb_NL[ #{Core} ]= dhdb_95100_NL[$1] ;
-    dhdb[ #{Core} ]   = dhdb~{Core_Material}[$1] ;
+      mu[#{Core}]   = mu0*mur ;
+      nu[#{Core}]   = 1/mu[] ;
   EndIf
 
   // Excitation Current
@@ -457,7 +431,7 @@ Resolution {
       EndFor
       InitSolution[A] ;
       TimeLoopTheta[time0, timemax, delta_t, 1.]{ // Implicit Euler (theta=1)
-        If(!Flag_NL)
+        If(!Flag_Permeability_From_Data)
             Generate[A] ; Solve[A] ;
         Else
             IterativeLoop[Nb_max_iter, stop_criterion, relaxation_factor]{
@@ -604,34 +578,6 @@ PostProcessing {
            [ CoefGeo*sigma[]*SquNorm[-1/AreaCell[]*{ir}] ] ;// 0.5 for frequency domain
            In DomainS ; Jacobian Vol ; Integration II ; } } }
 
-
-
-
-
-      // ------------------------------------------------------------------------------------------------
-      // Steinmetz Core Loss
-
-      // for piecewise linear currents
-      // iGSE Integral explicitely solved
-      // needs the result of Magb at peak current to evaluate the peak flux density
-      // (Norm[{d a}]*2) is delta_B
-
-      If(Flag_Generalized_Steinmetz_loss)
-        { Name piGSE ; Value { Integral { [ Freq * ki * (Norm[{d a}]*2)^(beta-alpha) * (
-                                        ((Norm[{d a}]*2 / t_rise )^alpha) * t_rise +
-                                        ((Norm[{d a}]*2 / t_fall )^alpha) * t_fall
-                                        // 10 abschnitte reinbauen
-                                        // python überprüfung + vorfaktoren zu NULL
-                                   ) ] ; In Core ; Jacobian Vol ; Integration II ;} } }
-      EndIf
-
-      If(Flag_Steinmetz_loss)
-        { Name pSE ; Value { Integral { [ CoefGeo * ki * Freq^alpha * (Norm[{d a}])^beta
-                                     ] ; In Core ; Jacobian Vol ; Integration II ;} } }
-
-        { Name pSE_density ; Value { Integral { [ CoefGeo* ki * Freq^alpha * (Norm[{d a}])^beta
-                                     ] ; In Core ; Jacobian Vol ; Integration II ;} } }
-      EndIf
 
       // hysteresis losses need to be studied in time domain simulation
       // Hysteresis Losses (According To Complex Core Parameters)

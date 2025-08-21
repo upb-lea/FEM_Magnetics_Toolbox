@@ -113,14 +113,18 @@ def basic_example_transformer_5_windings(onelab_folder: str = None, show_visual_
     # 2. set core parameters
     core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=16.1e-3, window_w=(22.5 - 12) / 2 * 1e-3,
                                                     core_inner_diameter=12e-3, core_h=22e-3)
-    core = fmt.Core(core_dimensions=core_dimensions, material=fmt.Material.N95, temperature=60, frequency=100000,
-                    # permeability_datasource="manufacturer_datasheet",
-                    permeability_datasource=fmt.MaterialDataSource.Measurement,
-                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                    permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
-                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                    permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK)
+
+    core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
+                                                    temperature=25,
+                                                    permeability_datasource=fmt.DataSource.TDK_MDT,
+                                                    permittivity_datasource=fmt.DataSource.LEA_MTB,
+                                                    mdb_verbosity=fmt.Verbosity.Silent)
+
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Single,
+                    core_dimensions=core_dimensions,
+                    detailed_core_model=False)
+
     geo.set_core(core)
 
     # 3. set air gap parameters
@@ -147,19 +151,19 @@ def basic_example_transformer_5_windings(onelab_folder: str = None, show_visual_
                                                        vertical_split_factors=[None, [0.5, 0.85], None])
 
     # 6. create windings and assign conductors
-    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
     winding1.set_litz_round_conductor(0.85e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
 
-    winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
     winding2.set_litz_round_conductor(1.0e-3 / 2, 60, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
 
-    winding3 = fmt.Conductor(2, fmt.Conductivity.Copper)
+    winding3 = fmt.Conductor(2, fmt.ConductorMaterial.Copper)
     winding3.set_litz_round_conductor(0.75e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
 
-    winding4 = fmt.Conductor(3, fmt.Conductivity.Copper)
+    winding4 = fmt.Conductor(3, fmt.ConductorMaterial.Copper)
     winding4.set_litz_round_conductor(0.95e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
 
-    winding5 = fmt.Conductor(4, fmt.Conductivity.Copper)
+    winding5 = fmt.Conductor(4, fmt.ConductorMaterial.Copper)
     winding5.set_litz_round_conductor(0.75e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
 
     # 7. assign windings to virtual winding windows (cells)
