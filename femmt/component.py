@@ -3504,7 +3504,7 @@ class MagneticComponent:
 
             if self.windings[winding_number].parallel:
                 if self.simulation_type == SimulationType.ElectroStatic:
-                    raise Exception ("Parallel winding are not considered yet for electrostatic simulation")
+                    raise Exception("Parallel winding are not considered yet for electrostatic simulation")
                 text_file.write(f"NbrCond_{winding_number + 1} = 1;\n")
                 text_file.write(f"AreaCell_{winding_number + 1} = {self.windings[winding_number].a_cell * turns};\n")
             else:
