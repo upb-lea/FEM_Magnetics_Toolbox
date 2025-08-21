@@ -1233,10 +1233,6 @@ class MagneticComponent:
         # Set the excitation type (voltage or charge)
         self.flag_excitation_type = excitation_type
 
-        # Update material permittivity for the electrostatic analysis if not custom defined
-        if self.core.material.permittivity_datasource != MaterialDataSource.Custom:
-            self.core.update_core_material_pro_file(plot_interpolation)  # No frequency is used in electrostatics
-
         # Apply the excitation to each turn in each winding
         num_windings = len(self.windings)
 
@@ -3603,33 +3599,34 @@ class MagneticComponent:
             text_file.write("er_layer_insulation = 1.0;\n")
         text_file.write(f"er_bobbin = {self.insulation.er_bobbin};\n")
 
-        # Core Material
-        text_file.write(f"mur = {self.core.material.mu_r_abs};\n")  # mur is predefined to a fixed value
-        if self.core.material.permeability_type == PermeabilityType.FromData:
-            text_file.write("Flag_Permeability_From_Data = 1;\n")  # mur is predefined to a fixed value
-        else:
-            text_file.write("Flag_Permeability_From_Data = 0;\n")  # mur is predefined to a fixed value
-        if self.core.material.permeability_type == PermeabilityType.FixedLossAngle:
-            # Real part of complex permeability
-            text_file.write(f"mur_real = {self.core.material.mu_r_abs * np.cos(np.deg2rad(self.core.material.phi_mu_deg))};\n")
-            # Imaginary part of complex permeability
-            text_file.write(
-                f"mur_imag = {self.core.material.mu_r_abs * np.sin(np.deg2rad(self.core.material.phi_mu_deg))};\n")
-            # loss angle for complex representation of hysteresis loss
-            text_file.write("Flag_Fixed_Loss_Angle = 1;\n")
-        else:
-            text_file.write(
-                "Flag_Fixed_Loss_Angle = 0;\n")  # loss angle for complex representation of hysteresis loss
+        if not self.simulation_type == SimulationType.ElectroStatic:
+            # Core Material
+            text_file.write(f"mur = {self.core.material.mu_r_abs};\n")  # mur is predefined to a fixed value
+            if self.core.material.permeability_type == PermeabilityType.FromData:
+                text_file.write("Flag_Permeability_From_Data = 1;\n")  # mur is predefined to a fixed value
+            else:
+                text_file.write("Flag_Permeability_From_Data = 0;\n")  # mur is predefined to a fixed value
+            if self.core.material.permeability_type == PermeabilityType.FixedLossAngle:
+                # Real part of complex permeability
+                text_file.write(f"mur_real = {self.core.material.mu_r_abs * np.cos(np.deg2rad(self.core.material.phi_mu_deg))};\n")
+                # Imaginary part of complex permeability
+                text_file.write(
+                    f"mur_imag = {self.core.material.mu_r_abs * np.sin(np.deg2rad(self.core.material.phi_mu_deg))};\n")
+                # loss angle for complex representation of hysteresis loss
+                text_file.write("Flag_Fixed_Loss_Angle = 1;\n")
+            else:
+                text_file.write(
+                    "Flag_Fixed_Loss_Angle = 0;\n")  # loss angle for complex representation of hysteresis loss
 
-        # Complex (equivalent) conductivity
-        self.core.material.complex_conductance = \
-            self.core.material.dc_conductivity + complex(0, 1) * 2 * np.pi * self.frequency * self.core.material.complex_permittivity
-        if self.core.material.complex_conductance != 0 and self.core.material.complex_conductance is not None:
-            text_file.write("Flag_Conducting_Core = 1;\n")
-            text_file.write(f"sigma_core_real = {self.core.material.complex_conductance.real};\n")
-            text_file.write(f"sigma_core_imag = {self.core.material.complex_conductance.imag};\n")
-        else:
-            text_file.write("Flag_Conducting_Core = 0;\n")
+            # Complex (equivalent) conductivity
+            self.core.material.complex_conductance = \
+                self.core.material.dc_conductivity + complex(0, 1) * 2 * np.pi * self.frequency * self.core.material.complex_permittivity
+            if self.core.material.complex_conductance != 0 and self.core.material.complex_conductance is not None:
+                text_file.write("Flag_Conducting_Core = 1;\n")
+                text_file.write(f"sigma_core_real = {self.core.material.complex_conductance.real};\n")
+                text_file.write(f"sigma_core_imag = {self.core.material.complex_conductance.imag};\n")
+            else:
+                text_file.write("Flag_Conducting_Core = 0;\n")
 
         text_file.close()
 
