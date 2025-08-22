@@ -4,9 +4,8 @@ from dataclasses import dataclass
 
 # 3rd party libraries
 import numpy as np
-from materialdatabase.meta.data_classes import MaterialCurve
 from materialdatabase.meta.data_enums import DataSource
-from femmt.enumerations import *
+from materialdatabase.meta.setup_enums import MeasurementDataType
 
 
 @dataclass
@@ -110,7 +109,8 @@ class StoCtTargetAndFixedParameters:
     i_peak_2: float
     i_phase_deg_1: float
     i_phase_deg_2: float
-    material_dto_curve_list: list[MaterialCurve]
+    material_name_list: list[str]
+    material_complex_mu_r_list: list[float]
     time_extracted_vec: list
     current_extracted_1_vec: list
     current_extracted_2_vec: list
