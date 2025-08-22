@@ -19,16 +19,6 @@ PostOperation Map_local UsingPost MagDyn_a {
   //Print[ Mag_h_real,  OnElementsOf Domain,  File StrCat[DirResFields, "Mag_h_real", ExtGmsh],  LastTimeStepOnly ] ;
   //Print[ Mag_h_imag,  OnElementsOf Domain,  File StrCat[DirResFields, "Mag_h_imag", ExtGmsh],  LastTimeStepOnly ] ;
 
-  // Core Loss Density
-  If(Flag_Generalized_Steinmetz_loss)
-    Print[ piGSE,  OnElementsOf Domain,  File StrCat[DirResFields, "piGSE", ExtGmsh],  LastTimeStepOnly ] ;
-  EndIf
-
-  If(Flag_Steinmetz_loss)
-    Print[ pSE,  OnElementsOf Domain,  File StrCat[DirResFields, "pSE", ExtGmsh],  LastTimeStepOnly ] ;
-    Print[ pSE_density,  OnElementsOf Domain,  File StrCat[DirResFields, "pSE_density", ExtGmsh],  LastTimeStepOnly ] ;
-  EndIf
-
   //Print[ mur,  OnElementsOf Domain,  File StrCat[DirResFields, "mur", ExtGmsh],  LastTimeStepOnly ] ;
   //Print[ mur_norm,  OnElementsOf Domain,  File StrCat[DirResFields, "mur_norm", ExtGmsh],  LastTimeStepOnly ] ;
   //Print[ nur_re,  OnElementsOf Domain,  File StrCat[DirResFields, "nur_re", ExtGmsh],  LastTimeStepOnly ] ;

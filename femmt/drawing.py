@@ -58,9 +58,9 @@ class TwoDaxiSymmetric:
         # TODO Is the zero initialization necessary?
         self.p_outer = np.zeros((4, 4))
         self.p_region_bound = np.zeros((4, 4))
-        if self.core.core_type == CoreType.Single:
-            self.p_window = np.zeros((4 * core.number_core_windows, 4))  # TODO: why is this done for both sides?
-        if self.core.core_type == CoreType.Stacked:
+        if self.core.geometry.core_type == CoreType.Single:
+            self.p_window = np.zeros((4 * core.geometry.number_core_windows, 4))  # TODO: why is this done for both sides?
+        if self.core.geometry.core_type == CoreType.Stacked:
             self.p_window_top = np.zeros((4, 4))  # TODO: just for right side? make it the same as for single core geometry
             self.p_window_bot = np.zeros((4, 4))  # TODO: just for right side? make it the same as for single core geometry
         self.p_air_gaps = np.zeros((4 * air_gaps.number, 4))
@@ -76,103 +76,103 @@ class TwoDaxiSymmetric:
             self.p_conductor.insert(i, [])
             self.p_iso_conductor.insert(i, [])
 
-        self.r_inner = core.r_inner
-        self.r_outer = core.r_outer
+        self.r_inner = core.geometry.r_inner
+        self.r_outer = core.geometry.r_outer
 
     def draw_outer(self):
         """Draws the outer points of the main core (single core)."""
         # Outer Core
         # (A_zyl=2pi*r*h => h=0.5r=0.25core_w <=> ensure A_zyl=A_core on the tiniest point)
-        self.p_outer[0][:] = [-self.r_outer, -self.core.core_h / 2, 0, self.mesh_data.c_core]
+        self.p_outer[0][:] = [-self.r_outer, -self.core.geometry.core_h / 2, 0, self.mesh_data.c_core]
 
-        self.p_outer[1][:] = [self.r_outer, -self.core.core_h / 2, 0, self.mesh_data.c_core]
+        self.p_outer[1][:] = [self.r_outer, -self.core.geometry.core_h / 2, 0, self.mesh_data.c_core]
 
-        self.p_outer[2][:] = [-self.r_outer, self.core.core_h / 2, 0, self.mesh_data.c_core]
+        self.p_outer[2][:] = [-self.r_outer, self.core.geometry.core_h / 2, 0, self.mesh_data.c_core]
 
-        self.p_outer[3][:] = [self.r_outer, self.core.core_h / 2, 0, self.mesh_data.c_core]
+        self.p_outer[3][:] = [self.r_outer, self.core.geometry.core_h / 2, 0, self.mesh_data.c_core]
 
     def draw_single_window(self):
         """Draw a single window."""
         # At this point both windows (in a cut) are modeled
         self.p_window[0] = [-self.r_inner,
-                            -self.core.window_h / 2,
+                            -self.core.geometry.window_h / 2,
                             0,
                             self.mesh_data.c_window]
 
-        self.p_window[1] = [-self.core.core_inner_diameter / 2,
-                            -self.core.window_h / 2,
+        self.p_window[1] = [-self.core.geometry.core_inner_diameter / 2,
+                            -self.core.geometry.window_h / 2,
                             0,
                             self.mesh_data.c_window]
 
         self.p_window[2] = [-self.r_inner,
-                            self.core.window_h / 2,
+                            self.core.geometry.window_h / 2,
                             0,
                             self.mesh_data.c_window]
 
-        self.p_window[3] = [-self.core.core_inner_diameter / 2,
-                            self.core.window_h / 2,
+        self.p_window[3] = [-self.core.geometry.core_inner_diameter / 2,
+                            self.core.geometry.window_h / 2,
                             0,
                             self.mesh_data.c_window]
 
-        self.p_window[4] = [self.core.core_inner_diameter / 2,
-                            -self.core.window_h / 2,
+        self.p_window[4] = [self.core.geometry.core_inner_diameter / 2,
+                            -self.core.geometry.window_h / 2,
                             0,
                             self.mesh_data.c_window]
 
         self.p_window[5] = [self.r_inner,
-                            -self.core.window_h / 2,
+                            -self.core.geometry.window_h / 2,
                             0,
                             self.mesh_data.c_window]
 
-        self.p_window[6] = [self.core.core_inner_diameter / 2,
-                            self.core.window_h / 2,
+        self.p_window[6] = [self.core.geometry.core_inner_diameter / 2,
+                            self.core.geometry.window_h / 2,
                             0,
                             self.mesh_data.c_window]
 
         self.p_window[7] = [self.r_inner,
-                            self.core.window_h / 2,
+                            self.core.geometry.window_h / 2,
                             0,
                             self.mesh_data.c_window]
 
     def draw_stacked_windows(self):
         """Draw stacked windows."""
-        self.p_window_bot[0] = [self.core.core_inner_diameter / 2,
-                                -self.core.window_h_bot / 2,
+        self.p_window_bot[0] = [self.core.geometry.core_inner_diameter / 2,
+                                -self.core.geometry.window_h_bot / 2,
                                 0,
                                 self.mesh_data.c_window]
 
         self.p_window_bot[1] = [self.r_inner,
-                                -self.core.window_h_bot / 2,
+                                -self.core.geometry.window_h_bot / 2,
                                 0,
                                 self.mesh_data.c_window]
 
-        self.p_window_bot[2] = [self.core.core_inner_diameter / 2,
-                                self.core.window_h_bot / 2,
+        self.p_window_bot[2] = [self.core.geometry.core_inner_diameter / 2,
+                                self.core.geometry.window_h_bot / 2,
                                 0,
                                 self.mesh_data.c_window]
 
         self.p_window_bot[3] = [self.r_inner,
-                                self.core.window_h_bot / 2,
+                                self.core.geometry.window_h_bot / 2,
                                 0,
                                 self.mesh_data.c_window]
 
-        self.p_window_top[0] = [self.core.core_inner_diameter / 2,
-                                self.core.window_h_bot / 2 + self.core.core_thickness,
+        self.p_window_top[0] = [self.core.geometry.core_inner_diameter / 2,
+                                self.core.geometry.window_h_bot / 2 + self.core.geometry.core_thickness,
                                 0,
                                 self.mesh_data.c_window]
 
         self.p_window_top[1] = [self.r_inner,
-                                self.core.window_h_bot / 2 + self.core.core_thickness,
+                                self.core.geometry.window_h_bot / 2 + self.core.geometry.core_thickness,
                                 0,
                                 self.mesh_data.c_window]
 
-        self.p_window_top[2] = [self.core.core_inner_diameter / 2,
-                                self.core.window_h_bot / 2 + self.core.core_thickness + self.core.window_h_top,
+        self.p_window_top[2] = [self.core.geometry.core_inner_diameter / 2,
+                                self.core.geometry.window_h_bot / 2 + self.core.geometry.core_thickness + self.core.geometry.window_h_top,
                                 0,
                                 self.mesh_data.c_window]
 
         self.p_window_top[3] = [self.r_inner,
-                                self.core.window_h_bot / 2 + self.core.core_thickness + self.core.window_h_top,
+                                self.core.geometry.window_h_bot / 2 + self.core.geometry.core_thickness + self.core.geometry.window_h_top,
                                 0,
                                 self.mesh_data.c_window]
 
@@ -190,31 +190,31 @@ class TwoDaxiSymmetric:
 
             # # Left leg (-1)
             # if self.component.air_gaps.midpoints[i][0] == -1:
-            #     self.p_air_gaps[i * 4] = [-(self.component.core.core_w + self.component.core.window_w),
+            #     self.p_air_gaps[i * 4] = [-(self.component.core.geometry.core_w + self.component.core.geometry.window_w),
             #                               self.component.air_gaps.midpoints[i][1] -
             #     self.component.air_gaps.midpoints[i][2] / 2, 0, self.component.air_gaps.midpoints[i][3]]
-            #     self.p_air_gaps[i * 4 + 1] = [-(self.component.core.core_w / 2 + self.component.core.window_w),
+            #     self.p_air_gaps[i * 4 + 1] = [-(self.component.core.geometry.core_w / 2 + self.component.core.geometry.window_w),
             #                                   self.component.air_gaps.midpoints[i][1] -
             #     self.component.air_gaps.midpoints[i][2] / 2, 0, self.component.air_gaps.midpoints[i][3]]
-            #     self.p_air_gaps[i * 4 + 2] = [-(self.component.core.core_w + self.component.core.window_w),
+            #     self.p_air_gaps[i * 4 + 2] = [-(self.component.core.geometry.core_w + self.component.core.geometry.window_w),
             #                                   self.component.air_gaps.midpoints[i][1] +
             #     self.component.air_gaps.midpoints[i][2] / 2, 0, self.component.air_gaps.midpoints[i][3]]
-            #     self.p_air_gaps[i * 4 + 3] = [-(self.component.core.core_w / 2 + self.component.core.window_w),
+            #     self.p_air_gaps[i * 4 + 3] = [-(self.component.core.geometry.core_w / 2 + self.component.core.geometry.window_w),
             #                                   self.component.air_gaps.midpoints[i][1] +
             #     self.component.air_gaps.midpoints[i][2] / 2, 0, self.component.air_gaps.midpoints[i][3]]
             #
             # # Right leg (+1)
             # if self.component.air_gaps.midpoints[i][0] == 1:
-            #     self.p_air_gaps[i * 4] = [self.component.core.core_w / 2 + self.component.core.window_w,
+            #     self.p_air_gaps[i * 4] = [self.component.core.geometry.core_w / 2 + self.component.core.geometry.window_w,
             #                               self.component.air_gaps.midpoints[i][1] -
             #     self.component.air_gaps.midpoints[i][2] / 2, 0, self.component.air_gaps.midpoints[i][3]]
-            #     self.p_air_gaps[i * 4 + 1] = [self.component.core.core_w + self.component.core.window_w,
+            #     self.p_air_gaps[i * 4 + 1] = [self.component.core.geometry.core_w + self.component.core.geometry.window_w,
             #                                   self.component.air_gaps.midpoints[i][1] -
             #     self.component.air_gaps.midpoints[i][2] / 2, 0, self.component.air_gaps.midpoints[i][3]]
-            #     self.p_air_gaps[i * 4 + 2] = [self.component.core.core_w / 2 + self.component.core.window_w,
+            #     self.p_air_gaps[i * 4 + 2] = [self.component.core.geometry.core_w / 2 + self.component.core.geometry.window_w,
             #                                   self.component.air_gaps.midpoints[i][1] +
             #     self.component.air_gaps.midpoints[i][2] / 2, 0, self.component.air_gaps.midpoints[i][3]]
-            #     self.p_air_gaps[i * 4 + 3] = [self.component.core.core_w + self.component.core.window_w,
+            #     self.p_air_gaps[i * 4 + 3] = [self.component.core.geometry.core_w + self.component.core.geometry.window_w,
             #                                   self.component.air_gaps.midpoints[i][1] +
             #     self.component.air_gaps.midpoints[i][2] / 2, 0, self.component.air_gaps.midpoints[i][3]]
 
@@ -224,8 +224,8 @@ class TwoDaxiSymmetric:
 
                 air_gap_y_position = self.air_gaps.midpoints[i][1]
                 air_gap_height = self.air_gaps.midpoints[i][2]
-                air_gap_length_top = self.core.core_inner_diameter / 2
-                air_gap_length_bot = self.core.core_inner_diameter / 2
+                air_gap_length_top = self.core.geometry.core_inner_diameter / 2
+                air_gap_length_bot = self.core.geometry.core_inner_diameter / 2
 
                 # Check for stray_paths in integrated transformers
                 if self.component_type == ComponentType.IntegratedTransformer:
@@ -250,10 +250,10 @@ class TwoDaxiSymmetric:
 
         # In order to close the air gap when a stray_path is added, additional points need to be added
         if self.component_type == ComponentType.IntegratedTransformer:
-            top_point = [self.core.core_inner_diameter / 2,
+            top_point = [self.core.geometry.core_inner_diameter / 2,
                          self.air_gaps.midpoints[self.stray_path.start_index + 1][1] - self.air_gaps.midpoints[self.stray_path.start_index + 1][2] / 2,
                          0, self.mesh_data.c_air_gaps]
-            bot_point = [self.core.core_inner_diameter / 2,
+            bot_point = [self.core.geometry.core_inner_diameter / 2,
                          self.air_gaps.midpoints[self.stray_path.start_index][1] + self.air_gaps.midpoints[self.stray_path.start_index][2] / 2,
                          0, self.mesh_data.c_air_gaps]
             self.p_close_air_gaps = [top_point, bot_point]
@@ -1880,19 +1880,19 @@ class TwoDaxiSymmetric:
         Currently not used. Code kept for future implementations
         """
         self.p_region_bound[0][:] = [-self.r_outer * self.mesh_data.padding,
-                                     -(self.core.window_h / 2 + self.core.core_thickness) * self.mesh_data.padding,
+                                     -(self.core.geometry.window_h / 2 + self.core.geometry.core_thickness) * self.mesh_data.padding,
                                      0,
                                      self.mesh_data.c_core * self.mesh_data.padding]
         self.p_region_bound[1][:] = [self.r_outer * self.mesh_data.padding,
-                                     -(self.core.window_h / 2 + self.core.core_thickness) * self.mesh_data.padding,
+                                     -(self.core.geometry.window_h / 2 + self.core.geometry.core_thickness) * self.mesh_data.padding,
                                      0,
                                      self.mesh_data.c_core * self.mesh_data.padding]
         self.p_region_bound[2][:] = [-self.r_outer * self.mesh_data.padding,
-                                     (self.core.window_h / 2 + self.core.core_thickness) * self.mesh_data.padding,
+                                     (self.core.geometry.window_h / 2 + self.core.geometry.core_thickness) * self.mesh_data.padding,
                                      0,
                                      self.mesh_data.c_core * self.mesh_data.padding]
         self.p_region_bound[3][:] = [self.r_outer * self.mesh_data.padding,
-                                     (self.core.window_h / 2 + self.core.core_thickness) * self.mesh_data.padding,
+                                     (self.core.geometry.window_h / 2 + self.core.geometry.core_thickness) * self.mesh_data.padding,
                                      0,
                                      self.mesh_data.c_core * self.mesh_data.padding]
 
@@ -1928,11 +1928,11 @@ class TwoDaxiSymmetric:
             self.p_iso_bot_core = []
             self.p_iso_pri_sec = []
             # Useful points for insulation creation
-            left_x = self.core.core_inner_diameter / 2 + insulation_delta
+            left_x = self.core.geometry.core_inner_diameter / 2 + insulation_delta
             right_x = self.r_inner - insulation_delta
             if self.stray_path:
                 # Useful dimensions needed for calculating some points
-                window_h = self.core.window_h
+                window_h = self.core.geometry.window_h
                 start_index = self.stray_path.start_index
                 air_gap_1_position = self.air_gaps.midpoints[start_index][1]
                 air_gap_1_height = self.air_gaps.midpoints[start_index][2]
@@ -1945,10 +1945,10 @@ class TwoDaxiSymmetric:
                 bot_section_top_y = y_bot_stray_path - insulation_delta
                 bot_section_bot_y = -window_h / 2 + insulation_delta
             else:
-                window_h_top = self.core.window_h_top
-                window_h_bot = self.core.window_h_bot
-                top_section_top_y = window_h_bot / 2 + self.core.core_thickness + window_h_top - insulation_delta
-                top_section_bot_y = window_h_bot / 2 + self.core.core_thickness + insulation_delta
+                window_h_top = self.core.geometry.window_h_top
+                window_h_bot = self.core.geometry.window_h_bot
+                top_section_top_y = window_h_bot / 2 + self.core.geometry.core_thickness + window_h_top - insulation_delta
+                top_section_bot_y = window_h_bot / 2 + self.core.geometry.core_thickness + insulation_delta
                 bot_section_top_y = window_h_bot / 2 - insulation_delta
                 bot_section_bot_y = -window_h_bot / 2 + insulation_delta
 
@@ -2179,7 +2179,7 @@ class TwoDaxiSymmetric:
             self.p_iso_bot_core = [iso_bot_core_left, iso_bot_core_top, iso_bot_core_right, iso_bot_core_bot]
 
         else:
-            window_h = self.core.window_h
+            window_h = self.core.geometry.window_h
             iso = self.insulation
             mesh_data = self.mesh_data
 
@@ -2206,15 +2206,10 @@ class TwoDaxiSymmetric:
                 self.p_iso_pri_sec = []
 
                 # Useful points for insulation creation
-                left_x = self.core.core_inner_diameter / 2 + insulation_delta
+                left_x = self.core.geometry.core_inner_diameter / 2 + insulation_delta
                 top_y = window_h / 2 - insulation_delta
                 right_x = self.r_inner - insulation_delta
                 bot_y = -window_h / 2 + insulation_delta
-                # # Useful lengths
-                # left_iso_width = iso.core_cond[2] - insulation_delta- insulation_delta
-                # top_iso_height = iso.core_cond[0] - insulation_delta - insulation_delta
-                # right_iso_width = iso.core_cond[3] - insulation_delta - insulation_delta
-                # bot_iso_height = iso.core_cond[1] - insulation_delta - insulation_delta
 
                 # Useful lengths
                 left_iso_width = iso.core_cond[2] - insulation_delta - insulation_delta
@@ -2344,7 +2339,7 @@ class TwoDaxiSymmetric:
                     insulation_delta_top_bot = (window_h - bobbin_h) / 2
                     # left
                     bobbin_inner_radius = self.insulation.bobbin_inner_diameter / 2
-                    core_inner_radius = self.core.core_inner_diameter / 2
+                    core_inner_radius = self.core.geometry.core_inner_diameter / 2
                     insulation_delta_left = bobbin_inner_radius - core_inner_radius
                     # insulation_delta_left = 3e-4
 
@@ -2352,7 +2347,7 @@ class TwoDaxiSymmetric:
                 self.p_iso_pri_sec = []
 
                 # Useful points for insulation creation
-                left_x = self.core.core_inner_diameter / 2 + insulation_delta_left
+                left_x = self.core.geometry.core_inner_diameter / 2 + insulation_delta_left
                 top_y = window_h / 2 - insulation_delta_top_bot
                 right_x = self.r_inner - insulation_delta
                 bot_y = -window_h / 2 + insulation_delta_top_bot
@@ -2593,10 +2588,10 @@ class TwoDaxiSymmetric:
         The insulation is only drawn if self.insulation.flag_insulation was set.
         """
         self.draw_outer()
-        if self.core.core_type == CoreType.Single:
+        if self.core.geometry.core_type == CoreType.Single:
             self.draw_single_window()
             self.draw_air_gaps()
-        if self.core.core_type == CoreType.Stacked:
+        if self.core.geometry.core_type == CoreType.Stacked:
             self.draw_stacked_windows()
         self.draw_conductors()
         self.check_number_of_drawn_conductors()
@@ -2605,9 +2600,9 @@ class TwoDaxiSymmetric:
             self.draw_insulations()
         self.draw_insulation_conductor()
         # TODO: Region
-        # if self.core.core_type == CoreType.Single:
+        # if self.core.geometry.core_type == CoreType.Single:
         #     self.draw_region_single()
-        # if self.core.core_type == CoreType.Stacked:
+        # if self.core.geometry.core_type == CoreType.Stacked:
         #     self.draw_region_stacked()
 
     @staticmethod

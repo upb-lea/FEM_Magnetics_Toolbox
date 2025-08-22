@@ -47,15 +47,18 @@ def basic_example_sweep(onelab_folder: str | None = None, show_visual_outputs: b
         core_db = fmt.core_database()["PQ 40/40"]
         core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"],
                                                         window_h=core_db["window_h"], core_h=core_db["core_h"])
-        core = fmt.Core(core_dimensions=core_dimensions,
-                        material=fmt.Material.N95, temperature=25, frequency=100000,
-                        permeability_datasource=fmt.MaterialDataSource.Measurement,
-                        permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                        permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
-                        permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                        permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                        permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK
-                        )
+
+        core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
+                                                        temperature=25,
+                                                        permeability_datasource=fmt.DataSource.TDK_MDT,
+                                                        permittivity_datasource=fmt.DataSource.LEA_MTB,
+                                                        mdb_verbosity=fmt.Verbosity.Silent)
+
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
+                        core_dimensions=core_dimensions,
+                        detailed_core_model=False)
+
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
@@ -70,7 +73,7 @@ def basic_example_sweep(onelab_folder: str | None = None, show_visual_outputs: b
         winding_window = fmt.WindingWindow(core, insulation)
         complete = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
-        conductor = fmt.Conductor(0, fmt.Conductivity.Copper)
+        conductor = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
         conductor.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6, 
                                            fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
         complete.set_winding(conductor, 9, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)

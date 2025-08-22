@@ -262,7 +262,6 @@ class TransformerOptimization:
                                "current_phases_deg"],
                            plot_interpolation=False)
 
-            geo.check_model_mqs_condition()
             geo.write_simulation_parameters_to_pro_files()
             geo.generate_load_litz_approximation_parameters()
             geo.simulate()
@@ -550,7 +549,6 @@ class TransformerOptimization:
                        phase_deg_list=center_tapped_study_excitation["hysteresis"]["transformer"]["current_phases_deg"],
                        plot_interpolation=False)
 
-        geo.check_model_mqs_condition()
         geo.write_simulation_parameters_to_pro_files()
         geo.generate_load_litz_approximation_parameters()
         geo.simulate()

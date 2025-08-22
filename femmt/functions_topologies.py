@@ -9,6 +9,7 @@ from femmt.dtos import *
 from femmt.model import WindingWindow, Conductor, Insulation, Core, VirtualWindingWindow
 from femmt.functions_drawing import *
 from femmt.functions_model import define_center_tapped_insulation
+from femmt.enumerations import CoreType, ConductorType, ConductorMaterial
 
 
 def create_stacked_winding_windows(core: Core, insulation: Insulation) -> (WindingWindow, WindingWindow):
@@ -24,8 +25,8 @@ def create_stacked_winding_windows(core: Core, insulation: Insulation) -> (Windi
     winding_window_top = WindingWindow(core, insulation)
     winding_window_bot = WindingWindow(core, insulation)
 
-    max_pos = core.window_h_bot / 2 + core.core_inner_diameter / 4  # TODO: could also be done arbitrarily
-    min_pos = core.window_h_bot / 2
+    max_pos = core.geometry.window_h_bot / 2 + core.geometry.core_inner_diameter / 4  # TODO: could also be done arbitrarily
+    min_pos = core.geometry.window_h_bot / 2
     distance = max_pos - min_pos
     # horizontal_split = min_pos + distance / 2
     if insulation.top_section_core_cond:
@@ -286,9 +287,9 @@ def set_center_tapped_windings(core: Core,
     """
     def define_insulations():
         insulation = Insulation(flag_insulation=True)
-        if core.core_type == CoreType.Single:
+        if core.geometry.core_type == CoreType.Single:
             insulation.add_core_insulations(iso_top_core, iso_bot_core, iso_left_core, iso_right_core)
-        elif core.core_type == CoreType.Stacked:
+        elif core.geometry.core_type == CoreType.Stacked:
             insulation.add_top_section_core_insulations(iso_top_core, iso_bot_core, iso_left_core, iso_right_core)
             insulation.add_bottom_section_core_insulations(iso_top_core, iso_bot_core, iso_left_core, iso_right_core)
         insulation.add_winding_insulations([[iso_primary_to_primary, iso_primary_to_secondary, iso_primary_to_secondary],
@@ -302,45 +303,45 @@ def set_center_tapped_windings(core: Core,
                                                           primary_to_secondary=iso_primary_to_secondary)
 
     def define_windings(winding_temperature: float):
-        winding1 = Conductor(0, Conductivity.Copper, winding_material_temperature=winding_temperature)
+        winding1 = Conductor(0, ConductorMaterial.Copper, temperature=winding_temperature)
         winding1.set_litz_round_conductor(primary_radius, primary_number_strands, primary_strand_radius, None,
                                           conductor_arrangement=ConductorArrangement.SquareFullWidth)
         # winding1.set_solid_round_conductor(primary_radius, conductor_arrangement=ConductorArrangement.SquareFullWidth)
 
-        winding2 = Conductor(1, Conductivity.Copper, winding_material_temperature=winding_temperature)
+        winding2 = Conductor(1, ConductorMaterial.Copper, temperature=winding_temperature)
         winding2.set_rectangular_conductor(thickness=secondary_thickness_foil)
         winding2.parallel = True
 
-        winding3 = Conductor(2, Conductivity.Copper, winding_material_temperature=winding_temperature)
+        winding3 = Conductor(2, ConductorMaterial.Copper, temperature=winding_temperature)
         winding3.set_rectangular_conductor(thickness=secondary_thickness_foil)
         winding3.parallel = True
         return winding1, winding2, winding3
     winding1, winding2, winding3 = define_windings(winding_temperature)
 
     def define_rows():
-        if core.core_type == CoreType.Single:
+        if core.geometry.core_type == CoreType.Single:
             primary_row = single_row(number_of_conds_per_winding=primary_turns,
-                                     window_width=core.window_w - insulation.core_cond[2] - insulation.core_cond[3],
+                                     window_width=core.geometry.window_w - insulation.core_cond[2] - insulation.core_cond[3],
                                      winding_tag=WindingTag.Primary,
                                      conductor_type=ConductorType.RoundLitz,
                                      radius=primary_radius,
                                      cond_cond_isolation=insulation.cond_cond[0][0])
 
             secondary_row = single_row(number_of_conds_per_winding=secondary_parallel_turns,
-                                       window_width=core.window_w - insulation.core_cond[2] - insulation.core_cond[3],
+                                       window_width=core.geometry.window_w - insulation.core_cond[2] - insulation.core_cond[3],
                                        winding_tag=WindingTag.Secondary,
                                        conductor_type=ConductorType.RectangularSolid,
                                        thickness=secondary_thickness_foil)
-        elif core.core_type == CoreType.Stacked:
+        elif core.geometry.core_type == CoreType.Stacked:
             primary_row = single_row(number_of_conds_per_winding=primary_turns,
-                                     window_width=core.window_w - insulation.top_section_core_cond[2] - insulation.top_section_core_cond[3],
+                                     window_width=core.geometry.window_w - insulation.top_section_core_cond[2] - insulation.top_section_core_cond[3],
                                      winding_tag=WindingTag.Primary,
                                      conductor_type=ConductorType.RoundLitz,
                                      radius=primary_radius,
                                      cond_cond_isolation=insulation.cond_cond[0][0])
 
             secondary_row = single_row(number_of_conds_per_winding=secondary_parallel_turns,
-                                       window_width=core.window_w - insulation.bot_section_core_cond[2] - insulation.bot_section_core_cond[3],
+                                       window_width=core.geometry.window_w - insulation.bot_section_core_cond[2] - insulation.bot_section_core_cond[3],
                                        winding_tag=WindingTag.Secondary,
                                        conductor_type=ConductorType.RectangularSolid,
                                        thickness=secondary_thickness_foil)
@@ -351,16 +352,16 @@ def set_center_tapped_windings(core: Core,
     primary_row, secondary_row, tertiary_row = define_rows()
 
     # Depending on core geometry, define the winding window
-    if core.core_type == CoreType.Single:
+    if core.geometry.core_type == CoreType.Single:
         ww_bot = WindingWindow(core, insulation)
-        available_height = core.window_h - iso_top_core - iso_bot_core
-    elif core.core_type == CoreType.Stacked:
+        available_height = core.geometry.window_h - iso_top_core - iso_bot_core
+    elif core.geometry.core_type == CoreType.Stacked:
         ww_top, ww_bot = create_stacked_winding_windows(core, insulation)
         vww_top = ww_top.split_window(WindingWindowSplit.NoSplitWithBobbin, top_bobbin=bobbin_coil_top, bot_bobbin=bobbin_coil_bot,
                                       left_bobbin=bobbin_coil_left, right_bobbin=bobbin_coil_right)
-        available_height = core.window_h_bot - iso_top_core - iso_bot_core
+        available_height = core.geometry.window_h_bot - iso_top_core - iso_bot_core
     else:
-        raise Exception(f"Unknown core type {core.core_type}")
+        raise Exception(f"Unknown core type {core.geometry.core_type}")
 
     # Define the transformer winding stack
     transformer_stack = stack_center_tapped_transformer(primary_row, secondary_row, tertiary_row,
@@ -377,11 +378,11 @@ def set_center_tapped_windings(core: Core,
                                       wrap_para_type=wrap_para_type, foil_horizontal_placing_strategy=foil_horizontal_placing_strategy)
 
     # If "stacked-core", also set primary coil turns
-    if core.core_type == CoreType.Stacked:
+    if core.geometry.core_type == CoreType.Stacked:
         vww_top.set_winding(winding1, primary_coil_turns, None)
 
     # Depending on core geometry, return winding window(s) and insulation
-    if core.core_type == CoreType.Single:
+    if core.geometry.core_type == CoreType.Single:
         return insulation, ww_bot
-    elif core.core_type == CoreType.Stacked:
+    elif core.geometry.core_type == CoreType.Stacked:
         return insulation, ww_top, ww_bot

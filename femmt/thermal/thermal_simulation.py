@@ -205,7 +205,6 @@ def create_windings(winding_tags: list, k_windings: float, winding_losses, condu
                 if tag not in tag_counters:  # The counter is needed here to create a single region for every turn in case of parallel windings
                     tag_counters[tag] = 0
                 else:
-                    # just a physical domain that could be a unique
                     tag_counters[tag] += 10000
                 regions[name] = tag + tag_counters[tag]
 

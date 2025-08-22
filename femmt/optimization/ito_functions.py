@@ -221,11 +221,11 @@ def integrated_transformer_fem_simulation_from_result_dto(config_dto: ItoSingleI
     primary_litz = ff.litz_database()[dto.litz_wire_name_1]
     secondary_litz = ff.litz_database()[dto.litz_wire_name_2]
 
-    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
     winding1.set_litz_round_conductor(primary_litz["conductor_radii"], primary_litz["strands_numbers"],
                                       primary_litz["strand_radii"], None, fmt.ConductorArrangement.Square)
 
-    winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
     winding2.set_litz_round_conductor(secondary_litz["conductor_radii"], secondary_litz["strands_numbers"],
                                       secondary_litz["strand_radii"], None, fmt.ConductorArrangement.Square)
 

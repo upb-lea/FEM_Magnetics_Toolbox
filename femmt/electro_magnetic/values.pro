@@ -63,17 +63,6 @@ PostOperation Get_global UsingPost MagDyn_a {
       Print[ j2F[ CorePart~{n} ], OnGlobal , Format TimeTable, File > Sprintf[StrCat[DirResValsCore, "CoreEddyCurrentLosses_%g.dat"], n]] ;
   EndFor
 
-  // Steinmetz Core Losses
-  If(Flag_Generalized_Steinmetz_loss)
-    Print[ piGSE[ Core ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"piGSE.dat"]] ;// Core losses
-    Print[ piGSE[ Core ], OnGlobal, Format Table];
-  EndIf
-
-  If(Flag_Steinmetz_loss)
-    Print[ pSE[ Core ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"pSE.dat"]] ;// Core losses
-    Print[ pSE[ Core ], OnGlobal, Format Table];
-  EndIf
-
 
   // Stored Energy
   Print[ MagEnergy[Domain], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"ME.dat"], LastTimeStepOnly, StoreInVariable $MagEnergy];
