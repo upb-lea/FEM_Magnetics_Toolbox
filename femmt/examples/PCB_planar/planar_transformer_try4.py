@@ -36,21 +36,20 @@ def transformer_2x4(onelab_folder: str = None,
         geo.file_data.onelab_folder_path = onelab_folder
 
     # 3) Core definition
-    dims = fmt.dtos.SingleCoreDimensions(
-        core_inner_diameter=5e-3,
-        window_w=6e-3,
-        window_h=2e-3,
-        core_h=8e-3
-    )
-    core = fmt.Core(
-        core_type=fmt.CoreType.Single,
-        core_dimensions=dims,
-        mu_r_abs=3100,
-        phi_mu_deg=12,
-        sigma=0.6,
-        permeability_datasource=fmt.MaterialDataSource.Custom,
-        permittivity_datasource=fmt.MaterialDataSource.Custom
-    )
+    core_dims = fmt.dtos.SingleCoreDimensions(core_inner_diameter=5e-3,
+                                              window_w=6e-3,
+                                              window_h=2e-3,
+                                              core_h=8e-3)
+    core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3100,
+                                                  phi_mu_deg=12,
+                                                  dc_conductivity=0.6,
+                                                  eps_r_abs=0,
+                                                  phi_eps_deg=0,
+                                                  mdb_verbosity=fmt.Verbosity.Silent)
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Single,
+                    core_dimensions=core_dims,
+                    detailed_core_model=False)
     geo.set_core(core)
 
     # 4) Air gap in center leg
@@ -86,9 +85,9 @@ def transformer_2x4(onelab_folder: str = None,
 
     # 7) Conductors
     wrap = fmt.WrapParaType.FixedThickness
-    P = fmt.Conductor(0, fmt.Conductivity.Copper)
+    P = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
     P.set_rectangular_conductor(thickness=70e-6)
-    S = fmt.Conductor(1, fmt.Conductivity.Copper)
+    S = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
     S.set_rectangular_conductor(thickness=70e-6)
 
     # 8) Assign P→S→P→S in each column

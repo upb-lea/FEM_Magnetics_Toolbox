@@ -100,14 +100,20 @@ def basic_example_transformer_foil(onelab_folder: str = None, show_visual_output
         geo.file_data.onelab_folder_path = onelab_folder
 
     # 2. set core parameters
-    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=5e-3,
-                                                    window_w=6e-3,
-                                                    window_h=2e-3,
-                                                    core_h=8e-3)
-    core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
-                    mu_r_abs=3100, phi_mu_deg=12,
-                    sigma=0.6, permeability_datasource=fmt.MaterialDataSource.Custom,
-                    permittivity_datasource=fmt.MaterialDataSource.Custom)
+    core_dims = fmt.dtos.SingleCoreDimensions(core_inner_diameter=5e-3,
+                                              window_w=6e-3,
+                                              window_h=2e-3,
+                                              core_h=8e-3)
+    core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3100,
+                                                  phi_mu_deg=12,
+                                                  dc_conductivity=0.6,
+                                                  eps_r_abs=0,
+                                                  phi_eps_deg=0,
+                                                  mdb_verbosity=fmt.Verbosity.Silent)
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Single,
+                    core_dimensions=core_dims,
+                    detailed_core_model=False)
     geo.set_core(core)
 
     # 3. set air gap parameters
@@ -130,10 +136,10 @@ def basic_example_transformer_foil(onelab_folder: str = None, show_visual_output
     vww_top_left, vww_top_right, vww_bot_left, vww_bot_right =\
         winding_window.split_window(fmt.WindingWindowSplit.HorizontalAndVerticalSplit, split_distance=0.0001)
     # 6. create conductors and set parameters
-    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
     winding1.set_rectangular_conductor(thickness=35e-6)
 
-    winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
     winding2.set_rectangular_conductor(thickness=35e-6)
     winding2.parallel = False
 

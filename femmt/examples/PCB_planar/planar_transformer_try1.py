@@ -100,21 +100,20 @@ def interleaved_flexible_split_transformer(onelab_folder: str = None,
         geo.file_data.onelab_folder_path = onelab_folder
 
     # --- 1) Core setup
-    core_dims = fmt.dtos.SingleCoreDimensions(
-        core_inner_diameter=5e-3,
-        window_w=6e-3,
-        window_h=2e-3,
-        core_h=8e-3
-    )
-    core = fmt.Core(
-        core_type=fmt.CoreType.Single,
-        core_dimensions=core_dims,
-        mu_r_abs=3100,
-        phi_mu_deg=12,
-        sigma=0.6,
-        permeability_datasource=fmt.MaterialDataSource.Custom,
-        permittivity_datasource=fmt.MaterialDataSource.Custom
-    )
+    core_dims = fmt.dtos.SingleCoreDimensions(core_inner_diameter=5e-3,
+                                                    window_w=6e-3,
+                                                    window_h=2e-3,
+                                                    core_h=8e-3)
+    core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3100,
+                                                  phi_mu_deg=12,
+                                                  dc_conductivity=0.6,
+                                                  eps_r_abs=0,
+                                                  phi_eps_deg=0,
+                                                  mdb_verbosity=fmt.Verbosity.Silent)
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Single,
+                    core_dimensions=core_dims,
+                    detailed_core_model=False)
     geo.set_core(core)
 
     # --- 2) Air-gap setup
@@ -148,9 +147,9 @@ def interleaved_flexible_split_transformer(onelab_folder: str = None,
 
     # --- 5) Define conductors
     wrap_type = fmt.WrapParaType.FixedThickness
-    p = fmt.Conductor(0, fmt.Conductivity.Copper)
+    p = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
     p.set_rectangular_conductor(thickness=33e-6)
-    s = fmt.Conductor(1, fmt.Conductivity.Copper)
+    s = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
     s.set_rectangular_conductor(thickness=35e-6)
 
     # --- 6) Assign interleaved windings
