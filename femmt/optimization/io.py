@@ -91,7 +91,7 @@ class InductorOptimization:
                 time_extracted_vec
                 current_extracted_vec
                 current_extracted_2_vec
-                material_dto_curve_list
+                material_complex_mu_r_list
                 fundamental_frequency
                 target_inductance_matrix
                 fem_working_directory
@@ -117,7 +117,7 @@ class InductorOptimization:
                 period_vector_t_i=config.time_current_vec, sample_factor=1000, plot='no', mode='time', filter_type='factor', filter_value_factor=0.03)
 
             # material properties
-            material_db = mdb.MaterialDatabase(is_silent=True)
+            material_db = mdb.Data()
 
             material_data_list = []
             magnet_model_list = []
@@ -137,7 +137,7 @@ class InductorOptimization:
                 i_peak=i_peak,
                 time_extracted_vec=time_extracted,
                 current_extracted_vec=current_extracted_vec,
-                material_dto_curve_list=material_data_list,
+                material_complex_mu_r_list=material_data_list,
                 magnet_hub_model_list=magnet_model_list,
                 fundamental_frequency=fundamental_frequency,
                 working_directories=working_directories,
@@ -196,7 +196,7 @@ class InductorOptimization:
             turns = trial.suggest_int('turns', 1, max_turns)
 
             material_name = trial.suggest_categorical('material_name', config.material_name_list)
-            for count, material_dto in enumerate(target_and_fixed_parameters.material_dto_curve_list):
+            for count, material_dto in enumerate(target_and_fixed_parameters.material_complex_mu_r_list):
                 if material_dto.material_name == material_name:
                     material_dto: mdb.MaterialCurve = material_dto
                     magnet_material_model = target_and_fixed_parameters.magnet_hub_model_list[count]
@@ -211,7 +211,7 @@ class InductorOptimization:
                 litz_wire_diameter=litz_wire_diameter,
 
                 insulations=config.insulations,
-                material_dto=material_dto,
+                material_mu_r_abs=material_dto,
                 magnet_material_model=magnet_material_model,
 
                 temperature=config.temperature,
@@ -248,9 +248,10 @@ class InductorOptimization:
             """
             target_total_reluctance = reluctance_input.turns ** 2 / reluctance_input.target_inductance
 
-            r_core_inner = fr.r_core_round(reluctance_input.core_inner_diameter, reluctance_input.window_h, reluctance_input.material_dto.material_mu_r_abs)
+            r_core_inner = fr.r_core_round(reluctance_input.core_inner_diameter, reluctance_input.window_h,
+                                           reluctance_input.material_mu_r_abs.material_mu_r_abs)
             r_core_top_bot = fr.r_core_top_bot_radiant(reluctance_input.core_inner_diameter, reluctance_input.window_w,
-                                                       reluctance_input.material_dto.material_mu_r_abs, reluctance_input.core_inner_diameter / 4)
+                                                       reluctance_input.material_mu_r_abs.material_mu_r_abs, reluctance_input.core_inner_diameter / 4)
             r_core = 2 * r_core_inner + 2 * r_core_top_bot
 
             r_air_gap_target = target_total_reluctance - r_core
@@ -260,8 +261,8 @@ class InductorOptimization:
             flux_density = flux / core_cross_section
 
             # Do not cross out saturation, as the genetic algorithm is missing bad results to improve its suggestions
-            # if flux_density.max() > 0.7 * material_dto.saturation_flux_density:
-            #     print(f"Flux density too high (70 % of b_sat): {flux_density} T > 0.7 * {material_dto.saturation_flux_density} T")
+            # if flux_density.max() > 0.7 * material_mu_r_abs.saturation_flux_density:
+            #     print(f"Flux density too high (70 % of b_sat): {flux_density} T > 0.7 * {material_mu_r_abs.saturation_flux_density} T")
             #     return float('nan'), float('nan')
 
             # calculate air gaps to reach the target parameters
@@ -650,7 +651,7 @@ class InductorOptimization:
                     litz_wire_diameter=litz_wire_diameter,
 
                     insulations=local_config.insulations,
-                    material_dto=material_dto,
+                    material_mu_r_abs=material_dto,
                     magnet_material_model=magnet_material_model,
 
                     temperature=local_config.temperature,
@@ -1021,9 +1022,9 @@ class InductorOptimization:
             litz_wire_diameter = 2 * litz_wire["conductor_radii"]
 
             # material properties
-            material_db = mdb.MaterialDatabase(is_silent=True)
+            material_db = mdb.Data()
 
-            material_dto: mdb.MaterialCurve = material_db.material_data_interpolation_to_dto(
+            material_mu_r_abs: mdb.MaterialCurve = material_db.material_data_interpolation_to_dto(
                 df_geometry['params_material_name'][index_number], target_and_fix_parameters.fundamental_frequency, local_config.temperature)
             # instantiate material-specific model
             magnet_material_model: mh.loss.LossModel = mh.loss.LossModel(material=df_geometry['params_material_name'][index_number], team="paderborn")
@@ -1038,7 +1039,7 @@ class InductorOptimization:
                 litz_wire_diameter=litz_wire_diameter,
 
                 insulations=local_config.insulations,
-                material_dto=material_dto,
+                material_mu_r_abs=material_mu_r_abs,
                 magnet_material_model=magnet_material_model,
 
                 temperature=local_config.temperature,

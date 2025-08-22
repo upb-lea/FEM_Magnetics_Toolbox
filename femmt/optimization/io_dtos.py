@@ -6,7 +6,6 @@ import dataclasses
 from magnethub.loss import LossModel
 
 # own libraries
-from materialdatabase.meta.data_classes import MaterialCurve
 from materialdatabase.meta.data_enums import DataSource
 from femmt.enumerations import *
 from femmt.optimization.ito_dtos import WorkingDirectories
@@ -67,7 +66,8 @@ class InductorOptimizationTargetAndFixedParameters:
 
     i_rms: float
     i_peak: float
-    material_dto_curve_list: list[MaterialCurve]
+    material_name_list: list[str]
+    material_complex_mu_r_list: list[float]
     magnet_hub_model_list: list[LossModel]
     time_extracted_vec: list
     current_extracted_vec: list
@@ -128,7 +128,7 @@ class ReluctanceModelInput:
     litz_wire_diameter: float
 
     insulations: InductorInsulationDTO
-    material_dto: MaterialCurve
+    material_mu_r_abs: float
     magnet_material_model: LossModel
 
     temperature: float

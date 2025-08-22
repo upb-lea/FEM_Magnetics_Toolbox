@@ -37,7 +37,7 @@ class StackedTransformerCenterTappedOptimization:
             time_extracted_vec
             current_extracted_1_vec
             current_extracted_2_vec
-            material_dto_curve_list
+            material_complex_mu_r_list
             fundamental_frequency
             target_inductance_matrix
             fem_working_directory
@@ -94,7 +94,7 @@ class StackedTransformerCenterTappedOptimization:
             time_extracted_vec=time_extracted,
             current_extracted_1_vec=current_extracted_1_vec,
             current_extracted_2_vec=current_extracted_2_vec,
-            material_dto_curve_list=material_data_list,
+            material_complex_mu_r_list=material_data_list,
             fundamental_frequency=fundamental_frequency,
             target_inductance_matrix=target_inductance_matrix,
             working_directories=working_directories
