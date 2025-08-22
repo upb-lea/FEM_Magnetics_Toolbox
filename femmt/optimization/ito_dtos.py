@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 # 3rd party libraries
 import numpy as np
-from materialdatabase.meta.data_classes import MaterialCurve
 from materialdatabase.meta.data_enums import DataSource
+from materialdatabase.meta.setup_enums import MeasurementDataType
 from magnethub.loss import LossModel
 from femmt.enumerations import *
 
@@ -32,10 +32,10 @@ class ItoInsulation:
 class IntegratedTransformerMaterialDataSources:
     """Data sources for the FEM simulation."""
 
-    permeability_datasource: MaterialDataSource
-    permeability_datatype: DataSource
-    permittivity_datasource: MaterialDataSource
-    permittivity_datatype: DataSource
+    permeability_datasource: DataSource
+    permeability_datatype: MeasurementDataType
+    permittivity_datasource: DataSource
+    permittivity_datatype: MeasurementDataType
 
 @dataclass
 class ItoSingleInputConfig:
@@ -105,7 +105,8 @@ class ItoTargetAndFixedParameters:
     i_peak_2: float
     i_phase_deg_1: float
     i_phase_deg_2: float
-    material_dto_curve_list: list[MaterialCurve]
+    material_name_list: list[float]
+    material_complex_mu_r_list: list[float]
     magnet_hub_model_list: list[LossModel]
     time_extracted_vec: list
     current_extracted_1_vec: list
@@ -181,7 +182,8 @@ class ItoReluctanceModelInput:
     litz_wire_diameter_2: float
 
     insulations: ItoInsulation
-    material_dto: MaterialCurve
+    material_name: str
+    material_complex_mu_r: float
     magnet_material_model: LossModel
 
     temperature: float

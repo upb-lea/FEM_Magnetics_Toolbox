@@ -142,7 +142,7 @@ class IntegratedTransformerOptimization:
             time_extracted_vec
             current_extracted_1_vec
             current_extracted_2_vec
-            material_dto_curve_list
+            material_complex_mu_r_list
             fundamental_frequency
             target_inductance_matrix
             fem_working_directory
@@ -207,7 +207,7 @@ class IntegratedTransformerOptimization:
             magnet_hub_model_list=magnet_model_list,
             current_extracted_1_vec=current_extracted_1_vec,
             current_extracted_2_vec=current_extracted_2_vec,
-            material_dto_curve_list=material_data_list,
+            material_complex_mu_r_list=material_data_list,
             fundamental_frequency=fundamental_frequency,
             target_inductance_matrix=target_inductance_matrix,
             working_directories=working_directories,
@@ -263,11 +263,11 @@ class IntegratedTransformerOptimization:
 
             # calculate the core reluctance
             core_inner_cylinder_top = fr.r_core_round(reluctance_input.core_inner_diameter, reluctance_input.window_h_top,
-                                                      reluctance_input.material_dto.material_mu_r_abs)
+                                                      reluctance_input.material_complex_mu_r.material_mu_r_abs)
             core_inner_cylinder_bot = fr.r_core_round(reluctance_input.core_inner_diameter, reluctance_input.window_h_bot,
-                                                      reluctance_input.material_dto.material_mu_r_abs)
+                                                      reluctance_input.material_complex_mu_r.material_mu_r_abs)
             core_top_bot_radiant = fr.r_core_top_bot_radiant(reluctance_input.core_inner_diameter, reluctance_input.window_w,
-                                                             reluctance_input.material_dto.material_mu_r_abs, reluctance_input.core_inner_diameter / 4)
+                                                             reluctance_input.material_complex_mu_r.material_mu_r_abs, reluctance_input.core_inner_diameter / 4)
 
             r_core_top = 2 * core_inner_cylinder_top + core_top_bot_radiant
             r_core_bot = 2 * core_inner_cylinder_bot + core_top_bot_radiant
@@ -500,7 +500,7 @@ class IntegratedTransformerOptimization:
 
             # suggest core material
             material_name = trial.suggest_categorical('material_name', config.material_list)
-            for count, material_dto in enumerate(target_and_fixed_parameters.material_dto_curve_list):
+            for count, material_dto in enumerate(target_and_fixed_parameters.material_complex_mu_r_list):
                 if material_dto.material_name == material_name:
                     material_dto: mdb.MaterialCurve = material_dto
                     magnet_material_model = target_and_fixed_parameters.magnet_hub_model_list[count]
@@ -566,7 +566,7 @@ class IntegratedTransformerOptimization:
                 litz_wire_diameter_2=litz_diameter_2,
 
                 insulations=config.insulations,
-                material_dto=material_dto,
+                material_complex_mu_r=material_dto,
                 magnet_material_model=magnet_material_model,
 
                 temperature=config.temperature,
