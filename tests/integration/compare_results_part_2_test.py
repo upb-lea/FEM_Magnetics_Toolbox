@@ -2127,10 +2127,10 @@ def test_transformer_5_windings(fixture_transformer_5_windings: pytest.fixture):
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
     # check thermal simulation results
-    # assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    # fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-    #                                   "thermal_transformer_5_windings.json")
-    # compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=2)
+    assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                      "thermal_transformer_5_windings.json")
+    compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=2)
 
 
 
@@ -2209,7 +2209,7 @@ def test_load_files(temp_folder: pytest.fixture, fixture_inductor_core_material_
                     fixture_inductor_core_fixed_loss_angle: pytest.fixture, fixture_inductor_core_fixed_loss_angle_dc: pytest.fixture,
                     fixture_inductor_core_fixed_loss_angle_litz_wire: pytest.fixture, fixture_inductor_core_fixed_loss_angle_foil_horizontal: pytest.fixture,
                     fixture_inductor_core_fixed_loss_angle_foil_vertical: pytest.fixture,
-                    fixture_transformer_core_fixed_loss_angle: pytest.fixture, fixture_transformer_interleaved_core_fixed_loss_angle: pytest.fixture,
+                    fixture_transformer_interleaved_core_fixed_loss_angle: pytest.fixture,
                     fixture_transformer_integrated_core_fixed_loss_angle: pytest.fixture
                     ):
     """Function tests if simulations can be set up from a simulation file.
@@ -2233,8 +2233,6 @@ def test_load_files(temp_folder: pytest.fixture, fixture_inductor_core_material_
     :type fixture_inductor_core_fixed_loss_angle_foil_horizontal: pytest.fixture
     :param fixture_inductor_core_fixed_loss_angle_foil_vertical: fixture for inductor
     :type fixture_inductor_core_fixed_loss_angle_foil_vertical: pytest.fixture
-    :param fixture_transformer_core_fixed_loss_angle: fixture for transformer
-    :type fixture_transformer_core_fixed_loss_angle: pytest.fixture
     :param fixture_transformer_interleaved_core_fixed_loss_angle: fixture for transformer
     :type fixture_transformer_interleaved_core_fixed_loss_angle: pytest.fixture
     :param fixture_transformer_integrated_core_fixed_loss_angle: fixture for transformer
@@ -2255,7 +2253,6 @@ def test_load_files(temp_folder: pytest.fixture, fixture_inductor_core_material_
                                     fixture_inductor_core_fixed_loss_angle_litz_wire,
                                     fixture_inductor_core_fixed_loss_angle_foil_horizontal,
                                     fixture_inductor_core_fixed_loss_angle_foil_vertical,
-                                    fixture_transformer_core_fixed_loss_angle,
                                     fixture_transformer_interleaved_core_fixed_loss_angle,
                                     fixture_transformer_integrated_core_fixed_loss_angle
                                     ]

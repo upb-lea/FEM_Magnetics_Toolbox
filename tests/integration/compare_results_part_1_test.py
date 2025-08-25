@@ -682,3 +682,64 @@ def test_simulation_inductor_electrostatic(fixture_inductor_electrostatic: pytes
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "inductor_electrostatic.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
+
+def test_load_files(temp_folder: pytest.fixture,
+                    fixture_inductor_core_material_database_measurement: pytest.fixture,
+                    fixture_transformer_core_fixed_loss_angle: pytest.fixture,
+                    fixture_inductor_time_domain: pytest.fixture,
+                    fixture_inductor_electrostatic: pytest.fixture
+                    ):
+    """Function tests if simulations can be set up from a simulation file.
+
+    There is no complete function check, there is just an error-check if the load will fail or not.
+
+    Note: Fixtures are used, to make sure that the latest self-generated log-files can be read.
+    It is not okay to use predefined logfiles which where generated once.
+
+    :param temp_folder: fixture for temporary simulation folder and onelab folder
+    :type temp_folder: pytest.fixture
+    :param fixture_inductor_core_material_database_measurement: fixture for inductor
+    :type fixture_inductor_core_material_database_measurement: pytest.fixture,
+    :param fixture_transformer_core_fixed_loss_angle: fixture for transformer
+    :type fixture_transformer_core_fixed_loss_angle: pytest.fixture
+    :param fixture_inductor_time_domain: fixture
+    :type fixture_inductor_time_domain: pytest.fixture
+    :param fixture_inductor_electrostatic: fixture
+    :type fixture_inductor_electrostatic: pytest.fixture
+    """
+    temp_folder_path, onelab_folder = temp_folder
+
+    working_directory = temp_folder_path
+    if not os.path.exists(working_directory):
+        os.mkdir(working_directory)
+
+        result_log_filepath_list = [fixture_inductor_core_material_database_measurement,
+                                    fixture_transformer_core_fixed_loss_angle,
+                                    fixture_inductor_time_domain,
+                                    fixture_inductor_electrostatic
+                                    ]
+
+        result_log_filepath_direction = os.path.join(os.path.dirname(__file__), "fixtures", "results")
+
+        # femmt_simulation_inductor_core_material_database = os.path.join(result_log_filepath_direction,
+        # "inductor_core_material.json")
+        # femmt_simulation_inductor_core_fixed_loss_angle = os.path.join(result_log_filepath_direction,
+        # "inductor_core_fixed_loss_angle.json")
+        # femmt_simulation_inductor_core_fixed_loss_angle_litz_wire = os.path.join(result_log_filepath_direction,
+        # "inductor_core_fixed_loss_angle_litz_wire.json")
+        # femmt_simulation_transformer_core_fixed_loss_angle = os.path.join(result_log_filepath_direction,
+        # "transformer_core_fixed_loss_angle.json")
+        # femmt_simulation_transformer_interleaved_core_fixed_loss_angle = os.path.join(result_log_filepath_direction,
+        # "transformer_interleaved_core_fixed_loss_angle.json")
+        # femmt_simulation_transformer_integrated_core_fixed_loss_angle = os.path.join(result_log_filepath_direction,
+        # "transformer_integrated_core_fixed_loss_angle.json")
+        #
+        #
+        # fixture_log_filepath_list = []
+
+        for filepath in result_log_filepath_list:
+            test_result_log = fmt.MagneticComponent.decode_settings_from_log(filepath, working_directory)
+
+            assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
+
+            # compare_result_logs(test_result_log, fixture_result_log)
