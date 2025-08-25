@@ -70,15 +70,15 @@ def create_parallel_example_inductor(inductor_frequency: int, air_gap_height: fl
                                                     window_w=core_db["window_w"],
                                                     window_h=core_db["window_h"],
                                                     core_h=core_db["core_h"])
-    core = fmt.Core(core_type=fmt.CoreType.Single,
+    core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
+                                                    temperature=45,
+                                                    permeability_datasource=fmt.DataSource.TDK_MDT,
+                                                    permittivity_datasource=fmt.DataSource.LEA_MTB)
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
-                    material=mdb.Material.N49, temperature=45, frequency=inductor_frequency,
-                    permeability_datasource=fmt.MaterialDataSource.Measurement,
-                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                    permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
-                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                    permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK)
+                    detailed_core_model=False)
+
     geo.set_core(core)
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_height, air_gap_position)
@@ -182,9 +182,9 @@ def parallel_simulation_study(averaging_count: int):
 
 if __name__ == "__main__":
     # ---- Choosing the execution ----
-    execution_type = "default_example"
+    # execution_type = "default_example"
     # execution_type = "custom_hpc"
-    # execution_type = "parallel_study"
+    execution_type = "parallel_study"
 
     if execution_type == "default_example":
         example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
