@@ -26,15 +26,15 @@ This results to the following code:
    import femmt as fmt
 
    geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.FreqDomain,
-                                component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
-                                verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
+                               component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
+                               onelab_verbosity=fmt.Verbosity.ToConsole)
 
 The ``simulation_type`` specifies the type of simulation to be performed.
 
 - If set to ``FreqDomain``, indicating a frequency domain simulation.
 - If set to ``TimeDomain``, indicating a time domain simulations.
 
-The ``Verbosity`` controls the level of detail in the output.
+The ``onelab_verbosity`` controls the level of the FEM simulation software ``Onelab`` details in the output.
 
 - If set to ``ToConsole``, all output messages are shown in the commend line .
 - If set to ``ToFile``, all output messages are written to files.
@@ -81,16 +81,15 @@ Now the core object can be created and added to the model (geo object)
                                                     window_h=core_db["window_h"],
                                                     core_h=core_db["core_h"])
 
-   core = fmt.Core(core_type=fmt.CoreType.Single,
+   core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
+                                                   temperature=45,
+                                                   permeability_datasource=fmt.DataSource.TDK_MDT,
+                                                   permittivity_datasource=fmt.DataSource.LEA_MTB)
+
+    core = fmt.Core(material=core_material,
+                    core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
-                    detailed_core_model=False,
-                    material=mdb.Material.N49, temperature=45, frequency=inductor_frequency,
-                    permeability_datasource=fmt.MaterialDataSource.Measurement,
-                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                    permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
-                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                    permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK)
+                    detailed_core_model=False)
    geo.set_core(core)
 
 Material database
@@ -351,7 +350,7 @@ To create a conductor have a look at the following code example:
 
 .. code:: python
 
-   winding1 = fmt.Conductor(winding_number=0, conductivity=fmt.Conductivity.Copper)
+   winding1 = fmt.Conductor(winding_number=0, conductivity=fmt.ConductorMaterial.Copper)
    winding1.set_solid_round_conductor(conductor_radius=0.0011, conductor_arrangement=fmt.ConductorArrangement.Square)
 
 Add conductors to virtual winding windows
