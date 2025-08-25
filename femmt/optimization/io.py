@@ -1014,7 +1014,6 @@ class InductorOptimization:
 
             material_mu_r_abs = np.abs(np.array([mu_real_at_f + 1j * mu_imag_at_f]))
 
-
             fem_input = FemInput(
                 # general parameters
                 working_directory=working_directory,
