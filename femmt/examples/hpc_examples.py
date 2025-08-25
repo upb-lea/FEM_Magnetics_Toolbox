@@ -28,8 +28,7 @@ def create_parallel_example_transformer() -> fmt.MagneticComponent:
                                                   phi_mu_deg=10,
                                                   dc_conductivity=1,
                                                   eps_r_abs=0,
-                                                  phi_eps_deg=0,
-                                                  mdb_verbosity=fmt.Verbosity.Silent)
+                                                  phi_eps_deg=0)
     core = fmt.Core(material=core_material,
                     core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
@@ -79,7 +78,7 @@ def create_parallel_example_inductor(inductor_frequency: int, air_gap_height: fl
                     permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
                     permittivity_datasource=fmt.MaterialDataSource.Measurement,
                     permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                    permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+                    permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK)
     geo.set_core(core)
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_height, air_gap_position)

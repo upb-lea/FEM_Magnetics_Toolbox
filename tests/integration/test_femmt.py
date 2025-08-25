@@ -164,8 +164,7 @@ def fixture_inductor_core_material_database(temp_folder: pytest.fixture):
         core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N95,
                                                         temperature=25,
                                                         permeability_datasource=fmt.DataSource.Datasheet,
-                                                        permittivity_datasource=fmt.DataSource.Datasheet,
-                                                        mdb_verbosity=fmt.Verbosity.Silent)
+                                                        permittivity_datasource=fmt.DataSource.Datasheet)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -292,8 +291,7 @@ def fixture_inductor_core_material_database_measurement(temp_folder: pytest.fixt
         core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
                                                         temperature=25,
                                                         permeability_datasource=fmt.DataSource.TDK_MDT,
-                                                        permittivity_datasource=fmt.DataSource.LEA_MTB,
-                                                        mdb_verbosity=fmt.Verbosity.Silent)
+                                                        permittivity_datasource=fmt.DataSource.LEA_MTB)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -421,8 +419,7 @@ def fixture_inductor_core_fixed_loss_angle(temp_folder: pytest.fixture):
                                                       phi_mu_deg=10,
                                                       dc_conductivity=0.5,
                                                       eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
+                                                      phi_eps_deg=0)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -549,8 +546,7 @@ def fixture_inductor_core_fixed_loss_angle_dc(temp_folder: pytest.fixture):
                                                       phi_mu_deg=10,
                                                       dc_conductivity=0.5,
                                                       eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
+                                                      phi_eps_deg=0)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -676,8 +672,7 @@ def fixture_inductor_core_fixed_loss_angle_litz_wire(temp_folder: pytest.fixture
                                                       phi_mu_deg=10,
                                                       dc_conductivity=0.5,
                                                       eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
+                                                      phi_eps_deg=0)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -808,8 +803,7 @@ def fixture_inductor_core_fixed_loss_angle_foil_vertical(temp_folder: pytest.fix
                                                       phi_mu_deg=12,
                                                       dc_conductivity=0.6,
                                                       eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
+                                                      phi_eps_deg=0)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -940,8 +934,7 @@ def fixture_inductor_core_fixed_loss_angle_foil_horizontal(temp_folder: pytest.f
                                                       phi_mu_deg=12,
                                                       dc_conductivity=0.6,
                                                       eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
+                                                      phi_eps_deg=0)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -1069,8 +1062,7 @@ def fixture_transformer_core_fixed_loss_angle(temp_folder: pytest.fixture):
                                                       phi_mu_deg=12,
                                                       dc_conductivity=1.2,
                                                       eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
+                                                      phi_eps_deg=0)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -1206,8 +1198,7 @@ def fixture_transformer_interleaved_core_fixed_loss_angle(temp_folder: pytest.fi
                                                       phi_mu_deg=10,
                                                       dc_conductivity=1,
                                                       eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
+                                                      phi_eps_deg=0)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -1342,8 +1333,7 @@ def fixture_transformer_integrated_core_fixed_loss_angle(temp_folder: pytest.fix
                                                       phi_mu_deg=12,
                                                       dc_conductivity=0.6,
                                                       eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
+                                                      phi_eps_deg=0)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -1486,8 +1476,7 @@ def fixture_transformer_stacked_center_tapped(temp_folder: pytest.fixture):
                                                       phi_mu_deg=12,
                                                       dc_conductivity=1.2,
                                                       eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
+                                                      phi_eps_deg=0)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Stacked,
@@ -1647,8 +1636,7 @@ def fixture_transformer_5_windings(temp_folder: pytest.fixture):
         core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
                                                         temperature=60,
                                                         permeability_datasource=fmt.DataSource.TDK_MDT,
-                                                        permittivity_datasource=fmt.DataSource.LEA_MTB,
-                                                        mdb_verbosity=fmt.Verbosity.Silent)
+                                                        permittivity_datasource=fmt.DataSource.LEA_MTB)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -1819,8 +1807,7 @@ def fixture_inductor_time_domain(temp_folder: pytest.fixture):
                                                       phi_mu_deg=0,
                                                       dc_conductivity=1,
                                                       eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
+                                                      phi_eps_deg=0)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -1911,8 +1898,7 @@ def fixture_transformer_time_domain(temp_folder: pytest.fixture):
                                                       phi_mu_deg=0,
                                                       dc_conductivity=1,
                                                       eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
+                                                      phi_eps_deg=0)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -2008,8 +1994,7 @@ def fixture_transformer_3_windings_time_domain(temp_folder: pytest.fixture):
                                                       phi_mu_deg=0,
                                                       dc_conductivity=1,
                                                       eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
+                                                      phi_eps_deg=0)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,

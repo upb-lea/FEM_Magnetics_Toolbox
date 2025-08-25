@@ -90,7 +90,7 @@ Now the core object can be created and added to the model (geo object)
                     permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
                     permittivity_datasource=fmt.MaterialDataSource.Measurement,
                     permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                    permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+                    permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK)
    geo.set_core(core)
 
 Material database
