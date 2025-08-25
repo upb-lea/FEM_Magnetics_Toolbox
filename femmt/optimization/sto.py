@@ -1010,17 +1010,18 @@ class StackedTransformerOptimization:
                                                              window_w=fem_input.window_w,
                                                              window_h_top=fem_input.window_h_top,
                                                              window_h_bot=fem_input.window_h_bot)
-            core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions,
-                            material=fem_input.material_name, temperature=fem_input.temperature,
-                            frequency=fem_input.fundamental_frequency,
-                            permeability_datasource=fem_input.material_data_sources.permeability_datasource,
-                            permeability_datatype=fem_input.material_data_sources.permeability_datatype,
-                            permeability_measurement_setup=fem_input.material_data_sources.permeability_measurement_setup,
-                            permittivity_datasource=fem_input.material_data_sources.permittivity_datasource,
-                            permittivity_datatype=fem_input.material_data_sources.permittivity_datatype,
-                            permittivity_measurement_setup=fem_input.material_data_sources.permittivity_measurement_setup,
-                            mdb_verbosity=fmt.Verbosity.Silent
-                            )
+
+            core_material = fmt.ImportedComplexCoreMaterial(material=fem_input.material_name,
+                                                            temperature=fem_input.temperature,
+                                                            permeability_datasource=fem_input.material_data_sources.permeability_datasource,
+                                                            permittivity_datasource=fem_input.material_data_sources.permittivity_datasource,
+                                                            mdb_verbosity=fmt.Verbosity.Silent)
+
+            core = fmt.Core(material=core_material,
+                            core_type=fmt.CoreType.Stacked,
+                            core_dimensions=core_dimensions,
+                            detailed_core_model=False)
+
             geo.set_core(core)
 
             # 3. set air gap parameters
@@ -1193,6 +1194,19 @@ class StackedTransformerOptimization:
             local_config.time_current_vec = current_waveform
             target_and_fix_parameters = StackedTransformerOptimization.ReluctanceModel.calculate_fix_parameters(local_config)
 
+            # material properties
+            material_db = mdb.Data()
+
+            material_name = Material(df_geometry['params_material_name'][index_number])
+
+            small_signal_mu_real_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_real_over_f_at_T)
+            small_signal_mu_imag_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_imag_over_f_at_T)
+
+            mu_real_at_f = np.interp(10_000, small_signal_mu_real_over_f_at_T["f"], small_signal_mu_real_over_f_at_T["mu_real"])
+            mu_imag_at_f = np.interp(10_000, small_signal_mu_imag_over_f_at_T["f"], small_signal_mu_imag_over_f_at_T["mu_imag"])
+
+            material_mu_r_abs = np.abs(np.array([mu_real_at_f + 1j * mu_imag_at_f]))
+
             working_directory = target_and_fix_parameters.working_directories.fem_working_directory
             if not os.path.exists(working_directory):
                 os.mkdir(working_directory)
@@ -1205,7 +1219,7 @@ class StackedTransformerOptimization:
                 simulation_name="xx",
 
                 # material and geometry parameters
-                material_name=df_geometry['params_material_name'][index_number],
+                material_name=material_name,
                 primary_litz_wire_name=df_geometry['params_primary_litz_name'][index_number],
                 secondary_litz_wire_name=df_geometry['params_secondary_litz_name'][index_number],
                 core_inner_diameter=core_inner_diameter,
@@ -1236,19 +1250,6 @@ class StackedTransformerOptimization:
             litz_wire_diameter_primary = 2 * litz_wire_primary_dict["conductor_radii"]
             litz_wire_secondary_dict = ff.litz_database()[df_geometry['params_secondary_litz_name'][index_number]]
             litz_wire_diameter_secondary = 2 * litz_wire_secondary_dict["conductor_radii"]
-
-            # material properties
-            material_db = mdb.Data()
-
-            material_name = Material(df_geometry['params_material_name'][index_number])
-
-            small_signal_mu_real_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_real_over_f_at_T)
-            small_signal_mu_imag_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_imag_over_f_at_T)
-
-            mu_real_at_f = np.interp(10_000, small_signal_mu_real_over_f_at_T["f"], small_signal_mu_real_over_f_at_T["mu_real"])
-            mu_imag_at_f = np.interp(10_000, small_signal_mu_imag_over_f_at_T["f"], small_signal_mu_imag_over_f_at_T["mu_imag"])
-
-            material_mu_r_abs = np.abs(np.array([mu_real_at_f + 1j * mu_imag_at_f]))
 
             # instantiate material-specific model
             magnet_material_model: mh.loss.LossModel = mh.loss.LossModel(material=material_name, team="paderborn")
