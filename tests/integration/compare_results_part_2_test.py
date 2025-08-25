@@ -247,9 +247,6 @@ def fixture_inductor_core_material_database(temp_folder: pytest.fixture):
 
     return electromagnetoquasistatic_result, thermal_result, geometry_result, material_result
 
-
-
-
 @pytest.fixture
 def fixture_inductor_core_fixed_loss_angle(temp_folder: pytest.fixture):
     """
@@ -893,9 +890,6 @@ def fixture_inductor_core_fixed_loss_angle_foil_horizontal(temp_folder: pytest.f
 
     return electromagnetoquasistatic_result, thermal_result, geometry_result, material_result
 
-
-
-
 @pytest.fixture
 def fixture_transformer_interleaved_core_fixed_loss_angle(temp_folder: pytest.fixture):
     """
@@ -1505,9 +1499,6 @@ def fixture_transformer_5_windings(temp_folder: pytest.fixture):
 
     return electromagnetoquasistatic_result, thermal_result, geometry_result, material_result
 
-
-
-
 @pytest.fixture
 def fixture_transformer_time_domain(temp_folder: pytest.fixture):
     """
@@ -1710,10 +1701,6 @@ def fixture_transformer_3_windings_time_domain(temp_folder: pytest.fixture):
 
     return electromagnetoquasistatic_result, material_result, geometry_result
 
-
-
-
-
 @pytest.fixture
 def fixture_transformer_electrostatic(temp_folder: pytest.fixture):
     """
@@ -1858,8 +1845,6 @@ def test_inductor_core_material_database(fixture_inductor_core_material_database
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "thermal_inductor_core_material_database.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=5)
-
-
 
 def test_inductor_core_fixed_loss_angle(fixture_inductor_core_fixed_loss_angle: pytest.fixture):
     """
@@ -2008,9 +1993,6 @@ def test_inductor_core_fixed_loss_angle_foil_horizontal(
                                       "thermal_inductor_core_fixed_loss_angle_foil_horizontal.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log)
 
-
-
-
 def test_transformer_interleaved_core_fixed_loss_angle(fixture_transformer_interleaved_core_fixed_loss_angle: pytest.fixture):
     """
     Integration test to validate the magnetoquasistatic simulation and the thermal simulation.
@@ -2132,8 +2114,6 @@ def test_transformer_5_windings(fixture_transformer_5_windings: pytest.fixture):
                                       "thermal_transformer_5_windings.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=2)
 
-
-
 def test_transformer_time_domain(fixture_transformer_time_domain: pytest.fixture):
     """
     Integration test to validate the magnetoquasistatic simulation.
@@ -2178,9 +2158,6 @@ def test_transformer_3_windings_time_domain(fixture_transformer_3_windings_time_
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "log_transformer_3_windings_time_domain.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
-
-
-
 
 def test_simulation_transformer_electrostatic(fixture_transformer_electrostatic: pytest.fixture):
     """
