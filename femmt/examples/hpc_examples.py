@@ -9,7 +9,6 @@ import statistics
 
 # Local libraries
 import femmt as fmt
-import materialdatabase as mdb
 
 """This file contains examples for the use of the hpc function. Internally the multiprocessing package is used.
 

@@ -1,4 +1,8 @@
-"""Basic example testing."""
+"""Basic example testing.
+
+These tests just run the basic examples and see if the run without error.
+There is no result comparison.
+"""
 
 # python libraries
 import os
@@ -314,3 +318,55 @@ def test_advanced_example_inductor_air_gap_sweep(temp_folder: pytest.fixture):
                                                                        show_visual_outputs=False,
                                                                        is_test=True)
 
+
+def test_basic_transformer_component_study(temp_folder: pytest.fixture):
+    """
+    Integration test to the basic example file.
+
+    :param temp_folder: temporary folder path and onelab filepath
+    :type temp_folder: pytest.fixture
+    """
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.component_study.transformer_component_study.transformer_component_study(onelab_folder=onelab_folder,
+                                                                                           show_visual_outputs=False,
+                                                                                           is_test=True)
+
+
+def test_basic_inductor_excitation_sweep(temp_folder: pytest.fixture):
+    """
+    Integration test to the basic example file.
+
+    :param temp_folder: temporary folder path and onelab filepath
+    :type temp_folder: pytest.fixture
+    """
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_inductor_excitation_sweep.basic_example_inductor_excitation_sweep(onelab_folder=onelab_folder,
+                                                                                           show_visual_outputs=False,
+                                                                                           is_test=True)
+
+
+def test_basic_transformer_excitation_sweep(temp_folder: pytest.fixture):
+    """
+    Integration test to the basic example file.
+
+    :param temp_folder: temporary folder path and onelab filepath
+    :type temp_folder: pytest.fixture
+    """
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_transformer_excitation_sweep.basic_example_transformer_excitation_sweep(onelab_folder=onelab_folder,
+                                                                                                 show_visual_outputs=False,
+                                                                                                 is_test=True)
+
+
+def test_basic_transformer_split_windings(temp_folder: pytest.fixture):
+    """
+    Integration test to the basic example file.
+
+    :param temp_folder: temporary folder path and onelab filepath
+    :type temp_folder: pytest.fixture
+    """
+    temp_folder_path, onelab_folder = temp_folder
+    for num_windings in [2, 3, 5, 6]:
+        print(f"Running simulation for {num_windings} windings")
+        femmt.examples.basic_split_windings.run_transformer_vvw_split_examples(num_windings, onelab_folder=onelab_folder,
+                                                                               show_visual_outputs=False, is_test=True)
