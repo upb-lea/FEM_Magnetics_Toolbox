@@ -91,7 +91,7 @@ class InductorOptimization:
                 time_extracted_vec
                 current_extracted_vec
                 current_extracted_2_vec
-                material_complex_mu_r_list
+                material_mu_r_abs_list
                 fundamental_frequency
                 target_inductance_matrix
                 fem_working_directory
@@ -119,11 +119,17 @@ class InductorOptimization:
             # material properties
             material_db = mdb.Data()
 
-            material_data_list = []
+            material_mu_r_abs_list = []
             magnet_model_list = []
             for material_name in config.material_name_list:
-                material_dto: mdb.MaterialCurve = material_db.material_data_interpolation_to_dto(material_name, fundamental_frequency, config.temperature)
-                material_data_list.append(material_dto)
+                small_signal_mu_real_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_real_over_f_at_T)
+                small_signal_mu_imag_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_imag_over_f_at_T)
+
+                mu_real_at_f = np.interp(10_000, small_signal_mu_real_over_f_at_T["f"], small_signal_mu_real_over_f_at_T["mu_real"])
+                mu_imag_at_f = np.interp(10_000, small_signal_mu_imag_over_f_at_T["f"], small_signal_mu_imag_over_f_at_T["mu_imag"])
+
+                material_mu_r_abs = np.abs(np.array([mu_real_at_f + 1j * mu_imag_at_f]))
+                material_mu_r_abs_list.append(material_mu_r_abs)
                 # instantiate material-specific model
                 mdl: mh.loss.LossModel = mh.loss.LossModel(material=material_name, team="paderborn")
                 magnet_model_list.append(mdl)
@@ -137,7 +143,8 @@ class InductorOptimization:
                 i_peak=i_peak,
                 time_extracted_vec=time_extracted,
                 current_extracted_vec=current_extracted_vec,
-                material_complex_mu_r_list=material_data_list,
+                material_name_list=config.material_name_list,
+                material_mu_r_abs_list=material_mu_r_abs_list,
                 magnet_hub_model_list=magnet_model_list,
                 fundamental_frequency=fundamental_frequency,
                 working_directories=working_directories,
@@ -196,9 +203,9 @@ class InductorOptimization:
             turns = trial.suggest_int('turns', 1, max_turns)
 
             material_name = trial.suggest_categorical('material_name', config.material_name_list)
-            for count, material_dto in enumerate(target_and_fixed_parameters.material_complex_mu_r_list):
-                if material_dto.material_name == material_name:
-                    material_dto: mdb.MaterialCurve = material_dto
+            for count, material_mu_r_abs_value in enumerate(target_and_fixed_parameters.material_mu_r_abs_list):
+                if target_and_fixed_parameters.material_name_list[count] == material_name:
+                    material_mu_r_abs = material_mu_r_abs_value
                     magnet_material_model = target_and_fixed_parameters.magnet_hub_model_list[count]
 
             reluctance_model_input = ReluctanceModelInput(
@@ -211,7 +218,7 @@ class InductorOptimization:
                 litz_wire_diameter=litz_wire_diameter,
 
                 insulations=config.insulations,
-                material_mu_r_abs=material_dto,
+                material_mu_r_abs=material_mu_r_abs,
                 magnet_material_model=magnet_material_model,
 
                 temperature=config.temperature,
@@ -249,9 +256,9 @@ class InductorOptimization:
             target_total_reluctance = reluctance_input.turns ** 2 / reluctance_input.target_inductance
 
             r_core_inner = fr.r_core_round(reluctance_input.core_inner_diameter, reluctance_input.window_h,
-                                           reluctance_input.material_mu_r_abs.material_mu_r_abs)
+                                           reluctance_input.material_mu_r_abs)
             r_core_top_bot = fr.r_core_top_bot_radiant(reluctance_input.core_inner_diameter, reluctance_input.window_w,
-                                                       reluctance_input.material_mu_r_abs.material_mu_r_abs, reluctance_input.core_inner_diameter / 4)
+                                                       reluctance_input.material_mu_r_abs, reluctance_input.core_inner_diameter / 4)
             r_core = 2 * r_core_inner + 2 * r_core_top_bot
 
             r_air_gap_target = target_total_reluctance - r_core
