@@ -147,10 +147,10 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
     winding1.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
-    # winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    # winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
     # winding1.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
 
-    # winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    # winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
     # winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
     winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)

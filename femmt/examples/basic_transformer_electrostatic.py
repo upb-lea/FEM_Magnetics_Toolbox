@@ -43,25 +43,13 @@ def basic_example_transformer_electrostatic(onelab_folder: str = None, show_visu
         geo.file_data.onelab_folder_path = onelab_folder
 
     # 2. set core parameters
-    # core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.02, window_w=0.01, window_h=0.03,
-    #                                                 core_h=0.02)
-    # core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
-    #                 permeability_datasource=fmt.MaterialDataSource.Custom,
-    #                 permittivity_datasource=fmt.MaterialDataSource.Custom,
-    #                 detailed_core_model=False)
-    # geo.set_core(core)
     core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
                                                     window_w=core_db["window_w"],
                                                     window_h=core_db["window_h"],
                                                     core_h=core_db["core_h"])
-    # core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
-    #                                                 temperature=45,
-    #                                                 permeability_datasource=fmt.DataSource.TDK_MDT,
-    #                                                 permittivity_datasource=fmt.DataSource.LEA_MTB,
-    #                                                 mdb_verbosity=fmt.Verbosity.Silent)
-
-    core = fmt.Core(material=None,
+    core_material = fmt.ElectrostaticCoreMaterial(eps_r=100e3)
+    core = fmt.Core(material=core_material,
                     core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
                     detailed_core_model=False)

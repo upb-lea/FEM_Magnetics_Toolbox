@@ -1322,7 +1322,10 @@ class MagneticComponent:
         logger.info("Write simulation parameters to .pro files (file communication).")
 
         # Write initialization parameters for simulation in 'Parameter.pro' file
-        self.write_electro_magnetic_parameter_pro()
+        if self.simulation_type == SimulationType.ElectroStatic:
+            self.write_electro_static_parameter_pro()
+        else:
+            self.write_electro_magnetic_parameter_pro()
 
         # Write postprocessing parameters in 'postquantities.pro' file
         self.write_electro_magnetic_post_pro()
@@ -3458,20 +3461,10 @@ class MagneticComponent:
             text_file.write("Flag_Time_Domain = 1;\n")
             text_file.write("Flag_Freq_Domain = 0;\n")
             text_file.write("Flag_Static = 0;\n")
-        if self.simulation_type == SimulationType.ElectroStatic:
-            text_file.write("Flag_Static = 1;\n")
-            text_file.write("Flag_Freq_Domain = 0;\n")
-            text_file.write("Flag_Time_Domain = 0;\n")
 
-        # Airgap number
-        if self.simulation_type == SimulationType.ElectroStatic:
-            text_file.write("n_airgaps = {};\n".format(len(self.air_gaps.midpoints)))
-
-            # Frequency
-        if not self.simulation_type == SimulationType.ElectroStatic:
-            text_file.write("Freq = %s;\n" % self.frequency)
-            text_file.write(f"delta = {self.delta};\n")
-
+        # Frequency
+        text_file.write("Freq = %s;\n" % self.frequency)
+        text_file.write(f"delta = {self.delta};\n")
         # time domain parameters
         if self.simulation_type == SimulationType.TimeDomain:
             text_file.write(f"T = {self.time_period};\n")
@@ -3503,8 +3496,6 @@ class MagneticComponent:
                                                       winding_number=winding_number)
 
             if self.windings[winding_number].parallel:
-                if self.simulation_type == SimulationType.ElectroStatic:
-                    raise Exception("Parallel winding are not considered yet for electrostatic simulation")
                 text_file.write(f"NbrCond_{winding_number + 1} = 1;\n")
                 text_file.write(f"AreaCell_{winding_number + 1} = {self.windings[winding_number].a_cell * turns};\n")
             else:
@@ -3551,32 +3542,6 @@ class MagneticComponent:
                 text_file.write(f"Val_EE_{winding_number + 1} = {self.current_density[winding_number]};\n")
                 raise NotImplementedError
 
-            if self.simulation_type == SimulationType.ElectroStatic:
-                if self.voltage is not None:
-                    text_file.write("Flag_voltage = 1;\n")
-                    text_file.write("Flag_charge = 0;\n")
-                    turns = self.voltage[winding_number]
-                    for turn_index, voltage_value in enumerate(turns):
-                        text_file.write(f"Voltage_{winding_number + 1}_{turn_index + 1} = {voltage_value};\n")
-                elif self.charge is not None:
-                    text_file.write("Flag_charge = 1;\n")
-                    text_file.write("Flag_voltage = 0;\n")
-                    turns = self.charge[winding_number]
-                    for turn_index, charge_value in enumerate(turns):
-                        text_file.write(f"Charge_{winding_number + 1}_{turn_index + 1} = {charge_value};\n")
-
-                if self.v_core is not None:
-                    text_file.write("v_core = {};\n".format(self.v_core))
-                    text_file.write("Flag_excite_core = 1;\n")
-                else:
-                    text_file.write("Flag_excite_core = 0;\n")
-
-                if self.v_ground_out_boundary == 0:
-                    text_file.write("Flag_ground_OutBoundary = 1;\n")
-                    text_file.write("v_ground_OutBoundary = 0;\n")
-                else:
-                    text_file.write("Flag_ground_OutBoundary = 0;\n")
-
             logger.info(f"Cell surface area: {self.windings[winding_number].a_cell}, "
                         f"Reduced frequency: {self.red_freq[winding_number]}")
 
@@ -3601,35 +3566,123 @@ class MagneticComponent:
             text_file.write("er_layer_insulation = 1.0;\n")
         text_file.write(f"er_bobbin = {self.insulation.er_bobbin};\n")
 
-        if not self.simulation_type == SimulationType.ElectroStatic:
-            # Core Material
-            text_file.write(f"mur = {self.core.material.mu_r_abs};\n")  # mur is predefined to a fixed value
-            if self.core.material.permeability_type == PermeabilityType.FromData:
-                text_file.write("Flag_Permeability_From_Data = 1;\n")  # mur is predefined to a fixed value
-            else:
-                text_file.write("Flag_Permeability_From_Data = 0;\n")  # mur is predefined to a fixed value
-            if self.core.material.permeability_type == PermeabilityType.FixedLossAngle:
-                # Real part of complex permeability
-                text_file.write(f"mur_real = {self.core.material.mu_r_abs * np.cos(np.deg2rad(self.core.material.phi_mu_deg))};\n")
-                # Imaginary part of complex permeability
-                text_file.write(
-                    f"mur_imag = {self.core.material.mu_r_abs * np.sin(np.deg2rad(self.core.material.phi_mu_deg))};\n")
-                # loss angle for complex representation of hysteresis loss
-                text_file.write("Flag_Fixed_Loss_Angle = 1;\n")
-            else:
-                text_file.write(
-                    "Flag_Fixed_Loss_Angle = 0;\n")  # loss angle for complex representation of hysteresis loss
+        # Core Material
+        text_file.write(f"mur = {self.core.material.mu_r_abs};\n")  # mur is predefined to a fixed value
+        if self.core.material.permeability_type == PermeabilityType.FromData:
+            text_file.write("Flag_Permeability_From_Data = 1;\n")  # mur is predefined to a fixed value
+        else:
+            text_file.write("Flag_Permeability_From_Data = 0;\n")  # mur is predefined to a fixed value
+        if self.core.material.permeability_type == PermeabilityType.FixedLossAngle:
+            # Real part of complex permeability
+            text_file.write(f"mur_real = {self.core.material.mu_r_abs * np.cos(np.deg2rad(self.core.material.phi_mu_deg))};\n")
+            # Imaginary part of complex permeability
+            text_file.write(
+                f"mur_imag = {self.core.material.mu_r_abs * np.sin(np.deg2rad(self.core.material.phi_mu_deg))};\n")
+            # loss angle for complex representation of hysteresis loss
+            text_file.write("Flag_Fixed_Loss_Angle = 1;\n")
+        else:
+            text_file.write(
+                "Flag_Fixed_Loss_Angle = 0;\n")  # loss angle for complex representation of hysteresis loss
 
-            # Complex (equivalent) conductivity
-            self.core.material.complex_conductance = \
-                self.core.material.dc_conductivity + complex(0, 1) * 2 * np.pi * self.frequency * self.core.material.complex_permittivity
-            if self.core.material.complex_conductance != 0 and self.core.material.complex_conductance is not None:
-                text_file.write("Flag_Conducting_Core = 1;\n")
-                text_file.write(f"sigma_core_real = {self.core.material.complex_conductance.real};\n")
-                text_file.write(f"sigma_core_imag = {self.core.material.complex_conductance.imag};\n")
-            else:
-                text_file.write("Flag_Conducting_Core = 0;\n")
+        # Complex (equivalent) conductivity
+        self.core.material.complex_conductance = \
+            self.core.material.dc_conductivity + complex(0, 1) * 2 * np.pi * self.frequency * self.core.material.complex_permittivity
+        if self.core.material.complex_conductance != 0 and self.core.material.complex_conductance is not None:
+            text_file.write("Flag_Conducting_Core = 1;\n")
+            text_file.write(f"sigma_core_real = {self.core.material.complex_conductance.real};\n")
+            text_file.write(f"sigma_core_imag = {self.core.material.complex_conductance.imag};\n")
+        else:
+            text_file.write("Flag_Conducting_Core = 0;\n")
 
+        text_file.close()
+
+    def write_electro_static_parameter_pro(self):
+        """
+        Write the needed parameters to the "Electrostatic_Parameter.pro" file.
+
+        This file is generated by python and is read by gmsh to hand over some parameters.
+        """
+        text_file = open(os.path.join(self.file_data.electro_magnetic_folder_path, "Electrostatic_Parameter.pro"), "w")
+
+        # component types
+        if self.component_type == ComponentType.Inductor:
+            text_file.write("Number_of_Windings = {};\n".format(len(self.windings)))
+
+        if self.component_type == ComponentType.Transformer:
+            text_file.write("Number_of_Windings = {};\n".format(len(self.windings)))
+
+        if self.component_type == ComponentType.IntegratedTransformer:
+            text_file.write("Number_of_Windings = {};\n".format(len(self.windings)))
+
+        text_file.write("Flag_Static = 1;\n")
+
+        # Airgap number
+        text_file.write("n_airgaps = {};\n".format(len(self.air_gaps.midpoints)))
+
+        # Conductor specific definitions
+        for winding_number in range(len(self.windings)):
+            # -- Geometry --
+            # Core Parts
+            text_file.write(f"nCoreParts = {len(self.mesh.plane_surface_core)};\n")
+
+            turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                      winding_number=winding_number)
+
+            if self.windings[winding_number].parallel:
+                raise Exception("Parallel winding are not considered yet for electrostatic simulation")
+            else:
+                text_file.write(f"NbrCond_{winding_number + 1} = {turns};\n")
+                text_file.write(f"AreaCell_{winding_number + 1} = {self.windings[winding_number].a_cell};\n")
+
+            # relative permittivity
+            # Turn insulation is not implemented yet for RectangularSolid
+            # Or if the turn insulation is not drawn
+            if self.windings[winding_number].conductor_type == ConductorType.RectangularSolid or not self.insulation.turn_ins:
+                text_file.write(f"er_turns_insulation_{winding_number + 1} = 1.0;\n")
+            else:
+                text_file.write(f"er_turns_insulation_{winding_number + 1} = {self.insulation.er_turn_insulation[winding_number]};\n")
+
+            # For stranded Conductors:
+            # text_file.write(f"NbrstrandedCond = {self.turns};\n")  # redundant
+            if self.windings[winding_number].conductor_type == ConductorType.RoundLitz:
+                raise Exception("RoundLitz conductor type not yet implemented for electrostatic simulation")
+
+            # could be needed in future
+            text_file.write(f"Rc_{winding_number + 1} = {self.windings[winding_number].conductor_radius};\n")
+
+            if self.voltage is not None:
+                text_file.write("Flag_voltage = 1;\n")
+                text_file.write("Flag_charge = 0;\n")
+                turns = self.voltage[winding_number]
+                for turn_index, voltage_value in enumerate(turns):
+                    text_file.write(f"Voltage_{winding_number + 1}_{turn_index + 1} = {voltage_value};\n")
+            elif self.charge is not None:
+                text_file.write("Flag_charge = 1;\n")
+                text_file.write("Flag_voltage = 0;\n")
+                turns = self.charge[winding_number]
+                for turn_index, charge_value in enumerate(turns):
+                    text_file.write(f"Charge_{winding_number + 1}_{turn_index + 1} = {charge_value};\n")
+
+            if self.v_core is not None:
+                text_file.write("v_core = {};\n".format(self.v_core))
+                text_file.write("Flag_excite_core = 1;\n")
+            else:
+                text_file.write("Flag_excite_core = 0;\n")
+
+            if self.v_ground_out_boundary == 0:
+                text_file.write("Flag_ground_OutBoundary = 1;\n")
+                text_file.write("v_ground_OutBoundary = 0;\n")
+            else:
+                text_file.write("Flag_ground_OutBoundary = 0;\n")
+
+        # Nature Constants
+        text_file.write(f"e0 = {epsilon_0};\n")
+        text_file.write(f"er_core= {self.core.material.eps_r};\n")
+        if self.insulation.er_layer_insulation is not None:
+            text_file.write(f"er_layer_insulation = {self.insulation.er_layer_insulation};\n")
+        else:
+            text_file.write("er_layer_insulation = 1.0;\n")
+        text_file.write(f"er_bobbin = {self.insulation.er_bobbin};\n")
         text_file.close()
 
     def write_electro_magnetic_post_pro(self):

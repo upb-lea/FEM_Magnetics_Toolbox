@@ -489,6 +489,29 @@ class ImportedComplexCoreMaterial:
             "permittivity_datatype": MeasurementDataType.ComplexPermittivity
         }
 
+class ElectrostaticCoreMaterial:
+    """Defines material properties for electrostatic simulations."""
+
+    def __init__(self, eps_r: float):
+        """
+        Define the dielectric constant of the core.
+
+        :param eps_r: Relative permittivity of the core material.
+        :type eps_r: float
+        """
+        self.eps_r = eps_r
+
+    def to_dict(self):
+        """Return a dictionary representation of the core material.
+
+        Useful for serialization or logging.
+
+        :return: Dictionary of core material parameters.
+        :rtype: dict
+        """
+        return {
+            "eps_r": self.eps_r
+        }
 
 class Core:
     """Combines geometry and material properties of a magnetic core.
@@ -500,7 +523,7 @@ class Core:
     """
 
     def __init__(self,
-                 material: ImportedComplexCoreMaterial | LinearComplexCoreMaterial,
+                 material: ImportedComplexCoreMaterial | LinearComplexCoreMaterial | ElectrostaticCoreMaterial,
                  core_type: CoreType = CoreType.Single,
                  core_dimensions: Optional[object] = None,
                  detailed_core_model: bool = False):
