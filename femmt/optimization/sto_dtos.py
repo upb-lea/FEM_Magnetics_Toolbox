@@ -191,7 +191,7 @@ class ReluctanceModelInput:
 
     insulations: StoInsulation
     material_name: str
-    material_complex_mu_r: float
+    material_mu_r_abs: float
     magnet_material_model: LossModel
 
     temperature: float

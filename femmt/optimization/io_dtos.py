@@ -67,7 +67,7 @@ class InductorOptimizationTargetAndFixedParameters:
     i_rms: float
     i_peak: float
     material_name_list: list[str]
-    material_complex_mu_r_list: list[float]
+    material_mu_r_abs_list: list[float]
     magnet_hub_model_list: list[LossModel]
     time_extracted_vec: list
     current_extracted_vec: list

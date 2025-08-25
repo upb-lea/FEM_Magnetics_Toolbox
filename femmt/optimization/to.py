@@ -34,7 +34,7 @@ class TransformerOptimization:
             time_extracted_vec
             current_extracted_1_vec
             current_extracted_2_vec
-            material_complex_mu_r_list
+            material_mu_r_abs_list
             fundamental_frequency
             target_inductance_matrix
             fem_working_directory
