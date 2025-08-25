@@ -3085,7 +3085,7 @@ class MainWindow(QMainWindow):
                             permeability_measurement_setup=permeability_measurement_setup_enum,
                             permittivity_datasource=permittivity_datasource_enum,
                             permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                            permittivity_measurement_setup=permittivity_measurement_setup_enum, mdb_verbosity=fmt.Verbosity.Silent)
+                            permittivity_measurement_setup=permittivity_measurement_setup_enum)
 
             geo.set_core(core)
 
@@ -3270,7 +3270,7 @@ class MainWindow(QMainWindow):
                             permeability_measurement_setup=permeability_measurement_setup_enum,
                             permittivity_datasource=permittivity_datasource_enum,
                             permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                            permittivity_measurement_setup=permittivity_measurement_setup_enum, mdb_verbosity=fmt.Verbosity.Silent)
+                            permittivity_measurement_setup=permittivity_measurement_setup_enum)
             # core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
             #                 permeability_datasource=permeability_datasource_enum,
             #                 permittivity_datasource=permittivity_datasource_enum,

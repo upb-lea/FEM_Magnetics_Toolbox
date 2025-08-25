@@ -53,7 +53,6 @@ class MagneticComponent:
                  component_type: ComponentType = ComponentType.Inductor, working_directory: str = None,
                  clean_previous_results: bool = True, onelab_verbosity: Verbosity = 1, is_gui: bool = False,
                  simulation_name: str | None = None, wwr_enabled=True):
-        # TODO Add a enum? for the verbosity to combine silent and print_output_to_file variables
         """
         Initialize the magnetic component.
 
@@ -84,7 +83,7 @@ class MagneticComponent:
         if clean_previous_results:
             self.file_data.clear_previous_simulation_results()
 
-        # Variable to set silent mode
+        # Variable to set silent mode for onelab
         self.verbosity = onelab_verbosity
         if not gmsh.isInitialized():
             gmsh.initialize()

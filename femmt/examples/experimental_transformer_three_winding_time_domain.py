@@ -44,8 +44,7 @@ def basic_example_transformer_three_windings_time_domain(onelab_folder: str = No
                                                   phi_mu_deg=0,
                                                   dc_conductivity=1,
                                                   eps_r_abs=0,
-                                                  phi_eps_deg=0,
-                                                  mdb_verbosity=fmt.Verbosity.Silent)
+                                                  phi_eps_deg=0)
 
     core = fmt.Core(material=core_material,
                     core_type=fmt.CoreType.Single,

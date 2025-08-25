@@ -877,8 +877,7 @@ class InductorOptimization:
             core_material = fmt.ImportedComplexCoreMaterial(material=fem_input.material_name,
                                                             temperature=fem_input.temperature,
                                                             permeability_datasource=fmt.DataSource.TDK_MDT,
-                                                            permittivity_datasource=fmt.DataSource.LEA_MTB,
-                                                            mdb_verbosity=fmt.Verbosity.Silent)
+                                                            permittivity_datasource=fmt.DataSource.LEA_MTB)
 
             core = fmt.Core(material=core_material,
                             core_type=fmt.CoreType.Single,

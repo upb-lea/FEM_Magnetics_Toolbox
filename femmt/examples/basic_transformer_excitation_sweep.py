@@ -59,8 +59,7 @@ def basic_example_transformer_excitation_sweep(onelab_folder: str = None, show_v
                                                   phi_mu_deg=12,
                                                   dc_conductivity=1.2,
                                                   eps_r_abs=0,
-                                                  phi_eps_deg=0,
-                                                  mdb_verbosity=fmt.Verbosity.Silent)
+                                                  phi_eps_deg=0)
 
     core = fmt.Core(material=core_material,
                     core_type=fmt.CoreType.Single,
