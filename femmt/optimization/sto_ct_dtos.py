@@ -4,9 +4,11 @@ from dataclasses import dataclass
 
 # 3rd party libraries
 import numpy as np
+
+# own libraries (mdb + femmt)
 from materialdatabase.meta.data_enums import DataSource
 from materialdatabase.meta.setup_enums import MeasurementDataType
-
+from femmt.optimization.ito_dtos import WorkingDirectories
 
 @dataclass
 class StoCtInsulation:
@@ -81,19 +83,6 @@ class ThermalConfig:
     case_gap_bot: float
     boundary_temperatures: dict
     boundary_flags: dict
-
-
-@dataclass
-class WorkingDirectories:
-    """Working directories for an integrated transformer optimization."""
-
-    fem_working_directory: str
-    reluctance_model_results_directory: str
-    fem_simulation_results_directory: str
-    fem_simulation_filtered_results_directory: str
-    fem_thermal_simulation_results_directory: str
-    fem_thermal_filtered_simulation_results_directory: str
-
 
 @dataclass
 class StoCtTargetAndFixedParameters:
