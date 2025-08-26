@@ -150,21 +150,6 @@ the corresponding FEM simulation on the right. |FEMMT_Screenshot|
 
 To run a minimal example please have a look at the `examples <https://github.com/upb-lea/FEM_Magnetics_Toolbox/tree/main/femmt/examples>`__.
 
-GUI (Experimental)
--------------------
-
-There is a first preview for a GUI. Installing this is a bit cumbersome
-at first, but will be simplified in the future:
-
-* Download the complete repository via ``Code`` -> ``Download ZIP`` and unpack it.
-* Or clone the repository
-* Install the development version of femmt using ``pip install -e .``
-* Run python ``.../path-to_femmt/femmt/gui/femmt_gui.py``
-
-Please note, the GUI is experimental.
-
-|femmt_gui_definition|
-
 Troubleshooting
 -------------------
 If the working directory is within OneDrive, there are problems writing .dat files, which are basic for FEMMT. The following error messages appear:
@@ -213,5 +198,4 @@ programming language python is used.
 
 .. |geometry_translated| image:: docs/images/geometry_translated.png
 .. |FEMMT_Screenshot| image:: docs/images/FEMMT_Screenshot.png
-.. |femmt_gui_definition| image:: docs/images/femmt_gui_definition.png
 .. |counting_arrow_system| image:: docs/images/counting_arrow_system.png
