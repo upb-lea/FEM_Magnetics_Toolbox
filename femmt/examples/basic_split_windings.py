@@ -53,8 +53,7 @@ def run_transformer_vvw_split_examples(num_windings: int, onelab_folder: str = N
         core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
                                                         temperature=60,
                                                         permeability_datasource=fmt.DataSource.TDK_MDT,
-                                                        permittivity_datasource=fmt.DataSource.LEA_MTB,
-                                                        mdb_verbosity=fmt.Verbosity.Silent)
+                                                        permittivity_datasource=fmt.DataSource.LEA_MTB)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,

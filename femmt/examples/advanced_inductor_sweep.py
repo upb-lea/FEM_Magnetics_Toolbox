@@ -44,8 +44,7 @@ def advanced_example_inductor_sweep(onelab_folder: str = None, show_visual_outpu
     core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
                                                     temperature=30,
                                                     permeability_datasource=fmt.DataSource.TDK_MDT,
-                                                    permittivity_datasource=fmt.DataSource.LEA_MTB,
-                                                    mdb_verbosity=fmt.Verbosity.Silent)
+                                                    permittivity_datasource=fmt.DataSource.LEA_MTB)
 
     core = fmt.Core(material=core_material,
                     core_type=fmt.CoreType.Single,

@@ -280,8 +280,7 @@ class LinearComplexCoreMaterial:
                  phi_mu_deg: float = 0,
                  dc_conductivity: float = 0,
                  eps_r_abs: float = 0,
-                 phi_eps_deg: float = 0,
-                 mdb_verbosity: Any = Verbosity.Silent):
+                 phi_eps_deg: float = 0):
         """Create a CoreMaterial object describing electromagnetic and loss properties.
 
         The class uses material database queries and supports both predefined and custom material configurations.
@@ -292,10 +291,7 @@ class LinearComplexCoreMaterial:
         :type phi_mu_deg: float or None
         :param dc_conductivity: Electrical conductivity (only used for custom materials).
         :type dc_conductivity: complex or None
-        :param mdb_verbosity: Verbosity level for the material database.
-        :type mdb_verbosity: Any
         """
-        self.mdb_verbosity = mdb_verbosity
         self.file_path_to_solver_folder: Optional[str] = None
         self.material = 'custom'
         self.model_type = CoreMaterialType.Linear
@@ -352,8 +348,7 @@ class ImportedComplexCoreMaterial:
                  material: Union[str, Material],
                  temperature: Optional[float],
                  permeability_datasource: Union[str, MaterialDataSource],
-                 permittivity_datasource: Union[str, MaterialDataSource],
-                 mdb_verbosity: Any = Verbosity.Silent):
+                 permittivity_datasource: Union[str, MaterialDataSource]):
         """Create a CoreMaterial object describing electromagnetic and loss properties.
 
         The class uses material database queries and supports both predefined and custom material configurations.
@@ -366,11 +361,7 @@ class ImportedComplexCoreMaterial:
         :type permeability_datasource: str or DataSource (from material database)
         :param permittivity_datasource: Source of permittivity data.
         :type permittivity_datasource: str or DataSource (from material database)
-        :param mdb_verbosity: Verbosity level for the material database.
-        :type mdb_verbosity: Any
         """
-        self.mdb_verbosity = mdb_verbosity
-
         # for class ImportedComplexCoreMaterial, the model_type is fixed to "Imported"
         self.model_type = CoreMaterialType.Imported
 

@@ -1,34 +1,48 @@
-"""Contains integration tests to benchmark new changes against previous simulation results."""
-import pytest
-import os
-import numpy as np
+"""Contains integration tests to benchmark new changes against previous simulation results.
+
+This file is split up in two file:
+ - part 1 contains only a few rudimentary tests: Run this to get a rudimentary, fast overview if your changes are ok
+ - part 2 contains all the other tests: Run this to get a better overview if your changes are ok
+
+To get the full picture, you need to run all tests!
+"""
+
+# python libraries
 import json
-import femmt as fmt
+import os
+
+# 3rd party libraries
 import deepdiff
-import femmt.examples.basic_inductor
-import femmt.examples.basic_transformer_interleaved
-import femmt.examples.basic_transformer
-import femmt.examples.basic_transformer_three_winding
-import femmt.examples.basic_transformer_integrated
-import femmt.examples.basic_transformer_center_tapped
-import femmt.examples.basic_transformer_stacked
-import femmt.examples.basic_transformer_stacked_center_tapped
-import femmt.examples.basic_inductor_foil_vertical
-import femmt.examples.basic_inductor_foil
-import femmt.examples.basic_transformer_n_winding
-import femmt.examples.advanced_inductor_sweep
-import femmt.examples.basic_transformer_5_windings
-import femmt.examples.basic_transformer_6_windings
-import femmt.examples.experimental_inductor_time_domain
-import femmt.examples.experimental_transformer_time_domain
-import femmt.examples.experimental_transformer_three_winding_time_domain
-import femmt.examples.basic_inductor_electrostatic
-import femmt.examples.basic_transformer_electrostatic
-import femmt.examples.advanced_inductor_air_gap_sweep
-import femmt.examples.component_study.transformer_component_study
-import femmt.examples.basic_transformer_excitation_sweep
-import femmt.examples.basic_inductor_excitation_sweep
-import femmt.examples.basic_split_windings
+import pytest
+import numpy as np
+
+# own libraries
+import femmt as fmt
+
+
+@pytest.fixture
+def temp_folder():
+    """Fixture to create the temporary folder the results are stored."""
+    # Setup temp folder
+    temp_folder_path = os.path.join(os.path.dirname(__file__), "temp")
+
+    if not os.path.exists(temp_folder_path):
+        os.mkdir(temp_folder_path)
+
+    config_path = os.path.join(os.path.dirname(__file__), "..", "config.json")
+    if os.path.exists(config_path):
+        with open(config_path, "r") as fd:
+            content = json.load(fd)
+            onelab_path = content["onelab"]
+    elif os.path.isdir(os.path.join(os.path.dirname(__file__), "..", "..", "onelab")):
+        onelab_path = os.path.join(os.path.dirname(__file__), "..", "..", "onelab")
+    else:
+        print("FEMMT Simulations will not work without onelab path, which is not set yet. In order to \
+              run the tests please first specify a onelab path by creating a config.json in the tests folder.")
+        onelab_path = None
+
+    # Test
+    yield temp_folder_path, onelab_path
 
 
 def compare_result_logs(first_log_filepath: str, second_log_filepath: str, significant_digits: int = 6,
@@ -108,40 +122,15 @@ def compare_thermal_result_logs(first_log_filepath: str, second_log_filepath: st
 
 
 @pytest.fixture
-def temp_folder():
-    """Fixture to create the temporary folder the results are stored."""
-    # Setup temp folder
-    temp_folder_path = os.path.join(os.path.dirname(__file__), "temp")
-
-    if not os.path.exists(temp_folder_path):
-        os.mkdir(temp_folder_path)
-
-    config_path = os.path.join(os.path.dirname(__file__), "..", "config.json")
-    if os.path.exists(config_path):
-        with open(config_path, "r") as fd:
-            content = json.load(fd)
-            onelab_path = content["onelab"]
-    elif os.path.isdir(os.path.join(os.path.dirname(__file__), "..", "..", "onelab")):
-        onelab_path = os.path.join(os.path.dirname(__file__), "..", "..", "onelab")
-    else:
-        print("FEMMT Simulations will not work without onelab path, which is not set yet. In order to \
-              run the tests please first specify a onelab path by creating a config.json in the tests folder.")
-        onelab_path = None
-
-    # Test
-    yield temp_folder_path, onelab_path
-
-
-@pytest.fixture
 def fixture_inductor_core_material_database(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
-    
+
     :param temp_folder: temporary folder path and onelab filepath
     :type temp_folder: pytest.fixture
     """
     temp_folder_path, onelab_folder = temp_folder
-    
+
     # Create new temp folder, build model and simulate
     try:
         working_directory = temp_folder_path
@@ -164,8 +153,7 @@ def fixture_inductor_core_material_database(temp_folder: pytest.fixture):
         core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N95,
                                                         temperature=25,
                                                         permeability_datasource=fmt.DataSource.Datasheet,
-                                                        permittivity_datasource=fmt.DataSource.Datasheet,
-                                                        mdb_verbosity=fmt.Verbosity.Silent)
+                                                        permittivity_datasource=fmt.DataSource.Datasheet)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -258,141 +246,12 @@ def fixture_inductor_core_material_database(temp_folder: pytest.fixture):
     material_result = os.path.join(temp_folder_path, "results", "log_material.json")
 
     return electromagnetoquasistatic_result, thermal_result, geometry_result, material_result
-
-
-@pytest.fixture
-def fixture_inductor_core_material_database_measurement(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-    
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-
-    # Create new temp folder, build model and simulate
-    try:
-        working_directory = temp_folder_path
-        if not os.path.exists(working_directory):
-            os.mkdir(working_directory)
-
-        # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
-        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                    onelab_verbosity=fmt.Verbosity.Silent, is_gui=True)
-
-        # Set onelab path manually
-        geo.file_data.onelab_folder_path = onelab_folder
-
-        core_db = fmt.core_database()["PQ 40/40"]
-        core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
-                                                        window_w=core_db["window_w"],
-                                                        window_h=core_db["window_h"],
-                                                        core_h=core_db["core_h"])
-
-        core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
-                                                        temperature=25,
-                                                        permeability_datasource=fmt.DataSource.TDK_MDT,
-                                                        permittivity_datasource=fmt.DataSource.LEA_MTB,
-                                                        mdb_verbosity=fmt.Verbosity.Silent)
-
-        core = fmt.Core(material=core_material,
-                        core_type=fmt.CoreType.Single,
-                        core_dimensions=core_dimensions,
-                        detailed_core_model=False)
-
-        geo.set_core(core)
-
-        air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 10)
-        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 90)
-        geo.set_air_gaps(air_gaps)
-
-        insulation = fmt.Insulation()
-        insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
-        insulation.add_winding_insulations([[0.0005]], per_layer_of_turns=False)
-        geo.set_insulation(insulation)
-
-        winding_window = fmt.WindingWindow(core, insulation)
-        vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
-
-        winding = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=25)
-        winding.set_solid_round_conductor(conductor_radius=0.0013,
-                                          conductor_arrangement=fmt.ConductorArrangement.Square)
-
-        vww.set_winding(winding, 9, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward)
-        geo.set_winding_windows([winding_window])
-
-        geo.create_model(freq=100000, pre_visualize_geometry=False, save_png=False)
-
-        geo.single_simulation(freq=100000, current=[4.5], show_fem_simulation_results=False)
-
-        thermal_conductivity_dict = {
-            "air": 1.57,  # potting epoxy resign
-            "case": {
-                "top": 1.57,
-                "top_right": 1.57,
-                "right": 1.57,
-                "bot_right": 1.57,
-                "bot": 1.57
-            },
-            "core": 5,  # ferrite
-            "winding": 400,  # copper
-            "air_gaps": 1.57,
-            "insulation": 1.57
-        }
-
-        case_gap_top = 0.002
-        case_gap_right = 0.0025
-        case_gap_bot = 0.002
-
-        boundary_temperatures = {
-            "value_boundary_top": 20,
-            "value_boundary_top_right": 20,
-            "value_boundary_right_top": 20,
-            "value_boundary_right": 20,
-            "value_boundary_right_bottom": 20,
-            "value_boundary_bottom_right": 20,
-            "value_boundary_bottom": 20
-        }
-
-        boundary_flags = {
-            "flag_boundary_top": 1,
-            "flag_boundary_top_right": 1,
-            "flag_boundary_right_top": 1,
-            "flag_boundary_right": 1,
-            "flag_boundary_right_bottom": 1,
-            "flag_boundary_bottom_right": 1,
-            "flag_boundary_bottom": 1
-        }
-
-        # color_scheme = fmt.colors_ba_jonas
-        # colors_geometry = fmt.colors_geometry_ba_jonas
-        color_scheme = fmt.colors_ba_jonas
-        colors_geometry = fmt.colors_geometry_draw_only_lines
-
-        geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
-                               case_gap_right,
-                               case_gap_bot, show_thermal_simulation_results=False, pre_visualize_geometry=False,
-                               color_scheme=color_scheme, colors_geometry=colors_geometry)
-
-    except Exception as e:
-        print("An error occurred while creating the femmt mesh files:", e)
-    except KeyboardInterrupt:
-        print("Keyboard interrupt..")
-
-    electromagnetoquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
-    thermal_result = os.path.join(temp_folder_path, "results", "results_thermal.json")
-    geometry_result = os.path.join(temp_folder_path, "results", "log_coordinates_description.json")
-    material_result = os.path.join(temp_folder_path, "results", "log_material.json")
-
-    return electromagnetoquasistatic_result, thermal_result, geometry_result, material_result
-
 
 @pytest.fixture
 def fixture_inductor_core_fixed_loss_angle(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
-    
+
     :param temp_folder: temporary folder path and onelab filepath
     :type temp_folder: pytest.fixture
     """
@@ -421,8 +280,7 @@ def fixture_inductor_core_fixed_loss_angle(temp_folder: pytest.fixture):
                                                       phi_mu_deg=10,
                                                       dc_conductivity=0.5,
                                                       eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
+                                                      phi_eps_deg=0)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -520,7 +378,7 @@ def fixture_inductor_core_fixed_loss_angle(temp_folder: pytest.fixture):
 def fixture_inductor_core_fixed_loss_angle_dc(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
-    
+
     :param temp_folder: temporary folder path and onelab filepath
     :type temp_folder: pytest.fixture
     """
@@ -549,8 +407,7 @@ def fixture_inductor_core_fixed_loss_angle_dc(temp_folder: pytest.fixture):
                                                       phi_mu_deg=10,
                                                       dc_conductivity=0.5,
                                                       eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
+                                                      phi_eps_deg=0)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -643,11 +500,12 @@ def fixture_inductor_core_fixed_loss_angle_dc(temp_folder: pytest.fixture):
 
     return electromagnetoquasistatic_result, thermal_result, geometry_result, material_result
 
+
 @pytest.fixture
 def fixture_inductor_core_fixed_loss_angle_litz_wire(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
-    
+
     :param temp_folder: temporary folder path and onelab filepath
     :type temp_folder: pytest.fixture
     """
@@ -676,8 +534,7 @@ def fixture_inductor_core_fixed_loss_angle_litz_wire(temp_folder: pytest.fixture
                                                       phi_mu_deg=10,
                                                       dc_conductivity=0.5,
                                                       eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
+                                                      phi_eps_deg=0)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -776,7 +633,7 @@ def fixture_inductor_core_fixed_loss_angle_litz_wire(temp_folder: pytest.fixture
 def fixture_inductor_core_fixed_loss_angle_foil_vertical(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
-    
+
     :param temp_folder: temporary folder path and onelab filepath
     :type temp_folder: pytest.fixture
     """
@@ -808,8 +665,7 @@ def fixture_inductor_core_fixed_loss_angle_foil_vertical(temp_folder: pytest.fix
                                                       phi_mu_deg=12,
                                                       dc_conductivity=0.6,
                                                       eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
+                                                      phi_eps_deg=0)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -908,7 +764,7 @@ def fixture_inductor_core_fixed_loss_angle_foil_vertical(temp_folder: pytest.fix
 def fixture_inductor_core_fixed_loss_angle_foil_horizontal(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
-    
+
     :param temp_folder: temporary folder path and onelab filepath
     :type temp_folder: pytest.fixture
     """
@@ -940,8 +796,7 @@ def fixture_inductor_core_fixed_loss_angle_foil_horizontal(temp_folder: pytest.f
                                                       phi_mu_deg=12,
                                                       dc_conductivity=0.6,
                                                       eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
+                                                      phi_eps_deg=0)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -1035,149 +890,11 @@ def fixture_inductor_core_fixed_loss_angle_foil_horizontal(temp_folder: pytest.f
 
     return electromagnetoquasistatic_result, thermal_result, geometry_result, material_result
 
-
-@pytest.fixture
-def fixture_transformer_core_fixed_loss_angle(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-    
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-
-    # Create new temp folder, build model and simulate
-    try:
-        working_directory = temp_folder_path
-        if not os.path.exists(working_directory):
-            os.mkdir(working_directory)
-
-        # 1. chose simulation type
-        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
-                                    onelab_verbosity=fmt.Verbosity.Silent, is_gui=True)
-
-        # Set onelab path manually
-        geo.file_data.onelab_folder_path = onelab_folder
-
-        # 2. set core parameters
-        core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015,
-                                                        window_w=0.012,
-                                                        window_h=0.0295,
-                                                        core_h=0.05)
-
-        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3100,
-                                                      phi_mu_deg=12,
-                                                      dc_conductivity=1.2,
-                                                      eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
-
-        core = fmt.Core(material=core_material,
-                        core_type=fmt.CoreType.Single,
-                        core_dimensions=core_dimensions,
-                        detailed_core_model=False)
-
-        geo.set_core(core)
-
-        # 3. set air gap parameters
-        air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
-        geo.set_air_gaps(air_gaps)
-
-        # 4. set insulation
-        insulation = fmt.Insulation()
-        insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
-        insulation.add_winding_insulations([[0.0002, 0.0002], [0.0002, 0.0002]], per_layer_of_turns=False)
-        geo.set_insulation(insulation)
-
-        # 5. create winding window and virtual winding windows (vww)
-        winding_window = fmt.WindingWindow(core, insulation)
-        left, right = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit, 0.0005)
-
-        # 6. create conductors and set parameters
-        winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=25)
-        winding1.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
-
-        winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper, temperature=25)
-        winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
-
-        # 7. add conductor to vww and add winding window to MagneticComponent
-        left.set_winding(winding1, 10, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward)
-        right.set_winding(winding2, 10, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward)
-        geo.set_winding_windows([winding_window])
-
-        # 8. start simulation with given frequency, currents and phases
-        geo.create_model(freq=250000, pre_visualize_geometry=False)
-        geo.single_simulation(freq=250000, current=[4, 4], phi_deg=[0, 178], show_fem_simulation_results=False)
-
-        thermal_conductivity_dict = {
-            "air": 1.57,  # potting epoxy resign
-            "case": {
-                "top": 1.57,
-                "top_right": 1.57,
-                "right": 1.57,
-                "bot_right": 1.57,
-                "bot": 1.57
-            },
-            "core": 5,  # ferrite
-            "winding": 400,  # copper
-            "air_gaps": 1.57,
-            "insulation": 1.57
-        }
-
-        case_gap_top = 0.002
-        case_gap_right = 0.0025
-        case_gap_bot = 0.002
-
-        boundary_temperatures = {
-            "value_boundary_top": 20,
-            "value_boundary_top_right": 20,
-            "value_boundary_right_top": 20,
-            "value_boundary_right": 20,
-            "value_boundary_right_bottom": 20,
-            "value_boundary_bottom_right": 20,
-            "value_boundary_bottom": 20
-        }
-
-        boundary_flags = {
-            "flag_boundary_top": 1,
-            "flag_boundary_top_right": 1,
-            "flag_boundary_right_top": 1,
-            "flag_boundary_right": 1,
-            "flag_boundary_right_bottom": 1,
-            "flag_boundary_bottom_right": 1,
-            "flag_boundary_bottom": 1
-        }
-
-        # color_scheme = fmt.colors_ba_jonas
-        # colors_geometry = fmt.colors_geometry_ba_jonas
-        color_scheme = fmt.colors_ba_jonas
-        colors_geometry = fmt.colors_geometry_draw_only_lines
-
-        geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
-                               case_gap_right,
-                               case_gap_bot, show_thermal_simulation_results=False, pre_visualize_geometry=False,
-                               color_scheme=color_scheme,
-                               colors_geometry=colors_geometry)
-
-    except Exception as e:
-        print("An error occurred while creating the femmt mesh files:", e)
-    except KeyboardInterrupt:
-        print("Keyboard interrupt..")
-
-    electromagnetoquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
-    thermal_result = os.path.join(temp_folder_path, "results", "results_thermal.json")
-    geometry_result = os.path.join(temp_folder_path, "results", "log_coordinates_description.json")
-    material_result = os.path.join(temp_folder_path, "results", "log_material.json")
-
-    return electromagnetoquasistatic_result, thermal_result, geometry_result, material_result
-
-
 @pytest.fixture
 def fixture_transformer_interleaved_core_fixed_loss_angle(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
-    
+
     :param temp_folder: temporary folder path and onelab filepath
     :type temp_folder: pytest.fixture
     """
@@ -1206,8 +923,7 @@ def fixture_transformer_interleaved_core_fixed_loss_angle(temp_folder: pytest.fi
                                                       phi_mu_deg=10,
                                                       dc_conductivity=1,
                                                       eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
+                                                      phi_eps_deg=0)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -1313,7 +1029,7 @@ def fixture_transformer_interleaved_core_fixed_loss_angle(temp_folder: pytest.fi
 def fixture_transformer_integrated_core_fixed_loss_angle(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
-    
+
     :param temp_folder: temporary folder path and onelab filepath
     :type temp_folder: pytest.fixture
     """
@@ -1342,8 +1058,7 @@ def fixture_transformer_integrated_core_fixed_loss_angle(temp_folder: pytest.fix
                                                       phi_mu_deg=12,
                                                       dc_conductivity=0.6,
                                                       eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
+                                                      phi_eps_deg=0)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -1459,7 +1174,7 @@ def fixture_transformer_integrated_core_fixed_loss_angle(temp_folder: pytest.fix
 def fixture_transformer_stacked_center_tapped(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
-    
+
     :param temp_folder: temporary folder path and onelab filepath
     :type temp_folder: pytest.fixture
     """
@@ -1486,8 +1201,7 @@ def fixture_transformer_stacked_center_tapped(temp_folder: pytest.fixture):
                                                       phi_mu_deg=12,
                                                       dc_conductivity=1.2,
                                                       eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
+                                                      phi_eps_deg=0)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Stacked,
@@ -1621,7 +1335,7 @@ def fixture_transformer_stacked_center_tapped(temp_folder: pytest.fixture):
 def fixture_transformer_5_windings(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
-    
+
     :param temp_folder: temporary folder path and onelab filepath
     :type temp_folder: pytest.fixture
     """
@@ -1647,8 +1361,7 @@ def fixture_transformer_5_windings(temp_folder: pytest.fixture):
         core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
                                                         temperature=60,
                                                         permeability_datasource=fmt.DataSource.TDK_MDT,
-                                                        permittivity_datasource=fmt.DataSource.LEA_MTB,
-                                                        mdb_verbosity=fmt.Verbosity.Silent)
+                                                        permittivity_datasource=fmt.DataSource.LEA_MTB)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -1787,106 +1500,10 @@ def fixture_transformer_5_windings(temp_folder: pytest.fixture):
     return electromagnetoquasistatic_result, thermal_result, geometry_result, material_result
 
 @pytest.fixture
-def fixture_inductor_time_domain(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-    
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-
-    # Create new temp folder, build model and simulate
-    try:
-        working_directory = temp_folder_path
-        if not os.path.exists(working_directory):
-            os.mkdir(working_directory)
-
-        # 1. chose simulation type
-        geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.TimeDomain, component_type=fmt.ComponentType.Inductor,
-                                    working_directory=working_directory, onelab_verbosity=fmt.Verbosity.Silent, is_gui=True)
-        # Set onelab path manually
-        geo.file_data.onelab_folder_path = onelab_folder
-
-        # 2. set core parameters
-        core_db = fmt.core_database()["PQ 40/40"]
-        core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
-                                                        window_w=core_db["window_w"],
-                                                        window_h=core_db["window_h"],
-                                                        core_h=core_db["core_h"])
-
-        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3000,
-                                                      phi_mu_deg=0,
-                                                      dc_conductivity=1,
-                                                      eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
-
-        core = fmt.Core(material=core_material,
-                        core_type=fmt.CoreType.Single,
-                        core_dimensions=core_dimensions,
-                        detailed_core_model=False)
-
-        geo.set_core(core)
-
-        # 3. set air gap parameters
-        air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
-        geo.set_air_gaps(air_gaps)
-
-        # 4. set insulations
-        insulation = fmt.Insulation(flag_insulation=True)
-        insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
-        insulation.add_winding_insulations([[0.0005]], per_layer_of_turns=False)
-        geo.set_insulation(insulation)
-
-        # 5. create winding window and virtual winding windows (vww)
-        winding_window = fmt.WindingWindow(core, insulation)
-        vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
-
-        # 6. create conductor and set parameters: use solid wires
-        winding = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=45)
-        winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
-        winding.parallel = False
-
-        # 7. add conductor to vww and add winding window to MagneticComponent
-        vww.set_winding(winding, 7, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward)
-        geo.set_winding_windows([winding_window])
-
-        # 8. create the model
-        inductor_frequency = 270000
-        geo.create_model(freq=inductor_frequency, pre_visualize_geometry=False, save_png=False)
-
-        # 6.a. start simulation
-        # time value list
-        t = np.linspace(0, 1 / inductor_frequency, 5)
-        t_list = [float(x) for x in t.tolist()]
-        #  Current values list
-        current_values = 4.5 * np.cos(2 * np.pi * inductor_frequency * t)
-        current_values_list = current_values.tolist()
-
-        geo.time_domain_simulation(current_period_vec=[current_values_list],
-                                   time_period_vec=t_list,
-                                   number_of_periods=1,
-                                   show_fem_simulation_results=False,
-                                   show_rolling_average=False,)
-
-    except Exception as e:
-        print("An error occurred while creating the femmt mesh files:", e)
-    except KeyboardInterrupt:
-        print("Keyboard interrupt..")
-
-    electromagnetoquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
-    geometry_result = os.path.join(temp_folder_path, "results", "log_coordinates_description.json")
-    material_result = os.path.join(temp_folder_path, "results", "log_material.json")
-
-    return electromagnetoquasistatic_result, geometry_result, material_result
-
-@pytest.fixture
 def fixture_transformer_time_domain(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
-    
+
     :param temp_folder: temporary folder path and onelab filepath
     :type temp_folder: pytest.fixture
     """
@@ -1911,8 +1528,7 @@ def fixture_transformer_time_domain(temp_folder: pytest.fixture):
                                                       phi_mu_deg=0,
                                                       dc_conductivity=1,
                                                       eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
+                                                      phi_eps_deg=0)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -1979,11 +1595,13 @@ def fixture_transformer_time_domain(temp_folder: pytest.fixture):
     geometry_result = os.path.join(temp_folder_path, "results", "log_coordinates_description.json")
 
     return electromagnetoquasistatic_result, material_result, geometry_result
+
+
 @pytest.fixture
 def fixture_transformer_3_windings_time_domain(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
-    
+
     :param temp_folder: temporary folder path and onelab filepath
     :type temp_folder: pytest.fixture
     """
@@ -2008,8 +1626,7 @@ def fixture_transformer_3_windings_time_domain(temp_folder: pytest.fixture):
                                                       phi_mu_deg=0,
                                                       dc_conductivity=1,
                                                       eps_r_abs=0,
-                                                      phi_eps_deg=0,
-                                                      mdb_verbosity=fmt.Verbosity.Silent)
+                                                      phi_eps_deg=0)
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,
@@ -2083,106 +1700,6 @@ def fixture_transformer_3_windings_time_domain(temp_folder: pytest.fixture):
     geometry_result = os.path.join(temp_folder_path, "results", "log_coordinates_description.json")
 
     return electromagnetoquasistatic_result, material_result, geometry_result
-
-@pytest.fixture
-def fixture_inductor_electrostatic(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-
-    # Create new temp folder, build model and simulate
-    try:
-        working_directory = temp_folder_path
-        if not os.path.exists(working_directory):
-            os.mkdir(working_directory)
-
-        # 1. chose simulation type
-        geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.ElectroStatic, component_type=fmt.ComponentType.Inductor,
-                                    working_directory=working_directory, onelab_verbosity=fmt.Verbosity.Silent, is_gui=True)
-        # Set onelab path manually
-        geo.file_data.onelab_folder_path = onelab_folder
-
-        # 2. set core parameters
-        core_db = fmt.core_database()["PQ 40/40"]
-        core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
-                                                        window_w=core_db["window_w"],
-                                                        window_h=core_db["window_h"],
-                                                        core_h=core_db["core_h"])
-        core_material = fmt.ElectrostaticCoreMaterial(eps_r=100e3)
-
-        core = fmt.Core(material=core_material,
-                        core_type=fmt.CoreType.Single,
-                        core_dimensions=core_dimensions,
-                        detailed_core_model=False)
-
-        geo.set_core(core)
-
-        # 3. set air gap parameters
-        air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.001, 50)
-        # air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0002, 90)
-        geo.set_air_gaps(air_gaps)
-
-        # 4. set insulation and the materials of insulation (optional)
-        bobbin_db = fmt.bobbin_database()["PQ 40/40"]
-        bobbin_dimensions = fmt.dtos.BobbinDimensions(bobbin_inner_diameter=bobbin_db["bobbin_inner_diameter"],
-                                                      bobbin_window_w=bobbin_db["bobbin_window_w"],
-                                                      bobbin_window_h=bobbin_db["bobbin_window_h"],
-                                                      bobbin_h=bobbin_db["bobbin_h"])
-        insulation = fmt.Insulation(flag_insulation=True, bobbin_dimensions=bobbin_dimensions)
-        bobbin_material = fmt.insulation_materials_database()["core_insulation"]["bobbins"]["Thermoset"]["Phenolic"]
-        insulation.add_core_insulations(0.2e-3, 0.2e-3, 0.2e-3, 0.2e-3,
-                                        dielectric_constant=bobbin_material["dielectric_constant"])
-        turn_insulation_material = fmt.insulation_materials_database()["wire_insulation"]["plastic_insulation"]["Plenum Polyvinyl Chloride (Plenum PVC)"]
-        insulation.add_turn_insulation([0.2e-3], dielectric_constant=[turn_insulation_material["dielectric_constant"]])
-        # This is an air between turns if needed
-        insulation.add_winding_insulations([[1e-3, 1e-3]], per_layer_of_turns=True)
-        # Kapton material is added between every layer of turns
-        layer_insulation = fmt.insulation_materials_database()["film_insulation"]["Kapton"]
-        insulation.add_insulation_between_layers(thickness=0.6e-3, dielectric_constant=layer_insulation["dielectric_constant"])
-        geo.set_insulation(insulation)
-
-        # 5. create winding window and virtual winding windows (vww)
-        winding_window = fmt.WindingWindow(core, insulation)
-        vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
-
-        # 6. create conductor and set parameters: use solid wires
-        winding = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=45)
-        winding.set_solid_round_conductor(conductor_radius=1.1506e-3, conductor_arrangement=fmt.ConductorArrangement.Square)
-        winding.parallel = False  # set True to make the windings parallel, currently only for solid conductors
-        # 7. add conductor to vww and add winding window to MagneticComponent
-        vww.set_winding(winding, 7, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.VerticalUpward_HorizontalRightward,
-                        zigzag=True)
-        geo.set_winding_windows([winding_window])
-
-        # 8. create the model
-        geo.create_model(freq=2700000, pre_visualize_geometry=False, save_png=False, skin_mesh_factor=0.5)
-
-        # 8. run electrostatic simulation
-        num_turns_w1 = 7
-        V_A = 1
-        V_B = 0
-        voltages_winding_1 = [
-            V_A - (V_A - V_B) * i / (num_turns_w1 - 1)
-            for i in range(num_turns_w1)
-        ]
-        geo.electrostatic_simulation(voltage=[voltages_winding_1], ground_outer_boundary=False, core_voltage=0,
-                                     show_fem_simulation_results=False, save_to_excel_file=False)
-
-    except Exception as e:
-        print("An error occurred while creating the femmt mesh files:", e)
-    except KeyboardInterrupt:
-        print("Keyboard interrupt..")
-
-    electrostaticquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_static.json")
-    geometry_result = os.path.join(temp_folder_path, "results", "log_coordinates_description.json")
-    material_result = os.path.join(temp_folder_path, "results", "log_material.json")
-
-    return electrostaticquasistatic_result, geometry_result, material_result
 
 @pytest.fixture
 def fixture_transformer_electrostatic(temp_folder: pytest.fixture):
@@ -2328,42 +1845,6 @@ def test_inductor_core_material_database(fixture_inductor_core_material_database
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "thermal_inductor_core_material_database.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=5)
-
-
-def test_inductor_core_material_database_measurement(fixture_inductor_core_material_database_measurement: pytest.fixture):
-    """
-    Integration test to validate the magnetoquasistatic simulation and the thermal simulation.
-
-    :param fixture_inductor_core_material_database_measurement: fixture for inductor
-    :type fixture_inductor_core_material_database_measurement: pytest.fixture
-    """
-    test_result_log, thermal_result_log, geometry_result_log, material_result_log = fixture_inductor_core_material_database_measurement
-
-    assert os.path.exists(material_result_log), "Material log creation did not work!"
-
-    fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                        "material_inductor_core_material_database_measurement.json")
-    compare_result_logs(material_result_log, fixture_material_log, significant_digits=2, ignore_order=False, number_format_notation="e")
-
-    assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
-
-    fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                        "geometry_inductor_core_material_measurement.json")
-    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=6)
-
-    assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
-
-    # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "log_inductor_core_material_measurement.json")
-    compare_result_logs(test_result_log, fixture_result_log, significant_digits=5)
-
-    # check thermal simulation results
-    assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "thermal_inductor_core_material_database_measurement.json")
-    compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=6)
-
 
 def test_inductor_core_fixed_loss_angle(fixture_inductor_core_fixed_loss_angle: pytest.fixture):
     """
@@ -2512,36 +1993,6 @@ def test_inductor_core_fixed_loss_angle_foil_horizontal(
                                       "thermal_inductor_core_fixed_loss_angle_foil_horizontal.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log)
 
-
-def test_transformer_core_fixed_loss_angle(fixture_transformer_core_fixed_loss_angle: pytest.fixture):
-    """
-    Integration test to validate the magnetoquasistatic simulation and the thermal simulation.
-
-    :param fixture_transformer_core_fixed_loss_angle: fixture for the transformer
-    :type fixture_transformer_core_fixed_loss_angle: pytest.fixture
-    """
-    test_result_log, thermal_result_log, geometry_result_log, material_result_log = fixture_transformer_core_fixed_loss_angle
-
-    assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
-
-    fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                        "geometry_transformer_core_fixed_loss_angle.json")
-    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
-
-    assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
-
-    # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "log_transformer_core_fixed_loss_angle.json")
-    compare_result_logs(test_result_log, fixture_result_log)
-
-    # check thermal simulation results
-    assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "thermal_transformer_core_fixed_loss_angle.json")
-    compare_thermal_result_logs(thermal_result_log, fixture_result_log)
-
-
 def test_transformer_interleaved_core_fixed_loss_angle(fixture_transformer_interleaved_core_fixed_loss_angle: pytest.fixture):
     """
     Integration test to validate the magnetoquasistatic simulation and the thermal simulation.
@@ -2658,34 +2109,10 @@ def test_transformer_5_windings(fixture_transformer_5_windings: pytest.fixture):
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
     # check thermal simulation results
-    # assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    # fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-    #                                   "thermal_transformer_5_windings.json")
-    # compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=2)
-
-
-def test_simulation_inductor_time_domain(fixture_inductor_time_domain: pytest.fixture):
-    """
-    Integration test to validate the magnetoquasistatic simulation.
-
-    :param fixture_inductor_time_domain: fixture for the inductor time domain simulation
-    :type fixture_inductor_time_domain: pytest.fixture
-    """
-    test_result_log, geometry_result_log, material_result_log = fixture_inductor_time_domain
-
-    assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
-
-    fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                        "geometry_inductor_time_domain.json")
-    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
-
-    assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
-
-    # e_m mesh
+    assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "log_inductor_time_domain.json")
-    compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
-
+                                      "thermal_transformer_5_windings.json")
+    compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=2)
 
 def test_transformer_time_domain(fixture_transformer_time_domain: pytest.fixture):
     """
@@ -2732,28 +2159,6 @@ def test_transformer_3_windings_time_domain(fixture_transformer_3_windings_time_
                                       "log_transformer_3_windings_time_domain.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
-def test_simulation_inductor_electrostatic(fixture_inductor_electrostatic: pytest.fixture):
-    """
-    Integration test to validate the electrostatic simulation.
-
-    :param fixture_inductor_electrostatic: fixture for the inductor electrostatic  simulation
-    :type fixture_inductor_electrostatic: pytest.fixture
-    """
-    test_result_log, geometry_result_log, material_result_log = fixture_inductor_electrostatic
-
-    assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
-
-    fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                        "geometry_inductor_electrostatic.json")
-    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
-
-    assert os.path.exists(test_result_log), "Electro static simulation did not work!"
-
-    # e_s mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "inductor_electrostatic.json")
-    compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
-
 def test_simulation_transformer_electrostatic(fixture_transformer_electrostatic: pytest.fixture):
     """
     Integration test to validate the electrostatic simulation.
@@ -2781,7 +2186,7 @@ def test_load_files(temp_folder: pytest.fixture, fixture_inductor_core_material_
                     fixture_inductor_core_fixed_loss_angle: pytest.fixture, fixture_inductor_core_fixed_loss_angle_dc: pytest.fixture,
                     fixture_inductor_core_fixed_loss_angle_litz_wire: pytest.fixture, fixture_inductor_core_fixed_loss_angle_foil_horizontal: pytest.fixture,
                     fixture_inductor_core_fixed_loss_angle_foil_vertical: pytest.fixture,
-                    fixture_transformer_core_fixed_loss_angle: pytest.fixture, fixture_transformer_interleaved_core_fixed_loss_angle: pytest.fixture,
+                    fixture_transformer_interleaved_core_fixed_loss_angle: pytest.fixture,
                     fixture_transformer_integrated_core_fixed_loss_angle: pytest.fixture
                     ):
     """Function tests if simulations can be set up from a simulation file.
@@ -2805,8 +2210,6 @@ def test_load_files(temp_folder: pytest.fixture, fixture_inductor_core_material_
     :type fixture_inductor_core_fixed_loss_angle_foil_horizontal: pytest.fixture
     :param fixture_inductor_core_fixed_loss_angle_foil_vertical: fixture for inductor
     :type fixture_inductor_core_fixed_loss_angle_foil_vertical: pytest.fixture
-    :param fixture_transformer_core_fixed_loss_angle: fixture for transformer
-    :type fixture_transformer_core_fixed_loss_angle: pytest.fixture
     :param fixture_transformer_interleaved_core_fixed_loss_angle: fixture for transformer
     :type fixture_transformer_interleaved_core_fixed_loss_angle: pytest.fixture
     :param fixture_transformer_integrated_core_fixed_loss_angle: fixture for transformer
@@ -2827,7 +2230,6 @@ def test_load_files(temp_folder: pytest.fixture, fixture_inductor_core_material_
                                     fixture_inductor_core_fixed_loss_angle_litz_wire,
                                     fixture_inductor_core_fixed_loss_angle_foil_horizontal,
                                     fixture_inductor_core_fixed_loss_angle_foil_vertical,
-                                    fixture_transformer_core_fixed_loss_angle,
                                     fixture_transformer_interleaved_core_fixed_loss_angle,
                                     fixture_transformer_integrated_core_fixed_loss_angle
                                     ]
@@ -2856,318 +2258,3 @@ def test_load_files(temp_folder: pytest.fixture, fixture_inductor_core_material_
             assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
             # compare_result_logs(test_result_log, fixture_result_log)
-
-##############################
-# Basic example tests
-# These tests just run the basic examples and see if the run without error
-# There is no result comparison
-##############################
-
-
-def test_basic_example_inductor(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-    
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_inductor.basic_example_inductor(onelab_folder=onelab_folder,
-                                                         show_visual_outputs=False,
-                                                         is_test=True)
-
-
-def test_basic_example_transformer_interleaved(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-    
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer_interleaved.basic_example_transformer_interleaved(onelab_folder=onelab_folder,
-                                                                                       show_visual_outputs=False,
-                                                                                       is_test=True)
-
-
-def test_basic_example_transformer(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-    
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer.basic_example_transformer(onelab_folder=onelab_folder, show_visual_outputs=False,
-                                                               is_test=True)
-
-
-def test_basic_example_transformer_three_winding(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-    
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer_three_winding.basic_example_transformer_three_winding(onelab_folder=onelab_folder,
-                                                                                           show_visual_outputs=False,
-                                                                                           is_test=True)
-
-
-def test_basic_example_transformer_integrated(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-    
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer_integrated.basic_example_transformer_integrated(onelab_folder=onelab_folder,
-                                                                                     show_visual_outputs=False,
-                                                                                     is_test=True)
-
-
-def test_basic_example_transformer_center_tapped(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-    
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer_center_tapped.basic_example_transformer_center_tapped(onelab_folder=onelab_folder,
-                                                                                           show_visual_outputs=False,
-                                                                                           is_test=True)
-
-
-def test_basic_example_transformer_stacked(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-    
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer_stacked.basic_example_transformer_stacked(onelab_folder=onelab_folder,
-                                                                               show_visual_outputs=False,
-                                                                               is_test=True)
-
-
-def test_basic_example_transformer_stacked_center_tapped(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-    
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer_stacked_center_tapped.basic_example_transformer_stacked_center_tapped(
-        onelab_folder=onelab_folder, show_visual_outputs=False, is_test=True)
-
-
-def test_basic_example_inductor_foil_vertical(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-    
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_inductor_foil_vertical.basic_example_inductor_foil_vertical(onelab_folder=onelab_folder,
-                                                                                     show_visual_outputs=False,
-                                                                                     is_test=True)
-
-
-def test_basic_example_inductor_foil(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_inductor_foil.basic_example_inductor_foil(onelab_folder=onelab_folder,
-                                                                   show_visual_outputs=False,
-                                                                   is_test=True)
-
-
-def test_basic_example_transformer_n_winding(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-    
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer_n_winding.basic_example_transformer_n_winding(onelab_folder=onelab_folder,
-                                                                                   show_visual_outputs=False,
-                                                                                   is_test=True)
-
-
-def test_basic_example_transformer_5_windings(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-    
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer_5_windings.basic_example_transformer_5_windings(onelab_folder=onelab_folder,
-                                                                                     show_visual_outputs=False,
-                                                                                     is_test=True)
-
-
-def test_basic_example_transformer_6_windings(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer_6_windings.basic_example_transformer_6_windings(onelab_folder=onelab_folder,
-                                                                                     show_visual_outputs=False,
-                                                                                     is_test=True)
-
-
-def test_basic_inductor_time_domain(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-    
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.experimental_inductor_time_domain.basic_example_inductor_time_domain(onelab_folder=onelab_folder,
-                                                                                        show_visual_outputs=False,
-                                                                                        is_test=True)
-
-
-def test_basic_transformer_time_domain(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-    
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.experimental_transformer_time_domain.basic_example_transformer_time_domain(onelab_folder=onelab_folder,
-                                                                                              show_visual_outputs=False,
-                                                                                              is_test=True)
-
-def test_basic_inductor_electrostatic(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_inductor_electrostatic.basic_example_inductor_electrostatic(onelab_folder=onelab_folder,
-                                                                                     show_visual_outputs=False,
-                                                                                     is_test=True)
-
-def test_basic_transformer_electrostatic(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer_electrostatic.basic_example_transformer_electrostatic(onelab_folder=onelab_folder,
-                                                                                           show_visual_outputs=False,
-                                                                                           is_test=True)
-
-
-def test_basic_transformer_3_windings_time_domain(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-    
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.experimental_transformer_three_winding_time_domain.basic_example_transformer_three_windings_time_domain(onelab_folder=onelab_folder,
-                                                                                                                           show_visual_outputs=False,
-                                                                                                                           is_test=True)
-
-
-def test_advanced_example_inductor_sweep(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-    
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.advanced_inductor_sweep.advanced_example_inductor_sweep(onelab_folder=onelab_folder,
-                                                                           show_visual_outputs=False,
-                                                                           is_test=True)
-
-
-def test_advanced_example_inductor_air_gap_sweep(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-    
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.advanced_inductor_air_gap_sweep.basic_example_sweep(onelab_folder=onelab_folder,
-                                                                       show_visual_outputs=False,
-                                                                       is_test=True)
-
-
-def test_transformer_component_study(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-    
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.component_study.transformer_component_study.transformer_component_study(onelab_folder=onelab_folder,
-                                                                                           show_visual_outputs=False,
-                                                                                           is_test=True)
-
-
-def test_inductor_excitation_sweep(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_inductor_excitation_sweep.basic_example_inductor_excitation_sweep(onelab_folder=onelab_folder,
-                                                                                           show_visual_outputs=False,
-                                                                                           is_test=True)
-
-
-def test_transformer_excitation_sweep(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer_excitation_sweep.basic_example_transformer_excitation_sweep(onelab_folder=onelab_folder,
-                                                                                                 show_visual_outputs=False,
-                                                                                                 is_test=True)
-
-
-def test_split_windings(temp_folder: pytest.fixture):
-    """
-    Integration test to the basic example file.
-    
-    :param temp_folder: temporary folder path and onelab filepath
-    :type temp_folder: pytest.fixture
-    """
-    temp_folder_path, onelab_folder = temp_folder
-    for num_windings in [2, 3, 5, 6]:
-        print(f"Running simulation for {num_windings} windings")
-        femmt.examples.basic_split_windings.run_transformer_vvw_split_examples(num_windings, onelab_folder=onelab_folder,
-                                                                               show_visual_outputs=False, is_test=True)

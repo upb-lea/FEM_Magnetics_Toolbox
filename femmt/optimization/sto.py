@@ -1014,8 +1014,7 @@ class StackedTransformerOptimization:
             core_material = fmt.ImportedComplexCoreMaterial(material=fem_input.material_name,
                                                             temperature=fem_input.temperature,
                                                             permeability_datasource=fem_input.material_data_sources.permeability_datasource,
-                                                            permittivity_datasource=fem_input.material_data_sources.permittivity_datasource,
-                                                            mdb_verbosity=fmt.Verbosity.Silent)
+                                                            permittivity_datasource=fem_input.material_data_sources.permittivity_datasource)
 
             core = fmt.Core(material=core_material,
                             core_type=fmt.CoreType.Stacked,
