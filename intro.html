@@ -540,8 +540,8 @@ simulation results (e.g. losses, inductance, …).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">femmt</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">fmt</span>
 
 <span class="n">geo</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">MagneticComponent</span><span class="p">(</span><span class="n">simulation_type</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">SimulationType</span><span class="o">.</span><span class="n">FreqDomain</span><span class="p">,</span>
-                             <span class="n">component_type</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">ComponentType</span><span class="o">.</span><span class="n">Transformer</span><span class="p">,</span> <span class="n">working_directory</span><span class="o">=</span><span class="n">working_directory</span><span class="p">,</span>
-                             <span class="n">verbosity</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">Verbosity</span><span class="o">.</span><span class="n">ToConsole</span><span class="p">,</span> <span class="n">is_gui</span><span class="o">=</span><span class="n">is_test</span><span class="p">)</span>
+                            <span class="n">component_type</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">ComponentType</span><span class="o">.</span><span class="n">Transformer</span><span class="p">,</span> <span class="n">working_directory</span><span class="o">=</span><span class="n">working_directory</span><span class="p">,</span>
+                            <span class="n">onelab_verbosity</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">Verbosity</span><span class="o">.</span><span class="n">ToConsole</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">simulation_type</span></code> specifies the type of simulation to be performed.</p>
@@ -549,7 +549,7 @@ simulation results (e.g. losses, inductance, …).</p>
 <li><p>If set to <code class="docutils literal notranslate"><span class="pre">FreqDomain</span></code>, indicating a frequency domain simulation.</p></li>
 <li><p>If set to <code class="docutils literal notranslate"><span class="pre">TimeDomain</span></code>, indicating a time domain simulations.</p></li>
 </ul>
-<p>The <code class="docutils literal notranslate"><span class="pre">Verbosity</span></code> controls the level of detail in the output.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">onelab_verbosity</span></code> controls the level of the FEM simulation software <code class="docutils literal notranslate"><span class="pre">Onelab</span></code> details in the output.</p>
 <ul class="simple">
 <li><p>If set to <code class="docutils literal notranslate"><span class="pre">ToConsole</span></code>, all output messages are shown in the commend line .</p></li>
 <li><p>If set to <code class="docutils literal notranslate"><span class="pre">ToFile</span></code>, all output messages are written to files.</p></li>
@@ -585,16 +585,15 @@ using:</p>
                                                  <span class="n">window_h</span><span class="o">=</span><span class="n">core_db</span><span class="p">[</span><span class="s2">&quot;window_h&quot;</span><span class="p">],</span>
                                                  <span class="n">core_h</span><span class="o">=</span><span class="n">core_db</span><span class="p">[</span><span class="s2">&quot;core_h&quot;</span><span class="p">])</span>
 
-<span class="n">core</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">Core</span><span class="p">(</span><span class="n">core_type</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">CoreType</span><span class="o">.</span><span class="n">Single</span><span class="p">,</span>
+<span class="n">core_material</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">ImportedComplexCoreMaterial</span><span class="p">(</span><span class="n">material</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">Material</span><span class="o">.</span><span class="n">N49</span><span class="p">,</span>
+                                                <span class="n">temperature</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span>
+                                                <span class="n">permeability_datasource</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">DataSource</span><span class="o">.</span><span class="n">TDK_MDT</span><span class="p">,</span>
+                                                <span class="n">permittivity_datasource</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">DataSource</span><span class="o">.</span><span class="n">LEA_MTB</span><span class="p">)</span>
+
+ <span class="n">core</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">Core</span><span class="p">(</span><span class="n">material</span><span class="o">=</span><span class="n">core_material</span><span class="p">,</span>
+                 <span class="n">core_type</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">CoreType</span><span class="o">.</span><span class="n">Single</span><span class="p">,</span>
                  <span class="n">core_dimensions</span><span class="o">=</span><span class="n">core_dimensions</span><span class="p">,</span>
-                 <span class="n">detailed_core_model</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                 <span class="n">material</span><span class="o">=</span><span class="n">mdb</span><span class="o">.</span><span class="n">Material</span><span class="o">.</span><span class="n">N49</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">frequency</span><span class="o">=</span><span class="n">inductor_frequency</span><span class="p">,</span>
-                 <span class="n">permeability_datasource</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">MaterialDataSource</span><span class="o">.</span><span class="n">Measurement</span><span class="p">,</span>
-                 <span class="n">permeability_datatype</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">MeasurementDataType</span><span class="o">.</span><span class="n">ComplexPermeability</span><span class="p">,</span>
-                 <span class="n">permeability_measurement_setup</span><span class="o">=</span><span class="n">mdb</span><span class="o">.</span><span class="n">MeasurementSetup</span><span class="o">.</span><span class="n">LEA_LK</span><span class="p">,</span>
-                 <span class="n">permittivity_datasource</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">MaterialDataSource</span><span class="o">.</span><span class="n">Measurement</span><span class="p">,</span>
-                 <span class="n">permittivity_datatype</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">MeasurementDataType</span><span class="o">.</span><span class="n">ComplexPermittivity</span><span class="p">,</span>
-                 <span class="n">permittivity_measurement_setup</span><span class="o">=</span><span class="n">mdb</span><span class="o">.</span><span class="n">MeasurementSetup</span><span class="o">.</span><span class="n">LEA_LK</span><span class="p">,</span> <span class="n">mdb_verbosity</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">Verbosity</span><span class="o">.</span><span class="n">Silent</span><span class="p">)</span>
+                 <span class="n">detailed_core_model</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="n">geo</span><span class="o">.</span><span class="n">set_core</span><span class="p">(</span><span class="n">core</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -959,7 +958,7 @@ can be set:</p>
 <li><p><strong>RectangularSolid</strong></p></li>
 </ul>
 <p>To create a conductor have a look at the following code example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">winding1</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">Conductor</span><span class="p">(</span><span class="n">winding_number</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">conductivity</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">Conductivity</span><span class="o">.</span><span class="n">Copper</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">winding1</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">Conductor</span><span class="p">(</span><span class="n">winding_number</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">conductivity</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">ConductorMaterial</span><span class="o">.</span><span class="n">Copper</span><span class="p">)</span>
 <span class="n">winding1</span><span class="o">.</span><span class="n">set_solid_round_conductor</span><span class="p">(</span><span class="n">conductor_radius</span><span class="o">=</span><span class="mf">0.0011</span><span class="p">,</span> <span class="n">conductor_arrangement</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">ConductorArrangement</span><span class="o">.</span><span class="n">Square</span><span class="p">)</span>
 </pre></div>
 </div>
