@@ -522,12 +522,17 @@ bOPET
 xlsxwriter
 Thermoset
 Polyphenylene
+
+# Time domain Visualization
 VisualizationMode
 nopopup
 ShowScale
 PositionY
 PositionX
 AutoPosition
+
+# Winding scheme
+HorizontalRightward
 
 # mdb
 mdb
