@@ -15,6 +15,7 @@ import materialdatabase as mdb
 import femmt.optimization.ito_functions as itof
 import femmt.optimization.functions_optimization as fo
 import femmt as fmt
+from materialdatabase.meta.data_enums import Material
 
 # 3rd party libraries
 import numpy as np
@@ -45,7 +46,7 @@ class StackedTransformerOptimization:
                 time_extracted_vec
                 current_extracted_1_vec
                 current_extracted_2_vec
-                material_dto_curve_list
+                material_mu_r_abs_list
                 fundamental_frequency
                 target_inductance_matrix
                 fem_working_directory
@@ -86,13 +87,20 @@ class StackedTransformerOptimization:
                 period_vector_t_i=config.time_current_2_vec, sample_factor=1000, plot='no', mode='time', filter_type='factor', filter_value_factor=0.03)
 
             # material properties
-            material_db = mdb.MaterialDatabase(is_silent=True)
+            material_db = mdb.Data()
 
-            material_data_list = []
+            material_mu_r_abs_list = []
             magnet_model_list = []
             for material_name in config.material_list:
-                material_dto: mdb.MaterialCurve = material_db.material_data_interpolation_to_dto(material_name, fundamental_frequency, config.temperature)
-                material_data_list.append(material_dto)
+                small_signal_mu_real_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_real_over_f_at_T)
+                small_signal_mu_imag_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_imag_over_f_at_T)
+
+                mu_real_at_f = np.interp(10_000, small_signal_mu_real_over_f_at_T["f"], small_signal_mu_real_over_f_at_T["mu_real"])
+                mu_imag_at_f = np.interp(10_000, small_signal_mu_imag_over_f_at_T["f"], small_signal_mu_imag_over_f_at_T["mu_imag"])
+
+                material_mu_r_abs = np.abs(np.array([mu_real_at_f + 1j * mu_imag_at_f]))
+                material_mu_r_abs_list.append(material_mu_r_abs)
+
                 # instantiate material-specific model
                 mdl: mh.loss.LossModel = mh.loss.LossModel(material=material_name, team="paderborn")
                 magnet_model_list.append(mdl)
@@ -112,7 +120,8 @@ class StackedTransformerOptimization:
                 magnet_hub_model_list=magnet_model_list,
                 current_extracted_1_vec=current_extracted_1_vec,
                 current_extracted_2_vec=current_extracted_2_vec,
-                material_dto_curve_list=material_data_list,
+                material_name_list=config.material_list,
+                material_complex_mu_r_list=material_mu_r_abs_list,
                 fundamental_frequency=fundamental_frequency,
                 target_inductance_matrix=target_inductance_matrix,
                 working_directories=working_directories,
@@ -180,9 +189,9 @@ class StackedTransformerOptimization:
             secondary_litz_diameter = 2 * secondary_litz_dict['conductor_radii']
 
             material_name = trial.suggest_categorical('material_name', config.material_list)
-            for count, material_dto in enumerate(target_and_fixed_parameters.material_dto_curve_list):
-                if material_dto.material_name == material_name:
-                    material_dto: mdb.MaterialCurve = material_dto
+            for count, material_mu_r_abs_value in enumerate(target_and_fixed_parameters.material_complex_mu_r_list):
+                if target_and_fixed_parameters.material_name_list[count] == material_name:
+                    material_mu_r_abs: mdb.MaterialCurve = material_mu_r_abs_value
                     magnet_material_model = target_and_fixed_parameters.magnet_hub_model_list[count]
 
             # calculate total 2D-axi symmetric volume of the core:
@@ -247,7 +256,8 @@ class StackedTransformerOptimization:
                 litz_wire_diameter_2=secondary_litz_diameter,
 
                 insulations=config.insulations,
-                material_dto=material_dto,
+                material_name=material_name,
+                material_mu_r_abs=material_mu_r_abs,
                 magnet_material_model=magnet_material_model,
 
                 temperature=config.temperature,
@@ -325,11 +335,11 @@ class StackedTransformerOptimization:
 
             # calculate the core reluctance
             core_inner_cylinder_top = fr.r_core_round(reluctance_input.core_inner_diameter, reluctance_input.window_h_top,
-                                                      reluctance_input.material_dto.material_mu_r_abs)
+                                                      reluctance_input.material_mu_r_abs)
             core_inner_cylinder_bot = fr.r_core_round(reluctance_input.core_inner_diameter, reluctance_input.window_h_bot,
-                                                      reluctance_input.material_dto.material_mu_r_abs)
+                                                      reluctance_input.material_mu_r_abs)
             core_top_bot_radiant = fr.r_core_top_bot_radiant(reluctance_input.core_inner_diameter, reluctance_input.window_w,
-                                                             reluctance_input.material_dto.material_mu_r_abs, reluctance_input.core_inner_diameter / 4)
+                                                             reluctance_input.material_mu_r_abs, reluctance_input.core_inner_diameter / 4)
 
             r_core_top = 2 * core_inner_cylinder_top + core_top_bot_radiant
             r_core_bot = 2 * core_inner_cylinder_bot + core_top_bot_radiant
@@ -811,12 +821,18 @@ class StackedTransformerOptimization:
                 litz_wire_diameter_secondary = 2 * litz_wire_secondary_dict["conductor_radii"]
 
                 # material properties
-                material_db = mdb.MaterialDatabase(is_silent=True)
+                material_db = mdb.Data()
+                material_name = Material(df_geometry['params_material_name'][index])
+                small_signal_mu_real_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_real_over_f_at_T)
+                small_signal_mu_imag_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_imag_over_f_at_T)
 
-                material_dto: mdb.MaterialCurve = material_db.material_data_interpolation_to_dto(
-                    df_geometry['params_material_name'][index], target_and_fix_parameters.fundamental_frequency, local_config.temperature)
+                mu_real_at_f = np.interp(10_000, small_signal_mu_real_over_f_at_T["f"], small_signal_mu_real_over_f_at_T["mu_real"])
+                mu_imag_at_f = np.interp(10_000, small_signal_mu_imag_over_f_at_T["f"], small_signal_mu_imag_over_f_at_T["mu_imag"])
+
+                material_mu_r_abs = np.abs(np.array([mu_real_at_f + 1j * mu_imag_at_f]))
+
                 # instantiate material-specific model
-                magnet_material_model: mh.loss.LossModel = mh.loss.LossModel(material=df_geometry['params_material_name'][index], team="paderborn")
+                magnet_material_model: mh.loss.LossModel = mh.loss.LossModel(material=material_name, team="paderborn")
 
                 reluctance_model_input = ReluctanceModelInput(
                     target_inductance_matrix=fr.calculate_inductance_matrix_from_ls_lh_n(local_config.l_s12_target, local_config.l_h_target,
@@ -834,7 +850,8 @@ class StackedTransformerOptimization:
                     litz_wire_diameter_2=litz_wire_diameter_secondary,
 
                     insulations=local_config.insulations,
-                    material_dto=material_dto,
+                    material_name=material_name,
+                    material_mu_r_abs=material_mu_r_abs,
                     magnet_material_model=magnet_material_model,
 
                     temperature=local_config.temperature,
@@ -993,17 +1010,17 @@ class StackedTransformerOptimization:
                                                              window_w=fem_input.window_w,
                                                              window_h_top=fem_input.window_h_top,
                                                              window_h_bot=fem_input.window_h_bot)
-            core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions,
-                            material=fem_input.material_name, temperature=fem_input.temperature,
-                            frequency=fem_input.fundamental_frequency,
-                            permeability_datasource=fem_input.material_data_sources.permeability_datasource,
-                            permeability_datatype=fem_input.material_data_sources.permeability_datatype,
-                            permeability_measurement_setup=fem_input.material_data_sources.permeability_measurement_setup,
-                            permittivity_datasource=fem_input.material_data_sources.permittivity_datasource,
-                            permittivity_datatype=fem_input.material_data_sources.permittivity_datatype,
-                            permittivity_measurement_setup=fem_input.material_data_sources.permittivity_measurement_setup,
-                            mdb_verbosity=fmt.Verbosity.Silent
-                            )
+
+            core_material = fmt.ImportedComplexCoreMaterial(material=fem_input.material_name,
+                                                            temperature=fem_input.temperature,
+                                                            permeability_datasource=fem_input.material_data_sources.permeability_datasource,
+                                                            permittivity_datasource=fem_input.material_data_sources.permittivity_datasource)
+
+            core = fmt.Core(material=core_material,
+                            core_type=fmt.CoreType.Stacked,
+                            core_dimensions=core_dimensions,
+                            detailed_core_model=False)
+
             geo.set_core(core)
 
             # 3. set air gap parameters
@@ -1176,6 +1193,19 @@ class StackedTransformerOptimization:
             local_config.time_current_vec = current_waveform
             target_and_fix_parameters = StackedTransformerOptimization.ReluctanceModel.calculate_fix_parameters(local_config)
 
+            # material properties
+            material_db = mdb.Data()
+
+            material_name = Material(df_geometry['params_material_name'][index_number])
+
+            small_signal_mu_real_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_real_over_f_at_T)
+            small_signal_mu_imag_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_imag_over_f_at_T)
+
+            mu_real_at_f = np.interp(10_000, small_signal_mu_real_over_f_at_T["f"], small_signal_mu_real_over_f_at_T["mu_real"])
+            mu_imag_at_f = np.interp(10_000, small_signal_mu_imag_over_f_at_T["f"], small_signal_mu_imag_over_f_at_T["mu_imag"])
+
+            material_mu_r_abs = np.abs(np.array([mu_real_at_f + 1j * mu_imag_at_f]))
+
             working_directory = target_and_fix_parameters.working_directories.fem_working_directory
             if not os.path.exists(working_directory):
                 os.mkdir(working_directory)
@@ -1188,7 +1218,7 @@ class StackedTransformerOptimization:
                 simulation_name="xx",
 
                 # material and geometry parameters
-                material_name=df_geometry['params_material_name'][index_number],
+                material_name=material_name,
                 primary_litz_wire_name=df_geometry['params_primary_litz_name'][index_number],
                 secondary_litz_wire_name=df_geometry['params_secondary_litz_name'][index_number],
                 core_inner_diameter=core_inner_diameter,
@@ -1220,13 +1250,8 @@ class StackedTransformerOptimization:
             litz_wire_secondary_dict = ff.litz_database()[df_geometry['params_secondary_litz_name'][index_number]]
             litz_wire_diameter_secondary = 2 * litz_wire_secondary_dict["conductor_radii"]
 
-            # material properties
-            material_db = mdb.MaterialDatabase(is_silent=True)
-
-            material_dto: mdb.MaterialCurve = material_db.material_data_interpolation_to_dto(
-                df_geometry['params_material_name'][index_number], target_and_fix_parameters.fundamental_frequency, local_config.temperature)
             # instantiate material-specific model
-            magnet_material_model: mh.loss.LossModel = mh.loss.LossModel(material=df_geometry['params_material_name'][index_number], team="paderborn")
+            magnet_material_model: mh.loss.LossModel = mh.loss.LossModel(material=material_name, team="paderborn")
 
             reluctance_model_input = ReluctanceModelInput(
                 target_inductance_matrix=fr.calculate_inductance_matrix_from_ls_lh_n(local_config.l_s12_target, local_config.l_h_target,
@@ -1244,7 +1269,8 @@ class StackedTransformerOptimization:
                 litz_wire_diameter_2=litz_wire_diameter_secondary,
 
                 insulations=local_config.insulations,
-                material_dto=material_dto,
+                material_name=material_name,
+                material_mu_r_abs=material_mu_r_abs,
                 magnet_material_model=magnet_material_model,
 
                 temperature=local_config.temperature,

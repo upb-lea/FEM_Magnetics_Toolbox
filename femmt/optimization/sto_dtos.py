@@ -4,21 +4,10 @@ from dataclasses import dataclass
 
 # 3rd party libraries
 import numpy as np
-from materialdatabase.meta.data_classes import MaterialCurve
-from materialdatabase.meta.data_enums import DataSource
-from femmt.enumerations import *
 from magnethub.loss import LossModel
 
-@dataclass
-class WorkingDirectories:
-    """Working directories for an integrated transformer optimization."""
-
-    fem_working_directory: str
-    reluctance_model_results_directory: str
-    fem_simulation_results_directory: str
-    fem_simulation_filtered_results_directory: str
-    fem_thermal_simulation_results_directory: str
-    fem_thermal_filtered_simulation_results_directory: str
+# own libraries
+from femmt.optimization.optimization_dtos import MaterialDataSources, WorkingDirectories
 
 @dataclass
 class StoTargetAndFixedParameters:
@@ -34,7 +23,8 @@ class StoTargetAndFixedParameters:
     i_peak_2: float
     i_phase_deg_1: float
     i_phase_deg_2: float
-    material_dto_curve_list: list[MaterialCurve]
+    material_name_list: list[str]
+    material_complex_mu_r_list: list[float]
     magnet_hub_model_list: list[LossModel]
     time_extracted_vec: list
     current_extracted_1_vec: list
@@ -70,15 +60,6 @@ class StoInsulation:
     iso_primary_to_primary: float
     iso_secondary_to_secondary: float
     iso_primary_to_secondary: float
-
-@dataclass
-class StackedTransformerMaterialDataSources:
-    """Data sources for the FEM simulation."""
-
-    permeability_datasource: DataSource
-    permeability_datatype: MeasurementDataType
-    permittivity_datasource: DataSource
-    permittivity_datatype: MeasurementDataType
 
 @dataclass
 class StoSingleInputConfig:
@@ -125,7 +106,7 @@ class StoSingleInputConfig:
     mesh_accuracy: float
 
     # data sources
-    material_data_sources: StackedTransformerMaterialDataSources
+    material_data_sources: MaterialDataSources
 
 @dataclass
 class FemInput:
@@ -151,13 +132,13 @@ class FemInput:
     insulations: StoInsulation
 
     # data sources
-    material_data_sources: StackedTransformerMaterialDataSources
+    material_data_sources: MaterialDataSources
 
     # operating point conditions
     temperature: float
     fundamental_frequency: float
-    time_current_1_vec: np.array
-    time_current_2_vec: np.array
+    time_current_1_vec: np.ndarray
+    time_current_2_vec: np.ndarray
 
 @dataclass
 class FemOutput:
@@ -176,7 +157,7 @@ class FemOutput:
 class ReluctanceModelInput:
     """Input DTO for reluctance model simulation within the inductor optimization."""
 
-    target_inductance_matrix: np.array
+    target_inductance_matrix: np.ndarray
     core_inner_diameter: float
     window_w: float
     window_h_bot: float
@@ -190,7 +171,8 @@ class ReluctanceModelInput:
     litz_wire_diameter_2: float
 
     insulations: StoInsulation
-    material_dto: MaterialCurve
+    material_name: str
+    material_mu_r_abs: float
     magnet_material_model: LossModel
 
     temperature: float

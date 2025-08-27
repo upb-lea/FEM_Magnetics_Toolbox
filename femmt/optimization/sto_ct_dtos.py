@@ -4,10 +4,11 @@ from dataclasses import dataclass
 
 # 3rd party libraries
 import numpy as np
-from materialdatabase.meta.data_classes import MaterialCurve
-from materialdatabase.meta.data_enums import DataSource
-from femmt.enumerations import *
 
+# own libraries (mdb + femmt)
+from materialdatabase.meta.data_enums import DataSource
+from materialdatabase.meta.setup_enums import MeasurementDataType
+from femmt.optimization.ito_dtos import WorkingDirectories
 
 @dataclass
 class StoCtInsulation:
@@ -83,19 +84,6 @@ class ThermalConfig:
     boundary_temperatures: dict
     boundary_flags: dict
 
-
-@dataclass
-class WorkingDirectories:
-    """Working directories for an integrated transformer optimization."""
-
-    fem_working_directory: str
-    reluctance_model_results_directory: str
-    fem_simulation_results_directory: str
-    fem_simulation_filtered_results_directory: str
-    fem_thermal_simulation_results_directory: str
-    fem_thermal_filtered_simulation_results_directory: str
-
-
 @dataclass
 class StoCtTargetAndFixedParameters:
     """
@@ -110,7 +98,8 @@ class StoCtTargetAndFixedParameters:
     i_peak_2: float
     i_phase_deg_1: float
     i_phase_deg_2: float
-    material_dto_curve_list: list[MaterialCurve]
+    material_name_list: list[str]
+    material_complex_mu_r_list: list[float]
     time_extracted_vec: list
     current_extracted_1_vec: list
     current_extracted_2_vec: list

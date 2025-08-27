@@ -4,10 +4,10 @@ from dataclasses import dataclass
 
 # 3rd party libraries
 import numpy as np
-from materialdatabase.meta.data_classes import MaterialCurve
-from materialdatabase.meta.data_enums import DataSource
 from magnethub.loss import LossModel
-from femmt.enumerations import *
+
+# own libraries
+from femmt.optimization.optimization_dtos import MaterialDataSources, WorkingDirectories
 
 @dataclass
 class ItoInsulation:
@@ -27,15 +27,6 @@ class ItoInsulation:
     iso_primary_to_primary: float
     iso_secondary_to_secondary: float
     iso_primary_to_secondary: float
-
-@dataclass
-class IntegratedTransformerMaterialDataSources:
-    """Data sources for the FEM simulation."""
-
-    permeability_datasource: MaterialDataSource
-    permeability_datatype: DataSource
-    permittivity_datasource: MaterialDataSource
-    permittivity_datatype: DataSource
 
 @dataclass
 class ItoSingleInputConfig:
@@ -78,18 +69,7 @@ class ItoSingleInputConfig:
     insulations: ItoInsulation
 
     # data sources
-    material_data_sources: IntegratedTransformerMaterialDataSources
-
-@dataclass
-class WorkingDirectories:
-    """Working directories for an integrated transformer optimization."""
-
-    fem_working_directory: str
-    reluctance_model_results_directory: str
-    fem_simulation_results_directory: str
-    fem_simulation_filtered_results_directory: str
-    fem_thermal_simulation_results_directory: str
-    fem_thermal_filtered_simulation_results_directory: str
+    material_data_sources: MaterialDataSources
 
 @dataclass
 class ItoTargetAndFixedParameters:
@@ -105,7 +85,8 @@ class ItoTargetAndFixedParameters:
     i_peak_2: float
     i_phase_deg_1: float
     i_phase_deg_2: float
-    material_dto_curve_list: list[MaterialCurve]
+    material_name_list: list[float]
+    material_complex_mu_r_list: list[float]
     magnet_hub_model_list: list[LossModel]
     time_extracted_vec: list
     current_extracted_1_vec: list
@@ -181,7 +162,8 @@ class ItoReluctanceModelInput:
     litz_wire_diameter_2: float
 
     insulations: ItoInsulation
-    material_dto: MaterialCurve
+    material_name: str
+    material_complex_mu_r: float
     magnet_material_model: LossModel
 
     temperature: float

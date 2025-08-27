@@ -6,19 +6,8 @@ import dataclasses
 from magnethub.loss import LossModel
 
 # own libraries
-from materialdatabase.meta.data_classes import MaterialCurve
-from materialdatabase.meta.data_enums import DataSource
-from femmt.enumerations import *
 from femmt.optimization.ito_dtos import WorkingDirectories
-
-@dataclasses.dataclass
-class InductorMaterialDataSources:
-    """Data sources for the FEM simulation."""
-
-    permeability_datasource: DataSource
-    permeability_datatype: MeasurementDataType
-    permittivity_datasource: DataSource
-    permittivity_datatype: MeasurementDataType
+from femmt.optimization.optimization_dtos import MaterialDataSources
 
 @dataclasses.dataclass
 class InductorInsulationDTO:
@@ -55,7 +44,7 @@ class InductorOptimizationDTO:
     litz_wire_name_list: list[str]
 
     # FEM simulation
-    material_data_sources: InductorMaterialDataSources
+    material_data_sources: MaterialDataSources
 
 @dataclasses.dataclass
 class InductorOptimizationTargetAndFixedParameters:
@@ -67,7 +56,8 @@ class InductorOptimizationTargetAndFixedParameters:
 
     i_rms: float
     i_peak: float
-    material_dto_curve_list: list[MaterialCurve]
+    material_name_list: list[str]
+    material_mu_r_abs_list: list[float]
     magnet_hub_model_list: list[LossModel]
     time_extracted_vec: list
     current_extracted_vec: list
@@ -96,7 +86,7 @@ class FemInput:
     insulations: InductorInsulationDTO
 
     # data sources
-    material_data_sources: InductorMaterialDataSources
+    material_data_sources: MaterialDataSources
 
     # operating point conditions
     temperature: float
@@ -128,7 +118,7 @@ class ReluctanceModelInput:
     litz_wire_diameter: float
 
     insulations: InductorInsulationDTO
-    material_dto: MaterialCurve
+    material_mu_r_abs: float
     magnet_material_model: LossModel
 
     temperature: float
