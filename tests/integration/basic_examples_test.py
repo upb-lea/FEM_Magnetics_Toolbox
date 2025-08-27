@@ -408,4 +408,3 @@ def test_planar_transformer(temp_folder: pytest.fixture):
     femmt.examples.PCB_planar.planar_transformer.basic_example_planar_transformer_using_vww(onelab_folder=onelab_folder,
                                                                                             show_visual_outputs=False,
                                                                                             is_test=True)
-
