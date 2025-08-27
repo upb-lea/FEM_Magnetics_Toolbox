@@ -1044,8 +1044,6 @@ class TwoDaxiSymmetric:
                                             step_y_layer = start_y_layer + thickness_of_the_insulation_layer
                                             if round(y_move, 6) > round(top_bound, 6):
                                                 break
-                                            if round(step_y_layer, 6) > round(top_bound, 6):
-                                                break
                                         elif foil_horizontal_placing_strategy == FoilHorizontalDistribution.VerticalDownward:
                                             y_start = top_bound - i * winding.thickness - i * thickness_of_the_insulation_layer
                                             y_move = top_bound - (i + 1) * winding.thickness - i * thickness_of_the_insulation_layer
@@ -1053,22 +1051,20 @@ class TwoDaxiSymmetric:
                                             step_y_layer = start_y_layer - thickness_of_the_insulation_layer
                                             if round(y_move) < round(bot_bound):
                                                 break
-                                            if round(step_y_layer, 6) < round(bot_bound, 6):
-                                                break
                                         # Foil
                                         # An Insulation delta is necessary when the window is divided into cells
                                         self.p_conductor[num].extend([
-                                            [left_bound + insulation_delta, y_start, 0, self.mesh_data.c_conductor[num]],
-                                            [right_bound - insulation_delta, y_start, 0, self.mesh_data.c_conductor[num]],
-                                            [left_bound + insulation_delta, y_move, 0, self.mesh_data.c_conductor[num]],
-                                            [right_bound - insulation_delta, y_move, 0, self.mesh_data.c_conductor[num]]
+                                            [left_bound, y_start, 0, self.mesh_data.c_conductor[num]],
+                                            [right_bound, y_start, 0, self.mesh_data.c_conductor[num]],
+                                            [left_bound, y_move, 0, self.mesh_data.c_conductor[num]],
+                                            [right_bound, y_move, 0, self.mesh_data.c_conductor[num]]
                                         ])
                                         # add layer insulation
                                         layer_insulation_point = [
-                                            [left_bound + insulation_delta, start_y_layer, 0, self.mesh_data.c_conductor[num]],
-                                            [right_bound - insulation_delta, start_y_layer, 0, self.mesh_data.c_conductor[num]],
-                                            [right_bound - insulation_delta, step_y_layer, 0, self.mesh_data.c_conductor[num]],
-                                            [left_bound + insulation_delta, step_y_layer, 0, self.mesh_data.c_conductor[num]]]
+                                            [left_bound, start_y_layer, 0, self.mesh_data.c_conductor[num]],
+                                            [right_bound, start_y_layer, 0, self.mesh_data.c_conductor[num]],
+                                            [right_bound, step_y_layer, 0, self.mesh_data.c_conductor[num]],
+                                            [left_bound, step_y_layer, 0, self.mesh_data.c_conductor[num]]]
 
                                         if self.insulation.thickness_of_layer_insulation:
                                             self.p_iso_layer.append(layer_insulation_point)
