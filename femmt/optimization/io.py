@@ -1044,9 +1044,6 @@ class InductorOptimization:
             litz_wire = ff.litz_database()[df_geometry['params_litz_wire_name'][index_number]]
             litz_wire_diameter = 2 * litz_wire["conductor_radii"]
 
-            # material properties
-            material_db = mdb.Data()
-
             # instantiate material-specific model
             magnet_material_model: mh.loss.LossModel = mh.loss.LossModel(material=material_name, team="paderborn")
 

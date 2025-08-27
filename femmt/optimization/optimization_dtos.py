@@ -5,16 +5,13 @@ import dataclasses
 
 # own libraries
 from materialdatabase.meta.data_enums import DataSource
-from materialdatabase.meta.setup_enums import MeasurementDataType
 
 @dataclasses.dataclass
 class MaterialDataSources:
     """Data sources for the FEM simulation."""
 
     permeability_datasource: DataSource
-    permeability_datatype: MeasurementDataType
     permittivity_datasource: DataSource
-    permittivity_datatype: MeasurementDataType
 
 @dataclasses.dataclass
 class WorkingDirectories:
