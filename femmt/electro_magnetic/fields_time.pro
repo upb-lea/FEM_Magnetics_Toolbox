@@ -32,25 +32,18 @@ PostOperation Map_local UsingPost MagDyn_a {
   Print[ b,  OnElementsOf Domain,  File StrCat[DirResFields, "b", ExtGmsh],  LastTimeStepOnly ] ;
   //Print[ Magb, OnGrid {Cos[$A], Sin[$A], 0} { 0:2*Pi:Pi/180, 0, 0 },
              //File StrCat[DirResFields, "b_point.pos"], Format Gmsh ];
-  Print[ Magb,
-       OnGrid { $A, $B, 0 }
-              { 0.002, -0.02:0.02:0.001, 0 },
-       File StrCat[DirResFields, "Magb_grid.pos"],
-       Format Gmsh ];
-
-  Print[ b,
-       OnGrid { $A, $B, 0 }
-              { 0.002, -0.02:0.02:0.001, 0 },
-       File StrCat[DirResFields, "b_grid.pos"],
-       Format Gmsh ];
 
   //Print[ b_pol,  OnElementsOf Domain,  File StrCat[DirResFields, "b_pol", ExtGmsh],  LastTimeStepOnly ] ;
   //Print[ im_b_pol,  OnElementsOf Domain,  File StrCat[DirResFields, "im_b_pol", ExtGmsh],  LastTimeStepOnly ] ;
   //Print[ Mag_b_real,  OnElementsOf Domain,  File StrCat[DirResFields, "Mag_b_real", ExtGmsh],  LastTimeStepOnly] ;
   //Print[ Mag_b_imag,  OnElementsOf Domain,  File StrCat[DirResFields, "Mag_b_imag", ExtGmsh],  LastTimeStepOnly] ;
   If(Flag_show_standard_fields)
+     If (Flag_Stream_Visualization)
+        Print[ Magb,  OnElementsOf Domain, Name "Magnitude B-Field / T" , File StrCat[DirResFields, "Magb", ExtGmsh], LastTimeStepOnly];
+     Else
      Print[ Magb,  OnElementsOf Domain, Name "Magnitude B-Field / T" , File StrCat[DirResFields, "Magb", ExtGmsh]];
      //Print[ Magb,  OnElementsOf Domain, Name "Magnitude B-Field / T" , File StrCat[DirResFields, "Magb", ExtGmsh], LastTimeStepOnly];  // for  compute command -v2
+     EndIf
   EndIf
   //  , StoreInVariable $Magb maybe use this for Core Loss
 
@@ -67,18 +60,23 @@ PostOperation Map_local UsingPost MagDyn_a {
   //Print[ ir_norm, OnElementsOf Region[{Domain}], File StrCat[DirResFields, "ir_norm", ExtGmsh], LastTimeStepOnly ] ;
 
   // Ohmic Loss
-  If(Flag_show_standard_fields)
-    // to show the losses in every step
-    Print[ j2F_density, OnElementsOf Region[{DomainC}], Name "Solid wire and core eddy current loss density / W/m^3", File StrCat[DirResFields, "j2F_density", ExtGmsh]] ;
-    // it can be like this
-    //Print[ j2F_density, OnElementsOf Region[{DomainC}], Name "Solid wire and core eddy current loss density / W/m^3", File StrCat[DirResFields, "j2F_density", ExtGmsh, LastTimeStepOnly ] ;
+  If (Flag_Stream_Visualization)
+      For n In {1:n_windings}
+             If(!Flag_HomogenisedModel~{n})
+                If(Flag_show_standard_fields)
+                    // to show the losses in every step
+                    Print[ j2F_density, OnElementsOf Region[{DomainC}], Name "Solid wire and core eddy current loss density / W/m^3", File StrCat[DirResFields, "j2F_density", ExtGmsh], LastTimeStepOnly] ;
+                EndIf
+             Else
+                If(Flag_show_standard_fields)
+                    Print[ j2H_density, OnElementsOf DomainS, Name "Litz wire loss density / W/m^3", File StrCat[DirResFields,"j2H_density",ExtGmsh], LastTimeStepOnly] ;
+                EndIf
+             EndIf
+      EndFor
+  Else
+      Print[ j2F_density, OnElementsOf Region[{DomainC}], Name "Solid wire and core eddy current loss density / W/m^3", File StrCat[DirResFields, "j2F_density", ExtGmsh]] ;
+      Print[ j2H_density, OnElementsOf DomainS, Name "Litz wire loss density / W/m^3", File StrCat[DirResFields,"j2H_density",ExtGmsh]] ;
   EndIf
-  If(Flag_show_standard_fields)
-    //Print[ j2H, OnElementsOf DomainS, Name "Litz wire losses / W" , File StrCat[DirResFields,"jH",ExtGmsh] ] ;
-    Print[ j2H_density, OnElementsOf DomainS, Name "Litz wire loss density / W/m^3", File StrCat[DirResFields,"j2H_density",ExtGmsh]] ;
-  EndIf
-  //Print[ j2Hprox,   OnElementsOf DomainS, File StrCat[DirResFields,"jHprox",ExtGmsh] ] ;
-  //Print[ j2Hskin,   OnElementsOf DomainS, File StrCat[DirResFields,"jHskin",ExtGmsh] ] ;
 
 
   // Settings
@@ -86,9 +84,17 @@ PostOperation Map_local UsingPost MagDyn_a {
       "View[k].RangeType = 3;" ,// per timestep
       "View[k].NbIso = 25;",
       "View[k].IntervalsType = 3;",
-      "View[k].AutoPosition = 3",
+      "View[k].AutoPosition = 3;",
       "EndFor"// iso values
     ], File "option.pos"];
+
+   If (Flag_Stream_Visualization)
+       Echo[ Str[
+        "l=PostProcessing.NbViews-1;",   // last view
+        "View[l].ScaleType=2;"           // 2 is logarithmic
+      ],
+      File "option.pos"];
+  EndIf
   // RangeType = 1; // Value scale range type (1=default, 2=custom, 3=per time step)
   // IntervalsType = 2; // Type of interval display (1=iso, 2=continuous, 3=discrete, 4=numeric)
 

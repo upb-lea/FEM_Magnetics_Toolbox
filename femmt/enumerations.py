@@ -10,6 +10,12 @@ class Verbosity(IntEnum):
     ToConsole = 2  # Outputs to console
     ToFile = 3  # Outputs to file
 
+class VisualizationMode(IntEnum):
+    """How simulation results are shown in Gmsh."""
+
+    Final = 1   # Only final static result
+    Post = 2    # Animate after simulation
+    Stream = 3  # Live results during simulation
 
 class WindingTag(IntEnum):
     """Names of windings."""

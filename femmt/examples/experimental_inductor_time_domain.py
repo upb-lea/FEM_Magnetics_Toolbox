@@ -30,7 +30,7 @@ def basic_example_inductor_time_domain(onelab_folder: str = None, show_visual_ou
     # 1. chose simulation type
     geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.TimeDomain,
                                 component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                is_gui=is_test)
+                                is_gui=is_test, visualization_mode=fmt.VisualizationMode.Final)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
     if onelab_folder is not None:
