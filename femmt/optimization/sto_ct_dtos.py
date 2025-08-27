@@ -6,8 +6,7 @@ from dataclasses import dataclass
 import numpy as np
 
 # own libraries (mdb + femmt)
-from materialdatabase.meta.data_enums import DataSource
-from materialdatabase.meta.setup_enums import MeasurementDataType
+from femmt.optimization.optimization_dtos import MaterialDataSources
 from femmt.optimization.ito_dtos import WorkingDirectories
 
 @dataclass
@@ -67,10 +66,7 @@ class StoCtSingleInputConfig:
     mesh_accuracy: float
 
     # data sources
-    permeability_datasource: DataSource
-    permeability_datatype: MeasurementDataType
-    permittivity_datasource: DataSource
-    permittivity_datatype: MeasurementDataType
+    material_datasources: MaterialDataSources
 
 
 @dataclass
