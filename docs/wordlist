@@ -522,6 +522,12 @@ bOPET
 xlsxwriter
 Thermoset
 Polyphenylene
+VisualizationMode
+nopopup
+ShowScale
+PositionY
+PositionX
+AutoPosition
 
 # mdb
 mdb
