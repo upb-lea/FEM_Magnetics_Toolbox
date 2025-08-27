@@ -4,7 +4,7 @@ import os
 
 from datetime import datetime
 Date = datetime.now().strftime("%Y%m%d-%H%M%S")
-def basic_example_transformer_foil(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
+def basic_example_planar_transformer_using_vww(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
     """Run the example code for the transformer.
 
     :param onelab_folder: onelab folder path
@@ -183,4 +183,4 @@ def basic_example_transformer_foil(onelab_folder: str = None, show_visual_output
 
 
 if __name__ == "__main__":
-    basic_example_transformer_foil(show_visual_outputs=True)
+    basic_example_planar_transformer_using_vww(show_visual_outputs=True)

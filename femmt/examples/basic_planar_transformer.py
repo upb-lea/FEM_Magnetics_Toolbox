@@ -1,5 +1,5 @@
 """
-Basic example to show how to simulate a PCB transformer with interleaved foil winding.
+Basic example to show how to simulate a transformer with foil winding.
 
 After starting the program, the geometry dimensions are displayed. Verify this geometry, close the window, to continue the simulation.
 After a short time, B-Field and winding losses simulation results are shown. Winding losses are shown as a colormap.
@@ -16,7 +16,7 @@ import logging
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 
-def basic_example_pcb_interleaved(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
+def basic_example_planar_transformer(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
     """
     Run the example code for the PCB transformer.
 
@@ -102,6 +102,9 @@ def basic_example_pcb_interleaved(onelab_folder: str = None, show_visual_outputs
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
+    # Choose wrap para type
+    wrap_para_type = fmt.WrapParaType.FixedThickness
+
     # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
                                 is_gui=is_test)
@@ -138,8 +141,7 @@ def basic_example_pcb_interleaved(onelab_folder: str = None, show_visual_outputs
 
     winding_window = fmt.WindingWindow(core, insulation)
     # vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
-    # vww_bot, vww_top = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit, split_distance=0.0001)
-    vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+    vww_bot, vww_top = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit, split_distance=0.0001)
 
     # 6. create conductors and set parameters
     winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
@@ -147,18 +149,20 @@ def basic_example_pcb_interleaved(onelab_folder: str = None, show_visual_outputs
 
     winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
     winding2.set_rectangular_conductor(thickness=35e-6, width=4.8e-3)
-    winding2.parallel = True
+    winding2.parallel = False
 
-    vww.set_interleaved_winding(winding1, 5, winding2, 2, fmt.InterleavedWindingScheme.VerticalAlternating,
-                                foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalUpward, group_size=2)
+    vww_bot.set_winding(winding1, 5, fmt.WindingScheme.FoilHorizontal, fmt.Align.ToEdges, wrap_para_type=wrap_para_type.CustomDimensions,
+                        foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalUpward)
+    vww_top.set_winding(winding2, 2, fmt.WindingScheme.FoilHorizontal, fmt.Align.ToEdges, wrap_para_type=wrap_para_type.CustomDimensions,
+                        foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalUpward)
     geo.set_winding_windows([winding_window])
-    # Create Model
+
     geo.create_model(freq=1000000, pre_visualize_geometry=show_visual_outputs, save_png=False)
-    # Magnetic Simulation
+
     geo.single_simulation(freq=1000000, current=[3, 5], phi_deg=[0, 180], show_fem_simulation_results=show_visual_outputs)
-    # Thermal Simulation
+
     example_thermal_simulation(show_visual_outputs, flag_insulation=True)
 
 
 if __name__ == "__main__":
-    basic_example_pcb_interleaved(show_visual_outputs=True)
+    basic_example_planar_transformer(show_visual_outputs=True)

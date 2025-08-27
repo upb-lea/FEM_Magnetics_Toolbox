@@ -64,7 +64,7 @@ class MagneticComponent:
         :type component_type: ComponentType
         :param working_directory: Sets the working directory
         :type working_directory: string
-        :param visualization_mode: Sets the visualization mode. It makes sense in time domain simulation
+        :param visualization_mode: Sets the visualization mode. it is only used in the time domain simulation.
         :type visualization_mode: VisualizationMode
         :param is_gui: Asks at first startup for onelab-path. Distinction between GUI and command line.
             Defaults to 'False' in command-line-mode.

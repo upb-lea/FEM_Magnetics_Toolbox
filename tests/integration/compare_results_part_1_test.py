@@ -576,6 +576,130 @@ def fixture_inductor_electrostatic(temp_folder: pytest.fixture):
 
     return electrostaticquasistatic_result, geometry_result, material_result
 
+@pytest.fixture
+def fixture_planar_transformer_interleaved(temp_folder: pytest.fixture):
+    """
+    Integration test to the basic example file.
+
+    :param temp_folder: temporary folder path and onelab filepath
+    :type temp_folder: pytest.fixture
+    """
+    temp_folder_path, onelab_folder = temp_folder
+
+    # Create new temp folder, build model and simulate
+    try:
+        working_directory = temp_folder_path
+        if not os.path.exists(working_directory):
+            os.mkdir(working_directory)
+
+        # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
+                                    onelab_verbosity=fmt.Verbosity.Silent, is_gui=True)
+
+        # Set onelab path manually
+        core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=5e-3,
+                                                        window_w=6e-3,
+                                                        window_h=2e-3,
+                                                        core_h=8e-3)
+        core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3100,
+                                                      phi_mu_deg=12,
+                                                      dc_conductivity=0.6,
+                                                      eps_r_abs=0,
+                                                      phi_eps_deg=0)
+        core = fmt.Core(material=core_material,
+                        core_type=fmt.CoreType.Single,
+                        core_dimensions=core_dimensions,
+                        detailed_core_model=False)
+        geo.set_core(core)
+
+        air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
+        geo.set_air_gaps(air_gaps)
+
+        insulation = fmt.Insulation()
+        insulation.add_core_insulations(0.0005, 0.0005, 0.0005, 0.0005)
+        insulation.add_winding_insulations([[1.15e-4, 1.15e-4], [1.15e-4, 1.15e-4]])
+        insulation.add_insulation_between_layers(thickness=0.01e-3)
+        geo.set_insulation(insulation)
+
+        winding_window = fmt.WindingWindow(core, insulation)
+        vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+
+        winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
+        winding1.set_rectangular_conductor(thickness=35e-6, width=1.524e-3)
+
+        winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
+        winding2.set_rectangular_conductor(thickness=35e-6, width=4.8e-3)
+        winding2.parallel = True
+
+        vww.set_interleaved_winding(winding1, 5, winding2, 2, fmt.InterleavedWindingScheme.VerticalAlternating,
+                                    foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalUpward, group_size=1)
+        geo.set_winding_windows([winding_window])
+
+        geo.create_model(freq=1000000, pre_visualize_geometry=False)
+
+        geo.single_simulation(freq=1000000, current=[3, 5], phi_deg=[0, 180], show_fem_simulation_results=False)
+
+        thermal_conductivity_dict = {
+            "air": 1.57,  # potting epoxy resign
+            "case": {
+                "top": 1.57,
+                "top_right": 1.57,
+                "right": 1.57,
+                "bot_right": 1.57,
+                "bot": 1.57
+            },
+            "core": 5,  # ferrite
+            "winding": 400,  # copper
+            "air_gaps": 1.57,
+            "insulation": 1.57
+        }
+
+        case_gap_top = 0.002
+        case_gap_right = 0.0025
+        case_gap_bot = 0.002
+
+        boundary_temperatures = {
+            "value_boundary_top": 20,
+            "value_boundary_top_right": 20,
+            "value_boundary_right_top": 20,
+            "value_boundary_right": 20,
+            "value_boundary_right_bottom": 20,
+            "value_boundary_bottom_right": 20,
+            "value_boundary_bottom": 20
+        }
+
+        boundary_flags = {
+            "flag_boundary_top": 1,
+            "flag_boundary_top_right": 1,
+            "flag_boundary_right_top": 1,
+            "flag_boundary_right": 1,
+            "flag_boundary_right_bottom": 1,
+            "flag_boundary_bottom_right": 1,
+            "flag_boundary_bottom": 1
+        }
+
+        # color_scheme = fmt.colors_ba_jonas
+        # colors_geometry = fmt.colors_geometry_ba_jonas
+        color_scheme = fmt.colors_ba_jonas
+        colors_geometry = fmt.colors_geometry_draw_only_lines
+
+        geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
+                               case_gap_right,
+                               case_gap_bot, show_thermal_simulation_results=False, pre_visualize_geometry=False,
+                               color_scheme=color_scheme, colors_geometry=colors_geometry)
+
+    except Exception as e:
+        print("An error occurred while creating the femmt mesh files:", e)
+    except KeyboardInterrupt:
+        print("Keyboard interrupt..")
+
+    electromagnetoquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
+    thermal_result = os.path.join(temp_folder_path, "results", "results_thermal.json")
+    geometry_result = os.path.join(temp_folder_path, "results", "log_coordinates_description.json")
+
+    return electromagnetoquasistatic_result, thermal_result, geometry_result
+
 
 def test_inductor_core_material_database_measurement(fixture_inductor_core_material_database_measurement: pytest.fixture):
     """
@@ -660,6 +784,34 @@ def test_simulation_inductor_time_domain(fixture_inductor_time_domain: pytest.fi
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "log_inductor_time_domain.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
+
+def test_simulation_planar_transformer_interleaved(fixture_planar_transformer_interleaved: pytest.fixture):
+    """
+    Integration test to validate the magnetoquasistatic simulation.
+
+    :param fixture_planar_transformer_interleaved: fixture for the inductor time domain simulation
+    :type fixture_planar_transformer_interleaved: pytest.fixture
+    """
+    test_result_log, thermal_result_log, geometry_result_log = fixture_planar_transformer_interleaved
+
+    assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
+
+    fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                        "geometry_planar_transformer_interleaved.json")
+    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
+
+    assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
+
+    # e_m mesh
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                      "log_planar_transformer_interleaved.json")
+    compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
+
+    # check thermal simulation results
+    assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                      "thermal_planar_transformer_interleaved.json")
+    compare_thermal_result_logs(thermal_result_log, fixture_result_log)
 
 def test_simulation_inductor_electrostatic(fixture_inductor_electrostatic: pytest.fixture):
     """
