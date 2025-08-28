@@ -592,9 +592,12 @@ def fixture_planar_transformer_interleaved(temp_folder: pytest.fixture):
         if not os.path.exists(working_directory):
             os.mkdir(working_directory)
 
-        # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
+        # 1. chose simulation type
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
                                     onelab_verbosity=fmt.Verbosity.Silent, is_gui=True)
+
+        # Set onelab path manually
+        geo.file_data.onelab_folder_path = onelab_folder
 
         # Set onelab path manually
         core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=5e-3,
