@@ -87,8 +87,8 @@ def test_basic_example_transformer_interleaved(temp_folder: pytest.fixture):
     """
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_transformer_interleaved.basic_example_transformer_interleaved(onelab_folder=onelab_folder,
-                                                                                              show_visual_outputs=False,
-                                                                                              is_test=True)
+                                                                                       show_visual_outputs=False,
+                                                                                       is_test=True)
 
 
 def test_basic_example_transformer(temp_folder: pytest.fixture):
