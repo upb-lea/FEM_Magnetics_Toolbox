@@ -332,21 +332,6 @@ class ExcitationMeshingType(IntEnum):
 
 
 # Following Enums must always be consistent with the materialdatabase
-class MaterialDataSource(str, Enum):
-    """Sets the source from where data is taken."""
-
-    Custom = "custom"
-    Measurement = "measurements"
-    ManufacturerDatasheet = "manufacturer_datasheet"
-
-
-class MeasurementDataType(str, Enum):
-    """Sets the type of measurement data."""
-
-    ComplexPermeability = "complex_permeability"
-    ComplexPermittivity = "complex_permittivity"
-    Steinmetz = "Steinmetz"
-
 class CoreMaterialType(str, Enum):
     """Sets the core material type for the whole simulation. Needs to be given to the MagneticComponent on creation."""
 
