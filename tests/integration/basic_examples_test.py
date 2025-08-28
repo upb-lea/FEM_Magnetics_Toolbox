@@ -40,6 +40,7 @@ import femmt.examples.basic_planar_transformer
 import femmt.examples.basic_planar_transformer_interleaved
 import femmt.examples.PCB_planar.planar_transformer
 
+
 @pytest.fixture
 def temp_folder():
     """Fixture to create the temporary folder the results are stored."""
@@ -394,7 +395,7 @@ def test_basic_planar_transformer_interleaved(temp_folder: pytest.fixture):
     :type temp_folder: pytest.fixture
     """
     temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer_interleaved.basic_example_planar_transformer_interleaved(onelab_folder=onelab_folder,
+    femmt.examples.basic_planar_transformer_interleaved.basic_example_planar_transformer_interleaved(onelab_folder=onelab_folder,
                                                                                               show_visual_outputs=False,
                                                                                               is_test=True)
 def test_planar_transformer(temp_folder: pytest.fixture):
