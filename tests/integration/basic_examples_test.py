@@ -396,8 +396,8 @@ def test_basic_planar_transformer_interleaved(temp_folder: pytest.fixture):
     """
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_planar_transformer_interleaved.basic_example_planar_transformer_interleaved(onelab_folder=onelab_folder,
-                                                                                              show_visual_outputs=False,
-                                                                                              is_test=True)
+                                                                                                     show_visual_outputs=False,
+                                                                                                     is_test=True)
 def test_planar_transformer(temp_folder: pytest.fixture):
     """
     Integration test to the basic example file.
