@@ -1859,14 +1859,19 @@ class Mesh:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # insulations
         # TODO Currently insulations can only have the same material
+        # conductor insulation
+        cond_ins = []
+        for num in range(len(self.windings)):
+            cond_ins.extend(self.plane_surface_iso_cond[num])
         if self.model.core.geometry.core_type == CoreType.Single:
             if self.stray_path:
-                insulation_total = self.plane_surface_iso_top_core + self.plane_surface_iso_bot_core
+                insulation_total = self.plane_surface_iso_top_core + self.plane_surface_iso_bot_core + cond_ins + self.plane_surface_iso_layer
                 self.ps_insulation = gmsh.model.geo.addPhysicalGroup(2, insulation_total)
             else:
-                self.ps_insulation = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_iso_core)
+                insulation_total = self.plane_surface_iso_core + cond_ins + self.plane_surface_iso_layer
+                self.ps_insulation = gmsh.model.geo.addPhysicalGroup(2, insulation_total)
         else:
-            insulation_total = self.plane_surface_iso_top_core + self.plane_surface_iso_bot_core
+            insulation_total = self.plane_surface_iso_top_core + self.plane_surface_iso_bot_core + cond_ins + self.plane_surface_iso_layer
             self.ps_insulation = gmsh.model.geo.addPhysicalGroup(2, insulation_total)
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
