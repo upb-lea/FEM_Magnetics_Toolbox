@@ -12,7 +12,7 @@ from typing import Optional, Union, Dict, Any
 
 # Local libraries
 import materialdatabase as mdb
-from materialdatabase import Material, DataSource, DatasheetAttribute
+from materialdatabase import Material, DataSource, DatasheetAttribute, ComplexDataType
 
 import femmt.functions as ff
 from femmt.functions_model import *
@@ -309,13 +309,13 @@ class LinearComplexCoreMaterial:
 
         self.permeability_type = PermeabilityType.FixedLossAngle
         self.permeability = {
-            "datasource": MaterialDataSource.Custom,
-            "datatype": None,
+            "datasource": DataSource.Custom,
+            "datatype": ComplexDataType.complex_permeability
         }
 
         self.permittivity = {
-            "datasource": MaterialDataSource.Custom,
-            "datatype": None,
+            "datasource": DataSource.Custom,
+            "datatype": ComplexDataType.complex_permittivity
         }
 
     def to_dict(self) -> Dict[str, Any]:
@@ -347,8 +347,8 @@ class ImportedComplexCoreMaterial:
     def __init__(self,
                  material: Union[str, Material],
                  temperature: Optional[float],
-                 permeability_datasource: Union[str, MaterialDataSource],
-                 permittivity_datasource: Union[str, MaterialDataSource]):
+                 permeability_datasource: Union[str, DataSource],
+                 permittivity_datasource: Union[str, DataSource]):
         """Create a CoreMaterial object describing electromagnetic and loss properties.
 
         The class uses material database queries and supports both predefined and custom material configurations.
@@ -394,7 +394,7 @@ class ImportedComplexCoreMaterial:
         # permeability meta information
         self.magnetic_loss_approach = LossApproach.LossAngle
         self.permeability_type = PermeabilityType.FromData
-        self.permeability_datasource = permeability_datasource  # FEMMT distinguishes MaterialDataSource(s) (MDB not)
+        self.permeability_datasource = permeability_datasource
 
         # ComplexPermeability class from material database
         self.permeability = self.database.get_complex_permeability(
@@ -406,7 +406,7 @@ class ImportedComplexCoreMaterial:
         self.permeability.fit_permeability_magnitude()
 
         # permittivity meta information
-        self.permittivity_datasource = permittivity_datasource  # FEMMT distinguishes MaterialDataSource(s) (MDB not)
+        self.permittivity_datasource = permittivity_datasource
 
         # initialize the permittivity with the datasheet dc_conductivity, as it will be updated with the
         # actual material data at the specific frequency directly before the simulation
@@ -475,9 +475,9 @@ class ImportedComplexCoreMaterial:
             "material": self.material,
             "temperature": self.temperature,
             "permeability_datasource": self.permeability_datasource,
-            "permeability_datatype": MeasurementDataType.ComplexPermeability,
+            "permeability_datatype": ComplexDataType.complex_permeability,
             "permittivity_datasource": self.permittivity_datasource,
-            "permittivity_datatype": MeasurementDataType.ComplexPermittivity
+            "permittivity_datatype": ComplexDataType.complex_permittivity
         }
 
 class ElectrostaticCoreMaterial:
