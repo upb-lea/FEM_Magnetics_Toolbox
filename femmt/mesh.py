@@ -1332,6 +1332,15 @@ class Mesh:
                                 color_scheme[colors_geometry["insulation"]][1],
                                 color_scheme[colors_geometry["insulation"]][2],
                                 recursive=True)
+
+        if self.plane_surface_iso_layer:
+            gmsh.model.setColor(
+                [(2, iso_layer_surface) for iso_layer_surface in self.plane_surface_iso_layer],
+                color_scheme[colors_geometry["layer_insulation"]][0],
+                color_scheme[colors_geometry["layer_insulation"]][1],
+                color_scheme[colors_geometry["layer_insulation"]][2],
+                recursive=True
+            )
         if visualize_before:
             gmsh.fltk.run()
 
@@ -1850,14 +1859,19 @@ class Mesh:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # insulations
         # TODO Currently insulations can only have the same material
+        # conductor insulation
+        cond_ins = []
+        for num in range(len(self.windings)):
+            cond_ins.extend(self.plane_surface_iso_cond[num])
         if self.model.core.geometry.core_type == CoreType.Single:
             if self.stray_path:
-                insulation_total = self.plane_surface_iso_top_core + self.plane_surface_iso_bot_core
+                insulation_total = self.plane_surface_iso_top_core + self.plane_surface_iso_bot_core + cond_ins + self.plane_surface_iso_layer
                 self.ps_insulation = gmsh.model.geo.addPhysicalGroup(2, insulation_total)
             else:
-                self.ps_insulation = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_iso_core)
+                insulation_total = self.plane_surface_iso_core + cond_ins + self.plane_surface_iso_layer
+                self.ps_insulation = gmsh.model.geo.addPhysicalGroup(2, insulation_total)
         else:
-            insulation_total = self.plane_surface_iso_top_core + self.plane_surface_iso_bot_core
+            insulation_total = self.plane_surface_iso_top_core + self.plane_surface_iso_bot_core + cond_ins + self.plane_surface_iso_layer
             self.ps_insulation = gmsh.model.geo.addPhysicalGroup(2, insulation_total)
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -70,12 +70,12 @@ PostOperation Get_global UsingPost MagDyn_a {
 
 
   // Stored Energy
-  Print[ MagEnergy[Domain], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"ME.dat"], LastTimeStepOnly, StoreInVariable $MagEnergy, SendToServer StrCat[po,"ME"],  Color "LightYellow"];
+  Print[ MagEnergy[Domain], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"ME.dat"], LastTimeStepOnly, StoreInVariable $MagEnergy, SendToServer StrCat[po,"12ME"],  Color "LightYellow"];
 
   //EndFor
    For n In {1:n_windings}
       Print[ Flux_Linkage~{n}[DomainCond~{n}], OnGlobal, Format Table, File > Sprintf[StrCat[DirResVals,"Flux_Linkage_%g.dat"], n], LastTimeStepOnly, StoreInVariable $Flux,
-    SendToServer StrCat[po,"40Flux [Wb]"],  Color "LightYellow"];
+    SendToServer Sprintf[StrCat[po,"13Phi_%g [Wb]"], n],  Color "LightYellow"];
       //Print[ Flux_Linkage~{n}[DomainCond~{n}], OnGlobal, Format Table];
   EndFor
 
@@ -121,11 +121,11 @@ PostOperation Get_global UsingPost MagDyn_a {
   If(!Flag_Circuit)
      For n In {1:n_windings}
          If(!Flag_HomogenisedModel~{n})
-           Print[ I, OnRegion Winding~{n}, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"I_%g_T%g.dat"], n, T] , LastTimeStepOnly, SendToServer StrCat[po,"20Fct_Src~{n}[] [A]"], Color "LightYellow" ];
-           Print[ U, OnRegion Winding~{n}, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"U_%g_T%g.dat"], n, T] , LastTimeStepOnly, SendToServer StrCat[po,"20Voltage~{n}[] [A]"], Color "LightYellow"];
+           Print[ I, OnRegion Winding~{n}, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"I_%g_T%g.dat"], n, T] , LastTimeStepOnly, SendToServer Sprintf[StrCat[po,"14I_%g [A]"], n], Color "LightYellow" ];
+           Print[ U, OnRegion Winding~{n}, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"U_%g_T%g.dat"], n, T] , LastTimeStepOnly, SendToServer Sprintf[StrCat[po,"15V_%g [V]"], n], Color "LightYellow"];
          Else
-           Print[ I, OnRegion StrandedWinding~{n}, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"I_%g_T%g.dat"], n, T] , LastTimeStepOnly, SendToServer StrCat[po,"20Fct_Src~{n}[] [A]"], Color "LightYellow"];
-           Print[ U, OnRegion StrandedWinding~{n}, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"U_%g_T%g.dat"], n, T] , LastTimeStepOnly, SendToServer StrCat[po,"20Voltage~{n}[] [A]"], Color "LightYellow"];
+           Print[ I, OnRegion StrandedWinding~{n}, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"I_%g_T%g.dat"], n, T] , LastTimeStepOnly, SendToServer Sprintf[StrCat[po,"14I_%g [A]"], n], Color "LightYellow"];
+           Print[ U, OnRegion StrandedWinding~{n}, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"U_%g_T%g.dat"], n, T] , LastTimeStepOnly, SendToServer Sprintf[StrCat[po,"15V_%g [V]"], n], Color "LightYellow"];
          EndIf
      EndFor
   Else
