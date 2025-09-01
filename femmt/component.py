@@ -3,6 +3,7 @@
 import csv
 import fileinput
 import os
+import sys
 import gmsh
 import json
 import warnings
@@ -51,7 +52,7 @@ class MagneticComponent:
 
     def __init__(self, simulation_type: SimulationType = SimulationType.FreqDomain,
                  component_type: ComponentType = ComponentType.Inductor, working_directory: str = None,
-                 clean_previous_results: bool = True, onelab_verbosity: Verbosity = 1, is_gui: bool = False,
+                 clean_previous_results: bool = True, onelab_verbosity: Verbosity = 1, visualization_mode: VisualizationMode = 1, is_gui: bool = False,
                  simulation_name: str | None = None, wwr_enabled=True):
         """
         Initialize the magnetic component.
@@ -63,6 +64,8 @@ class MagneticComponent:
         :type component_type: ComponentType
         :param working_directory: Sets the working directory
         :type working_directory: string
+        :param visualization_mode: Sets the visualization mode. it is only used in the time domain simulation.
+        :type visualization_mode: VisualizationMode
         :param is_gui: Asks at first startup for onelab-path. Distinction between GUI and command line.
             Defaults to 'False' in command-line-mode.
         :type is_gui: bool
@@ -96,6 +99,9 @@ class MagneticComponent:
             self.is_onelab_silent = True
 
         self.wwr_enabled = wwr_enabled
+
+        # visulization
+        self.visualization_mode = visualization_mode
 
         logger.info(f"\n"
                     f"Initialized a new Magnetic Component of type {component_type.name}\n"
@@ -1298,9 +1304,19 @@ class MagneticComponent:
             self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver_freq + " -msh " + \
                                             self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose + to_file_str)
         if self.simulation_type == SimulationType.TimeDomain:
-            # the two commands work but some changes should be done in fields_time.pro
-            self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver_time + " -msh " + self.file_data.e_m_mesh_file + \
-                                            " -solve Analysis -pos Map_local  " + verbose + to_file_str)
+            if self.visualization_mode == VisualizationMode.Stream:
+                # 1) Start GUI
+                if not gmsh.isInitialized():
+                    gmsh.initialize()
+                if '-nopopup' not in sys.argv:
+                    gmsh.fltk.initialize()
+                gmsh.onelab.run("myGetDP", getdp_filepath + " " + solver_time + " -msh " + self.file_data.e_m_mesh_file + \
+                                " -solve Analysis -pos Map_local  " + verbose + to_file_str)
+                gmsh.fltk.run()
+            else:
+                # the two commands work but some changes should be done in fields_time.pro
+                self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver_time + " -msh " + self.file_data.e_m_mesh_file + \
+                                                " -solve Analysis -pos Map_local  " + verbose + to_file_str)
             # self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file +
             # " -solve Analysis -v2 " + verbose) # freeing solutions
         if self.simulation_type == SimulationType.ElectroStatic:
@@ -1453,7 +1469,6 @@ class MagneticComponent:
         :param rolling_avg_window_size: how many data points used in each calculation of the average
         :param benchmark: Benchmark simulation (stop time). Defaults to False.
         :type benchmark: bool
-
         """
         self.check_create_empty_material_log()
 
@@ -1480,7 +1495,10 @@ class MagneticComponent:
             self.calculate_average_files()
             self.calculate_and_write_time_domain_log()  # TODO: reuse center tapped
             if show_fem_simulation_results:
-                self.visualize()
+                if self.visualization_mode == VisualizationMode.Final:
+                    self.visualize()
+                elif self.visualization_mode == VisualizationMode.Post:
+                    self.live_visualization_2d()
             if show_rolling_average:
                 self.get_rolling_average(window_size=rolling_avg_window_size)
 
@@ -1496,7 +1514,10 @@ class MagneticComponent:
             self.calculate_and_write_time_domain_log()  # TODO: reuse center tapped
 
             if show_fem_simulation_results:
-                self.visualize()
+                if self.visualization_mode == VisualizationMode.Final:
+                    self.visualize()
+                elif self.visualization_mode == VisualizationMode.Post:
+                    self.live_visualization_2d()
             if show_rolling_average:
                 self.get_rolling_average(window_size=rolling_avg_window_size)
 
@@ -3460,6 +3481,15 @@ class MagneticComponent:
             text_file.write("Flag_Time_Domain = 1;\n")
             text_file.write("Flag_Freq_Domain = 0;\n")
             text_file.write("Flag_Static = 0;\n")
+            # Needed for visualization
+            if self.visualization_mode == VisualizationMode.Stream:
+                text_file.write("Flag_Stream_Visualization = 1;\n")
+            else:
+                text_file.write("Flag_Stream_Visualization = 0;\n")
+        if self.simulation_type == SimulationType.ElectroStatic:
+            text_file.write("Flag_Static = 1;\n")
+            text_file.write("Flag_Freq_Domain = 0;\n")
+            text_file.write("Flag_Time_Domain = 0;\n")
 
         # Frequency
         text_file.write("Freq = %s;\n" % self.frequency)
@@ -4757,6 +4787,119 @@ class MagneticComponent:
 
         gmsh.fltk.run()
         # gmsh.finalize()
+
+    def live_visualization_2d(self):
+        """
+        Show live visualization of the time-domain simulation results.
+
+        - a post simulation viewer
+        - allows to open ".pos"-files in gmsh
+        - For example current density, ohmic losses or the magnetic field density can be visualized
+        """
+        logger.info("\n---\nVisualize fields in GMSH front end:\n")
+        gmsh.initialize()
+        epsilon = 1e-9
+
+        # merge view files
+        gmsh.merge(os.path.join(self.file_data.e_m_fields_folder_path, 'j2F_density.pos'))
+        gmsh.merge(os.path.join(self.file_data.e_m_fields_folder_path, 'j2H_density.pos'))
+        gmsh.merge(os.path.join(self.file_data.e_m_fields_folder_path, 'Magb.pos'))
+        # to show the magnetic field in space and time step, merge b_grid, if it is existed
+        b_grid = os.path.join(self.file_data.e_m_fields_folder_path, "b_grid.pos")
+        has_b_grid = os.path.exists(b_grid)
+        if has_b_grid:
+            gmsh.merge(b_grid)
+
+        # Show the GUI:
+        if '-nopopup' not in sys.argv:
+            gmsh.fltk.initialize()
+
+        v = gmsh.view.getTags()
+        if len(v) == 0:
+            logger.info("No .pos views found in:", self.file_data.e_m_fields_folder_path)
+            gmsh.finalize()
+            return
+        # We set some options for each post-processing view:
+        # Mesh
+        gmsh.option.setNumber("Mesh.SurfaceEdges", 0)
+
+        if any(self.windings[i].conductor_type != ConductorType.RoundLitz for i in range(len(self.windings))):
+            # Ohmic losses (weighted effective value of current density)
+            # gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2F_density.pos"))
+            gmsh.option.setNumber(f"View[{v[0]}].ScaleType", 2)
+            gmsh.option.setNumber(f"View[{v[0]}].RangeType", 3)
+            gmsh.option.setNumber(f"View[{v[0]}].SaturateValues", 1)
+            gmsh.option.setNumber(f"View[{v[0]}].CustomMin", gmsh.option.getNumber(f"View[{v[0]}].Min") + epsilon)
+            gmsh.option.setNumber(f"View[{v[0]}].CustomMax", gmsh.option.getNumber(f"View[{v[0]}].Max"))
+            gmsh.option.setNumber(f"View[{v[0]}].ColormapNumber", 1)
+            gmsh.option.setNumber(f"View[{v[0]}].IntervalsType", 2)
+            gmsh.option.setNumber(f"View[{v[0]}].NbIso", 40)
+            gmsh.option.setNumber(f"View[{v[0]}].ShowTime", 4)
+            gmsh.option.setNumber(f"View[{v[0]}].TimeStep", 1)
+            gmsh.option.setNumber(f"View[{v[0]}].Time", 1)
+            gmsh.option.setNumber(f"View[{v[0]}].NbTimeStep", 1)
+
+            if any(self.windings[i].conductor_type == ConductorType.RoundLitz for i in range(len(self.windings))):
+                # Ohmic losses (weighted effective value of current density)
+                # gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2H_density.pos"))
+                gmsh.option.setNumber(f"View[{v[1]}].ScaleType", 2)
+                gmsh.option.setNumber(f"View[{v[1]}].RangeType", 3)
+                gmsh.option.setNumber(f"View[{v[1]}].SaturateValues", 1)
+                gmsh.option.setNumber(f"View[{v[1]}].CustomMin",
+                                      gmsh.option.getNumber(f"View[{v[1]}].Min") + epsilon)
+                gmsh.option.setNumber(f"View[{v[1]}].CustomMax", gmsh.option.getNumber(f"View[{v[1]}].Max"))
+                gmsh.option.setNumber(f"View[{v[1]}].ColormapNumber", 1)
+                gmsh.option.setNumber(f"View[{v[1]}].IntervalsType", 2)
+                gmsh.option.setNumber(f"View[{v[1]}].NbIso", 40)
+                gmsh.option.setNumber(f"View[{v[1]}].ShowTime", 4)
+                gmsh.option.setNumber(f"View[{v[1]}].TimeStep", 1)
+                gmsh.option.setNumber(f"View[{v[1]}].Time", 1)
+                gmsh.option.setNumber(f"View[{v[1]}].NbTimeStep", 1)
+
+            # Magnetic flux density
+            # gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Magb.pos"))
+            gmsh.option.setNumber(f"View[{v[2]}].ScaleType", 1)
+            gmsh.option.setNumber(f"View[{v[2]}].RangeType", 3)
+            gmsh.option.setNumber(f"View[{v[2]}].CustomMin", gmsh.option.getNumber(f"View[{v[2]}].Min") + epsilon)
+            gmsh.option.setNumber(f"View[{v[2]}].CustomMax", gmsh.option.getNumber(f"View[{v[2]}].Max"))
+            gmsh.option.setNumber(f"View[{v[2]}].ColormapNumber", 1)
+            gmsh.option.setNumber(f"View[{v[2]}].IntervalsType", 2)
+            gmsh.option.setNumber(f"View[{v[2]}].ShowTime", 4)
+            gmsh.option.setNumber(f"View[{v[2]}].NbIso", 40)
+            gmsh.option.setNumber(f"View[{v[2]}].TimeStep", 1)
+            gmsh.option.setNumber(f"View[{v[2]}].Time", 1)
+            gmsh.option.setNumber(f"View[{v[2]}].NbTimeStep", 1)
+
+        if has_b_grid:
+            bgrid_view = v[-1]  # last merged
+            gmsh.view.option.setString(bgrid_view, "Name", "B_field...")
+            gmsh.view.option.setNumber(bgrid_view, "Axes", 1)
+            gmsh.view.option.setNumber(bgrid_view, "IntervalsType", 2)
+            gmsh.view.option.setNumber(bgrid_view, "Type", 2)  # graph mode
+            gmsh.view.option.setNumber(bgrid_view, "AutoPosition", 0)
+            gmsh.view.option.setNumber(bgrid_view, "PositionX", 50)
+            gmsh.view.option.setNumber(bgrid_view, "PositionY", 50)
+            gmsh.view.option.setNumber(bgrid_view, "Width", 350)
+            gmsh.view.option.setNumber(bgrid_view, "Height", 250)
+
+        # Configure views for 2D
+        for vt in v:
+            gmsh.view.option.setNumber(vt, "IntervalsType", 2)  # color shading
+            gmsh.view.option.setNumber(vt, "ShowScale", 1)  # colorbar
+            gmsh.view.option.setNumber(vt, "Visible", 1)  # ensure visible
+
+        # Animate through time steps
+        frames = int(gmsh.view.option.getNumber(v[0], "NbTimeStep"))
+        t = 0
+        while gmsh.fltk.isAvailable():
+            for vt in v:
+                gmsh.view.option.setNumber(vt, "TimeStep", t)
+            gmsh.graphics.draw()
+            time.sleep(0.2)  # seconds per frame
+            t = (t + 1) % frames
+        if '-nopopup' not in sys.argv:
+            gmsh.fltk.run()
+        gmsh.finalize()
 
     def get_loss_data(self, last_n_values: int, loss_type: str = 'litz_loss'):
         """

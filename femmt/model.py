@@ -38,6 +38,7 @@ class Conductor:
     conductor_radius: float | None = None
     winding_number: int
     thickness: float | None = None
+    width: float | None = None
     ff: float | None = None
     strand_radius: float | None = None
     n_strands: int = 0
@@ -82,12 +83,14 @@ class Conductor:
         else:
             raise Exception(f"Material {material.name} not found in database")
 
-    def set_rectangular_conductor(self, thickness: float = None):
+    def set_rectangular_conductor(self, thickness: float = None, width: float = None):
         """
         Set a rectangular, solid conductor.
 
         :param thickness: thickness of the rectangular conductor in m
         :type thickness: float
+        :param width: width of the rectangular conductor in m
+        :type width: float
         """
         if self.conductor_is_set:
             raise Exception("Only one conductor can be set for each winding!")
@@ -95,6 +98,7 @@ class Conductor:
         self.conductor_is_set = True
         self.conductor_type = ConductorType.RectangularSolid
         self.thickness = thickness
+        self.width = width
         self.a_cell = None  # can only be set after the width is determined
         self.conductor_radius = 1  # Revisit
 
@@ -974,6 +978,7 @@ class VirtualWindingWindow:
         self.left_bound = left_bound
         self.right_bound = right_bound
         self.winding_is_set = False
+        self.group_size: int | None = None
 
     def set_winding(self, conductor: Conductor, turns: int, winding_scheme: WindingScheme, alignment: Align | None = None,
                     placing_strategy: ConductorDistribution | None = None, zigzag: bool = False,
@@ -1029,7 +1034,8 @@ class VirtualWindingWindow:
             raise Exception("When winding scheme is FoilHorizontal a foil_horizontal_placing_strategy must be set ")
 
     def set_interleaved_winding(self, conductor1: Conductor, turns1: int, conductor2: Conductor, turns2: int,
-                                winding_scheme: InterleavedWindingScheme):
+                                winding_scheme: InterleavedWindingScheme, foil_vertical_placing_strategy: FoilVerticalDistribution | None = None,
+                                foil_horizontal_placing_strategy: FoilHorizontalDistribution | None = None, group_size: int = 1):
         """Set an interleaved winding to the current virtual winding window. An interleaved winding always contains two conductors.
 
         If a conductor is primary or secondary is determined by the value of the winding number of the conductor. The order of the function parameters
@@ -1045,6 +1051,12 @@ class VirtualWindingWindow:
         :type turns2: int
         :param winding_scheme: Interleaved winding scheme defines the way the conductors are drawn
         :type winding_scheme: InterleavedWindingScheme
+        :param foil_vertical_placing_strategy: foil_vertical_placing_strategy defines the way the rectangular foil vertical conductors are placing in vww
+        :type foil_vertical_placing_strategy: FoilVerticalDistribution, optional
+        :param foil_horizontal_placing_strategy: foil_horizontal_placing_strategy defines the way the rectangular foil Horizontal conductors are placing in vww
+        :type foil_horizontal_placing_strategy: foil_horizontal_placing_strategy, optional
+        :param group_size: Number of conductors drawn
+        :type group_size: int
         """
         self.winding_type = WindingType.TwoInterleaved
         self.winding_scheme = winding_scheme
@@ -1052,6 +1064,11 @@ class VirtualWindingWindow:
         self.turns = [turns1, turns2]
         self.winding_is_set = True
         self.wrap_para = None
+        self.foil_vertical_placing_strategy = foil_vertical_placing_strategy
+        self.foil_horizontal_placing_strategy = foil_horizontal_placing_strategy
+        if group_size < 1:
+            raise ValueError("group_size must be >= 1")
+        self.group_size = group_size
 
     def set_center_tapped_winding(self,
                                   conductor1: Conductor, turns1: int,

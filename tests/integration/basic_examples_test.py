@@ -36,6 +36,10 @@ import femmt.examples.component_study.transformer_component_study
 import femmt.examples.basic_transformer_excitation_sweep
 import femmt.examples.basic_inductor_excitation_sweep
 import femmt.examples.basic_split_windings
+import femmt.examples.basic_planar_transformer
+import femmt.examples.basic_planar_transformer_interleaved
+import femmt.examples.PCB_planar.planar_transformer
+
 
 @pytest.fixture
 def temp_folder():
@@ -370,3 +374,38 @@ def test_basic_transformer_split_windings(temp_folder: pytest.fixture):
         print(f"Running simulation for {num_windings} windings")
         femmt.examples.basic_split_windings.run_transformer_vvw_split_examples(num_windings, onelab_folder=onelab_folder,
                                                                                show_visual_outputs=False, is_test=True)
+
+def test_basic_planar_transformer(temp_folder: pytest.fixture):
+    """
+    Integration test to the basic example file.
+
+    :param temp_folder: temporary folder path and onelab filepath
+    :type temp_folder: pytest.fixture
+    """
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_planar_transformer.basic_example_planar_transformer(onelab_folder=onelab_folder,
+                                                                             show_visual_outputs=False,
+                                                                             is_test=True)
+
+def test_basic_planar_transformer_interleaved(temp_folder: pytest.fixture):
+    """
+    Integration test to the basic example file.
+
+    :param temp_folder: temporary folder path and onelab filepath
+    :type temp_folder: pytest.fixture
+    """
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_planar_transformer_interleaved.basic_example_planar_transformer_interleaved(onelab_folder=onelab_folder,
+                                                                                                     show_visual_outputs=False,
+                                                                                                     is_test=True)
+def test_planar_transformer(temp_folder: pytest.fixture):
+    """
+    Integration test to the basic example file.
+
+    :param temp_folder: temporary folder path and onelab filepath
+    :type temp_folder: pytest.fixture
+    """
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.PCB_planar.planar_transformer.basic_example_planar_transformer_using_vww(onelab_folder=onelab_folder,
+                                                                                            show_visual_outputs=False,
+                                                                                            is_test=True)

@@ -10,6 +10,12 @@ class Verbosity(IntEnum):
     ToConsole = 2  # Outputs to console
     ToFile = 3  # Outputs to file
 
+class VisualizationMode(IntEnum):
+    """How simulation results are shown in Gmsh."""
+
+    Final = 1   # Only final static result
+    Post = 2    # Animate after simulation
+    Stream = 3  # Live results during simulation
 
 class WindingTag(IntEnum):
     """Names of windings."""
@@ -299,7 +305,10 @@ class WrapParaType(IntEnum):
     The foils will have a dynamic thickness. The thickness is chosen in such way that the virtual winding window is
     fully occupied. The thickness parameter when creating the conductor is irrelevant.
     """
-
+    CustomDimensions = 3
+    """
+    The foils will have a given width and thickness. The virtual winding window may not be fully occupied..
+    """
 
 class ConductorMaterial(IntEnum):
     """Sets the conductivity of the conductor."""
