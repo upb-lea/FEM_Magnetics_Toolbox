@@ -3658,7 +3658,8 @@ class MagneticComponent:
                                                       winding_number=winding_number)
 
             if self.windings[winding_number].parallel:
-                raise Exception("Parallel winding are not considered yet for electrostatic simulation")
+                text_file.write(f"NbrCond_{winding_number + 1} = 1;\n")
+                text_file.write(f"AreaCell_{winding_number + 1} = {self.windings[winding_number].a_cell * turns};\n")
             else:
                 text_file.write(f"NbrCond_{winding_number + 1} = {turns};\n")
                 text_file.write(f"AreaCell_{winding_number + 1} = {self.windings[winding_number].a_cell};\n")
@@ -4356,8 +4357,11 @@ class MagneticComponent:
         log_dict["capacitances"] = {"within_winding": {}, "between_windings": {}, "between_turns_core": {}}
 
         for winding_number in range(len(self.windings)):
-            turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
-                                                      winding_number=winding_number)
+            if self.windings[winding_number].parallel:
+                turns = 1
+            else:
+                turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                          winding_number=winding_number)
             winding_name = f"Winding_{winding_number + 1}"
             log_dict["capacitances"]["within_winding"][winding_name] = {}
 
@@ -4380,10 +4384,16 @@ class MagneticComponent:
             for winding2 in range(len(self.windings)):
                 if winding1 == winding2:
                     continue
-                turns1 = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
-                                                           winding_number=winding1)
-                turns2 = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
-                                                           winding_number=winding2)
+                if self.windings[winding1].parallel:
+                    turns1 = 1
+                else:
+                    turns1 = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                               winding_number=winding1)
+                if self.windings[winding2].parallel:
+                    turns2 = 1
+                else:
+                    turns2 = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                               winding_number=winding2)
                 winding2_name = f"Winding_{winding2 + 1}"
                 log_dict["capacitances"]["between_windings"][winding1_name][winding2_name] = {}
 
@@ -4410,9 +4420,11 @@ class MagneticComponent:
         for winding_number in range(len(self.windings)):
             winding_name = f"Winding_{winding_number + 1}"
             log_dict["capacitances"]["between_turns_core"][winding_name] = {}
-
-            turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
-                                                      winding_number=winding_number)
+            if self.windings[winding_number].parallel:
+                turns = 1
+            else:
+                turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                          winding_number=winding_number)
             for turn in range(1, turns + 1):
                 turn_key = f"Turn_{turn}"
                 capacitance_key = f"C_{winding_number + 1}_{turn}_Core"
