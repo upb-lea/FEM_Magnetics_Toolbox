@@ -64,7 +64,7 @@ class MagneticComponent:
         :type component_type: ComponentType
         :param working_directory: Sets the working directory
         :type working_directory: string
-        :param visualization_mode: Sets the visualization mode. it is only used in the time domain simulation.
+        :param visualization_mode: Sets the visualization mode. it is used in the time and frequency domain simulation.
         :type visualization_mode: VisualizationMode
         :param is_gui: Asks at first startup for onelab-path. Distinction between GUI and command line.
             Defaults to 'False' in command-line-mode.
@@ -1301,8 +1301,23 @@ class MagneticComponent:
         # Run simulations as sub clients (non-blocking??)
         getdp_filepath = os.path.join(self.file_data.onelab_folder_path, "getdp")
         if self.simulation_type == SimulationType.FreqDomain:
-            self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver_freq + " -msh " + \
-                                            self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose + to_file_str)
+            if self.visualization_mode == VisualizationMode.Stream:
+                # It opens gmsh and runs live
+                # 1) Start GUI
+                if not gmsh.isInitialized():
+                    gmsh.initialize()
+                if '-nopopup' not in sys.argv:
+                    gmsh.fltk.initialize()
+                gmsh.onelab.run("myGetDP", getdp_filepath + " " + solver_freq + " -msh " + self.file_data.e_m_mesh_file + \
+                                " -solve Analysis -v2" + verbose + to_file_str)
+                gmsh.fltk.run()
+            elif self.visualization_mode == VisualizationMode.Post:
+                gmsh.onelab.run("myGetDP", getdp_filepath + " " + solver_freq + " -msh " + self.file_data.e_m_mesh_file + \
+                                " -solve Analysis -v2" + verbose + to_file_str)
+                gmsh.fltk.run()
+            else:
+                self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver_freq + " -msh " + \
+                                                self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose + to_file_str)
         if self.simulation_type == SimulationType.TimeDomain:
             if self.visualization_mode == VisualizationMode.Stream:
                 # 1) Start GUI
@@ -1430,8 +1445,9 @@ class MagneticComponent:
             self.calculate_and_write_freq_domain_log()  # TODO: reuse center tapped
             self.log_reluctance_and_inductance()
             logging_time = time.time() - start_time
-            if show_fem_simulation_results:
-                self.visualize()
+            if self.visualization_mode == VisualizationMode.Final:
+                if show_fem_simulation_results:
+                    self.visualize()
 
             return generate_electro_magnetic_mesh_time, prepare_simulation_time, real_simulation_time, logging_time
         else:
@@ -1444,8 +1460,9 @@ class MagneticComponent:
             self.simulate()
             self.calculate_and_write_freq_domain_log()  # TODO: reuse center tapped
             self.log_reluctance_and_inductance()
-            if show_fem_simulation_results:
-                self.visualize()
+            if self.visualization_mode == VisualizationMode.Final:
+                if show_fem_simulation_results:
+                    self.visualize()
         logger.info(f"The electromagnetic results are stored here: {self.file_data.e_m_results_log_path}")
 
     def time_domain_simulation(self, current_period_vec: list[list[float]], time_period_vec: list[float], number_of_periods: int,
@@ -3476,6 +3493,10 @@ class MagneticComponent:
             text_file.write("Flag_Freq_Domain = 1;\n")
             text_file.write("Flag_Time_Domain = 0;\n")
             text_file.write("Flag_Static = 0;\n")
+            if self.visualization_mode == VisualizationMode.Stream or self.visualization_mode == VisualizationMode.Post:
+                text_file.write("Flag_Stream_Visualization = 1;\n")
+            else:
+                text_file.write("Flag_Stream_Visualization = 0;\n")
 
         if self.simulation_type == SimulationType.TimeDomain:
             text_file.write("Flag_Time_Domain = 1;\n")
@@ -3658,7 +3679,8 @@ class MagneticComponent:
                                                       winding_number=winding_number)
 
             if self.windings[winding_number].parallel:
-                raise Exception("Parallel winding are not considered yet for electrostatic simulation")
+                text_file.write(f"NbrCond_{winding_number + 1} = 1;\n")
+                text_file.write(f"AreaCell_{winding_number + 1} = {self.windings[winding_number].a_cell * turns};\n")
             else:
                 text_file.write(f"NbrCond_{winding_number + 1} = {turns};\n")
                 text_file.write(f"AreaCell_{winding_number + 1} = {self.windings[winding_number].a_cell};\n")
@@ -4356,8 +4378,11 @@ class MagneticComponent:
         log_dict["capacitances"] = {"within_winding": {}, "between_windings": {}, "between_turns_core": {}}
 
         for winding_number in range(len(self.windings)):
-            turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
-                                                      winding_number=winding_number)
+            if self.windings[winding_number].parallel:
+                turns = 1
+            else:
+                turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                          winding_number=winding_number)
             winding_name = f"Winding_{winding_number + 1}"
             log_dict["capacitances"]["within_winding"][winding_name] = {}
 
@@ -4380,10 +4405,16 @@ class MagneticComponent:
             for winding2 in range(len(self.windings)):
                 if winding1 == winding2:
                     continue
-                turns1 = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
-                                                           winding_number=winding1)
-                turns2 = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
-                                                           winding_number=winding2)
+                if self.windings[winding1].parallel:
+                    turns1 = 1
+                else:
+                    turns1 = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                               winding_number=winding1)
+                if self.windings[winding2].parallel:
+                    turns2 = 1
+                else:
+                    turns2 = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                               winding_number=winding2)
                 winding2_name = f"Winding_{winding2 + 1}"
                 log_dict["capacitances"]["between_windings"][winding1_name][winding2_name] = {}
 
@@ -4410,9 +4441,11 @@ class MagneticComponent:
         for winding_number in range(len(self.windings)):
             winding_name = f"Winding_{winding_number + 1}"
             log_dict["capacitances"]["between_turns_core"][winding_name] = {}
-
-            turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
-                                                      winding_number=winding_number)
+            if self.windings[winding_number].parallel:
+                turns = 1
+            else:
+                turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                          winding_number=winding_number)
             for turn in range(1, turns + 1):
                 turn_key = f"Turn_{turn}"
                 capacitance_key = f"C_{winding_number + 1}_{turn}_Core"

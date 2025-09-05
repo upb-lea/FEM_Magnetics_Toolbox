@@ -11,13 +11,39 @@ PostOperation Get_global UsingPost MagDyn_a {
   //Print[ SoF[ DomainC ], OnGlobal, Format TimeTable,  File > Sprintf("results/SF_iron.dat")] ; // TODO: Complex power
   //Print[ j2F[ Winding~{1} ], OnGlobal, Format TimeTable, File > StrCat[DirResVals, "j2F_1.dat"]] ;
 
-  
-  For n In {1:n_windings}
-      Print[ j2F[ Winding~{n} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResVals, "j2F_%g.dat"], n], LastTimeStepOnly, StoreInVariable $j2F, SendToServer StrCat[po,"j2F[J]"],  Color "LightYellow" ];
-  EndFor
+ If (Flag_Stream_Visualization)
+    // initialize
+    solid_exist = 0;
+    litz_exist  = 0;
 
+    For n In {1:n_windings}
+        If(!Flag_HomogenisedModel~{n})
+            solid_exist = 1; // found a solid conductor
+        Else
+            litz_exist  = 1; // found a litz conductor
+        EndIf
+    EndFor
+  If (solid_exist)
+      For n In {1:n_windings}
+          Print[ j2F[ Winding~{n} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResVals, "j2F_%g.dat"], n], LastTimeStepOnly,
+           StoreInVariable $j2F, SendToServer Sprintf[StrCat[po,"14winding_%g_losses [J]"], n],  Color "LightYellow" ];
+      EndFor
+  EndIf
+  If(litz_exist)
+      For n In {1:n_windings}
+          Print[ j2H[ StrandedWinding~{n} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResVals,"j2H_%g.dat"], n],
+           LastTimeStepOnly, StoreInVariable $j2H, SendToServer Sprintf[StrCat[po,"15winding_%g_losses [J]"], n],  Color "LightYellow" ] ;
+      EndFor
+  EndIf
 
-
+Else
+    For n In {1:n_windings}
+          Print[ j2F[ Winding~{n} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResVals, "j2F_%g.dat"], n], LastTimeStepOnly, StoreInVariable $j2F,
+           SendToServer Sprintf[StrCat[po,"14winding_%g_losses [J]"], n],  Color "LightYellow" ];
+           Print[ j2H[ StrandedWinding~{n} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResVals,"j2H_%g.dat"], n], LastTimeStepOnly,
+            StoreInVariable $j2H, SendToServer Sprintf[StrCat[po,"15winding_%g_losses [J]"], n],  Color "LightYellow" ] ;
+      EndFor
+EndIf
 
   //Print[ j2F[ Winding3 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2F_3.dat"]] ;
   // Stranded
@@ -26,10 +52,6 @@ PostOperation Get_global UsingPost MagDyn_a {
   //Print[ j2H[ DomainS ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"LossesStrandedWindings.dat"] ] ;
   //Print[ j2H[ StrandedWinding~{1} ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_1.dat"] ] ;
   //Print[ j2H[ StrandedWinding1 ], OnGlobal, Format Table];
-
-  For n In {1:n_windings}
-      Print[ j2H[ StrandedWinding~{n} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResVals,"j2H_%g.dat"], n], LastTimeStepOnly, StoreInVariable $j2H, SendToServer StrCat[po,"j2H[J]"],  Color "LightYellow"] ;
-  EndFor
 
 
   //Print[ j2H[ StrandedWinding2 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_2.dat"] ] ;
@@ -75,7 +97,7 @@ PostOperation Get_global UsingPost MagDyn_a {
   //EndFor
    For n In {1:n_windings}
       Print[ Flux_Linkage~{n}[DomainCond~{n}], OnGlobal, Format Table, File > Sprintf[StrCat[DirResVals,"Flux_Linkage_%g.dat"], n], LastTimeStepOnly, StoreInVariable $Flux,
-    SendToServer Sprintf[StrCat[po,"13Phi_%g [Wb]"], n],  Color "LightYellow"];
+    SendToServer Sprintf[StrCat[po,"13Flux_%g [Wb]"], n],  Color "LightYellow"];
       //Print[ Flux_Linkage~{n}[DomainCond~{n}], OnGlobal, Format Table];
   EndFor
 

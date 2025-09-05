@@ -7,6 +7,7 @@ If(Flag_Permeability_From_Data)
   Include "core_materials_temp.pro";
 EndIf
 ExtGmsh = ".pos";
+po = "Output 2D (Magnetic Simulation)/";
 
 
 // ----------------------
