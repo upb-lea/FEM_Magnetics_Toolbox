@@ -25,19 +25,23 @@ PostOperation Get_global UsingPost MagDyn_a {
     EndFor
   If (solid_exist)
       For n In {1:n_windings}
-          Print[ j2F[ Winding~{n} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResVals, "j2F_%g.dat"], n], LastTimeStepOnly, StoreInVariable $j2F, SendToServer Sprintf[StrCat[po,"14j2F_%g [J]"], n],  Color "LightYellow" ];
+          Print[ j2F[ Winding~{n} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResVals, "j2F_%g.dat"], n], LastTimeStepOnly,
+           StoreInVariable $j2F, SendToServer Sprintf[StrCat[po,"14winding_%g_losses [J]"], n],  Color "LightYellow" ];
       EndFor
   EndIf
   If(litz_exist)
       For n In {1:n_windings}
-          Print[ j2H[ StrandedWinding~{n} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResVals,"j2H_%g.dat"], n], LastTimeStepOnly, StoreInVariable $j2H, SendToServer Sprintf[StrCat[po,"15j2H_%g [J]"], n],  Color "LightYellow" ] ;
+          Print[ j2H[ StrandedWinding~{n} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResVals,"j2H_%g.dat"], n],
+           LastTimeStepOnly, StoreInVariable $j2H, SendToServer Sprintf[StrCat[po,"15winding_%g_losses [J]"], n],  Color "LightYellow" ] ;
       EndFor
   EndIf
 
 Else
     For n In {1:n_windings}
-          Print[ j2F[ Winding~{n} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResVals, "j2F_%g.dat"], n], LastTimeStepOnly, StoreInVariable $j2F, SendToServer Sprintf[StrCat[po,"14j2F_%g [J]"], n],  Color "LightYellow" ];
-           Print[ j2H[ StrandedWinding~{n} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResVals,"j2H_%g.dat"], n], LastTimeStepOnly, StoreInVariable $j2H, SendToServer Sprintf[StrCat[po,"15j2H_%g [J]"], n],  Color "LightYellow" ] ;
+          Print[ j2F[ Winding~{n} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResVals, "j2F_%g.dat"], n], LastTimeStepOnly, StoreInVariable $j2F,
+           SendToServer Sprintf[StrCat[po,"14winding_%g_losses [J]"], n],  Color "LightYellow" ];
+           Print[ j2H[ StrandedWinding~{n} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResVals,"j2H_%g.dat"], n], LastTimeStepOnly,
+            StoreInVariable $j2H, SendToServer Sprintf[StrCat[po,"15winding_%g_losses [J]"], n],  Color "LightYellow" ] ;
       EndFor
 EndIf
 
@@ -93,7 +97,7 @@ EndIf
   //EndFor
    For n In {1:n_windings}
       Print[ Flux_Linkage~{n}[DomainCond~{n}], OnGlobal, Format Table, File > Sprintf[StrCat[DirResVals,"Flux_Linkage_%g.dat"], n], LastTimeStepOnly, StoreInVariable $Flux,
-    SendToServer Sprintf[StrCat[po,"13Phi_%g [Wb]"], n],  Color "LightYellow"];
+    SendToServer Sprintf[StrCat[po,"13Flux_%g [Wb]"], n],  Color "LightYellow"];
       //Print[ Flux_Linkage~{n}[DomainCond~{n}], OnGlobal, Format Table];
   EndFor
 
