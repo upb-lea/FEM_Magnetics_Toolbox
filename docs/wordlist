@@ -450,6 +450,8 @@ NbSetpsPerPeriod
 NbSteps
 
 # electrostatic
+capacitive
+pdf
 Kapton
 Capacitances
 capacitances
