@@ -9,8 +9,6 @@ import os
 import warnings
 from scipy.integrate import quad
 import logging
-import re
-
 # Third parry libraries
 import gmsh
 from matplotlib import pyplot as plt
@@ -2636,61 +2634,6 @@ def calc_powerloss_from_MagNet_model_PB(material_name: Material, b_wave: np.ndar
     else:
         logger.warning("Material" + str(material_name.value) + " not supported by MagNet Models.")
         return None
-
-
-def calc_magnetic_flux_density_based_on_simulation_results(path: str) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Calculate the magnetic flux density and volume for every mesh cell.
-
-    :param path: path to "Magb.pos" file
-    :type path: str
-    :returns: magnetic flux density of every mesh cell of core / volume of every mesh cell of core
-    :rtype: np.ndarray, np.ndarray
-    """
-    with open(path, 'r') as file:
-        content = file.read()  # type of content: str
-
-    # find both occurrence of "Magnitude B-Field / T", Elements and Nodes in Magb.pos
-    indexes_B_Field = np.array([m.start() for m in re.finditer('"Magnitude B-Field / T"', content)])
-    indexes_Elements = np.array([m.start() for m in re.finditer('Elements', content)])
-    indexes_Coords = np.array([m.start() for m in re.finditer('Nodes', content)])
-    # filter magnetic flux density out of Magb.pos(data is between the both occurrences of "Magnitude B-Field / T") and put data into list
-    data_B_Field = np.array([float(x) for x in content[indexes_B_Field[0]:indexes_B_Field[1]].split()[11:-3]])
-    data_Elements = np.array([int(x) for x in content[indexes_Elements[0]:indexes_Elements[1]].split()[2:-1]])
-    data_Coords = np.array([float(x) for x in content[indexes_Coords[0]:indexes_Coords[1]].split()[2:-1]])
-    # divide long list into lists for every triangle/mesh-cell
-    chunks_B_Field = [data_B_Field[x:x + 5] for x in range(0, data_B_Field.shape[0], 5)]
-    chunks_Elements = np.array([data_Elements[x:x + 8] for x in range(0, data_Elements.shape[0], 8)])
-    chunks_Coords = np.array([data_Coords[x:x + 4] for x in range(0, data_Coords.shape[0], 4)])
-
-    data_triangle = np.concatenate((chunks_Elements, np.array(chunks_B_Field)), axis=1)
-    Triangle_Core = [[x[0], x[5], x[6], x[7], np.mean(x[10:])] for x in data_triangle if x[3] // 10000 == 12]
-
-    xyz = {}
-    for x in chunks_Coords:
-        xyz[str(x[0])] = np.array([x[1], x[2], x[3]])
-
-    for index, TriangleNode in enumerate(Triangle_Core):
-        xi = xyz[str(TriangleNode[1:4][0])]
-        xj = xyz[str(TriangleNode[1:4][1])]
-        xk = xyz[str(TriangleNode[1:4][2])]
-
-        radius = np.mean([xi[0], xj[0], xk[0]])
-
-        a = np.sqrt(np.dot(xi - xj, xi - xj))
-        b = np.sqrt(np.dot(xi - xk, xi - xk))
-        c = np.sqrt(np.dot(xj - xk, xj - xk))
-
-        s = (a + b + c) / 2
-        dA = np.sqrt(s * (s - a) * (s - b) * (s - c))  # Heron's formula
-
-        volume = 2 * np.pi * radius * dA
-        Triangle_Core[index].append(volume)
-
-    flux = np.array([x[-2] for x in Triangle_Core])
-    volume = np.array([x[-1] for x in Triangle_Core])
-
-    return flux, volume
 
 
 if __name__ == '__main__':

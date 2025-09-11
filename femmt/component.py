@@ -261,7 +261,7 @@ class MagneticComponent:
         :type custom_b_wave: np.ndarray
         :return: dict containing the hysteresis losses
         """
-        flux, volume = ff.calc_magnetic_flux_density_based_on_simulation_results(path=os.path.join(self.file_data.e_m_fields_folder_path, "Magb.pos"))
+        flux, volume = self.calc_magnetic_flux_density_based_on_simulation_results()
 
         # multiply the normalized signal of the magnetic flux density with the peak value of the magnetic flux density
         if b_wave is WaveformType.Sine:
@@ -272,10 +272,10 @@ class MagneticComponent:
         hyst_losses_density = ff.calc_powerloss_from_MagNet_model_PB(material_name=self.core.material.material, b_wave=b_wave,
                                                                      frequency=np.array([self.frequency] * b_wave.shape[0]),
                                                                      temperature=np.array([self.core.material.temperature] * b_wave.shape[0]))
-        power_loss = np.dot(hyst_losses_density, volume)
+        power_loss = float(np.dot(hyst_losses_density, volume))
         return power_loss
 
-    def calc_magnetic_flux_density_based_on_simulation_results(self) -> None:
+    def calc_magnetic_flux_density_based_on_simulation_results(self) -> tuple[np.ndarray, np.ndarray]:
         """Calculate the magnetic flux density and volume for every mesh cell of the core."""
         with open(os.path.join(self.file_data.e_m_fields_folder_path, "Magb.pos"), 'r') as file:
             content = file.read()  # type of content: str
@@ -286,7 +286,9 @@ class MagneticComponent:
         indexes_Coords = np.array([m.start() for m in re.finditer('Nodes', content)])
         # filter magnetic flux density out of Magb.pos(data is between the both occurrences of "Magnitude B-Field / T") and put data into list
         data_B_Field = np.array([float(x) for x in content[indexes_B_Field[0]:indexes_B_Field[1]].split()[11:-3]])
+        # filter elements(ID of triangles and nodes) out of Magb.pos(data is between the both occurrences of "Elements") and put data into list
         data_Elements = np.array([int(x) for x in content[indexes_Elements[0]:indexes_Elements[1]].split()[2:-1]])
+        # filter coordinates of nodes out of Magb.pos(data is between the both occurrences of "Elements") and put data into list
         data_Coords = np.array([float(x) for x in content[indexes_Coords[0]:indexes_Coords[1]].split()[2:-1]])
         # divide long list into lists for every triangle/mesh-cell
         chunks_B_Field = [data_B_Field[x:x + 5] for x in range(0, data_B_Field.shape[0], 5)]
@@ -294,23 +296,29 @@ class MagneticComponent:
         chunks_Coords = np.array([data_Coords[x:x + 4] for x in range(0, data_Coords.shape[0], 4)])
 
         data_triangle = np.concatenate((chunks_Elements, np.array(chunks_B_Field)), axis=1)
+        # rearrange arrays for data that is needed for calculation of mesh cell volume
         Triangle_Core = [[x[0], x[5], x[6], x[7], np.mean(x[10:])] for x in data_triangle if x[3] // 10000 == 12]
+        # x[0] = ID of mesh cell(triangle), x[5] = ID of first node of triangle, x[5] = ID of second node of triangle, x[5] = ID of third node of triangle,
+        # np.mean(x[10:]) = avr. of magnetic flux density of all three nodes
 
-        xyz = np.array([np.array([x[1], x[2], x[3]]) for x in chunks_Coords])
+        xyz = {}
+        for x in chunks_Coords:  # rearrange coordinates of nodes. These are the coordinates from the nodes of the whole mesh.
+            xyz[str(x[0])] = np.array([x[1], x[2], x[3]])  # key of dict is ID of node
 
         for index, TriangleNode in enumerate(Triangle_Core):
-            xi = xyz[int(TriangleNode[1:4][0] - 1), :]
-            xj = xyz[int(TriangleNode[1:4][1] - 1), :]
-            xk = xyz[int(TriangleNode[1:4][2] - 1), :]
+            xi = xyz[str(TriangleNode[1:4][0])]  # first node of triangle (x1, y1, z1)
+            xj = xyz[str(TriangleNode[1:4][1])]  # second node of triangle (x2, y2, z2)
+            xk = xyz[str(TriangleNode[1:4][2])]  # third node of triangle (x3, y3, z3)
 
-            radius = np.mean([xi[0], xj[0], xk[0]])  # radius -> average of x-values
+            radius = np.mean([xi[0], xj[0], xk[0]])  # radius -> average of x-values np.mean(x1, x2, x3)
 
-            a = np.sqrt(np.dot(xi - xj, xi - xj))
-            b = np.sqrt(np.dot(xi - xk, xi - xk))
-            c = np.sqrt(np.dot(xj - xk, xj - xk))
+            a = np.sqrt(np.dot(xi - xj, xi - xj))  # distance between first and second node
+            b = np.sqrt(np.dot(xi - xk, xi - xk))  # distance between first and third node
+            c = np.sqrt(np.dot(xj - xk, xj - xk))  # distance between second and third node
 
-            s = (a + b + c) / 2
-            dA = np.sqrt(s * (s - a) * (s - b) * (s - c))
+            # Heron's formula
+            s = (a + b + c) / 2  # semiperimeter of mesh cell (triangle)
+            dA = np.sqrt(s * (s - a) * (s - b) * (s - c))  # area of mesh cell
 
             volume = 2 * np.pi * radius * dA
 
