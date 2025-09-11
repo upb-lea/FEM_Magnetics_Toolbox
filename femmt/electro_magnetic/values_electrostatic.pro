@@ -1,17 +1,23 @@
 PostOperation Get_global UsingPost EleSta {
   // energy stored in air
-  Print[ energy[Domain], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"Energy_Stored_Component.dat"], LastTimeStepOnly, StoreInVariable $energy_Component];
-  Print[ energy[Air], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"Energy_Stored_Air.dat"], LastTimeStepOnly, StoreInVariable $energy_Air];
-  Print[ energy[Core], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"Energy_Stored_Core.dat"], LastTimeStepOnly, StoreInVariable $energy_Core];
+  Print[ energy[Domain], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"Energy_Stored_Component.dat"], LastTimeStepOnly, StoreInVariable $energy_Component
+  , SendToServer StrCat[po,"10Total energy [J]"], Color "LightYellow"];
+  Print[ energy[Air], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"Energy_Stored_Air.dat"], LastTimeStepOnly, StoreInVariable $energy_Air
+  , SendToServer StrCat[po,"11Energy (Air) [J]"], Color "LightYellow"];
+  Print[ energy[Core], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"Energy_Stored_Core.dat"], LastTimeStepOnly, StoreInVariable $energy_Core
+  , SendToServer StrCat[po,"12Energy (Core) [J]"], Color "LightYellow"];
 //  Print[ energy[Insulation_bobbin], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"Energy_Stored_bobbin.dat"], LastTimeStepOnly, StoreInVariable $energy_bobbin];
 //  Print[ energy[Insulation_cond], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"Energy_Stored_Cond_insulation.dat"], LastTimeStepOnly, StoreInVariable $energy_cond_insulation];
 
   // average voltage of the core
-  Print[ Avg_Voltage_Core[Core], OnGlobal, Format TimeTable, File > StrCat[DirResCirc,"Avg_Core_voltage.dat"], LastTimeStepOnly, StoreInVariable $Avg_Voltage_Core];
+  Print[ Avg_Voltage_Core[Core], OnGlobal, Format TimeTable, File > StrCat[DirResCirc,"Avg_Core_voltage.dat"], LastTimeStepOnly, StoreInVariable $Avg_Voltage_Core
+  , SendToServer StrCat[po,"13Average Voltage on Core[V]"], Color "LightYellow"];
 
   // Charges
-  Print[ Charge[Air], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"charge_Air.dat"], LastTimeStepOnly, StoreInVariable $Charge_Air];
-  Print[ Charge[Core], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"charge_Core.dat"], LastTimeStepOnly, StoreInVariable $Charge_Core];
+  Print[ Charge[Air], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"charge_Air.dat"], LastTimeStepOnly, StoreInVariable $Charge_Air
+  , SendToServer StrCat[po,"14Charge (Air) [C]"], Color "LightYellow"];
+  Print[ Charge[Core], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"charge_Core.dat"], LastTimeStepOnly, StoreInVariable $Charge_Core
+  , SendToServer StrCat[po,"15Charge (Core) [C]"], Color "LightYellow"];
   // voltage and charges on windings
   For n In {1:n_windings}
          Print[ U, OnRegion Winding~{n}, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"U_%g.dat"], n] , LastTimeStepOnly];
@@ -28,9 +34,11 @@ PostOperation Get_global UsingPost EleSta {
     // Print charge for each turn in the winding
     For turn_number In {1:nbturns~{winding_number}}
         Print[ U, OnRegion Turn~{winding_number}~{turn_number}, Format TimeTable,
-               File > Sprintf[StrCat[DirResCirc, "U_%g_%g.dat"], winding_number, turn_number], LastTimeStepOnly];
+               File > Sprintf[StrCat[DirResCirc, "U_%g_%g.dat"], winding_number, turn_number], LastTimeStepOnly,
+               SendToServer Sprintf[StrCat[po,"16U (Winding_%g_Turn_%g) [V]"], winding_number, turn_number],  Color "LightYellow"];
         Print[ Q, OnRegion Turn~{winding_number}~{turn_number}, Format TimeTable,
-               File > Sprintf[StrCat[DirResCirc, "Q_%g_%g.dat"], winding_number, turn_number], LastTimeStepOnly];
+               File > Sprintf[StrCat[DirResCirc, "Q_%g_%g.dat"], winding_number, turn_number], LastTimeStepOnly,
+               SendToServer Sprintf[StrCat[po,"17Q (Winding_%g_Turn_%g) [C]"], winding_number, turn_number],  Color "LightYellow"];
     EndFor
  EndFor
 

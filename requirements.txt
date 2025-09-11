@@ -14,3 +14,4 @@ optuna
 plotly
 mag-net-hub
 tqdm
+schemdraw

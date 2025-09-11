@@ -1317,7 +1317,7 @@ class MagneticComponent:
                 gmsh.fltk.run()
             else:
                 self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver_freq + " -msh " + \
-                                                self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose + to_file_str)
+                                                self.file_data.e_m_mesh_file + " -solve Analysis -v2" + verbose + to_file_str)
         if self.simulation_type == SimulationType.TimeDomain:
             if self.visualization_mode == VisualizationMode.Stream:
                 # 1) Start GUI
@@ -1331,12 +1331,23 @@ class MagneticComponent:
             else:
                 # the two commands work but some changes should be done in fields_time.pro
                 self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver_time + " -msh " + self.file_data.e_m_mesh_file + \
-                                                " -solve Analysis -pos Map_local  " + verbose + to_file_str)
-            # self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file +
-            # " -solve Analysis -v2 " + verbose) # freeing solutions
+                                                " -solve Analysis -pos Map_local " + verbose + to_file_str)
         if self.simulation_type == SimulationType.ElectroStatic:
-            self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver_electrostatic + " -msh " + \
-                                            self.file_data.e_m_mesh_file + " -solve EleSta_v -v2 " + verbose + to_file_str)
+            if self.visualization_mode == VisualizationMode.Stream:
+                if not gmsh.isInitialized():
+                    gmsh.initialize()
+                if '-nopopup' not in sys.argv:
+                    gmsh.fltk.initialize()
+                gmsh.onelab.run("myGetDP", getdp_filepath + " " + solver_electrostatic + " -msh " + \
+                                self.file_data.e_m_mesh_file + " -solve EleSta_v -pos Get_global" + verbose + to_file_str)
+                gmsh.fltk.run()
+            elif self.visualization_mode == VisualizationMode.Post:
+                gmsh.onelab.run("myGetDP", getdp_filepath + " " + solver_electrostatic + " -msh " + \
+                                self.file_data.e_m_mesh_file + " -solve EleSta_v -v2" + verbose + to_file_str)
+                gmsh.fltk.run()
+            else:
+                self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver_electrostatic + " -msh " + \
+                                                self.file_data.e_m_mesh_file + " -solve EleSta_v -v2" + verbose + to_file_str)
 
     def write_simulation_parameters_to_pro_files(self):
         """
@@ -1594,9 +1605,9 @@ class MagneticComponent:
                 ff.json_to_excel(json_file_path, output_excel_path)
                 logger.info(f"Data has been successfully written to {output_excel_path}")
             logging_time = time.time() - start_time
-
-            if show_fem_simulation_results:
-                self.visualize()
+            if self.visualization_mode == VisualizationMode.Final:
+                if show_fem_simulation_results:
+                    self.visualize()
 
             return generate_electro_magnetic_mesh_time, prepare_simulation_time, real_simulation_time, logging_time
         else:
@@ -1613,8 +1624,9 @@ class MagneticComponent:
                 ff.json_to_excel(json_file_path, output_excel_path)
                 logger.info(f"Data has been successfully written to {output_excel_path}")
 
-            if show_fem_simulation_results:
-                self.visualize()
+            if self.visualization_mode == VisualizationMode.Final:
+                if show_fem_simulation_results:
+                    self.visualize()
 
         logger.info(f"The electrostatic results are stored here: {self.file_data.electrostatic_results_log_path}")
 
@@ -2957,8 +2969,9 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing --- Capacitance extraction---
-    def get_capacitance_of_inductor_component(self, freq_for_mesh: float = 0.0, show_visual_outputs: bool = False, plot_interpolation: bool = False,
-                                              show_fem_simulation_results: bool = False, benchmark: bool = False, save_to_excel: bool = False):
+    def get_capacitance_of_inductor_component(self, freq_for_mesh: float = 0.0, show_visual_outputs: bool = False, show_equivalent_circuit: bool = False,
+                                              plot_interpolation: bool = False, show_fem_simulation_results: bool = False, benchmark: bool = False,
+                                              save_to_excel: bool = False):
         """
         Needed for finding parasitic capacitance of an inductor. A represent the first turn, B represents the last turn. e represents the core.
 
@@ -2978,6 +2991,8 @@ class MagneticComponent:
         :type freq_for_mesh: float = 0.0
         :param show_visual_outputs: show the electrostatic model before simulation
         :type show_visual_outputs: bool, optional
+        :param show_equivalent_circuit: show the equivalent circuit of inductor
+        :type show_equivalent_circuit: bool
         :param plot_interpolation: if True, plot the interpolation between the provided values for the material.
         :type plot_interpolation: bool
         :param show_fem_simulation_results: if True, show the simulation results after the simulation has finished
@@ -3030,6 +3045,14 @@ class MagneticComponent:
         c_ab, c_ae, c_be = c_vec
         c_ab_stray = c_ab + (c_ae * c_be) / (c_ae + c_be)
         logger.info(f"→ C_AB (incl. parasitic): {c_ab_stray:.4e} F")
+
+        if show_equivalent_circuit:
+            d = ff.draw_capacitive_equivalent_circuit_of_inductor(c_vec)
+            d.draw()
+            os.makedirs(self.file_data.e_m_values_folder_path, exist_ok=True)
+            figure_path = os.path.join(self.file_data.e_m_values_folder_path, "capacitive_equivalent_circuit_of_inductor.pdf")
+            d.save(figure_path)
+            logger.info(f"Equivalent circuit saved to {figure_path}")
 
         return c_vec
 
@@ -3098,9 +3121,9 @@ class MagneticComponent:
 
     def get_capacitance_of_transformer(self, freq_for_mesh: float = 0.0, c_meas_open: float | None = None,
                                        c_meas_short: float | None = None, measured_capacitances: tuple | list | None = None,
-                                       flip_the_sec_terminal: bool = False, show_visual_outputs: bool = False, plot_interpolation: bool = False,
-                                       show_fem_simulation_results: bool = False, benchmark: bool = False, save_to_excel: bool = False,
-                                       show_plot_comparison: bool = True):
+                                       flip_the_sec_terminal: bool = False, show_visual_outputs: bool = False, show_equivalent_circuit: bool = False,
+                                       plot_interpolation: bool = False, show_fem_simulation_results: bool = False, benchmark: bool = False,
+                                       save_to_excel: bool = False, show_plot_comparison: bool = True):
         r"""
         Get 10 parasitic capacitance of a transformer.
 
@@ -3132,6 +3155,8 @@ class MagneticComponent:
         :type flip_the_sec_terminal: bool
         :param show_visual_outputs: show the electrostatic model before simulation
         :type show_visual_outputs: bool, optional
+        :param show_equivalent_circuit: show the equivalent circuit of transformer
+        :type show_equivalent_circuit: bool
         :param plot_interpolation: if True, plot the interpolation between the provided values for the material.
         :type plot_interpolation: bool
         :param show_fem_simulation_results: if True, show the simulation results after the simulation has finished
@@ -3201,6 +3226,15 @@ class MagneticComponent:
         # comparison
         if show_plot_comparison and (c_meas_open is not None or c_meas_short is not None):
             ff.plot_open_and_short_comparison(c_sim_open, c_sim_short, c_meas_open, c_meas_short)
+
+        # show equivalent circuit
+        if show_equivalent_circuit:
+            d = ff.draw_capacitive_equivalent_circuit_of_transformer(c_vec)
+            d.draw()
+            os.makedirs(self.file_data.e_m_values_folder_path, exist_ok=True)
+            figure_path = os.path.join(self.file_data.e_m_values_folder_path, "capacitive_equivalent_circuit_of_transformer.pdf")
+            d.save(figure_path)
+            logger.info(f"Equivalent circuit saved to {figure_path}")
 
         return c_vec
 
@@ -3665,6 +3699,11 @@ class MagneticComponent:
             text_file.write("Number_of_Windings = {};\n".format(len(self.windings)))
 
         text_file.write("Flag_Static = 1;\n")
+
+        if self.visualization_mode == VisualizationMode.Stream or self.visualization_mode == VisualizationMode.Post:
+            text_file.write("Flag_Stream_Visualization = 1;\n")
+        else:
+            text_file.write("Flag_Stream_Visualization = 0;\n")
 
         # Airgap number
         text_file.write("n_airgaps = {};\n".format(len(self.air_gaps.midpoints)))
