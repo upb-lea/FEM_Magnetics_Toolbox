@@ -219,7 +219,6 @@ class MagneticComponent:
         self.onelab_client = onelab.client(__file__)
         self.simulation_name = simulation_name
 
-
     def calc_hystersis_losses_with_MagNet_model_PB_based_on_reluctance(self, peak_magnetizing_current: float = 1, b_wave: WaveformType = WaveformType.Sine,
                                                                        custom_b_wave: np.ndarray = None) -> float:
         """
