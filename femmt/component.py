@@ -255,7 +255,7 @@ class MagneticComponent:
         """
         Calculate the hysteresis losses with the MagNet model of Paderborn University based on FEM-simulation results.
 
-        - uses the local magnetic flux densitiy in each mesh cell
+        - uses the local magnetic flux density in each mesh cell
         - arbitrary waveforms are possible. But FEM simulation assumes a sinusoidal waveform and the peak of the magnetic flux density result of each mesh cell
           is used to linearly scale the arbitrary waveform to its max. value
         - for each mesh cell, the magnet model is applied
