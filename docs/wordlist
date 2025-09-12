@@ -448,6 +448,8 @@ sublist
 timemax
 NbSetpsPerPeriod
 NbSteps
+WaveformType
+powerloss
 
 # electrostatic
 capacitive

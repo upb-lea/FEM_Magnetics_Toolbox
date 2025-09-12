@@ -8,14 +8,16 @@ import os
 import warnings
 from scipy.integrate import quad
 import logging
-
 # Third parry libraries
 import gmsh
 from matplotlib import pyplot as plt
 import numpy.typing as npt
 import numpy as np
+from materialdatabase.meta.data_enums import Material
+import magnethub as mh
 import schemdraw
 import schemdraw.elements as elm
+
 
 # Local libraries
 from femmt.constants import *
@@ -2763,6 +2765,29 @@ def compare_excel_files(femmt_excel_path: str, femm_excel_path: str, comparison_
                 comparison_df.to_excel(writer, sheet_name=f"{sheet_name}_Comparison", index=False)
                 worksheet = writer.sheets[f"{sheet_name}_Comparison"]
                 worksheet.set_column('A:Z', 35)
+
+
+def calc_power_loss_from_MagNet_model_PB(material_name: Material, b_wave: np.ndarray, frequency: float, temperature: float) -> float | None:
+    """
+    Calculate the power loss density with the help of the trained neural network of the MagNet Challenge 2023.
+
+    :param material_name: Name of the material
+    :type material_name: Material
+    :param b_wave: array containing the shape of the magnetic flux density in time domain in T
+    :type b_wave: np.ndarray
+    :param frequency: value of the frequency in Hz
+    :type frequency: float
+    :param temperature: value of the temperature in °C
+    :type temperature: float
+    :return: powerloss in W/m^3
+    """
+    if material_name.value in ["3C90", "3C92", "3C94", "3C95", "3E6", "3F4", "77", "78", "79", "ML95S", "T37", "N27", "N30", "N49", "N87"]:
+        mdl = mh.loss.LossModel(material=material_name.value, team="paderborn")
+        power_loss_density, h_wave = mdl(b_wave, frequency, temperature)
+        return power_loss_density
+    else:
+        logger.warning("Material" + str(material_name.value) + " not supported by MagNet Models.")
+        return None
 
 
 if __name__ == '__main__':
