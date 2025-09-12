@@ -452,6 +452,8 @@ WaveformType
 powerloss
 
 # electrostatic
+capacitive
+pdf
 Kapton
 Capacitances
 capacitances

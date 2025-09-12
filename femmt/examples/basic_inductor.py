@@ -185,7 +185,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # example_thermal_simulation(show_visual_outputs, flag_insulation=True)
 
     # Extract the capacitance of inductor component
-#     geo.get_capacitance_of_inductor_component(show_fem_simulation_results=False)
+    # geo.get_capacitance_of_inductor_component(show_equivalent_circuit=True)
     # geo.get_inductor_stray_capacitance(show_visual_outputs=True)
 
 

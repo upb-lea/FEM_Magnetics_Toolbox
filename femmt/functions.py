@@ -1,6 +1,5 @@
 """Contains different functions, used by the whole FEMMT functions."""
 # Python standard libraries
-# Python standard libraries
 import json
 import pkg_resources
 import subprocess
@@ -16,6 +15,9 @@ import numpy.typing as npt
 import numpy as np
 from materialdatabase.meta.data_enums import Material
 import magnethub as mh
+import schemdraw
+import schemdraw.elements as elm
+
 
 # Local libraries
 from femmt.constants import *
@@ -2431,6 +2433,158 @@ def plot_open_and_short_comparison(c_sim_open: float, c_sim_short: float, c_meas
     plt.tight_layout()
     plt.show()
 
+def draw_capacitive_equivalent_circuit_of_inductor(c_vec: np.ndarray) -> schemdraw.Drawing:
+    """
+    Draw the 3-capacitance equivalent circuit of an inductor based on computed FEM results.
+
+    :param c_vec : array of 3 capacitance [C1 ... C3] in Farads, order consistent with internal numbering.
+    :type c_vec: byte array
+    """
+    # create drawing
+    d = schemdraw.Drawing(unit=2.0)
+
+    # draw terminal A
+    d += elm.Dot().label('A', loc='left')
+    d += elm.Line().length(2)
+    d += elm.Dot()
+    top_node_c1 = d.here
+    # draw C1
+    d += elm.Capacitor(c_vec=c_vec[0]).down().length(4).label(f'C1={c_vec[0]:.2e} F', loc='bottom', ofst=0.2)
+    d += elm.Dot()
+    bot_node_c1 = d.here
+    # draw terminal B
+    d += elm.Line().left().length(2)
+    d += elm.Dot().label('B', loc='left')
+    # draw C3 from B terminal
+    d += elm.Line().down().length(0).at(bot_node_c1)
+    d += elm.Capacitor().down().label(f'C3={c_vec[2]:.2e} F', loc='bottom', ofst=0.2)
+    d += elm.Dot()
+    bot_node_c3 = d.here
+    d += elm.Line().left().length(2)
+    d += elm.Dot().label('E', loc='left')
+
+    # now draw line form top node of c1
+    d += elm.Line().right().length(5).at(top_node_c1)
+    d += elm.Dot()
+    top_node_c3 = d.here
+    # draw C2
+    d += elm.Line().down().length(2)
+    d += elm.Capacitor().down().label(f'C2={c_vec[1]:.2e} F', loc='bottom', ofst=0.2)
+    d += elm.Line().down().length(2)
+    d += elm.Line().left().length(5)
+
+    # draw lines to complete the circuit
+    # A complete
+    d += elm.Line().right().length(5).at(top_node_c3)
+    d += elm.Dot()
+    d += elm.Dot().label('A', loc='right')
+    # B complete
+    d += elm.Line().right().length(10).at(bot_node_c1)
+    d += elm.Dot()
+    d += elm.Dot().label('B', loc='right')
+    # E complete
+    d += elm.Line().right().length(10).at(bot_node_c3)
+    d += elm.Dot()
+    d += elm.Dot().label('E', loc='right')
+
+    return d
+
+
+def draw_capacitive_equivalent_circuit_of_transformer(c_vec: np.ndarray) -> schemdraw.Drawing:
+    """
+    Draw the 10-capacitance equivalent circuit of a transformer based on computed FEM results.
+
+    :param c_vec : array of 10 capacitance [C1 ... C10] in Farads, order consistent with internal numbering.
+    :type c_vec: byte array
+    """
+    # Create drawing
+    d = schemdraw.Drawing(unit=2.0)
+
+    # draw terminal A
+    d += elm.Dot().label('A', loc='left')
+    d += elm.Line().length(2)
+    d += elm.Dot()
+    top_node_c7 = d.here
+    d += elm.Line().length(4)
+    d += elm.Dot()
+    top_node_c1 = d.here
+    # draw C1 and label
+    d += elm.Capacitor(c_vec=c_vec[0]).down().length(4).label(f'C1={c_vec[0]:.2e} F', loc='top', ofst=0.2)
+    d += elm.Dot()
+    # need for C8
+    bot_node_c1 = d.here
+    # draw terminal B
+    d += elm.Line().left().length(6)
+    d += elm.Dot().label('B', loc='left')
+    d += elm.Line().right().length(3).at(top_node_c7)
+    d += elm.Line().down().length(5).at(top_node_c7)
+    d += elm.Capacitor().down().label(f'C7={c_vec[6]:.2e} F', loc='bottom', ofst=0.2)
+    d += elm.Dot()
+    d += elm.Line().left().length(2)
+    d += elm.Dot().label('E', loc='left')
+    # draw C8 from point bot_node_c1
+    d += elm.Line().down().length(1).at(bot_node_c1)
+    d += elm.Capacitor().label(f'C8={c_vec[7]:.2e} F', loc='bottom', ofst=0.2)
+    # draw line to E (goes to left)
+    d += elm.Dot()
+    d += elm.Line().left().length(5)
+
+    # ----  draw capacitor path (A to external) ----
+    d += elm.Line().right().length(4).at(top_node_c1)  # extend from A to right
+    d += elm.Capacitor().right().label(f'C4={c_vec[3]:.2e} F', loc='bottom', ofst=0.2)
+    d += elm.Line().right().length(4)
+    d += elm.Dot()
+    top_node_c2 = d.here
+
+    # ----  draw capacitor path (B to external) C3 ----
+    d += elm.Line().right().length(4).at(bot_node_c1)
+    d += elm.Capacitor().right().label(f'C3={c_vec[2]:.2e} F')
+    d += elm.Line().right().length(4)
+    d += elm.Dot()
+
+    # --- draw line with an angle from top point of C1 for drawing C6
+    d += elm.Line().theta(-21.6).length(2).at(top_node_c1)  # extend from A to right
+    d += elm.Capacitor().label(f'C6={c_vec[5]:.2e} F', loc='bottom', ofst=0.35)
+    d += elm.Line().length(6.7)
+
+    # --- draw line with an angle from bot point of C1 for drawing C5
+    d += elm.Line().theta(21.6).length(7).at(bot_node_c1)  # extend from A to right
+    d += elm.Capacitor().label(f'C5={c_vec[4]:.2e} F', loc='bottom', ofst=0.35)
+    d += elm.Line().length(1.7)
+
+    # draw c2 form top node c2
+    d += elm.Capacitor().down().length(4).at(top_node_c2).label(
+        f'C2={c_vec[1]:.2e} F', loc='bottom', ofst=0.35)
+    d += elm.Dot()
+    bot_node_c2 = d.here
+
+    # draw C8 from bot_node_c2
+    d += elm.Line().down().length(1).at(bot_node_c2)
+    d += elm.Capacitor().label(f'C10={c_vec[9]:.2e} F')
+    d += elm.Dot()
+    d += elm.Line().left().length(10)
+
+    # draw lines from top_node_C2 and bot_node_c2
+    d += elm.Line().length(4).right().at(top_node_c2)
+    d += elm.Dot()
+    top_node_c9 = d.here
+    d += elm.Line().length(6).right().at(top_node_c2)
+    d += elm.Dot()
+    d += elm.Dot().label('C', loc='right')
+    d += elm.Line().length(6).right().at(bot_node_c2)
+    d += elm.Dot()
+    d += elm.Dot().label('D', loc='right')
+
+    # draw C9
+    d += elm.Line().down().length(5).at(top_node_c9)
+    d += elm.Capacitor().down().label(f'C9={c_vec[8]:.2e} F')
+    d += elm.Dot()
+    bot_node_c9 = d.here
+    d += elm.Line().left().length(4)
+    d += elm.Line().right().length(2).at(bot_node_c9)
+    d += elm.Dot().label('E', loc='right')
+
+    return d
 
 def close_excel_file_if_open(filepath):
     """
