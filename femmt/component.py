@@ -246,14 +246,19 @@ class MagneticComponent:
         elif b_wave is WaveformType.Custom:
             b_wave = custom_b_wave * b_field_peak
 
-        power_loss = ff.calc_powerloss_from_MagNet_model_PB(material_name=self.core.material.material, b_wave=b_wave, frequency=self.frequency,
-                                                            temperature=self.core.material.temperature) * self.calculate_core_volume()
+        power_loss = ff.calc_power_loss_from_MagNet_model_PB(material_name=self.core.material.material, b_wave=b_wave, frequency=self.frequency,
+                                                             temperature=self.core.material.temperature) * self.calculate_core_volume()
         return power_loss
 
     def calc_hystersis_losses_with_MagNet_model_PB_based_on_mesh_results(self, b_wave: WaveformType = WaveformType.Sine,
                                                                          custom_b_wave: np.ndarray = None) -> float:
         """
         Calculate the hysteresis losses with the MagNet model of Paderborn University based on FEM-simulation results.
+
+        - uses the local magnetic flux densitiy in each mesh cell
+        - arbitrary waveforms are possible. But FEM simulation assumes a sinusoidal waveform and the peak of the magnetic flux density result of each mesh cell
+          is used to linearly scale the arbitrary waveform to its max. value
+        - for each mesh cell, the magnet model is applied
 
         :param b_wave: type of the waveform of the magnetic flux density/magnetizing current
         :type b_wave: WaveformType
@@ -269,9 +274,9 @@ class MagneticComponent:
         elif b_wave is WaveformType.Custom:
             b_wave = np.array([custom_b_wave * b for b in flux])
 
-        hyst_losses_density = ff.calc_powerloss_from_MagNet_model_PB(material_name=self.core.material.material, b_wave=b_wave,
-                                                                     frequency=np.array([self.frequency] * b_wave.shape[0]),
-                                                                     temperature=np.array([self.core.material.temperature] * b_wave.shape[0]))
+        hyst_losses_density = ff.calc_power_loss_from_MagNet_model_PB(material_name=self.core.material.material, b_wave=b_wave,
+                                                                      frequency=np.array([self.frequency] * b_wave.shape[0]),
+                                                                      temperature=np.array([self.core.material.temperature] * b_wave.shape[0]))
         power_loss = float(np.dot(hyst_losses_density, volume))
         return power_loss
 
