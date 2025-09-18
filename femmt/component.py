@@ -1432,7 +1432,7 @@ class MagneticComponent:
                 gmsh.fltk.run()
             else:
                 self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver_freq + " -msh " + \
-                                                self.file_data.e_m_mesh_file + " -solve Analysis -v2" + verbose + to_file_str)
+                                                self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose + to_file_str)
         if self.simulation_type == SimulationType.TimeDomain:
             if self.visualization_mode == VisualizationMode.Stream:
                 # 1) Start GUI
