@@ -1,6 +1,7 @@
 """Enumeration for FEMMT."""
 from enum import IntEnum, Enum
 
+
 class Verbosity(IntEnum):
     """State of verbosity."""
 
@@ -10,12 +11,14 @@ class Verbosity(IntEnum):
     ToConsole = 2  # Outputs to console
     ToFile = 3  # Outputs to file
 
+
 class VisualizationMode(IntEnum):
     """How simulation results are shown in Gmsh."""
 
     Final = 1   # Only final static result
     Post = 2    # Animate after simulation
     Stream = 3  # Live results during simulation
+
 
 class WindingTag(IntEnum):
     """Names of windings."""
@@ -62,6 +65,7 @@ class ComponentType(IntEnum):
     Transformer = 2
     IntegratedTransformer = 3
 
+
 class SimulationType(IntEnum):
     """Sets the simulation type. The static is just to show the fields."""
 
@@ -69,11 +73,13 @@ class SimulationType(IntEnum):
     TimeDomain = 2
     ElectroStatic = 3
 
+
 class CoreType(IntEnum):
     """Sets the core type for the whole simulation. Needs to be given to the MagneticComponent on creation."""
 
     Single = 1  # one axisymmetric core
     Stacked = 2  # one and a half cores
+
 
 class AirGapMethod(IntEnum):
     """Sets the method how the air gap position (vertical) is set.
@@ -190,6 +196,7 @@ class ConductorArrangement(IntEnum):
     turns of the previous line. First drawn in y-direction then x-direction.
     """
 
+
 class Align(IntEnum):
     """Specifies the distribution direction for conductors when starting from the center. This can be done for having single windings in vww."""
 
@@ -201,6 +208,7 @@ class Align(IntEnum):
 
     CenterOnHorizontalAxis = 3
     """Conductors are centered across the middle line of the horizontal axis."""
+
 
 class ConductorDistribution(IntEnum):
     """Defines specific strategies for placing conductors starting from the peripheral (edges) of the virtual winding window."""
@@ -229,6 +237,7 @@ class ConductorDistribution(IntEnum):
     HorizontalLeftward_VerticalDownward = 8
     """Places conductors horizontally leftward first, then moves vertically downward for the next set with consistent direction."""
 
+
 class FoilVerticalDistribution(IntEnum):
     """Defines specific strategies for placing rectangular foil vertical conductors starting from the peripheral (edges) of the virtual winding window."""
 
@@ -238,6 +247,7 @@ class FoilVerticalDistribution(IntEnum):
     HorizontalLeftward = 2
     """Moves horizontally leftward for the next set with consistent direction."""
 
+
 class FoilHorizontalDistribution(IntEnum):
     """Defines specific strategies for placing rectangular foil horizontal conductors starting from the peripheral (edges) of the virtual winding window."""
 
@@ -246,6 +256,7 @@ class FoilHorizontalDistribution(IntEnum):
 
     VerticalDownward = 2
     """Moves vertically downward for the next set with consistent direction."""
+
 
 class CenterTappedInterleavingType(IntEnum):
     """Contains different interleaving types for the center tapped transformer."""
@@ -310,6 +321,7 @@ class WrapParaType(IntEnum):
     The foils will have a given width and thickness. The virtual winding window may not be fully occupied..
     """
 
+
 class ConductorMaterial(IntEnum):
     """Sets the conductivity of the conductor."""
 
@@ -346,3 +358,10 @@ class CoreMaterialType(str, Enum):
 
     Linear = "linear"
     Imported = "imported"
+
+
+class WaveformType(str, Enum):
+    """Types of waveforms."""
+
+    Sine = "sine"
+    Custom = "custom"

@@ -448,8 +448,12 @@ sublist
 timemax
 NbSetpsPerPeriod
 NbSteps
+WaveformType
+powerloss
 
 # electrostatic
+capacitive
+pdf
 Kapton
 Capacitances
 capacitances

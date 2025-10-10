@@ -37,7 +37,7 @@ def basic_example_inductor_electrostatic(onelab_folder: str = None, show_visual_
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.ElectroStatic, component_type=fmt.ComponentType.Inductor,
-                                working_directory=working_directory, is_gui=is_test)
+                                working_directory=working_directory, is_gui=is_test, visualization_mode=fmt.VisualizationMode.Final)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
     if onelab_folder is not None:
