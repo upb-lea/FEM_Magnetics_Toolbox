@@ -782,11 +782,13 @@ class InductorOptimization:
             """
             files_in_folder = [f for f in os.listdir(fem_results_folder_path) if os.path.isfile(os.path.join(fem_results_folder_path, f))]
 
+            reluctance_df_copy = reluctance_df.copy()
+
             # add new columns to the dataframe, init values with None
-            reluctance_df['fem_inductance'] = None
-            reluctance_df['fem_p_loss_winding'] = None
-            reluctance_df['fem_eddy_core'] = None
-            reluctance_df['fem_core'] = None
+            reluctance_df_copy['fem_inductance'] = None
+            reluctance_df_copy['fem_p_loss_winding'] = None
+            reluctance_df_copy['fem_eddy_core'] = None
+            reluctance_df_copy['fem_core'] = None
 
             for file in files_in_folder:
                 with open(os.path.join(fem_results_folder_path, file), 'r') as log_file:
@@ -795,16 +797,17 @@ class InductorOptimization:
                 index = int(file.replace("case_", "").replace(".json", ""))
 
                 # only write FEM simulation log results to df in case of reluctance number simulation is already present there
-                if index in reluctance_df["number"]:
-                    reluctance_df.at[index, 'fem_inductance'] = scanned_log_dict['single_sweeps'][0]['winding1']['flux_over_current'][0]
-                    reluctance_df.at[index, 'fem_p_loss_winding'] = scanned_log_dict['total_losses']['winding1']['total']
-                    reluctance_df.at[index, 'fem_eddy_core'] = scanned_log_dict['total_losses']['eddy_core']
-                    reluctance_df.at[index, 'fem_core'] = scanned_log_dict['total_losses']['core']
+                if index in reluctance_df_copy["number"]:
+                    reluctance_df_copy.at[index, 'fem_inductance'] = scanned_log_dict['single_sweeps'][0]['winding1']['flux_over_current'][0]
+                    reluctance_df_copy.at[index, 'fem_p_loss_winding'] = scanned_log_dict['total_losses']['winding1']['total']
+                    reluctance_df_copy.at[index, 'fem_eddy_core'] = scanned_log_dict['total_losses']['eddy_core']
+                    reluctance_df_copy.at[index, 'fem_core'] = scanned_log_dict['total_losses']['core']
 
             # final loss calculation
-            reluctance_df["combined_losses"] = reluctance_df["fem_eddy_core"] + reluctance_df["fem_p_loss_winding"] + reluctance_df["user_attrs_p_hyst"]
+            reluctance_df_copy["combined_losses"] = (reluctance_df_copy["fem_eddy_core"] + reluctance_df_copy["fem_p_loss_winding"] + \
+                                                     reluctance_df_copy["user_attrs_p_hyst"])
 
-            return reluctance_df
+            return reluctance_df_copy
 
         @staticmethod
         def fem_vs_reluctance_pareto(df: pd.DataFrame) -> None:
