@@ -54,25 +54,67 @@ PostOperation Map_local UsingPost MagDyn_a {
   //Print[ ir_norm, OnElementsOf Region[{Domain}], File StrCat[DirResFields, "ir_norm", ExtGmsh], LastTimeStepOnly ] ;
 
   // Ohmic Loss
-  If(Flag_show_standard_fields)
-    //Print[ j2F, OnElementsOf Region[{DomainC}], Name "Solid wire and core eddy current losses / W", File StrCat[DirResFields, "j2F", ExtGmsh], LastTimeStepOnly ] ;
-    Print[ j2F_density, OnElementsOf Region[{DomainC}], Name "Solid wire and core eddy current loss density / W/m^3", File StrCat[DirResFields, "j2F_density", ExtGmsh], LastTimeStepOnly ] ;
-  EndIf
-  If(Flag_show_standard_fields)
-    //Print[ j2H, OnElementsOf DomainS, Name "Litz wire losses / W" , File StrCat[DirResFields,"jH",ExtGmsh] ] ;
-    Print[ j2H_density, OnElementsOf DomainS, Name "Litz wire loss density / W/m^3", File StrCat[DirResFields,"jH_density",ExtGmsh] ] ;
-  EndIf
-  //Print[ j2Hprox,   OnElementsOf DomainS, File StrCat[DirResFields,"jHprox",ExtGmsh] ] ;
-  //Print[ j2Hskin,   OnElementsOf DomainS, File StrCat[DirResFields,"jHskin",ExtGmsh] ] ;
+  // This code is written to avoid the duplication of the printed losses, and also to avoid printing both losses where do we have just solid losses
+  // This is just in stream visualization
+  If (Flag_Stream_Visualization)
+    // initialize
+    solid_exist = 0;
+    litz_exist  = 0;
 
+    For n In {1:n_windings}
+        If(!Flag_HomogenisedModel~{n})
+            solid_exist = 1; // found a solid conductor
+        Else
+            litz_exist  = 1; // found a litz conductor
+        EndIf
+    EndFor
+
+    If(Flag_show_standard_fields)
+        If(solid_exist)
+            Print[ j2F_density, OnElementsOf Region[{DomainC}], Name "Solid wire and core eddy current loss density / W/m^3",
+                   File StrCat[DirResFields, "j2F_density", ExtGmsh], LastTimeStepOnly] ;
+        EndIf
+        If(litz_exist)
+            Print[ j2H_density, OnElementsOf DomainS, Name "Litz wire loss density / W/m^3", File StrCat[DirResFields,"j2H_density",ExtGmsh], LastTimeStepOnly] ;
+        EndIf
+    EndIf
+ Else
+    If(Flag_show_standard_fields)
+         Print[ j2F_density, OnElementsOf Region[{DomainC}], Name "Solid wire and core eddy current loss density / W/m^3", File StrCat[DirResFields, "j2F_density", ExtGmsh]] ;
+         Print[ j2H_density, OnElementsOf DomainS, Name "Litz wire loss density / W/m^3", File StrCat[DirResFields,"j2H_density",ExtGmsh]] ;
+    EndIf
+ EndIf
 
   // Settings
+  /*
   Echo[ Str["View[PostProcessing.NbViews-1].Light=0;
              View[PostProcessing.NbViews-1].LineWidth = 2;
              View[PostProcessing.NbViews-1].RangeType=3;
              View[PostProcessing.NbViews-1].IntervalsType=1;
+             View[PostProcessing.NbViews-1].ScaleType=1;
              View[PostProcessing.NbViews-1].NbIso = 25;"],
-           File OptionPos];
+           File "Option.pos"]; */
+ // Settings
+ If (Flag_Stream_Visualization)
+  Echo[ Str[
+  "For k In {0:PostProcessing.NbViews-1}",
+  "  View[k].RangeType  = 3;",  // per timestep
+  "  View[k].NbIso = 25;",
+  "  View[k].IntervalsType= 3;",
+  "  View[k].AutoPosition = 3;",
+  "  If (!StrCmp(View[k].Name, 'Solid wire and core eddy current loss density / W/m^3'))",
+  "    View[k].ScaleType = 2;",
+  "    View[k].SaturateValues = 1;",
+  "  EndIf",
+  "  If (!StrCmp(View[k].Name, 'Litz wire loss density / W/m^3'))",
+  "    View[k].ScaleType = 2;",
+  "  EndIf",
+  "  If (!StrCmp(View[k].Name, 'Litz wire loss density / W/m^3'))",
+  "    View[k].ScaleType = 2;",
+  "  EndIf",
+  "EndFor"
+ ], File "option.pos"];
+ EndIf
   // RangeType = 1; // Value scale range type (1=default, 2=custom, 3=per time step)
   // IntervalsType = 2; // Type of interval display (1=iso, 2=continuous, 3=discrete, 4=numeric)
 

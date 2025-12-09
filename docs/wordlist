@@ -448,8 +448,12 @@ sublist
 timemax
 NbSetpsPerPeriod
 NbSteps
+WaveformType
+powerloss
 
 # electrostatic
+capacitive
+pdf
 Kapton
 Capacitances
 capacitances
@@ -522,6 +526,17 @@ bOPET
 xlsxwriter
 Thermoset
 Polyphenylene
+
+# Time domain Visualization
+VisualizationMode
+nopopup
+ShowScale
+PositionY
+PositionX
+AutoPosition
+
+# Winding scheme
+HorizontalRightward
 
 # mdb
 mdb

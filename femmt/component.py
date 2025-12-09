@@ -3,6 +3,7 @@
 import csv
 import fileinput
 import os
+import sys
 import gmsh
 import json
 import warnings
@@ -51,7 +52,7 @@ class MagneticComponent:
 
     def __init__(self, simulation_type: SimulationType = SimulationType.FreqDomain,
                  component_type: ComponentType = ComponentType.Inductor, working_directory: str = None,
-                 clean_previous_results: bool = True, onelab_verbosity: Verbosity = 1, is_gui: bool = False,
+                 clean_previous_results: bool = True, onelab_verbosity: Verbosity = 1, visualization_mode: VisualizationMode = 1, is_gui: bool = False,
                  simulation_name: str | None = None, wwr_enabled=True):
         """
         Initialize the magnetic component.
@@ -63,6 +64,8 @@ class MagneticComponent:
         :type component_type: ComponentType
         :param working_directory: Sets the working directory
         :type working_directory: string
+        :param visualization_mode: Sets the visualization mode. it is used in the time and frequency domain simulation.
+        :type visualization_mode: VisualizationMode
         :param is_gui: Asks at first startup for onelab-path. Distinction between GUI and command line.
             Defaults to 'False' in command-line-mode.
         :type is_gui: bool
@@ -96,6 +99,9 @@ class MagneticComponent:
             self.is_onelab_silent = True
 
         self.wwr_enabled = wwr_enabled
+
+        # visulization
+        self.visualization_mode = visualization_mode
 
         logger.info(f"\n"
                     f"Initialized a new Magnetic Component of type {component_type.name}\n"
@@ -212,6 +218,121 @@ class MagneticComponent:
         self.onelab_setup(is_gui)
         self.onelab_client = onelab.client(__file__)
         self.simulation_name = simulation_name
+
+    def calc_hystersis_losses_with_MagNet_model_PB_based_on_reluctance(self, peak_magnetizing_current: float = 1, b_wave: WaveformType = WaveformType.Sine,
+                                                                       custom_b_wave: np.ndarray = None) -> float:
+        """
+        Calculate the hysteresis losses with the MagNet model of Paderborn University based on a reluctance model.
+
+        :param peak_magnetizing_current: peak value of the magnetizing current
+        :type peak_magnetizing_current: peak value of the magnetizing current
+        :param b_wave: type of the waveform of the magnetic flux density/magnetizing current
+        :type b_wave: WaveformType
+        :param custom_b_wave: normalized signal of the magnetic flux density/magnetizing current (normalized -> amplitude of 1)
+        :type custom_b_wave: np.ndarray
+        :return: hysteresis losses
+        :rtype: float
+        """
+        total_reluctance = self.calculate_core_reluctance()[0] + self.air_gaps_reluctance()[0]
+        center_leg_area = np.pi*(self.core.geometry.core_inner_diameter/2)**2
+
+        turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings, winding_number=0)
+        inductance = (turns**2)/total_reluctance
+        b_field_peak = inductance*peak_magnetizing_current/center_leg_area/turns
+
+        # multiply the normalized signal of the magnetic flux density with the peak value of the magnetic flux density
+        if b_wave is WaveformType.Sine:
+            b_wave = np.sin(np.linspace(0, 2*np.pi, 1024)) * b_field_peak
+        elif b_wave is WaveformType.Custom:
+            b_wave = custom_b_wave * b_field_peak
+
+        power_loss = ff.calc_power_loss_from_MagNet_model_PB(material_name=self.core.material.material, b_wave=b_wave, frequency=self.frequency,
+                                                             temperature=self.core.material.temperature) * self.calculate_core_volume()
+        return power_loss
+
+    def calc_hystersis_losses_with_MagNet_model_PB_based_on_mesh_results(self, b_wave: WaveformType = WaveformType.Sine,
+                                                                         custom_b_wave: np.ndarray = None) -> float:
+        """
+        Calculate the hysteresis losses with the MagNet model of Paderborn University based on FEM-simulation results.
+
+        - uses the local magnetic flux density in each mesh cell
+        - arbitrary waveforms are possible. But FEM simulation assumes a sinusoidal waveform and the peak of the magnetic flux density result of each mesh cell
+          is used to linearly scale the arbitrary waveform to its max. value
+        - for each mesh cell, the magnet model is applied
+
+        :param b_wave: type of the waveform of the magnetic flux density/magnetizing current
+        :type b_wave: WaveformType
+        :param custom_b_wave: normalized signal of the magnetic flux density/magnetizing current (normalized -> amplitude of 1)
+        :type custom_b_wave: np.ndarray
+        :return: dict containing the hysteresis losses
+        """
+        flux, volume = self.calc_magnetic_flux_density_based_on_simulation_results()
+
+        # multiply the normalized signal of the magnetic flux density with the peak value of the magnetic flux density
+        if b_wave is WaveformType.Sine:
+            b_wave = np.array([np.sin(np.linspace(0, 2*np.pi, 1024)) * b for b in flux])
+        elif b_wave is WaveformType.Custom:
+            b_wave = np.array([custom_b_wave * b for b in flux])
+
+        hyst_losses_density = ff.calc_power_loss_from_MagNet_model_PB(material_name=self.core.material.material, b_wave=b_wave,
+                                                                      frequency=np.array([self.frequency] * b_wave.shape[0]),
+                                                                      temperature=np.array([self.core.material.temperature] * b_wave.shape[0]))
+        power_loss = float(np.dot(hyst_losses_density, volume))
+        return power_loss
+
+    def calc_magnetic_flux_density_based_on_simulation_results(self) -> tuple[np.ndarray, np.ndarray]:
+        """Calculate the magnetic flux density and volume for every mesh cell of the core."""
+        with open(os.path.join(self.file_data.e_m_fields_folder_path, "Magb.pos"), 'r') as file:
+            content = file.read()  # type of content: str
+
+        # find both occurrence of "Magnitude B-Field / T", Elements and Nodes in Magb.pos
+        indexes_B_Field = np.array([m.start() for m in re.finditer('"Magnitude B-Field / T"', content)])
+        indexes_Elements = np.array([m.start() for m in re.finditer('Elements', content)])
+        indexes_Coords = np.array([m.start() for m in re.finditer('Nodes', content)])
+        # filter magnetic flux density out of Magb.pos(data is between the both occurrences of "Magnitude B-Field / T") and put data into list
+        data_B_Field = np.array([float(x) for x in content[indexes_B_Field[0]:indexes_B_Field[1]].split()[11:-3]])
+        # filter elements(ID of triangles and nodes) out of Magb.pos(data is between the both occurrences of "Elements") and put data into list
+        data_Elements = np.array([int(x) for x in content[indexes_Elements[0]:indexes_Elements[1]].split()[2:-1]])
+        # filter coordinates of nodes out of Magb.pos(data is between the both occurrences of "Elements") and put data into list
+        data_Coords = np.array([float(x) for x in content[indexes_Coords[0]:indexes_Coords[1]].split()[2:-1]])
+        # divide long list into lists for every triangle/mesh-cell
+        chunks_B_Field = [data_B_Field[x:x + 5] for x in range(0, data_B_Field.shape[0], 5)]
+        chunks_Elements = np.array([data_Elements[x:x + 8] for x in range(0, data_Elements.shape[0], 8)])
+        chunks_Coords = np.array([data_Coords[x:x + 4] for x in range(0, data_Coords.shape[0], 4)])
+
+        data_triangle = np.concatenate((chunks_Elements, np.array(chunks_B_Field)), axis=1)
+        # rearrange arrays for data that is needed for calculation of mesh cell volume
+        Triangle_Core = [[x[0], x[5], x[6], x[7], np.mean(x[10:])] for x in data_triangle if x[3] // 10000 == 12]
+        # x[0] = ID of mesh cell(triangle), x[5] = ID of first node of triangle, x[5] = ID of second node of triangle, x[5] = ID of third node of triangle,
+        # np.mean(x[10:]) = avr. of magnetic flux density of all three nodes
+
+        xyz = {}
+        for x in chunks_Coords:  # rearrange coordinates of nodes. These are the coordinates from the nodes of the whole mesh.
+            xyz[str(x[0])] = np.array([x[1], x[2], x[3]])  # key of dict is ID of node
+
+        for index, TriangleNode in enumerate(Triangle_Core):
+            xi = xyz[str(TriangleNode[1:4][0])]  # first node of triangle (x1, y1, z1)
+            xj = xyz[str(TriangleNode[1:4][1])]  # second node of triangle (x2, y2, z2)
+            xk = xyz[str(TriangleNode[1:4][2])]  # third node of triangle (x3, y3, z3)
+
+            radius = np.mean([xi[0], xj[0], xk[0]])  # radius -> average of x-values np.mean(x1, x2, x3)
+
+            a = np.sqrt(np.dot(xi - xj, xi - xj))  # distance between first and second node
+            b = np.sqrt(np.dot(xi - xk, xi - xk))  # distance between first and third node
+            c = np.sqrt(np.dot(xj - xk, xj - xk))  # distance between second and third node
+
+            # Heron's formula
+            s = (a + b + c) / 2  # semiperimeter of mesh cell (triangle)
+            dA = np.sqrt(s * (s - a) * (s - b) * (s - c))  # area of mesh cell
+
+            volume = 2 * np.pi * radius * dA
+
+            Triangle_Core[index].append(volume)
+
+        flux = np.array([x[-2] for x in Triangle_Core])
+        volume = np.array([x[-1] for x in Triangle_Core])
+
+        return flux, volume
 
     def update_mesh_accuracies(self, mesh_accuracy_core: float, mesh_accuracy_window: float,
                                mesh_accuracy_conductor, mesh_accuracy_air_gaps: float):
@@ -1295,17 +1416,53 @@ class MagneticComponent:
         # Run simulations as sub clients (non-blocking??)
         getdp_filepath = os.path.join(self.file_data.onelab_folder_path, "getdp")
         if self.simulation_type == SimulationType.FreqDomain:
-            self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver_freq + " -msh " + \
-                                            self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose + to_file_str)
+            if self.visualization_mode == VisualizationMode.Stream:
+                # It opens gmsh and runs live
+                # 1) Start GUI
+                if not gmsh.isInitialized():
+                    gmsh.initialize()
+                if '-nopopup' not in sys.argv:
+                    gmsh.fltk.initialize()
+                gmsh.onelab.run("myGetDP", getdp_filepath + " " + solver_freq + " -msh " + self.file_data.e_m_mesh_file + \
+                                " -solve Analysis -v2" + verbose + to_file_str)
+                gmsh.fltk.run()
+            elif self.visualization_mode == VisualizationMode.Post:
+                gmsh.onelab.run("myGetDP", getdp_filepath + " " + solver_freq + " -msh " + self.file_data.e_m_mesh_file + \
+                                " -solve Analysis -v2" + verbose + to_file_str)
+                gmsh.fltk.run()
+            else:
+                self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver_freq + " -msh " + \
+                                                self.file_data.e_m_mesh_file + " -solve Analysis -v2" + " " + verbose + to_file_str)
         if self.simulation_type == SimulationType.TimeDomain:
-            # the two commands work but some changes should be done in fields_time.pro
-            self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver_time + " -msh " + self.file_data.e_m_mesh_file + \
-                                            " -solve Analysis -pos Map_local  " + verbose + to_file_str)
-            # self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file +
-            # " -solve Analysis -v2 " + verbose) # freeing solutions
+            if self.visualization_mode == VisualizationMode.Stream:
+                # 1) Start GUI
+                if not gmsh.isInitialized():
+                    gmsh.initialize()
+                if '-nopopup' not in sys.argv:
+                    gmsh.fltk.initialize()
+                gmsh.onelab.run("myGetDP", getdp_filepath + " " + solver_time + " -msh " + self.file_data.e_m_mesh_file + \
+                                " -solve Analysis -pos Map_local  " + verbose + to_file_str)
+                gmsh.fltk.run()
+            else:
+                # the two commands work but some changes should be done in fields_time.pro
+                self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver_time + " -msh " + self.file_data.e_m_mesh_file + \
+                                                " -solve Analysis -pos Map_local " + verbose + to_file_str)
         if self.simulation_type == SimulationType.ElectroStatic:
-            self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver_electrostatic + " -msh " + \
-                                            self.file_data.e_m_mesh_file + " -solve EleSta_v -v2 " + verbose + to_file_str)
+            if self.visualization_mode == VisualizationMode.Stream:
+                if not gmsh.isInitialized():
+                    gmsh.initialize()
+                if '-nopopup' not in sys.argv:
+                    gmsh.fltk.initialize()
+                gmsh.onelab.run("myGetDP", getdp_filepath + " " + solver_electrostatic + " -msh " + \
+                                self.file_data.e_m_mesh_file + " -solve EleSta_v -pos Get_global" + verbose + to_file_str)
+                gmsh.fltk.run()
+            elif self.visualization_mode == VisualizationMode.Post:
+                gmsh.onelab.run("myGetDP", getdp_filepath + " " + solver_electrostatic + " -msh " + \
+                                self.file_data.e_m_mesh_file + " -solve EleSta_v -v2" + verbose + to_file_str)
+                gmsh.fltk.run()
+            else:
+                self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver_electrostatic + " -msh " + \
+                                                self.file_data.e_m_mesh_file + " -solve EleSta_v -v2" + verbose + to_file_str)
 
     def write_simulation_parameters_to_pro_files(self):
         """
@@ -1414,8 +1571,9 @@ class MagneticComponent:
             self.calculate_and_write_freq_domain_log()  # TODO: reuse center tapped
             self.log_reluctance_and_inductance()
             logging_time = time.time() - start_time
-            if show_fem_simulation_results:
-                self.visualize()
+            if self.visualization_mode == VisualizationMode.Final:
+                if show_fem_simulation_results:
+                    self.visualize()
 
             return generate_electro_magnetic_mesh_time, prepare_simulation_time, real_simulation_time, logging_time
         else:
@@ -1428,8 +1586,9 @@ class MagneticComponent:
             self.simulate()
             self.calculate_and_write_freq_domain_log()  # TODO: reuse center tapped
             self.log_reluctance_and_inductance()
-            if show_fem_simulation_results:
-                self.visualize()
+            if self.visualization_mode == VisualizationMode.Final:
+                if show_fem_simulation_results:
+                    self.visualize()
         logger.info(f"The electromagnetic results are stored here: {self.file_data.e_m_results_log_path}")
 
     def time_domain_simulation(self, current_period_vec: list[list[float]], time_period_vec: list[float], number_of_periods: int,
@@ -1453,7 +1612,6 @@ class MagneticComponent:
         :param rolling_avg_window_size: how many data points used in each calculation of the average
         :param benchmark: Benchmark simulation (stop time). Defaults to False.
         :type benchmark: bool
-
         """
         self.check_create_empty_material_log()
 
@@ -1480,7 +1638,10 @@ class MagneticComponent:
             self.calculate_average_files()
             self.calculate_and_write_time_domain_log()  # TODO: reuse center tapped
             if show_fem_simulation_results:
-                self.visualize()
+                if self.visualization_mode == VisualizationMode.Final:
+                    self.visualize()
+                elif self.visualization_mode == VisualizationMode.Post:
+                    self.live_visualization_2d()
             if show_rolling_average:
                 self.get_rolling_average(window_size=rolling_avg_window_size)
 
@@ -1496,7 +1657,10 @@ class MagneticComponent:
             self.calculate_and_write_time_domain_log()  # TODO: reuse center tapped
 
             if show_fem_simulation_results:
-                self.visualize()
+                if self.visualization_mode == VisualizationMode.Final:
+                    self.visualize()
+                elif self.visualization_mode == VisualizationMode.Post:
+                    self.live_visualization_2d()
             if show_rolling_average:
                 self.get_rolling_average(window_size=rolling_avg_window_size)
 
@@ -1556,9 +1720,9 @@ class MagneticComponent:
                 ff.json_to_excel(json_file_path, output_excel_path)
                 logger.info(f"Data has been successfully written to {output_excel_path}")
             logging_time = time.time() - start_time
-
-            if show_fem_simulation_results:
-                self.visualize()
+            if self.visualization_mode == VisualizationMode.Final:
+                if show_fem_simulation_results:
+                    self.visualize()
 
             return generate_electro_magnetic_mesh_time, prepare_simulation_time, real_simulation_time, logging_time
         else:
@@ -1575,8 +1739,9 @@ class MagneticComponent:
                 ff.json_to_excel(json_file_path, output_excel_path)
                 logger.info(f"Data has been successfully written to {output_excel_path}")
 
-            if show_fem_simulation_results:
-                self.visualize()
+            if self.visualization_mode == VisualizationMode.Final:
+                if show_fem_simulation_results:
+                    self.visualize()
 
         logger.info(f"The electrostatic results are stored here: {self.file_data.electrostatic_results_log_path}")
 
@@ -2919,8 +3084,9 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing --- Capacitance extraction---
-    def get_capacitance_of_inductor_component(self, freq_for_mesh: float = 0.0, show_visual_outputs: bool = False, plot_interpolation: bool = False,
-                                              show_fem_simulation_results: bool = False, benchmark: bool = False, save_to_excel: bool = False):
+    def get_capacitance_of_inductor_component(self, freq_for_mesh: float = 0.0, show_visual_outputs: bool = False, show_equivalent_circuit: bool = False,
+                                              plot_interpolation: bool = False, show_fem_simulation_results: bool = False, benchmark: bool = False,
+                                              save_to_excel: bool = False):
         """
         Needed for finding parasitic capacitance of an inductor. A represent the first turn, B represents the last turn. e represents the core.
 
@@ -2940,6 +3106,8 @@ class MagneticComponent:
         :type freq_for_mesh: float = 0.0
         :param show_visual_outputs: show the electrostatic model before simulation
         :type show_visual_outputs: bool, optional
+        :param show_equivalent_circuit: show the equivalent circuit of inductor
+        :type show_equivalent_circuit: bool
         :param plot_interpolation: if True, plot the interpolation between the provided values for the material.
         :type plot_interpolation: bool
         :param show_fem_simulation_results: if True, show the simulation results after the simulation has finished
@@ -2992,6 +3160,14 @@ class MagneticComponent:
         c_ab, c_ae, c_be = c_vec
         c_ab_stray = c_ab + (c_ae * c_be) / (c_ae + c_be)
         logger.info(f"→ C_AB (incl. parasitic): {c_ab_stray:.4e} F")
+
+        if show_equivalent_circuit:
+            d = ff.draw_capacitive_equivalent_circuit_of_inductor(c_vec)
+            d.draw()
+            os.makedirs(self.file_data.e_m_values_folder_path, exist_ok=True)
+            figure_path = os.path.join(self.file_data.e_m_values_folder_path, "capacitive_equivalent_circuit_of_inductor.pdf")
+            d.save(figure_path)
+            logger.info(f"Equivalent circuit saved to {figure_path}")
 
         return c_vec
 
@@ -3060,9 +3236,9 @@ class MagneticComponent:
 
     def get_capacitance_of_transformer(self, freq_for_mesh: float = 0.0, c_meas_open: float | None = None,
                                        c_meas_short: float | None = None, measured_capacitances: tuple | list | None = None,
-                                       flip_the_sec_terminal: bool = False, show_visual_outputs: bool = False, plot_interpolation: bool = False,
-                                       show_fem_simulation_results: bool = False, benchmark: bool = False, save_to_excel: bool = False,
-                                       show_plot_comparison: bool = True):
+                                       flip_the_sec_terminal: bool = False, show_visual_outputs: bool = False, show_equivalent_circuit: bool = False,
+                                       plot_interpolation: bool = False, show_fem_simulation_results: bool = False, benchmark: bool = False,
+                                       save_to_excel: bool = False, show_plot_comparison: bool = True):
         r"""
         Get 10 parasitic capacitance of a transformer.
 
@@ -3094,6 +3270,8 @@ class MagneticComponent:
         :type flip_the_sec_terminal: bool
         :param show_visual_outputs: show the electrostatic model before simulation
         :type show_visual_outputs: bool, optional
+        :param show_equivalent_circuit: show the equivalent circuit of transformer
+        :type show_equivalent_circuit: bool
         :param plot_interpolation: if True, plot the interpolation between the provided values for the material.
         :type plot_interpolation: bool
         :param show_fem_simulation_results: if True, show the simulation results after the simulation has finished
@@ -3163,6 +3341,15 @@ class MagneticComponent:
         # comparison
         if show_plot_comparison and (c_meas_open is not None or c_meas_short is not None):
             ff.plot_open_and_short_comparison(c_sim_open, c_sim_short, c_meas_open, c_meas_short)
+
+        # show equivalent circuit
+        if show_equivalent_circuit:
+            d = ff.draw_capacitive_equivalent_circuit_of_transformer(c_vec)
+            d.draw()
+            os.makedirs(self.file_data.e_m_values_folder_path, exist_ok=True)
+            figure_path = os.path.join(self.file_data.e_m_values_folder_path, "capacitive_equivalent_circuit_of_transformer.pdf")
+            d.save(figure_path)
+            logger.info(f"Equivalent circuit saved to {figure_path}")
 
         return c_vec
 
@@ -3455,11 +3642,24 @@ class MagneticComponent:
             text_file.write("Flag_Freq_Domain = 1;\n")
             text_file.write("Flag_Time_Domain = 0;\n")
             text_file.write("Flag_Static = 0;\n")
+            if self.visualization_mode == VisualizationMode.Stream or self.visualization_mode == VisualizationMode.Post:
+                text_file.write("Flag_Stream_Visualization = 1;\n")
+            else:
+                text_file.write("Flag_Stream_Visualization = 0;\n")
 
         if self.simulation_type == SimulationType.TimeDomain:
             text_file.write("Flag_Time_Domain = 1;\n")
             text_file.write("Flag_Freq_Domain = 0;\n")
             text_file.write("Flag_Static = 0;\n")
+            # Needed for visualization
+            if self.visualization_mode == VisualizationMode.Stream:
+                text_file.write("Flag_Stream_Visualization = 1;\n")
+            else:
+                text_file.write("Flag_Stream_Visualization = 0;\n")
+        if self.simulation_type == SimulationType.ElectroStatic:
+            text_file.write("Flag_Static = 1;\n")
+            text_file.write("Flag_Freq_Domain = 0;\n")
+            text_file.write("Flag_Time_Domain = 0;\n")
 
         # Frequency
         text_file.write("Freq = %s;\n" % self.frequency)
@@ -3615,6 +3815,11 @@ class MagneticComponent:
 
         text_file.write("Flag_Static = 1;\n")
 
+        if self.visualization_mode == VisualizationMode.Stream or self.visualization_mode == VisualizationMode.Post:
+            text_file.write("Flag_Stream_Visualization = 1;\n")
+        else:
+            text_file.write("Flag_Stream_Visualization = 0;\n")
+
         # Airgap number
         text_file.write("n_airgaps = {};\n".format(len(self.air_gaps.midpoints)))
 
@@ -3628,7 +3833,8 @@ class MagneticComponent:
                                                       winding_number=winding_number)
 
             if self.windings[winding_number].parallel:
-                raise Exception("Parallel winding are not considered yet for electrostatic simulation")
+                text_file.write(f"NbrCond_{winding_number + 1} = 1;\n")
+                text_file.write(f"AreaCell_{winding_number + 1} = {self.windings[winding_number].a_cell * turns};\n")
             else:
                 text_file.write(f"NbrCond_{winding_number + 1} = {turns};\n")
                 text_file.write(f"AreaCell_{winding_number + 1} = {self.windings[winding_number].a_cell};\n")
@@ -4326,8 +4532,11 @@ class MagneticComponent:
         log_dict["capacitances"] = {"within_winding": {}, "between_windings": {}, "between_turns_core": {}}
 
         for winding_number in range(len(self.windings)):
-            turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
-                                                      winding_number=winding_number)
+            if self.windings[winding_number].parallel:
+                turns = 1
+            else:
+                turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                          winding_number=winding_number)
             winding_name = f"Winding_{winding_number + 1}"
             log_dict["capacitances"]["within_winding"][winding_name] = {}
 
@@ -4350,10 +4559,16 @@ class MagneticComponent:
             for winding2 in range(len(self.windings)):
                 if winding1 == winding2:
                     continue
-                turns1 = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
-                                                           winding_number=winding1)
-                turns2 = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
-                                                           winding_number=winding2)
+                if self.windings[winding1].parallel:
+                    turns1 = 1
+                else:
+                    turns1 = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                               winding_number=winding1)
+                if self.windings[winding2].parallel:
+                    turns2 = 1
+                else:
+                    turns2 = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                               winding_number=winding2)
                 winding2_name = f"Winding_{winding2 + 1}"
                 log_dict["capacitances"]["between_windings"][winding1_name][winding2_name] = {}
 
@@ -4380,9 +4595,11 @@ class MagneticComponent:
         for winding_number in range(len(self.windings)):
             winding_name = f"Winding_{winding_number + 1}"
             log_dict["capacitances"]["between_turns_core"][winding_name] = {}
-
-            turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
-                                                      winding_number=winding_number)
+            if self.windings[winding_number].parallel:
+                turns = 1
+            else:
+                turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                          winding_number=winding_number)
             for turn in range(1, turns + 1):
                 turn_key = f"Turn_{turn}"
                 capacitance_key = f"C_{winding_number + 1}_{turn}_Core"
@@ -4757,6 +4974,119 @@ class MagneticComponent:
 
         gmsh.fltk.run()
         # gmsh.finalize()
+
+    def live_visualization_2d(self):
+        """
+        Show live visualization of the time-domain simulation results.
+
+        - a post simulation viewer
+        - allows to open ".pos"-files in gmsh
+        - For example current density, ohmic losses or the magnetic field density can be visualized
+        """
+        logger.info("\n---\nVisualize fields in GMSH front end:\n")
+        gmsh.initialize()
+        epsilon = 1e-9
+
+        # merge view files
+        gmsh.merge(os.path.join(self.file_data.e_m_fields_folder_path, 'j2F_density.pos'))
+        gmsh.merge(os.path.join(self.file_data.e_m_fields_folder_path, 'j2H_density.pos'))
+        gmsh.merge(os.path.join(self.file_data.e_m_fields_folder_path, 'Magb.pos'))
+        # to show the magnetic field in space and time step, merge b_grid, if it is existed
+        b_grid = os.path.join(self.file_data.e_m_fields_folder_path, "b_grid.pos")
+        has_b_grid = os.path.exists(b_grid)
+        if has_b_grid:
+            gmsh.merge(b_grid)
+
+        # Show the GUI:
+        if '-nopopup' not in sys.argv:
+            gmsh.fltk.initialize()
+
+        v = gmsh.view.getTags()
+        if len(v) == 0:
+            logger.info("No .pos views found in:", self.file_data.e_m_fields_folder_path)
+            gmsh.finalize()
+            return
+        # We set some options for each post-processing view:
+        # Mesh
+        gmsh.option.setNumber("Mesh.SurfaceEdges", 0)
+
+        if any(self.windings[i].conductor_type != ConductorType.RoundLitz for i in range(len(self.windings))):
+            # Ohmic losses (weighted effective value of current density)
+            # gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2F_density.pos"))
+            gmsh.option.setNumber(f"View[{v[0]}].ScaleType", 2)
+            gmsh.option.setNumber(f"View[{v[0]}].RangeType", 3)
+            gmsh.option.setNumber(f"View[{v[0]}].SaturateValues", 1)
+            gmsh.option.setNumber(f"View[{v[0]}].CustomMin", gmsh.option.getNumber(f"View[{v[0]}].Min") + epsilon)
+            gmsh.option.setNumber(f"View[{v[0]}].CustomMax", gmsh.option.getNumber(f"View[{v[0]}].Max"))
+            gmsh.option.setNumber(f"View[{v[0]}].ColormapNumber", 1)
+            gmsh.option.setNumber(f"View[{v[0]}].IntervalsType", 2)
+            gmsh.option.setNumber(f"View[{v[0]}].NbIso", 40)
+            gmsh.option.setNumber(f"View[{v[0]}].ShowTime", 4)
+            gmsh.option.setNumber(f"View[{v[0]}].TimeStep", 1)
+            gmsh.option.setNumber(f"View[{v[0]}].Time", 1)
+            gmsh.option.setNumber(f"View[{v[0]}].NbTimeStep", 1)
+
+            if any(self.windings[i].conductor_type == ConductorType.RoundLitz for i in range(len(self.windings))):
+                # Ohmic losses (weighted effective value of current density)
+                # gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2H_density.pos"))
+                gmsh.option.setNumber(f"View[{v[1]}].ScaleType", 2)
+                gmsh.option.setNumber(f"View[{v[1]}].RangeType", 3)
+                gmsh.option.setNumber(f"View[{v[1]}].SaturateValues", 1)
+                gmsh.option.setNumber(f"View[{v[1]}].CustomMin",
+                                      gmsh.option.getNumber(f"View[{v[1]}].Min") + epsilon)
+                gmsh.option.setNumber(f"View[{v[1]}].CustomMax", gmsh.option.getNumber(f"View[{v[1]}].Max"))
+                gmsh.option.setNumber(f"View[{v[1]}].ColormapNumber", 1)
+                gmsh.option.setNumber(f"View[{v[1]}].IntervalsType", 2)
+                gmsh.option.setNumber(f"View[{v[1]}].NbIso", 40)
+                gmsh.option.setNumber(f"View[{v[1]}].ShowTime", 4)
+                gmsh.option.setNumber(f"View[{v[1]}].TimeStep", 1)
+                gmsh.option.setNumber(f"View[{v[1]}].Time", 1)
+                gmsh.option.setNumber(f"View[{v[1]}].NbTimeStep", 1)
+
+            # Magnetic flux density
+            # gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Magb.pos"))
+            gmsh.option.setNumber(f"View[{v[2]}].ScaleType", 1)
+            gmsh.option.setNumber(f"View[{v[2]}].RangeType", 3)
+            gmsh.option.setNumber(f"View[{v[2]}].CustomMin", gmsh.option.getNumber(f"View[{v[2]}].Min") + epsilon)
+            gmsh.option.setNumber(f"View[{v[2]}].CustomMax", gmsh.option.getNumber(f"View[{v[2]}].Max"))
+            gmsh.option.setNumber(f"View[{v[2]}].ColormapNumber", 1)
+            gmsh.option.setNumber(f"View[{v[2]}].IntervalsType", 2)
+            gmsh.option.setNumber(f"View[{v[2]}].ShowTime", 4)
+            gmsh.option.setNumber(f"View[{v[2]}].NbIso", 40)
+            gmsh.option.setNumber(f"View[{v[2]}].TimeStep", 1)
+            gmsh.option.setNumber(f"View[{v[2]}].Time", 1)
+            gmsh.option.setNumber(f"View[{v[2]}].NbTimeStep", 1)
+
+        if has_b_grid:
+            bgrid_view = v[-1]  # last merged
+            gmsh.view.option.setString(bgrid_view, "Name", "B_field...")
+            gmsh.view.option.setNumber(bgrid_view, "Axes", 1)
+            gmsh.view.option.setNumber(bgrid_view, "IntervalsType", 2)
+            gmsh.view.option.setNumber(bgrid_view, "Type", 2)  # graph mode
+            gmsh.view.option.setNumber(bgrid_view, "AutoPosition", 0)
+            gmsh.view.option.setNumber(bgrid_view, "PositionX", 50)
+            gmsh.view.option.setNumber(bgrid_view, "PositionY", 50)
+            gmsh.view.option.setNumber(bgrid_view, "Width", 350)
+            gmsh.view.option.setNumber(bgrid_view, "Height", 250)
+
+        # Configure views for 2D
+        for vt in v:
+            gmsh.view.option.setNumber(vt, "IntervalsType", 2)  # color shading
+            gmsh.view.option.setNumber(vt, "ShowScale", 1)  # colorbar
+            gmsh.view.option.setNumber(vt, "Visible", 1)  # ensure visible
+
+        # Animate through time steps
+        frames = int(gmsh.view.option.getNumber(v[0], "NbTimeStep"))
+        t = 0
+        while gmsh.fltk.isAvailable():
+            for vt in v:
+                gmsh.view.option.setNumber(vt, "TimeStep", t)
+            gmsh.graphics.draw()
+            time.sleep(0.2)  # seconds per frame
+            t = (t + 1) % frames
+        if '-nopopup' not in sys.argv:
+            gmsh.fltk.run()
+        gmsh.finalize()
 
     def get_loss_data(self, last_n_values: int, loss_type: str = 'litz_loss'):
         """

@@ -1,5 +1,5 @@
 """
-Basic example to show how to simulate a transformer.
+Basic example to show how to simulate a transformer with foil winding.
 
 After starting the program, the geometry dimensions are displayed. Verify this geometry, close the window, to continue the simulation.
 After a short time, B-Field and winding losses simulation results are shown. Winding losses are shown as a colormap.
@@ -15,9 +15,10 @@ import logging
 # configure logging to show femmt terminal output
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
-def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
+
+def basic_example_planar_transformer(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
     """
-    Run the example code for the transformer.
+    Run the example code for the PCB transformer.
 
     :param onelab_folder: onelab folder path
     :type onelab_folder: str
@@ -101,7 +102,10 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
-    # 1. chose simulation type
+    # Choose wrap para type
+    wrap_para_type = fmt.WrapParaType.FixedThickness
+
+    # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
                                 is_gui=is_test)
 
@@ -109,70 +113,56 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     if onelab_folder is not None:
         geo.file_data.onelab_folder_path = onelab_folder
 
-    # 2. set core parameters
-    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295,
-                                                    core_h=0.04)
-
+    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=5e-3,
+                                                    window_w=6e-3,
+                                                    window_h=2e-3,
+                                                    core_h=8e-3)
     core_material = fmt.LinearComplexCoreMaterial(mu_r_abs=3100,
                                                   phi_mu_deg=12,
-                                                  dc_conductivity=1.2,
+                                                  dc_conductivity=0.6,
                                                   eps_r_abs=0,
                                                   phi_eps_deg=0)
-
     core = fmt.Core(material=core_material,
                     core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
                     detailed_core_model=False)
-
     geo.set_core(core)
 
-    # 3. set air gap parameters
-    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
     geo.set_air_gaps(air_gaps)
 
-    # 4. set insulation
-    insulation = fmt.Insulation(flag_insulation=True)
-    insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
-    insulation.add_winding_insulations([[0.0002, 0.001],
-                                        [0.001, 0.0002]], per_layer_of_turns=False)
+    insulation = fmt.Insulation()
+    insulation.add_core_insulations(0.0005, 0.0005, 0.0005, 0.0005)
+    insulation.add_winding_insulations([[1.15e-4, 1.15e-4],
+                                        [1.15e-4, 1.15e-4]])
+    insulation.add_insulation_between_layers(thickness=0.01e-3)
     geo.set_insulation(insulation)
 
-    # 5. create winding window and virtual winding windows (vww)
     winding_window = fmt.WindingWindow(core, insulation)
-    bot, top = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit, split_distance=0.001)
+    # vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+    vww_bot, vww_top = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit, split_distance=0.0001)
 
     # 6. create conductors and set parameters
     winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
-    winding1.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
-
-    # winding1 = fmt.Conductor(0, fmt.ConductorMaterial.Copper)
-    # winding1.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
-
-    # winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
-    # winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
+    winding1.set_rectangular_conductor(thickness=35e-6, width=1.5e-3)
 
     winding2 = fmt.Conductor(1, fmt.ConductorMaterial.Copper)
-    winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
+    winding2.set_rectangular_conductor(thickness=35e-6, width=4.8e-3)
     winding2.parallel = False
-    # winding2.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
 
-    # 7. add conductor to vww and add winding window to MagneticComponent
-    bot.set_winding(winding2, 10, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
-    top.set_winding(winding1, 10, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
+    vww_bot.set_winding(winding1, 5, fmt.WindingScheme.FoilHorizontal, fmt.Align.ToEdges, wrap_para_type=wrap_para_type.CustomDimensions,
+                        foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalUpward)
+    vww_top.set_winding(winding2, 2, fmt.WindingScheme.FoilHorizontal, fmt.Align.ToEdges, wrap_para_type=wrap_para_type.CustomDimensions,
+                        foil_horizontal_placing_strategy=fmt.FoilHorizontalDistribution.VerticalUpward)
     geo.set_winding_windows([winding_window])
 
-    # 8. start simulation with given frequency, currents and phases
-    geo.create_model(freq=200000, pre_visualize_geometry=show_visual_outputs)
-    geo.single_simulation(freq=200000, current=[2, 2], phi_deg=[0, 180],
-                          show_fem_simulation_results=show_visual_outputs)
+    geo.create_model(freq=1000000, pre_visualize_geometry=show_visual_outputs, save_png=False)
 
-    # thermal simulation
+    geo.single_simulation(freq=1000000, current=[3, 5], phi_deg=[0, 180], show_fem_simulation_results=show_visual_outputs)
+
     example_thermal_simulation(show_visual_outputs, flag_insulation=True)
-    # geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
-    # Extract capacitance of transformer component
-    # geo.get_capacitance_of_transformer(show_equivalent_circuit=True)
 
 
 if __name__ == "__main__":
-    basic_example_transformer(show_visual_outputs=True)
+    basic_example_planar_transformer(show_visual_outputs=True)
