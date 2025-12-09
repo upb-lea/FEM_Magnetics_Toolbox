@@ -465,6 +465,9 @@ PostProcessing {
       { Name nur_re ; Value { Term { [ Re[ nu[{d a}, Freq] * mu0 ] ] ; In Domain ; Jacobian Vol ; } } }  // := mur_re / (mur_re^2 + mur_im^2)
       { Name nur_im ; Value { Term { [ Im[ nu[{d a}, Freq] * mu0 ] ] ; In Domain ; Jacobian Vol ; } } }  // := mur_im / (mur_re^2 + mur_im^2)
 
+      // Conductivity Plot
+      { Name sigma_re ; Value { Term { [ Re[sigma[]] ] ; In Domain ; Jacobian Vol ; } } }
+      { Name sigma_im ; Value { Term { [ Im[sigma[]] ] ; In Domain ; Jacobian Vol ; } } }
 
       // ------------------------------------------------------------------------------------------------
       // Current Density

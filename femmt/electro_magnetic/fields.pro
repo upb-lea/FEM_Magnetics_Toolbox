@@ -4,6 +4,7 @@ PostOperation Map_local UsingPost MagDyn_a {
 
   // Potentials
   //Print[ raz,OnElementsOf Domain,  File StrCat[DirResFields, "raz", ExtGmsh], LastTimeStepOnly ] ;
+  //Print[ az,OnElementsOf Domain,  File StrCat[DirResFields, "az", ExtGmsh], LastTimeStepOnly ] ;
   //Print[ a,OnElementsOf Domain,  File StrCat[DirResFields, "a", ExtGmsh], LastTimeStepOnly ] ;
   //Print[ ur,OnElementsOf Domain,  File StrCat[DirResFields, "ur", ExtGmsh], LastTimeStepOnly ] ;
 
@@ -24,6 +25,8 @@ PostOperation Map_local UsingPost MagDyn_a {
   //Print[ nur_im,  OnElementsOf Domain,  File StrCat[DirResFields, "nur_im", ExtGmsh],  LastTimeStepOnly ] ;
   //Print[ mur_re,  OnElementsOf Domain,  File StrCat[DirResFields, "mur_re", ExtGmsh],  LastTimeStepOnly ] ;
   //Print[ mur_im,  OnElementsOf Domain,  File StrCat[DirResFields, "mur_im", ExtGmsh],  LastTimeStepOnly ] ;
+  //Print[ sigma_re,  OnElementsOf DomainS,  File StrCat[DirResFields, "sigma_re", ExtGmsh],  LastTimeStepOnly ] ;
+  //Print[ sigma_im,  OnElementsOf DomainS,  File StrCat[DirResFields, "sigma_im", ExtGmsh],  LastTimeStepOnly ] ;
   //Print[ p_hyst,  OnElementsOf Domain,  File StrCat[DirResFields, "p_hyst", ExtGmsh],  LastTimeStepOnly ] ;
   //Print[ p_hyst_density,  OnElementsOf Domain,  File StrCat[DirResFields, "p_hyst_density", ExtGmsh],  LastTimeStepOnly ] ;
 
