@@ -27,8 +27,12 @@ PostOperation Map_local UsingPost MagDyn_a {
   //Print[ mur_im,  OnElementsOf Domain,  File StrCat[DirResFields, "mur_im", ExtGmsh],  LastTimeStepOnly ] ;
   //Print[ sigma_re,  OnElementsOf DomainS,  File StrCat[DirResFields, "sigma_re", ExtGmsh],  LastTimeStepOnly ] ;
   //Print[ sigma_im,  OnElementsOf DomainS,  File StrCat[DirResFields, "sigma_im", ExtGmsh],  LastTimeStepOnly ] ;
+
+  // Core losses
+  // Print[ p_eddy_density,  OnElementsOf Core,  File StrCat[DirResFields, "p_core_eddy_density", ExtGmsh],  LastTimeStepOnly ] ;
+  // Print[ p_hyst_density,  OnElementsOf Core,  File StrCat[DirResFields, "p_core_hyst_density", ExtGmsh],  LastTimeStepOnly ] ;
+  // Print[ p_hyst_and_eddy_density,  OnElementsOf Core,  File StrCat[DirResFields, "p_core_total_density", ExtGmsh],  LastTimeStepOnly ] ;
   //Print[ p_hyst,  OnElementsOf Domain,  File StrCat[DirResFields, "p_hyst", ExtGmsh],  LastTimeStepOnly ] ;
-  //Print[ p_hyst_density,  OnElementsOf Domain,  File StrCat[DirResFields, "p_hyst_density", ExtGmsh],  LastTimeStepOnly ] ;
 
   // Magnetic Flux (Density)
   //Print[ b,  OnElementsOf Domain,  File StrCat[DirResFields, "b", ExtGmsh],  LastTimeStepOnly ] ;

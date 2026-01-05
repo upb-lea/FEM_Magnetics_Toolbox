@@ -510,17 +510,17 @@ PostProcessing {
           { Name j2F ; Value { Integral {
              [ CoefGeo*sigma[]*SquNorm[ {ur}/CoefGeo - Dt[{a}] ] ] ;
              In DomainC ; Jacobian Vol ; Integration II ; } } }
-          { Name j2F_density ; Value { Integral {
-             [ CoefGeo/ElementVol[]*sigma[]*SquNorm[ {ur}/CoefGeo - Dt[{a}] ] ] ;
-             In DomainC ; Jacobian Vol ; Integration II ; } } }
+          { Name j2F_density ; Value { Term {
+             [ sigma[]*SquNorm[ {ur}/CoefGeo - Dt[{a}] ] ] ;
+             In DomainC ; Jacobian Vol ; } } }
       Else
            { Name j2F ; Value { Integral {
              [ 0.5*CoefGeo*sigma[]*SquNorm[ {ur}/CoefGeo - Dt[{a}] ] ] ;// 0.5 for frequency domain
              In DomainC ; Jacobian Vol ; Integration II ; } } }
 
-           { Name j2F_density ; Value { Integral {
-             [ 0.5*CoefGeo/ElementVol[]*sigma[]*SquNorm[ {ur}/CoefGeo - Dt[{a}] ] ] ;// 0.5 for frequency domain
-             In DomainC ; Jacobian Vol ; Integration II ; } } }
+           { Name j2F_density ; Value { Term {
+             [ 0.5*sigma[]*SquNorm[ {ur}/CoefGeo - Dt[{a}] ] ] ;// 0.5 for frequency domain
+             In DomainC ; Jacobian Vol ; } } }
       EndIf
 
 
@@ -531,9 +531,9 @@ PostProcessing {
              [ CoefGeo*( Re[-{d a}*Conj[nuOm[]*{d a}]] + sigma[]*SquNorm[-1/AreaCell[]*{ir}]) ] ;
              In DomainS ; Jacobian Vol ; Integration II ; } } }
 
-           { Name j2H_density ; Value { Integral {
+           { Name j2H_density ; Value { Term {
              [ CoefGeo/ElementVol[]*( Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] + sigma[]*SquNorm[-1/AreaCell[]*{ir}]) ] ;
-             In DomainS ; Jacobian Vol ; Integration II ; } } }
+             In DomainS ; Jacobian Vol ; } } }
 
 
       Else
@@ -541,9 +541,9 @@ PostProcessing {
              [ 0.5*CoefGeo*( Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] + sigma[]*SquNorm[-1/AreaCell[]*{ir}]) ] ; // 0.5 for frequency domain
              In DomainS ; Jacobian Vol ; Integration II ; } } }
 
-           { Name j2H_density ; Value { Integral {
-             [ 0.5*CoefGeo/ElementVol[]*( Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] + sigma[]*SquNorm[-1/AreaCell[]*{ir}]) ] ; // 0.5 for frequency domain
-             In DomainS ; Jacobian Vol ; Integration II ; } } }
+           { Name j2H_density ; Value { Term {
+             [ 0.5 * ( Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] + sigma[]*SquNorm[-1/AreaCell[]*{ir}]) ] ; // 0.5 for frequency domain
+             In DomainS ; Jacobian Vol ; } } }
 
            { Name j2Hprox ; Value { Integral {
             [ 0.5*CoefGeo*Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] ] ;// 0.5 for frequency domain
@@ -557,18 +557,24 @@ PostProcessing {
 
 
       // ------------------------------------------------------------------------------------------------
-      // Hysteresis Losses (According To Complex Core Parameters)
+      // Core Losses (According To Complex Core Parameters)
 
       { Name p_hyst ; Value { Integral {
         // [ 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[Norm[{d a}], Freq]] * SquNorm[nu[Norm[{d a}], Freq] * Norm[{d a}]] ] ;
         [ - 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[{d a}, Freq] * {d a}] ] ;
         In Core ; Jacobian Vol ; Integration II ;} } }
 
-      { Name p_hyst_density ; Value { Integral {
-        [ - 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[Norm[{d a}], Freq] * {d a}] ] ;
-        In Core ; Jacobian Vol ; Integration II ;} } }
+      { Name p_hyst_density ; Value { Term {
+            [ - 0.5 * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[Norm[{d a}], Freq] * {d a}] ] ;
+            In Core ; Jacobian Vol ; } } }
 
+      { Name p_eddy_density ; Value { Term {
+            [ 0.5 * sigma[] * SquNorm[ {ur}/CoefGeo - Dt[{a}] ]  ] ;
+            In Core ; Jacobian Vol ; } } }
 
+      { Name p_hyst_and_eddy_density ; Value { Term {
+            [ 0.5 * sigma[] * SquNorm[ {ur}/CoefGeo - Dt[{a}] ] - 0.5 * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[Norm[{d a}], Freq] * {d a}] ] ;
+            In Core ; Jacobian Vol ; } } }
 
       // ------------------------------------------------------------------------------------------------
       // Energy
