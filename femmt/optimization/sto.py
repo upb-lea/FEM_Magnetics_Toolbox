@@ -786,14 +786,17 @@ class StackedTransformerOptimization:
                 return pickle.load(pickle_file_data)
 
         @staticmethod
-        def full_simulation(df_geometry: pd.DataFrame, current_waveform: list, stacked_transformer_config_filepath: str):
+        def full_simulation(df_geometry: pd.DataFrame, time_current_waveform_1: list, time_current_waveform_2: list,
+                            stacked_transformer_config_filepath: str):
             """
             Reluctance model (hysteresis losses) and FEM simulation (winding losses and eddy current losses) for geometries from df_geometry.
 
             :param df_geometry: Pandas dataframe with geometries
             :type df_geometry: pd.DataFrame
-            :param current_waveform: Current waveform to simulate
-            :type current_waveform: list
+            :param time_current_waveform_1: time and current waveform for winding 1 to simulate. Structure: [[],[]]
+            :type time_current_waveform_1: list
+            :param time_current_waveform_2: time and current waveform for winding 2 to simulate. Structure: [[],[]]
+            :type time_current_waveform_2: list
             :param stacked_transformer_config_filepath: Filepath of the inductor optimization configuration file
             :type stacked_transformer_config_filepath: str
             """
@@ -812,7 +815,8 @@ class StackedTransformerOptimization:
                     window_w = df_geometry['params_window_w'][index]
 
                 # overwrite the old time-current vector with the new one
-                local_config.time_current_vec = current_waveform
+                local_config.time_current_1_vec = time_current_waveform_1
+                local_config.time_current_2_vec = time_current_waveform_2
                 target_and_fix_parameters = StackedTransformerOptimization.ReluctanceModel.calculate_fix_parameters(local_config)
 
                 litz_wire_primary_dict = ff.litz_database()[df_geometry['params_primary_litz_name'][index]]
