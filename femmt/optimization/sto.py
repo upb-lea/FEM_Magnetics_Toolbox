@@ -1161,15 +1161,17 @@ class StackedTransformerOptimization:
             return reluctance_df_copy
 
         @staticmethod
-        def full_simulation(df_geometry: pd.DataFrame, current_waveform: list, stacked_transformer_config_filepath: str, process_number: int = 1,
-                            show_visual_outputs: bool = False, print_derivations: bool = False):
+        def full_simulation(df_geometry: pd.DataFrame, current_1_waveform: list, current_2_waveform: list, stacked_transformer_config_filepath: str,
+                            process_number: int = 1, show_visual_outputs: bool = False, print_derivations: bool = False):
             """
             Reluctance model (hysteresis losses) and FEM simulation (winding losses and eddy current losses) for geometries from df_geometry.
 
             :param df_geometry: Pandas dataframe with geometries
             :type df_geometry: pd.DataFrame
-            :param current_waveform: Current waveform to simulate
-            :type current_waveform: list
+            :param current_1_waveform: Time and current waveform for winding 1 to simulate. Structure: [[],[]]
+            :type current_1_waveform: list
+            :param current_2_waveform: Time and current waveform for winding 2 to simulate. Structure: [[],[]]
+            :type current_2_waveform: list
             :param stacked_transformer_config_filepath: Filepath of the inductor optimization configuration file
             :type stacked_transformer_config_filepath: str
             :param process_number: process number to run the simulation on
@@ -1197,7 +1199,9 @@ class StackedTransformerOptimization:
                 window_w = df_geometry['params_window_w'][index_number]
 
             # overwrite the old time-current vector with the new one
-            local_config.time_current_vec = current_waveform
+            local_config.time_current_1_vec = current_1_waveform
+            local_config.time_current_2_vec = current_2_waveform
+
             target_and_fix_parameters = StackedTransformerOptimization.ReluctanceModel.calculate_fix_parameters(local_config)
 
             # material properties
