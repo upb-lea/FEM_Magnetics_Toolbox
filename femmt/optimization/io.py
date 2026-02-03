@@ -680,7 +680,8 @@ class InductorOptimization:
                 reluctance_output: ReluctanceModelOutput = InductorOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_input)
 
                 p_total = reluctance_output.p_loss_total
-                return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink
+
+                return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink, reluctance_output.p_winding, reluctance_output.p_hyst
 
     class FemSimulation:
         """Contains methods to perform FEM simulations or process their results."""
