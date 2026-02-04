@@ -1074,7 +1074,8 @@ class InductorOptimization:
 
             reluctance_output: ReluctanceModelOutput = InductorOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_input)
 
-            p_total = reluctance_output.p_hyst + fem_output.fem_eddy_core + fem_output.fem_p_loss_winding
+            p_core = reluctance_output.p_hyst + fem_output.fem_eddy_core
+            p_total = p_core + fem_output.fem_p_loss_winding
 
             if print_derivations:
                 logger.info(f"Inductance reluctance: {local_config.target_inductance}")
@@ -1091,4 +1092,4 @@ class InductorOptimization:
                 logger.info(f"P_hyst FEM: {fem_output.fem_core_total}")
                 logger.info(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.fem_core_total) / reluctance_output.p_hyst * 100}")
 
-            return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink
+            return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink, fem_output.fem_p_loss_winding, p_core

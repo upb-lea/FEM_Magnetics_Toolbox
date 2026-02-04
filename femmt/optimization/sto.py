@@ -1311,7 +1311,8 @@ class StackedTransformerOptimization:
             reluctance_output: ReluctanceModelOutput = StackedTransformerOptimization.ReluctanceModel.single_reluctance_model_simulation(
                 reluctance_model_input)
 
-            p_total = reluctance_output.p_hyst + fem_output.eddy_core + fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2
+            p_core = reluctance_output.p_hyst + fem_output.eddy_core
+            p_total = p_core + fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2
 
             if print_derivations:
                 logger.info(f"Inductance l_h reluctance: {local_config.l_h_target}")
@@ -1335,4 +1336,4 @@ class StackedTransformerOptimization:
                 logger.info(f"P_hyst FEM: {fem_output.core}")
                 logger.info(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.core) / reluctance_output.p_hyst * 100}")
 
-            return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink
+            return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink, fem_output.p_loss_winding_1, fem_output.p_loss_winding_2, p_core
