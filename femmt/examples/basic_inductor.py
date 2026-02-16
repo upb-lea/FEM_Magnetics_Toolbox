@@ -120,7 +120,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
 
     core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
                                                     temperature=45,
-                                                    permeability_datasource=fmt.DataSource.TDK_MDT,
+                                                    permeability_datasource=fmt.DataSource.MagNet,
                                                     permittivity_datasource=fmt.DataSource.LEA_MTB)
 
     core = fmt.Core(material=core_material,
@@ -168,6 +168,9 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     geo.create_model(freq=inductor_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
 
     # 6.a. start simulation
+    # geo.single_simulation_with_current_offset(freq=inductor_frequency, current=[4.5], current_offset=4.5,
+    #                                           plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
+
     geo.single_simulation(freq=inductor_frequency, current=[4.5],
                           plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
     # geo.get_inductances(I0=2, op_frequency=20000, skin_mesh_factor=0.5)

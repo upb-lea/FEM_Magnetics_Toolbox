@@ -1196,7 +1196,8 @@ class MagneticComponent:
 
         # check the core saturation ( It does not work for custom)
         if self.core.material.material != "custom":
-            self.reluctance_model_pre_check()
+            # Increase saturation threshold ASA
+            self.reluctance_model_pre_check(2)
 
     def excitation_time_domain(self, current_list: list[list[float]], time_list: list[float],
                                number_of_periods: int, ex_type: str = 'current',
@@ -1520,6 +1521,100 @@ class MagneticComponent:
 
             with open(os.path.join(os.path.join(self.file_data.e_m_mesh_file)), "w") as mesh_file:
                 mesh_file.write(mesh_data)
+
+    def single_simulation_with_current_offset(self, freq: float, current: list[float], current_offset: float, phi_deg: list[float] = None,
+                          plot_interpolation: bool = False, show_fem_simulation_results: bool = True,
+                          benchmark: bool = False):
+        """
+        Start a _single_ electromagnetic ONELAB simulation with current offset.
+        Therefore the h-offset is calculated in a first simulation to load the complex permeability.
+
+        :param plot_interpolation:
+        :param freq: frequency to simulate
+        :type freq: float
+        :param current: current to simulate
+        :param current_offset: current offset
+        :param phi_deg: phase angle in degree
+        :type phi_deg: list[float]
+        :param show_fem_simulation_results: Set to True to show the simulation results after the simulation has finished
+        :type show_fem_simulation_results: bool
+        :param benchmark: Benchmark simulation (stop time). Defaults to False.
+        :type benchmark: bool
+        """
+
+        # Check if current offset is set to 0
+        if current_offset==0:
+            self.single_simulation(freq, current, phi_deg, plot_interpolation, show_fem_simulation_results, benchmark)
+            return
+
+        # Due to symetry set current offset as absolute value (positive)
+        current_offset = abs(current_offset)
+
+        current_offset_list = [current_offset]
+        # ASA: Welche Werte müssen hier genommen werden: Niederige Frequenz und ein Stromwert?  DC_Verluste mitnehmen  0Hz stark interpoliert
+        self.single_simulation( 1, current_offset_list)
+
+        result_data_file=os.path.join(self.file_data.results_folder_path,"log_electro_magnetic.json")
+
+        if os.path.exists(result_data_file):
+            with open(result_data_file, 'r', encoding='utf-8') as file_handler:
+                result_data = json.load(file_handler)
+        else:
+            raise ValueError(f"Result data file  {result_data_file} is not created!")
+
+        # Calculate the b-Field from json data
+        core_inner_diameter = result_data["simulation_settings"]["core"]["core_inner_diameter"]
+        b_field = (result_data["single_sweeps"][0]["winding1"]["flux"][0]) / core_inner_diameter
+        # ASA: Warum brauche ich L?
+        # Calculate h_offset from  b-field and lookup-table
+        required_h_offset = b_field / 1.257e-6 / 2300
+        # Load available h-offset data list
+        h_offset_list = self.core.material.database.get_available_h_offset(self.core.material.material,
+                                                                           self.core.material.permeability_datasource)
+
+        for h_offset in h_offset_list:
+            if h_offset >= required_h_offset:
+                h_offset_max = h_offset
+                break
+            # Overtake lower h_offset-value
+            h_offset_min = h_offset
+
+        # Check if a calculation is possible
+        if h_offset < required_h_offset:
+            raise ValueError(f"The calculated H-Offset of {required_h_offset} is higher than maximum supported H-Offset value of {h_offset}!")
+
+        # Calculate of fit curve at h_offset_max
+        # Calculate fit curve at h_offset_max
+        self.core.material.permeability = self.core.material.database.get_complex_permeability(
+            material=self.core.material.material,
+            data_source=self.core.material.permeability_datasource,
+            pv_fit_function=self.core.material.permeability.pv_fit_function,
+            h_offset=h_offset_max
+        )
+        self.core.material.permeability.params_pv = self.core.material.permeability.fit_losses()
+        self.core.material.permeability.params_mu_a = self.core.material.permeability.fit_permeability_magnitude()
+
+        # Check, if h_offset_max is not required_h_offset
+        if h_offset_max > required_h_offset:
+            # Interpolation is needed
+            params_pv_max = self.core.material.permeability.params_pv
+            params_mu_a_max = self.core.material.permeability.params_mu_a
+
+            self.core.material.permeability = self.core.material.database.get_complex_permeability(
+                material=self.core.material.material,
+                data_source=self.core.material.permeability_datasource,
+                pv_fit_function=self.core.material.permeability.pv_fit_function,
+                h_offset=h_offset_min
+            )
+            params_pv_min = self.core.material.permeability.fit_losses()
+            params_mu_a_min = self.core.material.permeability.fit_permeability_magnitude()
+            # Perform interpolation
+            self.core.material.permeability.params_pv = (params_pv_max - params_pv_min) * ((required_h_offset- h_offset_min) / (h_offset_max - h_offset_min)) + params_pv_min
+            self.core.material.permeability.params_mu_a = (params_mu_a_max - params_mu_a_min) * ((required_h_offset- h_offset_min) / (h_offset_max - h_offset_min)) + params_mu_a_min
+
+        # Perform simulation with adjust material parameter
+        self.single_simulation(freq, current, phi_deg, plot_interpolation, show_fem_simulation_results, benchmark)
+
 
     def single_simulation(self, freq: float, current: list[float], phi_deg: list[float] = None,
                           plot_interpolation: bool = False, show_fem_simulation_results: bool = True,
