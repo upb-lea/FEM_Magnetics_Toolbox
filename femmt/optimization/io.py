@@ -222,6 +222,7 @@ class InductorOptimization:
                 magnet_material_model=magnet_material_model,
 
                 temperature=config.temperature,
+                time_extracted_vec=target_and_fixed_parameters.time_extracted_vec,
                 current_extracted_vec=target_and_fixed_parameters.current_extracted_vec,
                 fundamental_frequency=target_and_fixed_parameters.fundamental_frequency,
                 fft_frequency_list=target_and_fixed_parameters.fft_frequency_list,
@@ -674,6 +675,7 @@ class InductorOptimization:
                     magnet_material_model=magnet_material_model,
 
                     temperature=local_config.temperature,
+                    time_extracted_vec=target_and_fix_parameters.time_extracted_vec,
                     current_extracted_vec=target_and_fix_parameters.current_extracted_vec,
                     fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
                     fft_frequency_list=target_and_fix_parameters.fft_frequency_list,
@@ -748,6 +750,8 @@ class InductorOptimization:
                             fft_frequency_list=target_and_fix_parameters.fft_frequency_list,
                             fft_amplitude_list=target_and_fix_parameters.fft_amplitude_list,
                             fft_phases_list=target_and_fix_parameters.fft_phases_list,
+                            time_vec=target_and_fix_parameters.time_extracted_vec,
+                            current_vec=target_and_fix_parameters.current_extracted_vec
                         )
 
                         # fem simulation here
@@ -1061,7 +1065,10 @@ class InductorOptimization:
                 fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
                 fft_frequency_list=target_and_fix_parameters.fft_frequency_list,
                 fft_amplitude_list=target_and_fix_parameters.fft_amplitude_list,
-                fft_phases_list=target_and_fix_parameters.fft_phases_list
+                fft_phases_list=target_and_fix_parameters.fft_phases_list,
+
+                time_vec=target_and_fix_parameters.time_extracted_vec,
+                current_vec=target_and_fix_parameters.current_extracted_vec
             )
 
             fem_output = InductorOptimization.FemSimulation.single_fem_simulation(fem_input, False)
