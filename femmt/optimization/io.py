@@ -880,8 +880,8 @@ class InductorOptimization:
 
             core_material = fmt.ImportedComplexCoreMaterial(material=fem_input.material_name,
                                                             temperature=fem_input.temperature,
-                                                            permeability_datasource=fmt.DataSource.TDK_MDT,
-                                                            permittivity_datasource=fmt.DataSource.LEA_MTB)
+                                                            permeability_datasource=fem_input.material_data_sources.permeability_datasource,
+                                                            permittivity_datasource=fem_input.material_data_sources.permittivity_datasource)
 
             core = fmt.Core(material=core_material,
                             core_type=fmt.CoreType.Single,
@@ -1087,9 +1087,9 @@ class InductorOptimization:
                 logger.info(f"Volume derivation: {(reluctance_output.volume - fem_output.volume) / reluctance_output.volume * 100} %")
                 logger.info(f"P_winding reluctance: {reluctance_output.p_winding}")
                 logger.info(f"P_winding FEM: {fem_output.fem_p_loss_winding}")
-                logger.info(f"P_winding derivation: {(fem_output.fem_p_loss_winding - reluctance_output.p_winding) / fem_output.fem_p_loss_winding * 100}")
+                logger.info(f"P_winding derivation: {(fem_output.fem_p_loss_winding - reluctance_output.p_winding) / fem_output.fem_p_loss_winding * 100} %")
                 logger.info(f"P_hyst reluctance: {reluctance_output.p_hyst}")
                 logger.info(f"P_hyst FEM: {fem_output.fem_core_total}")
-                logger.info(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.fem_core_total) / reluctance_output.p_hyst * 100}")
+                logger.info(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.fem_core_total) / reluctance_output.p_hyst * 100} %")
 
             return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink, fem_output.fem_p_loss_winding, p_core
