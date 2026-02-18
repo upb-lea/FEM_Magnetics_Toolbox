@@ -95,14 +95,18 @@ class FemInput:
     fft_amplitude_list: list[float]
     fft_phases_list: list[float]
 
+    # magnet loss model
+    time_vec: list[float]
+    current_vec: list[float]
+
 @dataclasses.dataclass
 class FemOutput:
     """Output DTO for a FEM simulation within the inductor optimization."""
 
-    fem_inductance: float
-    fem_p_loss_winding: float
-    fem_eddy_core: float
-    fem_core_total: float
+    inductance: float
+    p_loss_winding: float
+    p_core_sine: float
+    p_core_magnet: float
     volume: float
 
 @dataclasses.dataclass
@@ -122,6 +126,7 @@ class ReluctanceModelInput:
     magnet_material_model: LossModel
 
     temperature: float
+    time_extracted_vec: list
     current_extracted_vec: list
     fundamental_frequency: float
     fft_frequency_list: list[float]

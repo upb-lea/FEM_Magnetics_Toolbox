@@ -263,7 +263,11 @@ class InductorOptimization:
 
             r_air_gap_target = target_total_reluctance - r_core
 
-            flux = reluctance_input.turns * reluctance_input.current_extracted_vec / target_total_reluctance
+            # prepare equidistant flux vector for the magnet loss simulation
+            time_interp = np.linspace(reluctance_input.time_extracted_vec[0], reluctance_input.time_extracted_vec[-1], 1024)
+            current_interp = np.interp(time_interp, reluctance_input.time_extracted_vec, reluctance_input.current_extracted_vec)
+
+            flux = reluctance_input.turns * current_interp / target_total_reluctance
             core_cross_section = (reluctance_input.core_inner_diameter / 2) ** 2 * np.pi
             flux_density = flux / core_cross_section
 
@@ -749,10 +753,10 @@ class InductorOptimization:
                         # fem simulation here
                         fem_output = InductorOptimization.FemSimulation.single_fem_simulation(fem_input, False)
 
-                        reluctance_df.loc[index, 'fem_inductance'] = fem_output.fem_inductance
-                        reluctance_df.loc[index, 'fem_p_loss_winding'] = fem_output.fem_p_loss_winding
-                        reluctance_df.loc[index, 'fem_eddy_core'] = fem_output.fem_eddy_core
-                        reluctance_df.loc[index, 'fem_core'] = fem_output.fem_core_total
+                        reluctance_df.loc[index, 'fem_inductance'] = fem_output.inductance
+                        reluctance_df.loc[index, 'fem_p_loss_winding'] = fem_output.p_loss_winding
+                        reluctance_df.loc[index, 'fem_eddy_core'] = fem_output.p_core_sine
+                        reluctance_df.loc[index, 'fem_core'] = fem_output.p_core_magnet
 
                         # copy result files to result-file folder
                         source_json_file = os.path.join(
@@ -926,16 +930,33 @@ class InductorOptimization:
             current_amplitudes = [[current] for current in fem_input.fft_amplitude_list]
             phases = [[phase] for phase in fem_input.fft_phases_list]
 
+            # prepare core loss simulation
+            peak_current = np.max(fem_input.current_vec)
+            custom_b_wave = 1 / peak_current * fem_input.current_vec
+            time_interp = np.linspace(fem_input.time_vec[0], fem_input.time_vec[-1], 1024)
+            current_interp = np.interp(time_interp, fem_input.time_vec, fem_input.current_vec)
+            normalized_current_interp = 1 / peak_current * current_interp
+
+            # perform single hysteresis loss simulation where a sinusoidal signal with the peak amplitude is used
+            geo.single_simulation(freq=fem_input.fundamental_frequency, current=[peak_current],
+                                  plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
+
+            # read the flux per mesh cell and transfer it into losses with the help of the magnet model
+            hyst_losses_custom = geo.calc_hystersis_losses_with_MagNet_model_PB_based_on_mesh_results(b_wave=fmt.WaveformType.Custom,
+                                                                                                      custom_b_wave=normalized_current_interp)
+
+            result_dict_hyst = geo.read_log()
+
+            # get the winding losses
             geo.excitation_sweep(frequency_list=fem_input.fft_frequency_list, current_list_list=current_amplitudes,
                                  phi_deg_list_list=phases, show_last_fem_simulation=show_visual_outputs)
-
             result_dict = geo.read_log()
 
             fem_output = FemOutput(
-                fem_inductance=result_dict['single_sweeps'][0]['winding1']['flux_over_current'][0],
-                fem_p_loss_winding=result_dict['total_losses']['winding1']['total'],
-                fem_eddy_core=result_dict['total_losses']['eddy_core'],
-                fem_core_total=result_dict['total_losses']['core'],
+                inductance=result_dict['single_sweeps'][0]['winding1']['flux_over_current'][0],
+                p_loss_winding=result_dict['total_losses']['winding1']['total'],
+                p_core_sine=result_dict_hyst['total_losses']['core'],
+                p_core_magnet=hyst_losses_custom,
                 volume=result_dict["misc"]["core_2daxi_total_volume"]
             )
             return fem_output
@@ -1074,22 +1095,22 @@ class InductorOptimization:
 
             reluctance_output: ReluctanceModelOutput = InductorOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_input)
 
-            p_core = reluctance_output.p_hyst + fem_output.fem_eddy_core
-            p_total = p_core + fem_output.fem_p_loss_winding
+            p_core = reluctance_output.p_hyst + fem_output.p_core_sine
+            p_total = p_core + fem_output.p_loss_winding
 
             if print_derivations:
                 logger.info(f"Inductance reluctance: {local_config.target_inductance}")
-                logger.info(f"Inductance FEM: {fem_output.fem_inductance}")
+                logger.info(f"Inductance FEM: {fem_output.inductance}")
                 logger.info(f"Inductance derivation: "
-                            f"{(fem_output.fem_inductance - local_config.target_inductance) / local_config.target_inductance * 100} %")
+                            f"{(fem_output.inductance - local_config.target_inductance) / local_config.target_inductance * 100} %")
                 logger.info(f"Volume reluctance: {reluctance_output.volume}")
                 logger.info(f"Volume FEM: {fem_output.volume}")
                 logger.info(f"Volume derivation: {(reluctance_output.volume - fem_output.volume) / reluctance_output.volume * 100} %")
                 logger.info(f"P_winding reluctance: {reluctance_output.p_winding}")
-                logger.info(f"P_winding FEM: {fem_output.fem_p_loss_winding}")
-                logger.info(f"P_winding derivation: {(fem_output.fem_p_loss_winding - reluctance_output.p_winding) / fem_output.fem_p_loss_winding * 100} %")
+                logger.info(f"P_winding FEM: {fem_output.p_loss_winding}")
+                logger.info(f"P_winding derivation: {(fem_output.p_loss_winding - reluctance_output.p_winding) / fem_output.p_loss_winding * 100} %")
                 logger.info(f"P_hyst reluctance: {reluctance_output.p_hyst}")
-                logger.info(f"P_hyst FEM: {fem_output.fem_core_total}")
-                logger.info(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.fem_core_total) / reluctance_output.p_hyst * 100} %")
+                logger.info(f"P_hyst FEM: {fem_output.p_core_magnet}")
+                logger.info(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.p_core_magnet) / reluctance_output.p_hyst * 100} %")
 
-            return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink, fem_output.fem_p_loss_winding, p_core
+            return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink, fem_output.p_loss_winding, p_core
