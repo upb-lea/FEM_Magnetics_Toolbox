@@ -1171,7 +1171,7 @@ class MagneticComponent:
         if self.core.material.material != "custom":
             self.reluctance_model_pre_check()
 
-    def excitation_time_domain(self, current_list: list[list[float]], time_list: list[float],number_of_periods: int, ex_type: str = 'current',
+    def excitation_time_domain(self, current_list: list[list[float]], time_list: list[float], number_of_periods: int, ex_type: str = 'current',
                                plot_interpolation: bool = False, imposed_red_f=0):
         """
         Excites the electromagnetic problem in the time domain with specified current and time settings.
@@ -2249,7 +2249,7 @@ class MagneticComponent:
             return nominator / denominator
 
         # get the inductance
-        inductance_dict = self.get_inductances(I0=1, skin_mesh_factor=1,op_frequency=center_tapped_study_excitation["hysteresis"]["frequency"],
+        inductance_dict = self.get_inductances(I0=1, skin_mesh_factor=1, op_frequency=center_tapped_study_excitation["hysteresis"]["frequency"],
                                                silent=self.is_onelab_silent)
 
         # Initialize the hysteresis losses with zero
@@ -3856,8 +3856,8 @@ class MagneticComponent:
                 if complex_current_phasor == 0 or sweep_dict["f"] == 0:  # if-statement to avoid div by zero error
                     winding_dict["flux_over_current"] = [0.0, 0.0]
                 else:
-                    winding_dict["flux_over_current"].append((complex_voltage_phasor / (complex(0, 1) * 2 * np.pi * complex_current_phasor * sweep_dict["f"])).real)
-                    winding_dict["flux_over_current"].append((complex_voltage_phasor / (complex(0, 1) * 2 * np.pi * complex_current_phasor * sweep_dict["f"])).imag)
+                    winding_dict["flux_over_current"].append((complex_voltage_phasor / (complex(0, 1)*2*np.pi*complex_current_phasor*sweep_dict["f"])).real)
+                    winding_dict["flux_over_current"].append((complex_voltage_phasor / (complex(0, 1)*2*np.pi*complex_current_phasor*sweep_dict["f"])).imag)
 
                 # Flux
                 winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding_number + 1}",
@@ -3949,7 +3949,7 @@ class MagneticComponent:
             for single_simulation in range(0, number_frequency_simulations):
                 if single_simulation == fundamental_index:
                     for core_part in range(len(self.mesh.plane_surface_core)):
-                        log_dict["single_sweeps"][single_simulation]["core_parts"][ f"core_part_{core_part + 1}"]["hyst_losses"] = core_hyst_losses[core_part]
+                        log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{core_part + 1}"]["hyst_losses"] = core_hyst_losses[core_part]
                         log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{core_part + 1}"][
                             f"total_core_part_{core_part + 1}"] = core_hyst_losses[core_part] + log_dict[
                             "single_sweeps"][single_simulation]["core_parts"][f"core_part_{core_part + 1}"]["eddy_losses"]
@@ -4191,8 +4191,8 @@ class MagneticComponent:
                 if len(self.mesh.plane_surface_core) == 1:
                     log_dict["total_losses"]["total_core_part_1"] = log_dict["average_losses"]["core_parts"]["core_part_1"]["total_core_part_1"]
 
-                log_dict["total_losses"]["total_losses"] = (log_dict["total_losses"]["hyst_core_fundamental_freq"] + log_dict["total_losses"]["eddy_core"] +
-                                                            log_dict["total_losses"]["all_windings_losses"])
+                log_dict["total_losses"]["total_losses"] = (log_dict["total_losses"]["hyst_core_fundamental_freq"] + log_dict["total_losses"][
+                    "eddy_core"] + log_dict["total_losses"]["all_windings_losses"])
 
         common_log_dict = self.write_and_calculate_common_log(inductance_dict=inductance_dict)
         final_log_dict = {**log_dict, **common_log_dict}
@@ -4671,7 +4671,7 @@ class MagneticComponent:
                     gmsh.option.setNumber(f"View[{v[1]}].ScaleType", 2)
                     gmsh.option.setNumber(f"View[{v[1]}].RangeType", 3)
                     gmsh.option.setNumber(f"View[{v[1]}].SaturateValues", 1)
-                    gmsh.option.setNumber(f"View[{v[1]}].CustomMin",gmsh.option.getNumber(f"View[{v[1]}].Min") + epsilon)
+                    gmsh.option.setNumber(f"View[{v[1]}].CustomMin", gmsh.option.getNumber(f"View[{v[1]}].Min") + epsilon)
                     gmsh.option.setNumber(f"View[{v[1]}].CustomMax", gmsh.option.getNumber(f"View[{v[1]}].Max"))
                     gmsh.option.setNumber(f"View[{v[1]}].ColormapNumber", 1)
                     gmsh.option.setNumber(f"View[{v[1]}].IntervalsType", 2)
