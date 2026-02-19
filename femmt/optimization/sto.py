@@ -8,7 +8,7 @@ import json
 import pickle
 
 # own libraries
-from femmt.optimization.sto_dtos import StoSingleInputConfig, StoTargetAndFixedParameters, FemInput, FemOutput, ReluctanceModelInput, ReluctanceModelOutput
+from femmt.optimization.sto_dtos import StoSingleInputConfig, StoTargetAndFixedParameters, StoFemInput, StoFemOutput, StoReluctanceModelInput, StoReluctanceModelOutput
 import femmt.functions as ff
 import femmt.functions_reluctance as fr
 import materialdatabase as mdb
@@ -241,7 +241,7 @@ class StackedTransformerOptimization:
                 logger.debug("Winding window too small for too many turns.")
                 return float('nan'), float('nan')
 
-            reluctance_model_intput = ReluctanceModelInput(
+            reluctance_model_intput = StoReluctanceModelInput(
                 target_inductance_matrix=target_and_fixed_parameters.target_inductance_matrix,
                 core_inner_diameter=core_inner_diameter,
                 window_w=window_w,
@@ -301,14 +301,14 @@ class StackedTransformerOptimization:
             return reluctance_output.volume, reluctance_output.p_loss
 
         @staticmethod
-        def single_reluctance_model_simulation(reluctance_input: ReluctanceModelInput) -> ReluctanceModelOutput:
+        def single_reluctance_model_simulation(reluctance_input: StoReluctanceModelInput) -> StoReluctanceModelOutput:
             """
             Perform a single reluctance model simulation.
 
             :param reluctance_input: Reluctance model input data.
-            :type reluctance_input: ReluctanceModelInput
+            :type reluctance_input: StoReluctanceModelInput
             :return: Reluctance model output data
-            :rtype: ReluctanceModelOutput
+            :rtype: StoReluctanceModelOutput
             """
             core_total_height = reluctance_input.window_h_top + reluctance_input.window_h_bot + reluctance_input.core_inner_diameter * 3 / 4
             r_outer = fr.calculate_r_outer(reluctance_input.core_inner_diameter, reluctance_input.window_w)
@@ -490,7 +490,7 @@ class StackedTransformerOptimization:
 
             area_to_heat_sink = r_outer ** 2 * np.pi
 
-            reluctance_output = ReluctanceModelOutput(
+            reluctance_output = StoReluctanceModelOutput(
                 # set additional attributes
                 p_hyst=p_hyst,
                 p_hyst_top=p_top,
@@ -838,7 +838,7 @@ class StackedTransformerOptimization:
                 # instantiate material-specific model
                 magnet_material_model: mh.loss.LossModel = mh.loss.LossModel(material=material_name, team="paderborn")
 
-                reluctance_model_input = ReluctanceModelInput(
+                reluctance_model_input = StoReluctanceModelInput(
                     target_inductance_matrix=fr.calculate_inductance_matrix_from_ls_lh_n(local_config.l_s12_target, local_config.l_h_target,
                                                                                          local_config.n_target),
                     core_inner_diameter=core_inner_diameter,
@@ -881,7 +881,7 @@ class StackedTransformerOptimization:
                     fft_phases_list_2=target_and_fix_parameters.fft_phases_list_2
                 )
 
-                reluctance_output: ReluctanceModelOutput = StackedTransformerOptimization.ReluctanceModel.single_reluctance_model_simulation(
+                reluctance_output: StoReluctanceModelOutput = StackedTransformerOptimization.ReluctanceModel.single_reluctance_model_simulation(
                     reluctance_model_input)
 
                 p_total = reluctance_output.p_loss
@@ -936,7 +936,7 @@ class StackedTransformerOptimization:
                             window_w = reluctance_df["params_window_w"][index].item()
                             window_h_bot = reluctance_df["params_window_h_bot"][index].item()
 
-                        fem_input = FemInput(
+                        fem_input = StoFemInput(
                             simulation_name='xx',
                             working_directory=working_directory,
                             core_inner_diameter=core_inner_diameter,
@@ -970,7 +970,7 @@ class StackedTransformerOptimization:
                         reluctance_df.loc[index, 'p_loss_winding_1'] = fem_output.p_loss_winding_1
                         reluctance_df.loc[index, 'p_loss_winding_2'] = fem_output.p_loss_winding_2
                         reluctance_df.loc[index, 'eddy_core'] = fem_output.eddy_core
-                        reluctance_df.loc[index, 'core'] = fem_output.core
+                        reluctance_df.loc[index, 'core'] = fem_output.p_core_sine
 
                         # copy result files to result-file folder
                         source_json_file = os.path.join(
@@ -991,18 +991,18 @@ class StackedTransformerOptimization:
             return reluctance_df
 
         @staticmethod
-        def single_fem_simulation(fem_input: FemInput, show_visual_outputs: bool = False, wire_loss_only: bool = False):
+        def single_fem_simulation(fem_input: StoFemInput, show_visual_outputs: bool = False, wire_loss_only: bool = False):
             """
             Perform a single FEM simulation.
 
             :param fem_input: FEM input DTO
-            :type fem_input: FemInput
+            :type fem_input: StoFemInput
             :param show_visual_outputs: True to show visual outputs
             :type show_visual_outputs: bool
             :param wire_loss_only: True: only wire loss and inductance calculation, False: Full study (wire loss, hyst. losses, inductance calculation)
             :type wire_loss_only: bool
             :return: FEM output DTO
-            :rtype: FemOutput
+            :rtype: StoFemOutput
             """
             time_current_vectors = np.array([fem_input.time_current_1_vec, fem_input.time_current_2_vec])
 
@@ -1088,14 +1088,14 @@ class StackedTransformerOptimization:
 
                 result_dict = geo.read_log()
 
-                fem_output = FemOutput(
+                fem_output = StoFemOutput(
                     n_conc=result_dict['inductances']['n_conc'],
                     l_s_conc=result_dict['inductances']['l_s_conc'],
                     l_h_conc=result_dict['inductances']['l_h_conc'],
                     p_loss_winding_1=result_dict['total_losses']['winding1']['total'],
                     p_loss_winding_2=result_dict['total_losses']['winding2']['total'],
-                    eddy_core=result_dict['total_losses']['eddy_core'],
-                    core=0,
+                    p_core_sine=0,
+                    p_core_magnet=0,
                     volume=result_dict["misc"]["core_2daxi_total_volume"],
                 )
 
@@ -1105,14 +1105,14 @@ class StackedTransformerOptimization:
 
                 result_dict = geo.read_log()
 
-                fem_output = FemOutput(
+                fem_output = StoFemOutput(
                     n_conc=result_dict['inductances']['n_conc'],
                     l_s_conc=result_dict['inductances']['l_s_conc'],
                     l_h_conc=result_dict['inductances']['l_h_conc'],
                     p_loss_winding_1=result_dict['total_losses']['winding1']['total'],
                     p_loss_winding_2=result_dict['total_losses']['winding2']['total'],
-                    eddy_core=result_dict['total_losses']['eddy_core'],
-                    core=result_dict['total_losses']['core'],
+                    p_core_sine=result_dict['total_losses']['core'],
+                    p_core_magnet=0,
                     volume=result_dict["misc"]["core_2daxi_total_volume"],
                 )
 
@@ -1224,7 +1224,7 @@ class StackedTransformerOptimization:
             working_directory = os.path.join(
                 target_and_fix_parameters.working_directories.fem_working_directory, f"process_{process_number}")
 
-            fem_input = FemInput(
+            fem_input = StoFemInput(
                 # general parameters
                 working_directory=working_directory,
                 simulation_name="xx",
@@ -1265,7 +1265,7 @@ class StackedTransformerOptimization:
             # instantiate material-specific model
             magnet_material_model: mh.loss.LossModel = mh.loss.LossModel(material=material_name, team="paderborn")
 
-            reluctance_model_input = ReluctanceModelInput(
+            reluctance_model_input = StoReluctanceModelInput(
                 target_inductance_matrix=fr.calculate_inductance_matrix_from_ls_lh_n(local_config.l_s12_target, local_config.l_h_target,
                                                                                      local_config.n_target),
                 core_inner_diameter=core_inner_diameter,
@@ -1308,7 +1308,7 @@ class StackedTransformerOptimization:
                 fft_phases_list_2=target_and_fix_parameters.fft_phases_list_2
             )
 
-            reluctance_output: ReluctanceModelOutput = StackedTransformerOptimization.ReluctanceModel.single_reluctance_model_simulation(
+            reluctance_output: StoReluctanceModelOutput = StackedTransformerOptimization.ReluctanceModel.single_reluctance_model_simulation(
                 reluctance_model_input)
 
             p_core = reluctance_output.p_hyst + fem_output.eddy_core
@@ -1333,7 +1333,7 @@ class StackedTransformerOptimization:
                 logger.info(f"P_winding_both derivation: "
                             f"{winding_derivation}")
                 logger.info(f"P_hyst reluctance: {reluctance_output.p_hyst}")
-                logger.info(f"P_hyst FEM: {fem_output.core}")
-                logger.info(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.core) / reluctance_output.p_hyst * 100}")
+                logger.info(f"P_hyst FEM (sine): {fem_output.p_core_sine}")
+                logger.info(f"P_hyst derivation (sine): {(reluctance_output.p_hyst - fem_output.p_core_sine) / reluctance_output.p_hyst * 100}")
 
             return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink, fem_output.p_loss_winding_1, fem_output.p_loss_winding_2, p_core

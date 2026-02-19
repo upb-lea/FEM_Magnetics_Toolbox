@@ -68,7 +68,7 @@ class InductorOptimizationTargetAndFixedParameters:
     fft_phases_list: list[float]
 
 @dataclasses.dataclass
-class FemInput:
+class IoFemInput:
     """Input DTO for a FEM simulation within the inductor optimization."""
 
     # general parameters
@@ -100,7 +100,7 @@ class FemInput:
     current_vec: list[float]
 
 @dataclasses.dataclass
-class FemOutput:
+class IoFemOutput:
     """Output DTO for a FEM simulation within the inductor optimization."""
 
     inductance: float
@@ -110,7 +110,7 @@ class FemOutput:
     volume: float
 
 @dataclasses.dataclass
-class ReluctanceModelInput:
+class IoReluctanceModelInput:
     """Input DTO for reluctance model simulation within the inductor optimization."""
 
     target_inductance: float
@@ -134,7 +134,7 @@ class ReluctanceModelInput:
     fft_phases_list: list[float]
 
 @dataclasses.dataclass
-class ReluctanceModelOutput:
+class IoReluctanceModelOutput:
     """output DTO for reluctance model simulation within the inductor optimization."""
 
     volume: float
