@@ -450,6 +450,14 @@ NbSetpsPerPeriod
 NbSteps
 WaveformType
 powerloss
+StoReluctanceModelInput
+StoReluctanceModelOutput
+StoFemInput
+StoFemOutput
+IoReluctanceModelInput
+IoReluctanceModelOutput
+IoFemInput
+IoFemOutput
 
 # electrostatic
 capacitive
