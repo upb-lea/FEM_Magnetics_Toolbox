@@ -109,7 +109,7 @@ class StoSingleInputConfig:
     material_data_sources: MaterialDataSources
 
 @dataclass
-class FemInput:
+class StoFemInput:
     """Input DTO for a FEM simulation within the stacked transformer optimization."""
 
     # general parameters
@@ -141,7 +141,7 @@ class FemInput:
     time_current_2_vec: np.ndarray
 
 @dataclass
-class FemOutput:
+class StoFemOutput:
     """Output DTO for a FEM simulation within the stacked transformer optimization."""
 
     n_conc: float
@@ -149,12 +149,12 @@ class FemOutput:
     l_h_conc: float
     p_loss_winding_1: float
     p_loss_winding_2: float
-    eddy_core: float
-    core: float
+    p_core_sine: float
+    p_core_magnet: float
     volume: float
 
 @dataclass
-class ReluctanceModelInput:
+class StoReluctanceModelInput:
     """Input DTO for reluctance model simulation within the inductor optimization."""
 
     target_inductance_matrix: np.ndarray
@@ -198,7 +198,7 @@ class ReluctanceModelInput:
     fft_phases_list_2: list[float]
 
 @dataclass
-class ReluctanceModelOutput:
+class StoReluctanceModelOutput:
     """output DTO for reluctance model simulation within the inductor optimization."""
 
     # set additional attributes
