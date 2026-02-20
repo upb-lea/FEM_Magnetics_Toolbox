@@ -1829,7 +1829,7 @@ def test_inductor_core_material_database(fixture_inductor_core_material_database
 
     fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                         "geometry_inductor_core_material_database.json")
-    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=5)
+    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=6)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
@@ -2106,7 +2106,7 @@ def test_transformer_5_windings(fixture_transformer_5_windings: pytest.fixture):
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "log_transformer_5_windings.json")
-    compare_result_logs(test_result_log, fixture_result_log, significant_digits=3)
+    compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
