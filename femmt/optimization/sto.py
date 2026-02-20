@@ -8,7 +8,8 @@ import json
 import pickle
 
 # own libraries
-from femmt.optimization.sto_dtos import StoSingleInputConfig, StoTargetAndFixedParameters, StoFemInput, StoFemOutput, StoReluctanceModelInput, StoReluctanceModelOutput
+from femmt.optimization.sto_dtos import (StoSingleInputConfig, StoTargetAndFixedParameters, StoFemInput, StoFemOutput,
+                                         StoReluctanceModelInput, StoReluctanceModelOutput)
 import femmt.functions as ff
 import femmt.functions_reluctance as fr
 import materialdatabase as mdb
