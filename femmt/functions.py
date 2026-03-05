@@ -1,13 +1,14 @@
 """Contains different functions, used by the whole FEMMT functions."""
 # Python standard libraries
 import json
-import pkg_resources
 import subprocess
 import sys
 import os
 import warnings
 from scipy.integrate import quad
 import logging
+import importlib.metadata
+
 # Third parry libraries
 import gmsh
 from matplotlib import pyplot as plt
@@ -17,7 +18,6 @@ from materialdatabase.meta.data_enums import Material
 import magnethub as mh
 import schemdraw
 import schemdraw.elements as elm
-
 
 # Local libraries
 from femmt.constants import *
@@ -845,11 +845,20 @@ def pm_core_inner_diameter_calculator(inner_core_diameter: float, hole_diameter:
 
     return np.around(2 * np.sqrt(area_total / np.pi), decimals=4)
 
+def list_installed_packages() -> set:
+    """"List installed python packages."""
+    distributions = importlib.metadata.distributions()
+    installed_packages = []
+    for dist in distributions:
+        args = dist.metadata['Name']
+        installed_packages.append(args)
+    set_installed_packages = set(installed_packages)
+    return set_installed_packages
 
 def install_pyfemm_if_missing() -> None:
     """Installs femm-software pip package in case of running on Windows machine. Windows users only."""
     required = {'pyfemm'}
-    installed = {pkg.key for pkg in pkg_resources.working_set}
+    installed = list_installed_packages()
     missing = required - installed
 
     if missing:
