@@ -1157,14 +1157,17 @@ def i_rms(time_current_matrix: np.array) -> float:
     time = time_current_matrix[0]
     current = time_current_matrix[1]
 
+    time_unique, index = np.unique(time, return_index=True)
+    current_unique = current[index]
+
     square_integral_sum = 0
 
     # set up function
-    for count in np.arange(np.shape(time_current_matrix)[1] - 1):
+    for count in np.arange(np.shape(current_unique)[0] - 1):
         # figure out linear equation between points
-        y_axis = current[count]
-        delta_time = time[count + 1] - time[count]
-        delta_current = current[count + 1] - current[count]
+        y_axis = current_unique[count]
+        delta_time = time_unique[count + 1] - time_unique[count]
+        delta_current = current_unique[count + 1] - current_unique[count]
         gradient = delta_current / delta_time
 
         # calculate solution of (partly) square integral
@@ -1175,7 +1178,7 @@ def i_rms(time_current_matrix: np.array) -> float:
         square_integral_sum += square_integral
 
     # return "mean" and "root" to finalize rms calculation
-    return np.sqrt(square_integral_sum / time[-1])
+    return np.sqrt(square_integral_sum / time_unique[-1])
 
 def calc_skin_depth(frequency: float, material_name: str = "Copper", temperature: float = 100) -> float:
     """
