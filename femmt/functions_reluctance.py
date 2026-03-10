@@ -539,7 +539,7 @@ def max_value_from_value_vec(*args):
 
 def phases_deg_from_time_current(time_vec: list, *args):
     """
-    Return the phases_deg of the peaks. To rebuild the signal, use cosinus instead of sine.
+    Return the phases_deg of the peaks. To rebuild the signal, use cosine instead of sine.
 
     :param time_vec: time vector with time steps
     :type time_vec: list
