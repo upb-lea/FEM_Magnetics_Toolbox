@@ -536,7 +536,6 @@ def max_value_from_value_vec(*args):
 
     return tuple(peak_list)
 
-
 def phases_deg_from_time_current(time_vec: list, *args):
     """
     Return the phases_deg of the peaks. To rebuild the signal, use cosine instead of sine.
@@ -1145,7 +1144,7 @@ def resistance_litz_wire(core_inner_diameter: float, window_w: float, window_h: 
     # return R = rho * l / A
     return total_turn_length / litz_wire_effective_area / sigma_copper
 
-def i_rms(time_current_matrix: np.array) -> float:
+def i_rms(time_current_matrix: np.ndarray) -> float:
     """
     RMS calculation from a time-current-vector.
 
@@ -1154,6 +1153,9 @@ def i_rms(time_current_matrix: np.array) -> float:
     :return: rms current
     :rtype: float
     """
+    if not isinstance(time_current_matrix, np.ndarray):
+        time_current_matrix = np.array(time_current_matrix)
+
     time = time_current_matrix[0]
     current = time_current_matrix[1]
 
