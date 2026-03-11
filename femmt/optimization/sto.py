@@ -442,7 +442,7 @@ class StackedTransformerOptimization:
                     frequency=fft_frequency, winding_area=winding_area_1_top,
                     litz_wire_material_name='Copper', temperature=reluctance_input.temperature)
 
-                p_winding_1_top += proximity_factor_1_top * primary_resistance_top * reluctance_input.fft_amplitude_list_1[count] ** 2
+                p_winding_1_top += proximity_factor_1_top * primary_resistance_top * 0.5 * reluctance_input.fft_amplitude_list_1[count] ** 2
 
                 if number_bot_prim_turns_per_column > reluctance_input.turns_1_bot:
                     winding_area_1_bot = 2 * reluctance_input.primary_litz_dict["conductor_radii"] * \
