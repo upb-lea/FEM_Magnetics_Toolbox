@@ -947,10 +947,12 @@ class InductorOptimization:
                                   plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
 
             # read the flux per mesh cell and transfer it into losses with the help of the magnet model
-            hyst_losses_custom = geo.calc_hystersis_losses_with_MagNet_model_PB_based_on_mesh_results(b_wave=fmt.WaveformType.Custom,
+            hyst_losses_magnet = geo.calc_hystersis_losses_with_MagNet_model_PB_based_on_mesh_results(b_wave=fmt.WaveformType.Custom,
                                                                                                       custom_b_wave=normalized_current_interp)
-
             result_dict_hyst = geo.read_log()
+
+            core_eddy_current_losses = result_dict_hyst['total_losses']['eddy_core']
+            core_loss_magnet_eddy = hyst_losses_magnet + core_eddy_current_losses
 
             # get the winding losses
             geo.excitation_sweep(frequency_list=fem_input.fft_frequency_list, current_list_list=current_amplitudes,
@@ -961,7 +963,7 @@ class InductorOptimization:
                 inductance=result_dict['single_sweeps'][0]['winding1']['flux_over_current'][0],
                 p_loss_winding=result_dict['total_losses']['winding1']['total'],
                 p_core_sine=result_dict_hyst['total_losses']['core'],
-                p_core_magnet=hyst_losses_custom,
+                p_core_magnet=core_loss_magnet_eddy,
                 volume=result_dict["misc"]["core_2daxi_total_volume"]
             )
             return fem_output
