@@ -3,11 +3,14 @@
 import dataclasses
 
 # 3rd party libraries
+import pandas as pd
+from materialdatabase import Data
 from magnethub.loss import LossModel
 
 # own libraries
 from femmt.optimization.ito_dtos import WorkingDirectories
 from femmt.optimization.optimization_dtos import MaterialDataSources
+from femmt import ImportedComplexCoreMaterial
 
 @dataclasses.dataclass
 class InductorInsulationDTO:
@@ -66,6 +69,9 @@ class InductorOptimizationTargetAndFixedParameters:
     fft_frequency_list: list[float]
     fft_amplitude_list: list[float]
     fft_phases_list: list[float]
+    initial_mag_curve_list: list[pd.DataFrame]
+    imported_complex_material_list: list[ImportedComplexCoreMaterial]
+    current_offset: float
 
 @dataclasses.dataclass
 class IoFemInput:
@@ -132,6 +138,10 @@ class IoReluctanceModelInput:
     fft_frequency_list: list[float]
     fft_amplitude_list: list[float]
     fft_phases_list: list[float]
+    # ASA: Workaround due to unfortunately always staticmethod
+    initial_mag_curve: pd.DataFrame | None = None
+    imported_complex_material: ImportedComplexCoreMaterial| None = None
+    current_offset: float = 0
 
 @dataclasses.dataclass
 class IoReluctanceModelOutput:
