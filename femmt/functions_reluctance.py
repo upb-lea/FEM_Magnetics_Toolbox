@@ -1271,7 +1271,7 @@ def calc_proximity_factor_air_gap(litz_wire_name: str, number_turns: int, r_1: f
     return proximity_factor
 
 def magent_loss_model_on_cylinder_radiant(magnet_material_model: mh.loss.LossModel, r_cyl_inner: np.float64, r_cyl_outer: np.float64,
-                                          time_vec: np.ndarray, flux_vec: np.ndarray, h_cyl: np.ndarray, temperature: np.float64, total_opening_angle_rad: float = 110 / 360 * 2 * np.pi):
+                                          time_vec: np.ndarray, flux_vec: np.ndarray, h_cyl: np.ndarray, temperature: np.float64, total_opening_angle_rad: float = 210 / 360 * 2 * np.pi):
 
     def flux_density_cylinder_envelope(cylinder_radius: float | np.ndarray, flux_in_cylinder: float | np.ndarray,
                                        height_of_cylinder: float | np.ndarray, magnet_material_model: mh.loss.LossModel,
