@@ -357,7 +357,8 @@ class InductorOptimization:
                     iso_core_top=reluctance_input.insulations.core_top, iso_core_bot=reluctance_input.insulations.core_bot,
                     frequency=fft_frequency, litz_wire_material_name='Copper', temperature=reluctance_input.temperature)
 
-                p_winding += proximity_factor_assumption * winding_dc_resistance * reluctance_input.fft_amplitude_list[count] ** 2
+                # factor 0.5 due to RMS value needed, but fft returns peak values
+                p_winding += proximity_factor_assumption * winding_dc_resistance * 0.5 * reluctance_input.fft_amplitude_list[count] ** 2
 
             p_loss = p_winding + p_core
 
@@ -1376,10 +1377,12 @@ class InductorOptimization:
                                   plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
 
             # read the flux per mesh cell and transfer it into losses with the help of the magnet model
-            hyst_losses_custom = geo.calc_hystersis_losses_with_MagNet_model_PB_based_on_mesh_results(b_wave=fmt.WaveformType.Custom,
+            hyst_losses_magnet = geo.calc_hystersis_losses_with_MagNet_model_PB_based_on_mesh_results(b_wave=fmt.WaveformType.Custom,
                                                                                                       custom_b_wave=normalized_current_interp)
-
             result_dict_hyst = geo.read_log()
+
+            core_eddy_current_losses = result_dict_hyst['total_losses']['eddy_core']
+            core_loss_magnet_eddy = hyst_losses_magnet + core_eddy_current_losses
 
             # get the winding losses
             geo.excitation_sweep(frequency_list=fem_input.fft_frequency_list, current_list_list=current_amplitudes,
@@ -1390,7 +1393,7 @@ class InductorOptimization:
                 inductance=result_dict['single_sweeps'][0]['winding1']['flux_over_current'][0],
                 p_loss_winding=result_dict['total_losses']['winding1']['total'],
                 p_core_sine=result_dict_hyst['total_losses']['core'],
-                p_core_magnet=hyst_losses_custom,
+                p_core_magnet=core_loss_magnet_eddy,
                 volume=result_dict["misc"]["core_2daxi_total_volume"]
             )
             return fem_output
@@ -1522,7 +1525,7 @@ class InductorOptimization:
         def full_simulation(df_geometry: pd.DataFrame, current_waveform: list, inductor_config_filepath: str, process_number: int = 1,
                             print_derivations: bool = False) -> tuple:
             """
-            Reluctance model (hysteresis losses) and FEM simulation (winding losses and eddy current losses) for geometries from df_geometry.
+            FEM simulation (winding losses and hysteresis losses from magnet model) for geometries from df_geometry.
 
             :param df_geometry: Pandas dataframe with only one single geometries
             :type df_geometry: pd.DataFrame
@@ -1641,18 +1644,10 @@ class InductorOptimization:
 
                 reluctance_output: IoReluctanceModelOutput = InductorOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_input)
 
-                p_core = reluctance_output.p_hyst + fem_output.p_core_sine
-                p_total = p_core + fem_output.p_loss_winding
-
                 # Take over the result
                 volume_result = reluctance_output.volume
                 area_to_heat_sink_result = reluctance_output.area_to_heat_sink
-
-                p_core = reluctance_output.p_hyst + fem_output.p_core_sine
-                p_total = p_core + fem_output.p_loss_winding
-
-                # Debug ASA
-                print(f"Ind.={fem_output.inductance} gap={fem_input.air_gap_length}")
+                p_total = fem_output.p_core_magnet + fem_output.p_loss_winding
 
                 if print_derivations:
                     logger.info(f"Inductance reluctance: {local_config.target_inductance}")
@@ -1716,3 +1711,4 @@ class InductorOptimization:
                     # logger.info(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.p_core_magnet) / reluctance_output.p_hyst * 100} %")
 
             return volume_result, p_total, area_to_heat_sink_result, fem_output.p_loss_winding, p_core
+

@@ -536,10 +536,9 @@ def max_value_from_value_vec(*args):
 
     return tuple(peak_list)
 
-
 def phases_deg_from_time_current(time_vec: list, *args):
     """
-    Return the phases_deg of the peaks.
+    Return the phases_deg of the peaks. To rebuild the signal, use cosine instead of sine.
 
     :param time_vec: time vector with time steps
     :type time_vec: list
@@ -1112,6 +1111,7 @@ def resistance_litz_wire(core_inner_diameter: float, window_w: float, window_h: 
         # figure out the windings per column
         windings_per_column = possible_number_turns_per_column * np.ones(int(number_of_columns))
         last_column_turns = np.mod(turns_count, possible_number_turns_per_column)
+
         # Check, if more windings necessary
         if last_column_turns != 0:
             windings_per_column[-1] = last_column_turns
@@ -1133,6 +1133,7 @@ def resistance_litz_wire(core_inner_diameter: float, window_w: float, window_h: 
         number_of_rows = np.ceil(turns_count / possible_number_turns_per_row)
         windings_per_row = possible_number_turns_per_row * np.ones(int(number_of_rows))
         last_row_turns = np.mod(turns_count, possible_number_turns_per_row)
+
         # Check, if more windings necessary
         if last_row_turns != 0:
             windings_per_row[-1] = last_row_turns
@@ -1149,7 +1150,7 @@ def resistance_litz_wire(core_inner_diameter: float, window_w: float, window_h: 
     # return R = rho * l / A
     return total_turn_length / litz_wire_effective_area / sigma_copper
 
-def i_rms(time_current_matrix: np.array) -> float:
+def i_rms(time_current_matrix: np.ndarray) -> float:
     """
     RMS calculation from a time-current-vector.
 
@@ -1158,17 +1159,23 @@ def i_rms(time_current_matrix: np.array) -> float:
     :return: rms current
     :rtype: float
     """
+    if not isinstance(time_current_matrix, np.ndarray):
+        time_current_matrix = np.array(time_current_matrix)
+
     time = time_current_matrix[0]
     current = time_current_matrix[1]
+
+    time_unique, index = np.unique(time, return_index=True)
+    current_unique = current[index]
 
     square_integral_sum = 0
 
     # set up function
-    for count in np.arange(np.shape(time_current_matrix)[1] - 1):
+    for count in np.arange(np.shape(current_unique)[0] - 1):
         # figure out linear equation between points
-        y_axis = current[count]
-        delta_time = time[count + 1] - time[count]
-        delta_current = current[count + 1] - current[count]
+        y_axis = current_unique[count]
+        delta_time = time_unique[count + 1] - time_unique[count]
+        delta_current = current_unique[count + 1] - current_unique[count]
         gradient = delta_current / delta_time
 
         # calculate solution of (partly) square integral
@@ -1179,7 +1186,7 @@ def i_rms(time_current_matrix: np.array) -> float:
         square_integral_sum += square_integral
 
     # return "mean" and "root" to finalize rms calculation
-    return np.sqrt(square_integral_sum / time[-1])
+    return np.sqrt(square_integral_sum / time_unique[-1])
 
 def calc_skin_depth(frequency: float, material_name: str = "Copper", temperature: float = 100) -> float:
     """
