@@ -421,8 +421,7 @@ class ImportedComplexCoreMaterial:
         if self.permittivity_datasource != DataSource.Datasheet:
             self.permittivity = self.database.get_complex_permittivity(material=material,
                                                                        data_source=permittivity_datasource)
-            self.permittivity.fit_permittivity_magnitude()
-            self.permittivity.fit_loss_angle()
+            self.permittivity.fit_sigma()
 
     def update_permittivity(self, frequency: float) -> None:
         """Update permittivity and calculate equivalent conductivity at a given frequency.
