@@ -125,7 +125,7 @@ class MagneticComponent:
         self.insulation: Insulation = None  # Contains information about the needed insulations
         self.winding_windows = None
         self.is_winding_windows_valid = False
-       # self.winding_windows: Contains a list of every winding_window which was created containing a
+        # self.winding_windows: Contains a list of every winding_window which was created containing a
         # list of virtual_winding_windows
         self.stray_path = None  # Contains information about the stray_path (only for integrated transformers)
 
@@ -209,10 +209,29 @@ class MagneticComponent:
         self.onelab_client = onelab.client(__file__)
         self.simulation_name = simulation_name
 
-    def initialize_component_parameter(self, material_name: str , temperature: float,  permeability_datasource_name: str,
-                                  permittivity_datasource_name: str, core_dimensions: SingleCoreDimensions,
-                                  air_gaps: AirGaps, insulation: Insulation, winding_windows: list[WindingWindow]):
+    def initialize_component_parameter(self, material_name: str, temperature: float, permeability_datasource_name: str,
+                                       permittivity_datasource_name: str, core_dimensions: SingleCoreDimensions,
+                                       air_gaps: AirGaps, insulation: Insulation, winding_windows: list[WindingWindow]):
+        """
+        Initialize the magnetic component parameter.
 
+        :param material_name: Name of the magnetic material
+        :type  material_name: str
+        :param temperature: Temperature of the material
+        :type  temperature: float
+        :param permeability_datasource_name: Path of datasource for permeability data
+        :type  permeability_datasource_name: str
+        :param permittivity_datasource_name: Path of datasource for permittivity data
+        :type  permittivity_datasource_name: str
+        :param core_dimensions: Dimension data of the core
+        :type  core_dimensions: SingleCoreDimensions
+        :param air_gaps: Air gaps data
+        :type  air_gaps: AirGaps
+        :param insulation: Insulation data
+        :type  insulation: Insulation
+        :param winding_windows: List of winding windows
+        :type  winding_windows: list[WindingWindow]
+        """
         # Translate material and data sources
         material = Material(material_name)
         permeability_datasource = DataSource(permeability_datasource_name)
@@ -239,14 +258,18 @@ class MagneticComponent:
         self.set_insulation(insulation)
         self.set_winding_windows(winding_windows)
 
-    def get_core_parameter(self):
+    def get_core_parameter(self) -> Core:
+        """
+        Return the core parameter.
 
+        :return: Core parameter of geo-object
+        :rtype:  Core
+        """
         # Check, if core parameter are invalid
         if not self.is_core_parameter_valid:
-            raise ValueError("Core parameter are invalid. You need to set them by methode 'initialize_core_parameter'!")
+            raise ValueError("Core parameter are invalid. You need to set them by method 'initialize_core_parameter'!")
         # Return core parameter
-        return(self.core)
-
+        return self.core
 
     def calc_hystersis_losses_with_MagNet_model_PB_based_on_reluctance(self, peak_magnetizing_current: float = 1, b_wave: WaveformType = WaveformType.Sine,
                                                                        custom_b_wave: np.ndarray = None) -> float:
@@ -624,7 +647,6 @@ class MagneticComponent:
 
         # Set core parameter flag to True
         self.is_airgap_parameter_valid = True
-
 
     def set_winding_windows(self, winding_windows: list[WindingWindow]):
         """
@@ -1541,31 +1563,37 @@ class MagneticComponent:
             with open(os.path.join(os.path.join(self.file_data.e_m_mesh_file)), "w") as mesh_file:
                 mesh_file.write(mesh_data)
 
-
     def single_simulation_with_current_offset(self, freq: float, current: list[float], current_offset: float,
                                               initial_mag_curve: pd.DataFrame, phi_deg: list[float] = None,
                                               plot_interpolation: bool = False, show_fem_simulation_results: bool = True,
-                                              benchmark: bool = False):
+                                              benchmark: bool = False) -> tuple[float, float]:
         """
         Start a _single_ electromagnetic ONELAB simulation with current offset.
+
         Therefor the h-offset is calculated in a first simulation to load the complex permeability.
 
-        :param plot_interpolation:
         :param freq: frequency to simulate
-        :type freq: float
-        :param current: current to simulate
+        :type  freq: float
+        :param current: List of current measured points within a period (average value has to be 0)
+        :type  current: list[float]
         :param current_offset: current offset
-        :param phi_deg: phase angle in degree
+        :type  current_offset: float
+        :param initial_mag_curve: Initial magnetization curve
+        :type  initial_mag_curve: pd.DataFrame
+        :param phi_deg: phase angle in degree of current measured points
         :type phi_deg: list[float]
+        :param plot_interpolation: If True, plots interpolation of data. (Not used in sub-methods)
+        :type plot_interpolation: bool
         :param show_fem_simulation_results: Set to True to show the simulation results after the simulation has finished
         :type show_fem_simulation_results: bool
         :param benchmark: Benchmark simulation (stop time). Defaults to False.
         :type benchmark: bool
+        :return: Dynamic inductance and static inductance
+        :rtype:  tuple[float, float]
         """
         # Variable declaration
         h_offset = 0
         h_offset_max = 0
-
 
         # Create the model (ASA: Later to check condition, if this is necessary)
         self.create_model(freq=freq, pre_visualize_geometry=show_fem_simulation_results, save_png=False)
@@ -1574,7 +1602,7 @@ class MagneticComponent:
         self.core.material.calculate_without_h_offset()
 
         # Check if current offset is set to 0
-        if current_offset==0:
+        if current_offset == 0:
             self.single_simulation(freq, current, phi_deg, plot_interpolation, show_fem_simulation_results, benchmark)
             return
 
@@ -1583,8 +1611,8 @@ class MagneticComponent:
 
         current_offset_list = [current_offset]
         # Calculate with low frequency (1 Hz) to get the b-offset
-        self.single_simulation( 1, current_offset_list,show_fem_simulation_results=show_fem_simulation_results)
-        result_data_file=os.path.join(self.file_data.results_folder_path,"log_electro_magnetic.json")
+        self.single_simulation(1, current_offset_list, show_fem_simulation_results=show_fem_simulation_results)
+        result_data_file = os.path.join(self.file_data.results_folder_path, "log_electro_magnetic.json")
 
         if os.path.exists(result_data_file):
             with open(result_data_file, 'r', encoding='utf-8') as file_handler:
@@ -1593,7 +1621,7 @@ class MagneticComponent:
             raise ValueError(f"Result data file  {result_data_file} is not created!")
 
         # Get static inductance
-        static_inductance = result_data["single_sweeps"][0]["winding1"]["flux_over_current"][0]
+        static_inductance = float(result_data["single_sweeps"][0]["winding1"]["flux_over_current"][0])
 
         # Calculate the b-Field from json data
         core_inner_diameter = result_data["simulation_settings"]["core"]["core_inner_diameter"]
@@ -1605,8 +1633,8 @@ class MagneticComponent:
         if b_lower_line["b"] == b_upper_line["b"]:
             required_h_offset = b_lower_line["h"]
         else:
-            required_h_offset= b_lower_line["h"] + (b_upper_line["h"] - b_lower_line["h"]) * (
-                               b_field - b_lower_line["b"]) / (b_upper_line["b"] - b_lower_line["b"])
+            required_h_offset = (b_lower_line["h"] + (b_upper_line["h"] - b_lower_line["h"]) * (
+                                 b_field - b_lower_line["b"]) / (b_upper_line["b"] - b_lower_line["b"]))
 
         # Set h-offset for calculation
         self.core.material.calculate_with_h_offset(required_h_offset)
@@ -1618,10 +1646,12 @@ class MagneticComponent:
                 result_data = json.load(file_handler)
         else:
             raise ValueError(f"Result data file  {result_data_file} is not created!")
+        # Get dynamic inductance value
+        dynamic_inductance = float(result_data["single_sweeps"][0]["winding1"]["flux_over_current"][0])
+        # Reset h-Offset calculation
+        self.core.material.calculate_without_h_offset()
 
-        dynamic_inductance = result_data["single_sweeps"][0]["winding1"]["flux_over_current"][0]
-
-        return static_inductance, dynamic_inductance
+        return dynamic_inductance, static_inductance
 
     def single_simulation(self, freq: float, current: list[float], phi_deg: list[float] = None,
                           plot_interpolation: bool = False, show_fem_simulation_results: bool = True,
@@ -1963,8 +1993,7 @@ class MagneticComponent:
         logger.info(f"The electromagnetic results are stored here: {self.file_data.e_m_results_log_path}")
 
     def component_study(self, time_current_vectors: list[list[list[float]]], fft_filter_value_factor: float = 0.01):
-        """
-        Full study for the component: inductance values and losses.
+        """Full study for the component: inductance values and losses.
 
         :param time_current_vectors: ....
         :type time_current_vectors: list[list[list[float]]]
@@ -2246,6 +2275,7 @@ class MagneticComponent:
                 "current_phases_deg": None
             }
         }
+
         """
         def split_hysteresis_loss_excitation_center_tapped(hyst_frequency: list, hyst_loss_amplitudes: list, hyst_loss_phases_deg: list):
             """

@@ -369,6 +369,8 @@ DirResVals
 DirResValsCore
 DirStrandCoeff
 ScaleType
+SingleCoreDimensions
+ImportedComplexCoreMaterial
 pB
 pI
 nf

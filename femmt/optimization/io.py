@@ -6,7 +6,6 @@ import pickle
 import logging
 import shutil
 import json
-from os import supports_fd
 
 # 3rd party libraries
 import numpy as np
@@ -16,8 +15,6 @@ import magnethub as mh
 import pandas as pd
 from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
-from scipy.interpolate import interp1d
-from scipy.signal import savgol_filter
 import tqdm
 
 # onw libraries
@@ -153,10 +150,11 @@ class InductorOptimization:
                 # instantiate material-specific model
                 mdl: mh.loss.LossModel = mh.loss.LossModel(material=material_name, team="paderborn")
                 magnet_model_list.append(mdl)
-                initial_magnetization_curve = InductorOptimization.ReluctanceModel.get_initial_magnetization_curve(material_db.get_initial_magnetization_curve(mdb.Material(material_name), 500, config.temperature))
+                initial_magnetization_curve = material_db.get_initial_magnetization_curve(mdb.Material(material_name), 500, config.temperature)
                 initial_mag_curve_list.append(initial_magnetization_curve)
-                imported_complex_material_list.append(ImportedComplexCoreMaterial(material_name, config.temperature, config.material_data_sources.permeability_datasource,
-                                                                                  config.material_data_sources.permittivity_datasource))
+                imported_complex_material_list.append(ImportedComplexCoreMaterial(
+                    material_name, config.temperature, config.material_data_sources.permeability_datasource,
+                    config.material_data_sources.permittivity_datasource))
             # set up working directories
             working_directories = itof.set_up_folder_structure(config.inductor_optimization_directory)
 
@@ -179,71 +177,6 @@ class InductorOptimization:
                 current_offset=current_offset
             )
             return target_and_fix_parameters
-
-        @staticmethod
-        def get_initial_magnetization_curve(raw_initial_mag_curve: pd.DataFrame) -> pd.DataFrame:
-            """Calculate initial magnetization curve based on Jiles-Atherton model.
-
-            Later to calculate in material database
-
-            :param raw_initial_mag_curve: configuration file
-            :type raw_initial_mag_curve: ItoSingleInputConfig
-            :return: calculated initial_mag_curve
-            :rtype: pd.DataFrame
-            """
-            # Remove less equal 0 and add 0 and create symetric branch
-            raw_initial_mag_curve_pos = raw_initial_mag_curve[(raw_initial_mag_curve['h'] > 0) & (raw_initial_mag_curve['b'] > 0)]
-            raw_initial_mag_curve_neg = raw_initial_mag_curve_pos.copy()
-            raw_initial_mag_curve_neg['h'] = -raw_initial_mag_curve_neg['h']
-            raw_initial_mag_curve_neg['b'] = -raw_initial_mag_curve_neg['b']
-            raw_initial_mag_curve_pos = pd.concat([raw_initial_mag_curve_pos.iloc[[0]].copy(), raw_initial_mag_curve_pos, ], ignore_index=True)
-            raw_initial_mag_curve_pos.at[0, "b"] = 0
-            raw_initial_mag_curve_pos.at[0, "h"] = 0
-            # Assemble curve and sort for h
-            raw_initial_mag_curve = pd.concat([raw_initial_mag_curve_pos, raw_initial_mag_curve_neg, ], ignore_index=True)
-            raw_initial_mag_curve = raw_initial_mag_curve.sort_values(by='h').reset_index(drop=True)
-
-            def jiles_atherton_model(h, params):
-                # params: z.B. [Ms, a, k, c, alpha]
-                Ms, a, k, c, alpha = params
-                # Berechne B(h) nach Jiles-Atherton
-                # (Hier solltest du deine Implementierung einfügen)
-                B = Ms * np.tanh((h + alpha * Ms) / a)  # stark vereinfacht
-                return B
-
-            # Residuenfunktion für Optimierung
-            def residuals(params, h, b_measured):
-                b_model = jiles_atherton_model(h, params)
-                return b_model - b_measured
-
-            # smoothed raw data
-            h = raw_initial_mag_curve['h'].values
-            b = raw_initial_mag_curve['b'].values
-
-            # Start parameter values
-            params0 = [1.0, 1.0, 1.0, 0.1, 0.01]
-
-            # Optimization
-            result = optimize.least_squares(residuals, params0, args=(h, b))
-
-            # Optimal parameter set
-            params_opt = result.x
-
-            # Fit model curve with parameter
-            b_fit = jiles_atherton_model(h, params_opt)
-
-            # Create result DataFrame
-            initial_mag_curve = pd.DataFrame({"b": jiles_atherton_model(h, params_opt), "h": h})
-
-            # Debug
-            # plt.plot(h, raw_initial_mag_curve['b'], label='Messdaten', alpha=0.5)
-            # plt.plot(h, initial_mag_curve['b'], label='Jiles–Atherton Modell')
-            # plt.xlabel('H')
-            # plt.ylabel('B')
-            # plt.legend()
-            # plt.show()
-
-            return(initial_mag_curve)
 
         @staticmethod
         def objective(trial: optuna.Trial, config: InductorOptimizationDTO, target_and_fixed_parameters: InductorOptimizationTargetAndFixedParameters):
@@ -341,6 +274,7 @@ class InductorOptimization:
             trial.set_user_attr('window_h', window_h)
             trial.set_user_attr('window_w', window_w)
             trial.set_user_attr('flux_density_peak', reluctance_output.flux_density_peak)
+            trial.set_user_attr('dynamic_mu_r_abs', reluctance_output.dynamic_mu_r_abs)
 
             return reluctance_output.volume, reluctance_output.p_loss_total
 
@@ -440,16 +374,26 @@ class InductorOptimization:
             return reluctance_model_output
 
         @staticmethod
-        def single_reluctance_model_simulation_dc_offset(reluctance_input: IoReluctanceModelInput) -> IoReluctanceModelOutput:
+        def single_reluctance_model_simulation_dc_offset(reluctance_input: IoReluctanceModelInput,
+                                                         act_dynamic_mu_r_abs: float | None = None) -> IoReluctanceModelOutput:
             """Perform a single reluctance model simulation. E.g. during optimization or during a re-simulation of a single operating point.
 
             :param reluctance_input: Input parameters for the reluctance model simulation.
             :type reluctance_input: IoReluctanceModelInput
+            :param act_dynamic_mu_r_abs: Dynamic permeability value calculated in a previous step or None if not calculated
+            :type act_dynamic_mu_r_abs: float | None
             :return: Output parameters of the reluctance model simulation
             :rtype: IoReluctanceModelOutput
             """
-            # Variable declarationreluctance_input = {IoReluctanceModelInput} IoReluctanceModelInput(target_inductance=1e-05, core_inner_diameter=0.02, window_w=0.012, window_h=0.013463557904098145, turns...imported_complex_material=<femmt.model.ImportedComplexCoreMaterial object at 0x7c3ca5521e20>, current_offset=5.998990605058874)... View
-            dynamic_mu_r_abs = reluctance_input.material_mu_r_abs
+            if act_dynamic_mu_r_abs is None:
+                # Variable declarationreluctance_input = {IoReluctanceModelInput} IoReluctanceModelInput(target_inductance=1e-05,
+                # core_inner_diameter=0.02, window_w=0.012, window_h=0.013463557904098145,
+                # turns...imported_complex_material=<femmt.model.ImportedComplexCoreMaterial object at 0x7c3ca5521e20>,
+                # current_offset=5.998990605058874)... View
+                dynamic_mu_r_abs = reluctance_input.material_mu_r_abs
+            else:
+                dynamic_mu_r_abs = act_dynamic_mu_r_abs
+
             previous_dynamic_mu_r_abs = dynamic_mu_r_abs
 
             # prepare equidistant flux vector for the magnet loss simulation
@@ -472,18 +416,29 @@ class InductorOptimization:
                 core_cross_section = (reluctance_input.core_inner_diameter / 2) ** 2 * np.pi
                 flux_avg_density = flux_avg / core_cross_section
 
+                # Check if flux avarage density is too close to saturation
+                if flux_avg_density > 0.8 * reluctance_input.initial_mag_curve["b"].iloc[-1]:
+                    break
+
                 # Get the dynamic mu_r
-                dynamic_mu_r_abs = InductorOptimization.ReluctanceModel.get_dynamic_permeability(flux_avg_density, reluctance_input.initial_mag_curve)
+                dynamic_mu_r_abs = InductorOptimization.ReluctanceModel.get_dynamic_permeability(
+                    flux_avg_density, reluctance_input.imported_complex_material, reluctance_input.initial_mag_curve,
+                    reluctance_input.fundamental_frequency, reluctance_input.temperature)
+
+                # Check if dynamic mu_r is less than 0, this indicates an error
+                if dynamic_mu_r_abs < 0:
+                    break
+
                 # Check if the calculation is accurate enough (still missing)
-                if abs((dynamic_mu_r_abs - previous_dynamic_mu_r_abs)/dynamic_mu_r_abs) < 0.01 :
+                if abs((dynamic_mu_r_abs - previous_dynamic_mu_r_abs)/dynamic_mu_r_abs) < 0.01:
                     break
                 # Overtake actual value
                 previous_dynamic_mu_r_abs = dynamic_mu_r_abs
 
             # Do not cross out saturation, as the genetic algorithm is missing bad results to improve its suggestions
-            if flux_avg_density > 0.8 * reluctance_input.initial_mag_curve["b"].iloc[-1]:
+            if flux_avg_density > 0.8 * reluctance_input.initial_mag_curve["b"].iloc[-1] or dynamic_mu_r_abs < 0:
                 print(f"Average flux density is too high (80 % of b_sat): {flux_avg_density} "
-                      f"T > 0.8 * {reluctance_input.initial_mag_curve["b"].iloc[-1]} T  mur={dynamic_mu_r_abs}")
+                      f"T > 0.8 * {reluctance_input.initial_mag_curve['b'].iloc[-1]} T  mur={dynamic_mu_r_abs}")
                 reluctance_model_output = IoReluctanceModelOutput(
                     p_loss_total=float('nan'),
                     volume=float('nan'),
@@ -491,7 +446,8 @@ class InductorOptimization:
                     p_winding=float('nan'),
                     p_hyst=float('nan'),
                     l_air_gap=float('nan'),
-                    flux_density_peak=flux_avg_density
+                    flux_density_peak=flux_avg_density,
+                    dynamic_mu_r_abs=float('nan')
                 )
                 return reluctance_model_output
                 # return float('nan'), float('nan')
@@ -515,7 +471,7 @@ class InductorOptimization:
             # Do not cross out saturation, as the genetic algorithm is missing bad results to improve its suggestions
             if (flux_avg_density + flux_amplitude_density) > 0.8 * reluctance_input.initial_mag_curve["b"].iloc[-1]:
                 print(f"Maximum flux density is too high (80 % of b_sat): {flux_avg_density + flux_amplitude_density} "
-                      f"T > 0.8 * {reluctance_input.initial_mag_curve["b"].iloc[-1]} T mur={dynamic_mu_r_abs}")
+                      f"T > 0.8 * {reluctance_input.initial_mag_curve['b'].iloc[-1]} T mur={dynamic_mu_r_abs}")
                 reluctance_model_output = IoReluctanceModelOutput(
                     p_loss_total=float('nan'),
                     volume=float('nan'),
@@ -523,7 +479,8 @@ class InductorOptimization:
                     p_winding=float('nan'),
                     p_hyst=float('nan'),
                     l_air_gap=float('nan'),
-                    flux_density_peak=flux_avg_density + flux_amplitude_density
+                    flux_density_peak=flux_avg_density + flux_amplitude_density,
+                    dynamic_mu_r_abs=float('nan')
                 )
                 return reluctance_model_output
 
@@ -533,9 +490,6 @@ class InductorOptimization:
             p_density = InductorOptimization.ReluctanceModel.get_power_density(
                 flux_avg_density, flux_amplitude_density, reluctance_input.imported_complex_material, reluctance_input.initial_mag_curve,
                 reluctance_input.fundamental_frequency, reluctance_input.temperature)
-
-            p_density_factor = p_density_cmp/p_density*170/21
-            act_k = p_density / p_density_cmp
 
             # volume calculation
             r_outer = fr.calculate_r_outer(reluctance_input.core_inner_diameter, reluctance_input.window_w)
@@ -574,7 +528,7 @@ class InductorOptimization:
                 p_winding += proximity_factor_assumption * winding_dc_resistance * reluctance_input.fft_amplitude_list[count] ** 2
 
             # Add DC-loss P= R * I²
-            p_winding += winding_dc_resistance * reluctance_input.current_offset **2
+            p_winding += winding_dc_resistance * reluctance_input.current_offset ** 2
 
             p_loss = p_winding + p_core
 
@@ -586,46 +540,92 @@ class InductorOptimization:
                 p_hyst=p_core,
                 l_air_gap=l_air_gap,
                 flux_density_peak=np.max(flux_density),
+                dynamic_mu_r_abs=float(dynamic_mu_r_abs)
             )
-
-            # Debug
-            print(f"Ok-> Possible coil max. Flux density:{flux_avg_density + flux_amplitude_density} "
-                  f"with avg. {flux_amplitude_density} mur={dynamic_mu_r_abs}\n")
 
             return reluctance_model_output
 
         @staticmethod
-        def get_dynamic_permeability(flux_density: float, initial_mag_curve: pd.DataFrame) -> float :
-            # Variable declaration
-            mu_0 = 1.257e-6
+        def get_dynamic_permeability(flux_density: float, complex_material: ImportedComplexCoreMaterial, initial_mag_curve: pd.DataFrame,
+                                     fundamental_frequency: float, temperature: float) -> float:
+            """Get the dynamic permeability at given flux density.
 
-            inv_func = interp1d(initial_mag_curve["b"], initial_mag_curve["h"], bounds_error=False, fill_value="extrapolate")
-            # Check flux_density
-            if flux_density <= max(initial_mag_curve["b"]):
-                # Get flux density related h-value
-                h = inv_func(flux_density)
+            :param flux_density: Magnetic flux density
+            :type  flux_density: float
+            :param complex_material: Material data to get the dynamic permeability
+            :type  complex_material: ImportedComplexCoreMaterial
+            :param initial_mag_curve: initial magnetization curve
+            :type  initial_mag_curve: pd.DataFrame
+            :param fundamental_frequency: The fundamental frequency
+            :type  fundamental_frequency: float
+            :param temperature: Material temperature
+            :type  temperature: float
+            :return: Absolute value of the complex dynamic permeability of the material at given parameter
+            :rtype:  float
+            """
+            # Calculate h_offset from initial magnetization curve
+            b_lower_line = initial_mag_curve[initial_mag_curve["b"] <= flux_density].iloc[-1]
+            b_upper_line = initial_mag_curve[initial_mag_curve["b"] >= flux_density].iloc[0]
+            # Interplolate h-offset within initial magnetization curve between 2 measured points (if necessary)
+            if b_lower_line["b"] == b_upper_line["b"]:
+                required_h_offset = b_lower_line["h"]
             else:
-                h = max(initial_mag_curve["h"])
+                required_h_offset = b_lower_line["h"] + (b_upper_line["h"] - b_lower_line["h"]) * (
+                    flux_density - b_lower_line["b"]) / (b_upper_line["b"] - b_lower_line["b"])
 
-            # Derivate the curve
-            dyn_mu = np.gradient(initial_mag_curve["b"], initial_mag_curve["h"])
-            f_dyn_mu = interp1d(initial_mag_curve["h"], dyn_mu, bounds_error=False, fill_value="extrapolate")
+            # Check, if h-offset can be calculated from available data
+            h_offset_maximum = max(complex_material.database.get_available_h_offset(complex_material.material, complex_material.permeability_datasource))
+            if h_offset_maximum < required_h_offset:
+                logger.warning(f"Requested h_offset value {required_h_offset} is not available.\n"
+                               f"The h_offset value needs to be less equal {h_offset_maximum}!")
+                return -1
 
-            dyn_mu = f_dyn_mu(h)
-            dyn_mu_r = dyn_mu / mu_0
+            # Set h-offset for calculation, so that permeability_h_offset_upper and permeability_h_offset_lower are available
+            complex_material.calculate_with_h_offset(required_h_offset)
+            # Get complex permeability of upper curve
+            complex_mu_upper = complex_material.permeability_h_offset_upper.fit_real_and_imaginary_part_at_f_and_T(
+                fundamental_frequency, temperature, np.array([1e-6]))
+            # Calculate the absolute mu
+            mu_abs = (complex_mu_upper[0] ** 2 + complex_mu_upper[1] ** 2) ** 0.5
 
-            # Debug
-            # dyn_mu_r = dyn_mu_r/2
+            # Check of interpolation is needed
+            if required_h_offset < complex_material.h_offset_upper:
+                # Get complex permeability of lower curve
+                complex_mu_lower = complex_material.permeability_h_offset_lower.fit_real_and_imaginary_part_at_f_and_T(
+                    fundamental_frequency, temperature, np.array([1e-6]))
+                h_offset_upper = complex_material.h_offset_upper
+                h_offset_lower = complex_material.h_offset_lower
+                # Calculate the absolute mu
+                mu_abs_lower = (complex_mu_lower[0] ** 2 + complex_mu_lower[1] ** 2) ** 0.5
 
-            if dyn_mu_r == 0:
-                dyn_mu_r = 1
+                mu_delta = (mu_abs - mu_abs_lower) / (h_offset_upper - h_offset_lower) * (required_h_offset - h_offset_lower)
+                mu_abs = mu_abs_lower + mu_delta
 
-            return dyn_mu_r
+            # Reset calculation mode
+            complex_material.calculate_without_h_offset()
+
+            return mu_abs
 
         @staticmethod
         def get_power_density(flux_avg_density: float, flux_density: float, complex_material: ImportedComplexCoreMaterial, initial_mag_curve: pd.DataFrame,
                               fundamental_frequency: float, temperature: float) -> float:
+            """Get the power loss density of the material at given flux density.
 
+            :param flux_avg_density: Average magnetic flux density
+            :type  flux_avg_density: float
+            :param flux_density: Alternating magnetic flux density
+            :type  flux_density: float
+            :param complex_material: Material data to get the dynamic permeability
+            :type  complex_material: ImportedComplexCoreMaterial
+            :param initial_mag_curve: initial magnetization curve
+            :type  initial_mag_curve: pd.DataFrame
+            :param fundamental_frequency: The fundamental frequency
+            :type  fundamental_frequency: float
+            :param temperature: Material temperature
+            :type  temperature: float
+            :return: Power loss density of the material at given parameter
+            :rtype:  float
+            """
             # Calculate h_offset from  initial magnetization curve
             b_lower_line = initial_mag_curve[initial_mag_curve["b"] <= flux_avg_density].iloc[-1]
             b_upper_line = initial_mag_curve[initial_mag_curve["b"] >= flux_avg_density].iloc[0]
@@ -644,8 +644,8 @@ class InductorOptimization:
                 (fundamental_frequency,
                  temperature,
                  flux_density),
-                 *complex_material.permeability_h_offset_upper.params_pv
-            )
+                *complex_material.permeability_h_offset_upper.params_pv)
+
             # Check of interpolation is needed
             if required_h_offset < complex_material.h_offset_upper:
                 # Calculate p_density of lower curve
@@ -654,34 +654,28 @@ class InductorOptimization:
                     (fundamental_frequency,
                      temperature,
                      flux_density),
-                     *complex_material.permeability_h_offset_lower.params_pv
-                )
+                    *complex_material.permeability_h_offset_lower.params_pv)
+
                 h_offset_upper = complex_material.h_offset_upper
                 h_offset_lower = complex_material.h_offset_lower
                 p_delta = (p_density - p_lower_density) / (h_offset_upper - h_offset_lower) * (required_h_offset - h_offset_lower)
                 p_density = p_lower_density + p_delta
 
-                # Debug
-                # p_density = complex_material.permeability.pv_fit_function.get_function()(
-                #     (fundamental_frequency,
-                #      temperature,
-                #      flux_density),
-                #      *complex_material.permeability.params_pv
-                # )
+            # Reset h-offset calculation
+            complex_material.calculate_without_h_offset()
 
             return p_density
 
         @staticmethod
-        def debug_plot(data_list: list[float], label_list: list[str], color_list: list[str] = None,
-                                 interactive: bool = True) -> None:
+        def debug_plot(data_list: list[float], label_list: list[str], color_list: list[str] = None, interactive: bool = True) -> None:
             """
-            Plot an interactive debug diagram: First dataframe=x, all remaining dataframes are y-values
+            Plot an interactive debug diagram: First dataframe=x, all remaining dataframes are y-values.
 
             :param data_list: List of data. First entry is x, remaining are y
-            :type dataframes: list[float]
-            :param label_list: list of labels for the legend. Same order as df exept the first one
+            :type  data_list: list[float]
+            :param label_list: list of labels for the legend. Same order as df except the first one
             :type label_list: list[str]
-            :param color_list: list of colors for the points and legend. ame order as df exept the first one
+            :param color_list: list of colors for the points and legend.
             :type color_list: list[str]
             :param interactive: True to show trial numbers if one moves the mouse over it
             :type interactive: bool
@@ -689,7 +683,7 @@ class InductorOptimization:
             # Variable declaration
             color_list_base = ['red', 'blue', 'green', 'gray']
 
-            num_of_functions = len(dataframe_list)-1
+            num_of_functions = len(data_list)-1
             # Check if minimum 2 dataframes are part of the list
             if num_of_functions <= 0:
                 return
@@ -716,7 +710,7 @@ class InductorOptimization:
             for count, label_text in enumerate(label_list):
                 legend_list.append(mpatches.Patch(color=np.array(ff.colors_femmt_default[color_list[count]]) / 255, label=label_text))
             plt.legend(handles=legend_list)
-            sc = plt.scatter(df_all["values_0"], df_all["values_1"], s=10, c=color_array)
+            # sc = plt.scatter(df_all["values_0"], df_all["values_1"], s=10, c=color_array)
 
             # if interactive:
             #     annot = ax.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
@@ -811,6 +805,7 @@ class InductorOptimization:
                                                    storage=storage,
                                                    directions=['minimize', 'minimize'],
                                                    load_if_exists=True, sampler=sampler)
+
             if target_number_trials is not None:
                 # simulation for a given number of target trials
                 if len(study_in_storage.trials) < target_number_trials:
@@ -1062,17 +1057,10 @@ class InductorOptimization:
 
                 material_name = mdb.meta.Material(df_geometry['params_material_name'][index])
 
-                small_signal_mu_real_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_real_over_f_at_T)
-                small_signal_mu_imag_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_imag_over_f_at_T)
-
-                mu_real_at_f = np.interp(10_000, small_signal_mu_real_over_f_at_T["f"], small_signal_mu_real_over_f_at_T["mu_real"])
-                mu_imag_at_f = np.interp(10_000, small_signal_mu_imag_over_f_at_T["f"], small_signal_mu_imag_over_f_at_T["mu_imag"])
-
-                material_mu_r_abs = np.abs(np.array([mu_real_at_f + 1j * mu_imag_at_f]))
-
                 # instantiate material-specific model
                 magnet_material_model: mh.loss.LossModel = mh.loss.LossModel(material=material_name, team="paderborn")
 
+                # Set common IoReluctanceModelInput
                 reluctance_model_input = IoReluctanceModelInput(
                     core_inner_diameter=core_inner_diameter,
                     window_w=window_w,
@@ -1083,7 +1071,8 @@ class InductorOptimization:
                     litz_wire_diameter=litz_wire_diameter,
 
                     insulations=local_config.insulations,
-                    material_mu_r_abs=material_mu_r_abs,
+                    # Later to correct
+                    material_mu_r_abs=0,
                     magnet_material_model=magnet_material_model,
 
                     temperature=local_config.temperature,
@@ -1095,8 +1084,37 @@ class InductorOptimization:
                     fft_phases_list=target_and_fix_parameters.fft_phases_list
                 )
 
-                reluctance_output: IoReluctanceModelOutput = InductorOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_input)
+                # Check if simulation are without current offset
+                if target_and_fix_parameters.current_offset == 0:
 
+                    small_signal_mu_real_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_real_over_f_at_T)
+                    small_signal_mu_imag_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_imag_over_f_at_T)
+
+                    mu_real_at_f = np.interp(10_000, small_signal_mu_real_over_f_at_T["f"], small_signal_mu_real_over_f_at_T["mu_real"])
+                    mu_imag_at_f = np.interp(10_000, small_signal_mu_imag_over_f_at_T["f"], small_signal_mu_imag_over_f_at_T["mu_imag"])
+
+                    material_mu_r_abs = np.abs(np.array([mu_real_at_f + 1j * mu_imag_at_f]))
+                    # Set material constant
+                    reluctance_model_input.material_mu_r_abs = material_mu_r_abs
+                    # Calculate result
+                    reluctance_output: IoReluctanceModelOutput = InductorOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_input)
+                else:
+                    dynamic_mu_r_abs = df_geometry.iloc[0]['user_attrs_dynamic_mu_r_abs']
+
+                    for count, _ in enumerate(target_and_fix_parameters.material_mu_r_abs_list):
+                        if target_and_fix_parameters.material_name_list[count] == material_name:
+                            initial_mag_curve = target_and_fix_parameters.initial_mag_curve_list[count]
+                            imported_complex_material = target_and_fix_parameters.imported_complex_material_list[count]
+
+                    reluctance_model_input.initial_mag_curve = initial_mag_curve
+                    reluctance_model_input.imported_complex_material = imported_complex_material
+                    reluctance_model_input.current_offset = target_and_fix_parameters.current_offset
+
+                    reluctance_output: IoReluctanceModelOutput = (
+                        InductorOptimization.ReluctanceModel.single_reluctance_model_simulation_dc_offset(
+                            reluctance_model_input, dynamic_mu_r_abs))
+
+                # Extract total loss
                 p_total = reluctance_output.p_loss_total
 
                 return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink, reluctance_output.p_winding, reluctance_output.p_hyst
@@ -1378,6 +1396,109 @@ class InductorOptimization:
             return fem_output
 
         @staticmethod
+        def single_fem_simulation_with_h_offset(fem_input: IoFemInput, show_visual_outputs: bool = False) -> IoFemOutput:
+            """
+            Perform a single FEM simulation.
+
+            For parallel simulations, use different working directories.
+
+            :param fem_input: FEM input DTO
+            :type fem_input: IoFemInput
+            :param show_visual_outputs: True to show visual outputs
+            :type show_visual_outputs: bool
+            :return: FEM output DTO
+            :rtype: IoFemOutput
+            """
+            # 1. chose simulation type
+            geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.FreqDomain, component_type=fmt.ComponentType.Inductor,
+                                        working_directory=fem_input.working_directory, onelab_verbosity=fmt.Verbosity.Silent,
+                                        simulation_name=fem_input.simulation_name)
+
+            # 2. set core parameters
+            core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=fem_input.core_inner_diameter,
+                                                            window_w=fem_input.window_w,
+                                                            window_h=fem_input.window_h, core_h=fem_input.window_h + fem_input.core_inner_diameter / 2)
+
+            core_material = fmt.ImportedComplexCoreMaterial(material=fem_input.material_name,
+                                                            temperature=fem_input.temperature,
+                                                            permeability_datasource=fem_input.material_data_sources.permeability_datasource,
+                                                            permittivity_datasource=fem_input.material_data_sources.permittivity_datasource)
+
+            # Get initial magnetization curve
+            material_initial_mag_curve = core_material.database.get_initial_magnetization_curve(core_material.material, 100, fem_input.temperature)
+
+            core = fmt.Core(material=core_material,
+                            core_type=fmt.CoreType.Single,
+                            core_dimensions=core_dimensions,
+                            detailed_core_model=False)
+
+            geo.set_core(core)
+
+            # 3. set air gap parameters
+            air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+            air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, fem_input.air_gap_length, 50)
+            geo.set_air_gaps(air_gaps)
+
+            # 4. set insulations
+            insulation = fmt.Insulation(flag_insulation=True)
+            insulation.add_core_insulations(fem_input.insulations.core_top, fem_input.insulations.core_bot,
+                                            fem_input.insulations.core_left, fem_input.insulations.core_right)
+            insulation.add_winding_insulations([[fem_input.insulations.primary_to_primary]])
+            geo.set_insulation(insulation)
+
+            # 5. create winding window and virtual winding windows (vww)
+            winding_window = fmt.WindingWindow(core, insulation)
+            vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+
+            # 6. create conductor and set parameters: use solid wires
+            winding = fmt.Conductor(0, fmt.ConductorMaterial.Copper, temperature=fem_input.temperature)
+
+            primary_litz_wire = fmt.litz_database()[fem_input.litz_wire_name]
+            winding.set_litz_round_conductor(primary_litz_wire['conductor_radii'], primary_litz_wire['strands_numbers'],
+                                             primary_litz_wire['strand_radii'], None, fmt.ConductorArrangement.Square)
+
+            # 7. add conductor to vww and add winding window to MagneticComponent
+
+            vww.set_winding(winding, fem_input.turns, None, fmt.Align.CenterOnVerticalAxis,
+                            placing_strategy=fmt.ConductorDistribution.VerticalUpward_HorizontalRightward,
+                            zigzag=True)
+            geo.set_winding_windows([winding_window])
+
+            # 8. create the model
+            geo.create_model(freq=fem_input.fundamental_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
+
+            current_amplitudes = [[current] for current in fem_input.fft_amplitude_list]
+            phases = [[phase] for phase in fem_input.fft_phases_list]
+
+            # prepare core loss simulation
+            peak_current = np.max(fem_input.current_vec)
+            custom_b_wave = 1 / peak_current * fem_input.current_vec
+            time_interp = np.linspace(fem_input.time_vec[0], fem_input.time_vec[-1], 1024)
+            current_interp = np.interp(time_interp, fem_input.time_vec, fem_input.current_vec)
+            normalized_current_interp = 1 / peak_current * current_interp
+
+            # perform single hysteresis loss simulation where a sinusoidal signal with the peak amplitude is used
+            act_ind, st_ind = geo.single_simulation_with_current_offset(
+                freq=fem_input.fundamental_frequency, current=[peak_current], current_offset=fem_input.current_offset,
+                initial_mag_curve=material_initial_mag_curve, plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
+
+            result_dict_hyst = geo.read_log()
+
+            # get the winding losses
+            geo.excitation_sweep(frequency_list=fem_input.fft_frequency_list, current_list_list=current_amplitudes,
+                                 phi_deg_list_list=phases, show_last_fem_simulation=show_visual_outputs)
+            result_dict = geo.read_log()
+
+            fem_output = IoFemOutput(
+                inductance=result_dict['single_sweeps'][0]['winding1']['flux_over_current'][0],
+                p_loss_winding=result_dict['total_losses']['winding1']['total'],
+                p_core_sine=result_dict_hyst['total_losses']['core'],
+                p_core_magnet=result_dict["total_losses"]["hyst_core_fundamental_freq"],
+                volume=result_dict["misc"]["core_2daxi_total_volume"]
+            )
+            return fem_output
+
+        @staticmethod
         def filter_combined_loss_list_df(df: pd.DataFrame, factor_min_dc_losses: float = 1.2, factor_max_dc_losses: float = 10) -> pd.DataFrame:
             """
             Remove designs with too high losses compared to the minimum losses.
@@ -1480,11 +1601,11 @@ class InductorOptimization:
                 fft_phases_list=target_and_fix_parameters.fft_phases_list,
 
                 time_vec=target_and_fix_parameters.time_extracted_vec,
-                current_vec=target_and_fix_parameters.current_extracted_vec
+                current_vec=target_and_fix_parameters.current_extracted_vec,
+                current_offset=target_and_fix_parameters.current_offset,
             )
 
-            fem_output = InductorOptimization.FemSimulation.single_fem_simulation(fem_input, False)
-
+            # Load reluctance model input for magnet model and litz wire resistance calculation
             litz_wire = ff.litz_database()[df_geometry['params_litz_wire_name'][index_number]]
             litz_wire_diameter = 2 * litz_wire["conductor_radii"]
 
@@ -1511,26 +1632,87 @@ class InductorOptimization:
                 fft_frequency_list=target_and_fix_parameters.fft_frequency_list,
                 fft_amplitude_list=target_and_fix_parameters.fft_amplitude_list,
                 fft_phases_list=target_and_fix_parameters.fft_phases_list,
+                current_offset=0
             )
 
-            reluctance_output: IoReluctanceModelOutput = InductorOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_input)
+            # Check for no current offset
+            if target_and_fix_parameters.current_offset == 0:
+                fem_output = InductorOptimization.FemSimulation.single_fem_simulation(fem_input, False)
 
-            p_core = reluctance_output.p_hyst + fem_output.p_core_sine
-            p_total = p_core + fem_output.p_loss_winding
+                reluctance_output: IoReluctanceModelOutput = InductorOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_input)
 
-            if print_derivations:
-                logger.info(f"Inductance reluctance: {local_config.target_inductance}")
-                logger.info(f"Inductance FEM: {fem_output.inductance}")
-                logger.info(f"Inductance derivation: "
-                            f"{(fem_output.inductance - local_config.target_inductance) / local_config.target_inductance * 100} %")
-                logger.info(f"Volume reluctance: {reluctance_output.volume}")
-                logger.info(f"Volume FEM: {fem_output.volume}")
-                logger.info(f"Volume derivation: {(reluctance_output.volume - fem_output.volume) / reluctance_output.volume * 100} %")
-                logger.info(f"P_winding reluctance: {reluctance_output.p_winding}")
-                logger.info(f"P_winding FEM: {fem_output.p_loss_winding}")
-                logger.info(f"P_winding derivation: {(fem_output.p_loss_winding - reluctance_output.p_winding) / fem_output.p_loss_winding * 100} %")
-                logger.info(f"P_hyst reluctance: {reluctance_output.p_hyst}")
-                logger.info(f"P_hyst FEM: {fem_output.p_core_magnet}")
-                logger.info(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.p_core_magnet) / reluctance_output.p_hyst * 100} %")
+                p_core = reluctance_output.p_hyst + fem_output.p_core_sine
+                p_total = p_core + fem_output.p_loss_winding
 
-            return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink, fem_output.p_loss_winding, p_core
+                # Take over the result
+                volume_result = reluctance_output.volume
+                area_to_heat_sink_result = reluctance_output.area_to_heat_sink
+
+                p_core = reluctance_output.p_hyst + fem_output.p_core_sine
+                p_total = p_core + fem_output.p_loss_winding
+
+                # Debug ASA
+                print(f"Ind.={fem_output.inductance} gap={fem_input.air_gap_length}")
+
+                if print_derivations:
+                    logger.info(f"Inductance reluctance: {local_config.target_inductance}")
+                    logger.info(f"Inductance FEM: {fem_output.inductance}")
+                    logger.info(f"Inductance derivation: "
+                                f"{(fem_output.inductance - local_config.target_inductance) / local_config.target_inductance * 100} %")
+                    logger.info(f"Volume reluctance: {reluctance_output.volume}")
+                    logger.info(f"Volume FEM: {fem_output.volume}")
+                    logger.info(f"Volume derivation: {(reluctance_output.volume - fem_output.volume) / reluctance_output.volume * 100} %")
+                    logger.info(f"P_winding reluctance: {reluctance_output.p_winding}")
+                    logger.info(f"P_winding FEM: {fem_output.p_loss_winding}")
+                    logger.info(f"P_winding derivation: {(fem_output.p_loss_winding - reluctance_output.p_winding) / fem_output.p_loss_winding * 100} %")
+                    logger.info(f"P_hyst reluctance: {reluctance_output.p_hyst}")
+                    logger.info(f"P_hyst FEM: {fem_output.p_core_magnet}")
+                    logger.info(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.p_core_magnet) / reluctance_output.p_hyst * 100} %")
+            else:
+                # Perform simulation
+                fem_output = InductorOptimization.FemSimulation.single_fem_simulation_with_h_offset(fem_input, False)
+                # Take over the result
+                volume_result = fem_output.volume
+                # Recalculate the heat sink area
+                r_outer = fr.calculate_r_outer(core_inner_diameter, window_w)
+                area_to_heat_sink_result = r_outer ** 2 * np.pi
+                # Calculate with simulation results
+                p_core = fem_output.p_core_magnet
+
+                # winding loss calculation
+                winding_dc_resistance = fr.resistance_litz_wire(
+                    core_inner_diameter=reluctance_model_input.core_inner_diameter, window_w=reluctance_model_input.window_w,
+                    window_h=reluctance_model_input.window_h,
+                    turns_count=reluctance_model_input.turns, iso_core_top=reluctance_model_input.insulations.core_top,
+                    iso_core_bot=reluctance_model_input.insulations.core_bot,
+                    iso_core_left=reluctance_model_input.insulations.core_left,
+                    iso_core_right=reluctance_model_input.insulations.core_right,
+                    iso_primary_to_primary=reluctance_model_input.insulations.primary_to_primary,
+                    litz_wire_name=reluctance_model_input.litz_wire_name,
+                    material="Copper", scheme="vertical_first", temperature=reluctance_model_input.temperature)
+
+                # Add DC-loss P= R * I²
+                fem_output.p_loss_winding += (winding_dc_resistance * fem_input.current_offset ** 2)
+                # Calculate total power loss of inductance
+                p_total = p_core + fem_output.p_loss_winding
+
+                # Debug ASA
+                # print(f"Ind.={fem_output.inductance}")
+                # print(f"Ind.={fem_output.inductance} gap={fem_input.air_gap_length}")
+
+                if print_derivations:
+                    logger.info(f"Inductance reluctance: {local_config.target_inductance}")
+                    logger.info(f"Inductance FEM: {fem_output.inductance}")
+                    logger.info(f"Inductance derivation: "
+                                f"{(fem_output.inductance - local_config.target_inductance) / local_config.target_inductance * 100} %")
+                    # logger.info(f"Volume reluctance: {reluctance_output.volume}")
+                    logger.info(f"Volume FEM: {fem_output.volume}")
+                    # logger.info(f"Volume derivation: {(reluctance_output.volume - fem_output.volume) / reluctance_output.volume * 100} %")
+                    # logger.info(f"P_winding reluctance: {reluctance_output.p_winding}")
+                    logger.info(f"P_winding FEM: {fem_output.p_loss_winding}")
+                    # logger.info(f"P_winding derivation: {(fem_output.p_loss_winding - reluctance_output.p_winding) / fem_output.p_loss_winding * 100} %")
+                    # logger.info(f"P_hyst reluctance: {reluctance_output.p_hyst}")
+                    logger.info(f"P_hyst FEM: {fem_output.p_core_magnet}")
+                    # logger.info(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.p_core_magnet) / reluctance_output.p_hyst * 100} %")
+
+            return volume_result, p_total, area_to_heat_sink_result, fem_output.p_loss_winding, p_core

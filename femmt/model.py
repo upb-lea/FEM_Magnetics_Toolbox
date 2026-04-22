@@ -12,7 +12,6 @@ from typing import Optional, Union, Dict, Any
 
 # Local libraries
 import materialdatabase as mdb
-from fontTools.afmLib import kernRE
 from materialdatabase import Material, DataSource, DatasheetAttribute, ComplexDataType, ComplexPermeability
 
 import femmt.functions as ff
@@ -412,9 +411,9 @@ class ImportedComplexCoreMaterial:
         self.permeability.fit_permeability_magnitude()
 
         # ComplexPermeability class from material database for h_offset calculation
-        self.permeability_h_offset_upper: ComplexPermeability| None = None
+        self.permeability_h_offset_upper: ComplexPermeability | None = None
         self.h_offset_upper: float = 0
-        self.permeability_h_offset_lower: ComplexPermeability| None = None
+        self.permeability_h_offset_lower: ComplexPermeability | None = None
         self.h_offset_lower: float = 0
 
         # permittivity meta information
@@ -449,6 +448,12 @@ class ImportedComplexCoreMaterial:
             self.dc_conductivity = 0
 
     def calculate_with_h_offset(self, required_h_offset: float = 0):
+        """
+        Activate the calculation with h-offset at required magnetic strength value.
+
+        :param required_h_offset: h-offset, which shall be taken in account (h=0 as default value)
+        :type  required_h_offset: float
+        """
         # Variable declaration
         # h_offset is symetric
         h_offset = abs(required_h_offset)
@@ -456,9 +461,8 @@ class ImportedComplexCoreMaterial:
         # Check, if h-offset can be calculated from available data
         h_offset_list = self.database.get_available_h_offset(self.material, self.permeability_datasource)
         if h_offset > max(h_offset_list):
-            raise ValueError(f"Requested h_offset value {h_offset} is not availble.\n"
+            raise ValueError(f"Requested h_offset value {h_offset} is not available.\n"
                              f"The h_offset value needs to be less equal {max(h_offset_list)}!")
-
 
         for act_h_offset in h_offset_list:
             if act_h_offset >= h_offset:
@@ -492,6 +496,7 @@ class ImportedComplexCoreMaterial:
             self.h_offset_lower = self.h_offset_upper
 
     def calculate_without_h_offset(self):
+        """Deactivate the calculation with h-offset."""
         self.h_offset = 0
 
     def update_core_material_pro_file(self, frequency: int,
@@ -508,7 +513,6 @@ class ImportedComplexCoreMaterial:
         :param plot_interpolation: If True, plots interpolation of data.
         :type plot_interpolation: bool
         """
-
         # Check, if no h-offset calculation is needed
         if self.h_offset == 0:
             mu_r_real_vec, mu_r_imag_vec = self.permeability.fit_real_and_imaginary_part_at_f_and_T(

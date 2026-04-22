@@ -4,7 +4,6 @@ import dataclasses
 
 # 3rd party libraries
 import pandas as pd
-from materialdatabase import Data
 from magnethub.loss import LossModel
 
 # own libraries
@@ -105,6 +104,11 @@ class IoFemInput:
     time_vec: list[float]
     current_vec: list[float]
 
+    # ASA: Workaround
+    initial_mag_curve: pd.DataFrame | None = None
+    imported_complex_material: ImportedComplexCoreMaterial | None = None
+    current_offset: float = 0
+
 @dataclasses.dataclass
 class IoFemOutput:
     """Output DTO for a FEM simulation within the inductor optimization."""
@@ -140,7 +144,7 @@ class IoReluctanceModelInput:
     fft_phases_list: list[float]
     # ASA: Workaround due to unfortunately always staticmethod
     initial_mag_curve: pd.DataFrame | None = None
-    imported_complex_material: ImportedComplexCoreMaterial| None = None
+    imported_complex_material: ImportedComplexCoreMaterial | None = None
     current_offset: float = 0
 
 @dataclasses.dataclass
@@ -154,3 +158,4 @@ class IoReluctanceModelOutput:
     p_hyst: float
     l_air_gap: float
     flux_density_peak: float
+    dynamic_mu_r_abs: float | None = None

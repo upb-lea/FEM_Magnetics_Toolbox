@@ -47,8 +47,7 @@ if __name__ == '__main__':
     # instantiate material-specific model
     magnet_material_model: mh.loss.LossModel = mh.loss.LossModel(material=material.name, team="paderborn")
     # Initial magnetization curve
-    initial_mag_curve = io.ReluctanceModel.get_initial_magnetization_curve(
-        material_db.get_initial_magnetization_curve(material, 500, temperature))
+    initial_mag_curve = material_db.get_initial_magnetization_curve(material, 500, temperature)
     imported_complex_material = ImportedComplexCoreMaterial(material, temperature,
                                                             material_data_sources.permeability_datasource,
                                                             material_data_sources.permittivity_datasource)
@@ -63,7 +62,7 @@ if __name__ == '__main__':
 
         # p_loss calculation
         # get power loss in W/m³ and estimated H wave in A/m
-        p_density_cmp, _ = magnet_material_model(flux_density, fundamental_frequency,temperature)
+        p_density_cmp, _ = magnet_material_model(flux_density, fundamental_frequency, temperature)
         p_density = io.ReluctanceModel.get_power_density(
             flux_avg_density, flux_peak_density, imported_complex_material,
             initial_mag_curve, float(fundamental_frequency), temperature)
@@ -73,5 +72,5 @@ if __name__ == '__main__':
 
         result_list.append((flux_peak_density, p_density, p_density_cmp, act_k))
 
-    result: pd.DataFrame = pd.DataFrame(result_list,columns=["flux_peak_density", "p_density", "p_density_magnet", "act_k"])
+    result: pd.DataFrame = pd.DataFrame(result_list, columns=["flux_peak_density", "p_density", "p_density_magnet", "act_k"])
     result.to_csv("/home/andreas/Workspace/Projekt/Test/Testdata/p_loss_vgl.csv")
