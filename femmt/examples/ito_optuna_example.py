@@ -4,6 +4,7 @@ import os
 
 # 3rd party libraries
 import numpy as np
+import pandas as pd
 import datetime
 
 # femmt libraries
@@ -31,7 +32,7 @@ material_data_sources = fmt.MaterialDataSources(
 )
 
 fmt_inductor_optimization_dto = fmt.InductorOptimizationDTO(
-    inductor_study_name="ExampleInductor",
+    inductor_study_name="Example_Inductor",
     core_name_list=["PQ 50/50", "PQ 50/40", "PQ 40/40", "PQ 40/30", "PQ 35/35", "PQ 32/30", "PQ 32/20", "PQ 26/25", "PQ 26/20", "PQ 20/20", "PQ 20/16"],
     material_name_list=[Material("N49")],
     core_inner_diameter_min_max_list=[],
@@ -46,7 +47,7 @@ fmt_inductor_optimization_dto = fmt.InductorOptimizationDTO(
     target_inductance=5e-6,
     temperature=100,
     time_current_vec=i_1,
-    inductor_optimization_directory="/home/andreas/Workspace/Projekt/FEM_Magnetics_Toolbox/femmt/examples/example_results/ito_optuna",
+    inductor_optimization_directory=os.path.join(os.path.dirname(__file__), "example_results/ito_optuna"),
     material_data_sources=material_data_sources
     # os.path.join(
     #     configuration_data.study_data.optimization_directory,
@@ -58,12 +59,14 @@ fmt_inductor_optimization_dto = fmt.InductorOptimizationDTO(
 # Set task according your need
 task_start_proceed_study = True
 task_filter_reluctance_model = True
+task_reluctance_model_simulation_from_filtered_reluctance_model_results = True
 task_fem_simulation_from_filtered_reluctance_model_results = True
 task_plot_study_results = True
 
 # Variable declaration
-pareto_reluctance_dto_df_list: list = []
-reluctance_result_df_list: list = []
+config_filtered_filepath = os.path.join(fmt_inductor_optimization_dto.inductor_optimization_directory,
+                                        f"{fmt_inductor_optimization_dto.inductor_study_name}_filtered.csv")
+config_filepath = os.path.join(fmt_inductor_optimization_dto.inductor_optimization_directory, f"{fmt_inductor_optimization_dto.inductor_study_name}.pkl")
 
 if __name__ == '__main__':
     time_start = datetime.datetime.now()
@@ -75,21 +78,39 @@ if __name__ == '__main__':
         # load trials from reluctance model to a pandas dataframe (df)
         reluctance_result_df = fmt.InductorOptimization.ReluctanceModel.study_to_df(fmt_inductor_optimization_dto)
 
-        reluctance_result_df_list.append(reluctance_result_df)
-
         # filter for Pareto front
         pareto_reluctance_dto_df = fmt.InductorOptimization.ReluctanceModel.filter_loss_list_df(
             reluctance_result_df, factor_min_dc_losses=0.5)
 
-        pareto_reluctance_dto_df_list.append(pareto_reluctance_dto_df)
-
         fmt.InductorOptimization.ReluctanceModel.df_plot_pareto_front(
             reluctance_result_df, pareto_reluctance_dto_df, label_list=["all", "filtered"], interactive=False)
 
-        config_filepath = os.path.join(fmt_inductor_optimization_dto.inductor_optimization_directory, f"{fmt_inductor_optimization_dto.inductor_study_name}.pkl")
-
         # inductor_id_list_pareto = pareto_reluctance_dto_df_list["number"].to_numpy()
         inductor_id_list_pareto = pareto_reluctance_dto_df["number"].to_numpy()
+
+        pareto_reluctance_dto_df.to_csv(config_filtered_filepath)
+
+    # load filtered reluctance data
+    pareto_reluctance_dto_df = pd.read_csv(config_filtered_filepath)
+
+    if task_reluctance_model_simulation_from_filtered_reluctance_model_results:
+
+        # Filter out 5 simulations
+        n = len(pareto_reluctance_dto_df)
+        indices: list = []
+        for i in range(5):
+            indices.append(int(round(i * (n - 1) / 4)))
+
+        # Single index
+        indices = [int(round(n/2))]
+        # Get filtered subset
+        pareto_reluctance_dto_filtered_df = pareto_reluctance_dto_df.iloc[indices]
+
+        df_geometry_re_simulation_number = pareto_reluctance_dto_filtered_df
+
+        volume, combined_losses, area_to_heat_sink, winding_loss, core_loss = fmt.InductorOptimization.ReluctanceModel.full_simulation(
+            df_geometry_re_simulation_number, current_waveform=i_1,
+            inductor_config_filepath=config_filepath)
 
     if task_fem_simulation_from_filtered_reluctance_model_results:
         # load filtered reluctance models
@@ -107,6 +128,9 @@ if __name__ == '__main__':
         pareto_reluctance_dto_filtered_df = pareto_reluctance_dto_df.iloc[indices]
 
         df_geometry_re_simulation_number = pareto_reluctance_dto_filtered_df
+
+        config_filepath = os.path.join(fmt_inductor_optimization_dto.inductor_optimization_directory,
+                                       f"{fmt_inductor_optimization_dto.inductor_study_name}.pkl")
 
         volume, combined_losses, area_to_heat_sink, winding_loss, core_loss = fmt.InductorOptimization.FemSimulation.full_simulation(
             df_geometry_re_simulation_number, current_waveform=i_1,

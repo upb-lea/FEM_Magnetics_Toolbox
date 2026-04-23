@@ -27,7 +27,6 @@ from femmt.constants import *
 from femmt.mesh import Mesh
 from femmt.model import VirtualWindingWindow, WindingWindow, Core, Insulation, StrayPath, AirGaps, Conductor, LinearComplexCoreMaterial, \
     ImportedComplexCoreMaterial
-from materialdatabase import Material, DataSource
 from femmt.enumerations import *
 from femmt.data import FileData, MeshData
 from femmt.drawing import TwoDaxiSymmetric
@@ -208,55 +207,6 @@ class MagneticComponent:
         self.onelab_setup(is_gui)
         self.onelab_client = onelab.client(__file__)
         self.simulation_name = simulation_name
-
-    def initialize_component_parameter(self, material_name: str, temperature: float, permeability_datasource_name: str,
-                                       permittivity_datasource_name: str, core_dimensions: SingleCoreDimensions,
-                                       air_gaps: AirGaps, insulation: Insulation, winding_windows: list[WindingWindow]):
-        """
-        Initialize the magnetic component parameter.
-
-        :param material_name: Name of the magnetic material
-        :type  material_name: str
-        :param temperature: Temperature of the material
-        :type  temperature: float
-        :param permeability_datasource_name: Path of datasource for permeability data
-        :type  permeability_datasource_name: str
-        :param permittivity_datasource_name: Path of datasource for permittivity data
-        :type  permittivity_datasource_name: str
-        :param core_dimensions: Dimension data of the core
-        :type  core_dimensions: SingleCoreDimensions
-        :param air_gaps: Air gaps data
-        :type  air_gaps: AirGaps
-        :param insulation: Insulation data
-        :type  insulation: Insulation
-        :param winding_windows: List of winding windows
-        :type  winding_windows: list[WindingWindow]
-        """
-        # Translate material and data sources
-        material = Material(material_name)
-        permeability_datasource = DataSource(permeability_datasource_name)
-        permittivity_datasource = DataSource(permittivity_datasource_name)
-        # Get ImportedComplexCoreMaterial
-        core_material = ImportedComplexCoreMaterial(material=material,
-                                                    temperature=temperature,
-                                                    permeability_datasource=permeability_datasource,
-                                                    permittivity_datasource=permittivity_datasource)
-
-        # Set core by dimension and material parameter
-        self.set_core(Core(material=core_material,
-                      core_type=CoreType.Single,
-                      core_dimensions=core_dimensions,
-                      detailed_core_model=False))
-
-        # Set air gap parameters
-        self.set_air_gaps(air_gaps)
-
-        # Set core parameter flag to True
-        self.is_core_parameter_valid = True
-
-        # Set insulation
-        self.set_insulation(insulation)
-        self.set_winding_windows(winding_windows)
 
     def get_core_parameter(self) -> Core:
         """

@@ -1711,4 +1711,3 @@ class InductorOptimization:
                     # logger.info(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.p_core_magnet) / reluctance_output.p_hyst * 100} %")
 
             return volume_result, p_total, area_to_heat_sink_result, fem_output.p_loss_winding, p_core
-
