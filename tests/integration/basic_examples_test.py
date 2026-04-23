@@ -13,6 +13,7 @@ import pytest
 
 # own libraries
 import femmt.examples.basic_inductor
+import femmt.examples.basic_inductor_with_dc_offset
 import femmt.examples.basic_transformer_interleaved
 import femmt.examples.basic_transformer
 import femmt.examples.basic_transformer_three_winding
@@ -77,6 +78,17 @@ def test_basic_example_inductor(temp_folder: pytest.fixture):
                                                          show_visual_outputs=False,
                                                          is_test=True)
 
+def test_basic_example_inductor_with_dc_offset(temp_folder: pytest.fixture):
+    """
+    Integration test to the basic example file.
+
+    :param temp_folder: temporary folder path and onelab filepath
+    :type temp_folder: pytest.fixture
+    """
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_inductor_with_dc_offset.basic_example_inductor_with_dc_offset(onelab_folder=onelab_folder,
+                                                         show_visual_outputs=False,
+                                                         is_test=True)
 
 def test_basic_example_transformer_interleaved(temp_folder: pytest.fixture):
     """

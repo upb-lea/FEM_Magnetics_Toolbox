@@ -25,7 +25,7 @@ target_inductance = 2e-05
 # Deviation to target inductance (abs(L_is/L_shall)
 deviation_inductance = 0.01
 # Start air_gap
-start_air_gap = 0.0005
+start_air_gap = 0.001
 
 
 def basic_example_inductor_with_dc_offset(onelab_folder: str = None, show_visual_outputs: bool = False, is_test: bool = False):
