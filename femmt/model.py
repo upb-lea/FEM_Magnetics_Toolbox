@@ -12,7 +12,7 @@ from typing import Optional, Union, Dict, Any
 
 # Local libraries
 import materialdatabase as mdb
-from materialdatabase import Material, DataSource, DatasheetAttribute, ComplexDataType
+from materialdatabase import Material, DataSource, DatasheetAttribute, ComplexDataType, ComplexPermeability
 
 import femmt.functions as ff
 from femmt.functions_model import *
@@ -377,7 +377,8 @@ class ImportedComplexCoreMaterial:
 
         # name of the material
         self.material = Material(material)
-
+        # h-offset (average of h at operation point)
+        self.h_offset: float = 0
         # global core temperature
         self.temperature = temperature
 
@@ -409,6 +410,12 @@ class ImportedComplexCoreMaterial:
         self.permeability.fit_losses()
         self.permeability.fit_permeability_magnitude()
 
+        # ComplexPermeability class from material database for h_offset calculation
+        self.permeability_h_offset_upper: ComplexPermeability | None = None
+        self.h_offset_upper: float = 0
+        self.permeability_h_offset_lower: ComplexPermeability | None = None
+        self.h_offset_lower: float = 0
+
         # permittivity meta information
         self.permittivity_datasource = permittivity_datasource
 
@@ -439,6 +446,58 @@ class ImportedComplexCoreMaterial:
             self.complex_permittivity = epsilon_0 * complex(eps_real, -eps_imag)
             self.dc_conductivity = 0
 
+    def calculate_with_h_offset(self, required_h_offset: float = 0):
+        """
+        Activate the calculation with h-offset at required magnetic strength value.
+
+        :param required_h_offset: h-offset, which shall be taken in account (h=0 as default value)
+        :type  required_h_offset: float
+        """
+        # Variable declaration
+        # h_offset is symetric
+        h_offset = abs(required_h_offset)
+
+        # Check, if h-offset can be calculated from available data
+        h_offset_list = self.database.get_available_h_offset(self.material, self.permeability_datasource)
+        if h_offset > max(h_offset_list):
+            raise ValueError(f"Requested h_offset value {h_offset} is not available.\n"
+                             f"The h_offset value needs to be less equal {max(h_offset_list)}!")
+
+        for act_h_offset in h_offset_list:
+            if act_h_offset >= h_offset:
+                self.h_offset_upper = act_h_offset
+                break
+            # Overtake lower h_offset-value
+            self.h_offset_lower = act_h_offset
+
+        self.h_offset = h_offset
+        # Load both curves
+        self.permeability_h_offset_upper = self.database.get_complex_permeability(
+            material=self.material,
+            data_source=self.permeability_datasource,
+            h_offset=self.h_offset_upper,
+            pv_fit_function=mdb.FitFunction.enhancedSteinmetz
+        )
+        self.permeability_h_offset_upper.fit_losses()
+        self.permeability_h_offset_upper.fit_permeability_magnitude()
+
+        # Check if h-offset needs to interpolate
+        if self.h_offset_upper > h_offset:
+            self.permeability_h_offset_lower = self.database.get_complex_permeability(
+                material=self.material,
+                data_source=self.permeability_datasource,
+                h_offset=self.h_offset_lower,
+                pv_fit_function=mdb.FitFunction.enhancedSteinmetz
+            )
+            self.permeability_h_offset_lower.fit_losses()
+            self.permeability_h_offset_lower.fit_permeability_magnitude()
+        else:
+            self.h_offset_lower = self.h_offset_upper
+
+    def calculate_without_h_offset(self):
+        """Deactivate the calculation with h-offset."""
+        self.h_offset = 0
+
     def update_core_material_pro_file(self, frequency: int,
                                       folder: str,
                                       b_ref_vec: npt.NDArray[np.float64] = np.linspace(0, 0.3, 100),
@@ -453,11 +512,35 @@ class ImportedComplexCoreMaterial:
         :param plot_interpolation: If True, plots interpolation of data.
         :type plot_interpolation: bool
         """
-        mu_r_real_vec, mu_r_imag_vec = self.permeability.fit_real_and_imaginary_part_at_f_and_T(
-            f_op=frequency,
-            T_op=self.temperature,
-            b_vals=b_ref_vec
-        )
+        # Check, if no h-offset calculation is needed
+        if self.h_offset == 0:
+            mu_r_real_vec, mu_r_imag_vec = self.permeability.fit_real_and_imaginary_part_at_f_and_T(
+                f_op=frequency,
+                T_op=self.temperature,
+                b_vals=b_ref_vec
+            )
+        else:
+            # Calculate fit curve at upper h_offset
+            mu_r_real_vec, mu_r_imag_vec = self.permeability_h_offset_upper.fit_real_and_imaginary_part_at_f_and_T(
+                f_op=frequency,
+                T_op=self.temperature,
+                b_vals=b_ref_vec
+            )
+
+            # Check if h-offset needs to interpolate
+            if self.h_offset_upper != self.h_offset_lower:
+                # Calculate fit curve at lower h_offset
+                mu_r_real_vec_lower, mu_r_imag_vec_lower = self.permeability_h_offset_lower.fit_real_and_imaginary_part_at_f_and_T(
+                    f_op=frequency,
+                    T_op=self.temperature,
+                    b_vals=b_ref_vec
+                )
+                # Calculate the curve distance. Weight factor=dx/delta_x with dx= (h_offset - h_offset_lower) and delta_x=(h_offset_upper - h_offset_lower)
+                # y=y_lower+ dx/delta_x*(y_upper-y_lower)
+                weight_factor = (self.h_offset - self.h_offset_lower)/(self.h_offset_upper-self.h_offset_lower)
+                # Interpolate both curves
+                mu_r_real_vec = mu_r_real_vec_lower + (mu_r_real_vec - mu_r_real_vec_lower) * weight_factor
+                mu_r_imag_vec = mu_r_imag_vec_lower + (mu_r_imag_vec - mu_r_imag_vec_lower) * weight_factor
 
         write_permeability_pro_file(parent_directory=folder,
                                     b_ref_vec=np.array(b_ref_vec).tolist(),

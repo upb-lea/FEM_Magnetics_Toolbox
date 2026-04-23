@@ -1111,6 +1111,8 @@ def resistance_litz_wire(core_inner_diameter: float, window_w: float, window_h: 
         # figure out the windings per column
         windings_per_column = possible_number_turns_per_column * np.ones(int(number_of_columns))
         last_column_turns = np.mod(turns_count, possible_number_turns_per_column)
+
+        # Check, if more windings necessary
         if last_column_turns != 0:
             windings_per_column[-1] = last_column_turns
 
@@ -1131,6 +1133,8 @@ def resistance_litz_wire(core_inner_diameter: float, window_w: float, window_h: 
         number_of_rows = np.ceil(turns_count / possible_number_turns_per_row)
         windings_per_row = possible_number_turns_per_row * np.ones(int(number_of_rows))
         last_row_turns = np.mod(turns_count, possible_number_turns_per_row)
+
+        # Check, if more windings necessary
         if last_row_turns != 0:
             windings_per_row[-1] = last_row_turns
 

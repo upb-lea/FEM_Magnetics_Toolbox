@@ -87,10 +87,10 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
         # run geo.create_model in order for the thermal simulation to work (geo.single_simulation is not needed).
         # Obviously when the model is modified and the losses can be out of date and therefore the
         # geo.single_simulation needs to run again.
-        geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
-                               case_gap_right, case_gap_bot, show_thermal_visual_outputs,
-                               color_scheme=fmt.colors_ba_jonas, colors_geometry=fmt.colors_geometry_ba_jonas,
-                               flag_insulation=flag_insulation)
+        # geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
+        #                        case_gap_right, case_gap_bot, show_thermal_visual_outputs,
+        #                        color_scheme=fmt.colors_ba_jonas, colors_geometry=fmt.colors_geometry_ba_jonas,
+        #                        flag_insulation=flag_insulation)
 
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
     if not os.path.exists(example_results_folder):
@@ -118,10 +118,13 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
                                                     window_h=core_db["window_h"],
                                                     core_h=core_db["core_h"])
 
-    core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
+    core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N27,
                                                     temperature=45,
-                                                    permeability_datasource=fmt.DataSource.TDK_MDT,
+                                                    permeability_datasource=fmt.DataSource.MagNet,
                                                     permittivity_datasource=fmt.DataSource.LEA_MTB)
+
+    # ASA Needs to be calculated while initialisatin of core_material! self.database is a problem  (database is to hide)
+    initial_mag_curve = core_material.database.get_initial_magnetization_curve(fmt.Material.N49, 500, 45)
 
     core = fmt.Core(material=core_material,
                     core_type=fmt.CoreType.Single,
@@ -132,7 +135,8 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
 
     # 3. set air gap parameters
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
+    # air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0015, 50)
     # air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0002, 90)
     geo.set_air_gaps(air_gaps)
 
@@ -168,8 +172,11 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     geo.create_model(freq=inductor_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
 
     # 6.a. start simulation
-    geo.single_simulation(freq=inductor_frequency, current=[4.5],
-                          plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
+    geo.single_simulation_with_current_offset(freq=inductor_frequency, current=[2], current_offset=4.5, initial_mag_curve=initial_mag_curve,
+                                              plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
+
+    # geo.single_simulation(freq=inductor_frequency, current=[4.5],
+    #                       plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
     # geo.get_inductances(I0=2, op_frequency=20000, skin_mesh_factor=0.5)
     # geo.femm_reference(freq=inductor_frequency, current=[4.5], sign=[1], non_visualize=0)#
 

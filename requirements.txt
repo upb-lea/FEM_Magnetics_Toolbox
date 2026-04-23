@@ -13,5 +13,6 @@ materialdatabase==0.3.0
 optuna
 plotly
 mag-net-hub
+toml
 tqdm
 schemdraw
