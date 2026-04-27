@@ -668,86 +668,6 @@ class InductorOptimization:
             return p_density
 
         @staticmethod
-        def debug_plot(data_list: list[float], label_list: list[str], color_list: list[str] = None, interactive: bool = True) -> None:
-            """
-            Plot an interactive debug diagram: First dataframe=x, all remaining dataframes are y-values.
-
-            :param data_list: List of data. First entry is x, remaining are y
-            :type  data_list: list[float]
-            :param label_list: list of labels for the legend. Same order as df except the first one
-            :type label_list: list[str]
-            :param color_list: list of colors for the points and legend.
-            :type color_list: list[str]
-            :param interactive: True to show trial numbers if one moves the mouse over it
-            :type interactive: bool
-            """
-            # Variable declaration
-            color_list_base = ['red', 'blue', 'green', 'gray']
-
-            num_of_functions = len(data_list)-1
-            # Check if minimum 2 dataframes are part of the list
-            if num_of_functions <= 0:
-                return
-
-            # Check and complete label list
-            if len(label_list) < num_of_functions:
-                for index in range(num_of_functions-len(label_list)):
-                    base_index = index % len(label_list)
-                    label_list.append(f"y{index}")
-
-            # Check and complete color list
-            if color_list is None:
-                color_list = []
-            if len(color_list) < num_of_functions:
-                for index in range(num_of_functions-len(color_list)):
-                    base_index = index % len(color_list)
-                    color_list.append(color_list_base[base_index])
-
-            fig, ax = plt.subplots()
-            # Add drawing
-            for index in range(num_of_functions):
-                plt.scatter(data_list[index], data_list[index+1], s=10, c=color_list[index],)
-            legend_list = []
-            for count, label_text in enumerate(label_list):
-                legend_list.append(mpatches.Patch(color=np.array(ff.colors_femmt_default[color_list[count]]) / 255, label=label_text))
-            plt.legend(handles=legend_list)
-            # sc = plt.scatter(df_all["values_0"], df_all["values_1"], s=10, c=color_array)
-
-            # if interactive:
-            #     annot = ax.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
-            #                         bbox=dict(boxstyle="round", fc="w"),
-            #                         arrowprops=dict(arrowstyle="->"))
-            #     annot.set_visible(False)
-            #
-            #     def update_annot(ind):
-            #         pos = sc.get_offsets()[ind["ind"][0]]
-            #         annot.xy = pos
-            #         text = f"{[names[n] for n in ind['ind']]}"
-            #         annot.set_text(text)
-            #         annot.get_bbox_patch().set_alpha(0.4)
-            #
-            #     def hover(event):
-            #         vis = annot.get_visible()
-            #         if event.inaxes == ax:
-            #             cont, ind = sc.contains(event)
-            #             if cont:
-            #                 update_annot(ind)
-            #                 annot.set_visible(True)
-            #                 fig.canvas.draw_idle()
-            #             else:
-            #                 if vis:
-            #                     annot.set_visible(False)
-            #                     fig.canvas.draw_idle()
-            #
-            #     fig.canvas.mpl_connect("motion_notify_event", hover)
-
-            plt.xlabel('frequency in Hz')
-            plt.ylabel('Losses in W')
-            plt.grid()
-            plt.show()
-            plt.clf()
-
-        @staticmethod
         def start_proceed_study(config: InductorOptimizationDTO, number_trials: int | None = None,
                                 target_number_trials: int | None = None, storage: str = 'sqlite',
                                 sampler=optuna.samplers.NSGAIIISampler(),
@@ -1359,6 +1279,9 @@ class InductorOptimization:
                             zigzag=True)
             geo.set_winding_windows([winding_window])
 
+            # 7a. Set the reluctance model pre check flag
+            geo.set_saturation_threshold(fem_input.saturation_threshold)
+
             # 8. create the model
             geo.create_model(freq=fem_input.fundamental_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
 
@@ -1467,6 +1390,9 @@ class InductorOptimization:
                             zigzag=True)
             geo.set_winding_windows([winding_window])
 
+            # 7a. Set the reluctance model pre check flag
+            geo.set_saturation_threshold(fem_input.saturation_threshold)
+
             # 8. create the model
             geo.create_model(freq=fem_input.fundamental_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
 
@@ -1523,7 +1449,7 @@ class InductorOptimization:
 
         @staticmethod
         def full_simulation(df_geometry: pd.DataFrame, current_waveform: list, inductor_config_filepath: str, process_number: int = 1,
-                            print_derivations: bool = False) -> tuple:
+                            print_derivations: bool = False, saturation_threshold: float = 0.7) -> tuple:
             """
             FEM simulation (winding losses and hysteresis losses from magnet model) for geometries from df_geometry.
 
@@ -1537,6 +1463,8 @@ class InductorOptimization:
             :type process_number: int
             :param print_derivations: True to print derivation from FEM simulation to reluctance model
             :type print_derivations: bool
+            :param saturation_threshold: Threshold of maximum material saturation (default: 0.7)
+            :type  saturation_threshold: float
             :return: volume, loss
             :rtype: tuple
             """
@@ -1606,6 +1534,7 @@ class InductorOptimization:
                 time_vec=target_and_fix_parameters.time_extracted_vec,
                 current_vec=target_and_fix_parameters.current_extracted_vec,
                 current_offset=target_and_fix_parameters.current_offset,
+                saturation_threshold=saturation_threshold
             )
 
             # Load reluctance model input for magnet model and litz wire resistance calculation
@@ -1664,6 +1593,8 @@ class InductorOptimization:
                     logger.info(f"P_hyst FEM: {fem_output.p_core_magnet}")
                     logger.info(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.p_core_magnet) / reluctance_output.p_hyst * 100} %")
             else:
+                # Notify user that simulation is performed with DC-Offset
+                logger.info(f"Simulation is performed with DC-Offset of {target_and_fix_parameters.current_offset}A")
                 # Perform simulation
                 fem_output = InductorOptimization.FemSimulation.single_fem_simulation_with_h_offset(fem_input, False)
                 # Take over the result

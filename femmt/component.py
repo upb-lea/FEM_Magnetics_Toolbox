@@ -160,6 +160,8 @@ class MagneticComponent:
         self.red_freq = None  # [] * self.n_windings  # Defined for every conductor
         self.max_reduced_frequency = 3.25
         self.delta = None
+        # Saturation threshold used in method 'excitation' for reluctance model pre-check (Default: 0.7 of material saturation)
+        self._saturation_threshold: float = 0.7
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # MeshData to store the mesh size for different points
@@ -1192,8 +1194,7 @@ class MagneticComponent:
 
         # check the core saturation ( It does not work for custom)
         if self.core.material.material != "custom":
-            # Increase saturation threshold ASA
-            self.reluctance_model_pre_check(2)
+            self.reluctance_model_pre_check(self._saturation_threshold)
 
     def excitation_time_domain(self, current_list: list[list[float]], time_list: list[float], number_of_periods: int, ex_type: str = 'current',
                                plot_interpolation: bool = False, imposed_red_f=0):
@@ -1943,7 +1944,8 @@ class MagneticComponent:
         logger.info(f"The electromagnetic results are stored here: {self.file_data.e_m_results_log_path}")
 
     def component_study(self, time_current_vectors: list[list[list[float]]], fft_filter_value_factor: float = 0.01):
-        """Full study for the component: inductance values and losses.
+        """
+        Full study for the component: inductance values and losses.
 
         :param time_current_vectors: ....
         :type time_current_vectors: list[list[list[float]]]
@@ -2852,6 +2854,24 @@ class MagneticComponent:
         # Save the reluctance log as a JSON file
         with open(self.file_data.reluctance_log_path, "w+", encoding='utf-8') as outfile:
             json.dump(reluctance_log, outfile, indent=2, ensure_ascii=False)
+
+    def set_saturation_threshold(self, saturation_threshold: float = 0.7):
+        """
+        Set the reluctance model simulation limit.
+
+        :param saturation_threshold: Value of saturation limit based on the material saturation flux density
+        :type  saturation_threshold: float
+        """
+        self._saturation_threshold = saturation_threshold
+
+    def get_saturation_threshold(self) -> bool:
+        """
+        Provide the saturation threshold for calculation.
+
+        :return: Value of the saturation threshold
+        :rtype:  float
+        """
+        return self._saturation_threshold
 
     def reluctance_model_pre_check(self, saturation_threshold: float = 0.7):
         """

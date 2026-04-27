@@ -1,11 +1,11 @@
 """Example how to perform an optimization using optuna and FEMMT."""
 # python libraries
 import os
+import datetime
 
 # 3rd party libraries
 import numpy as np
 import pandas as pd
-import datetime
 
 # femmt libraries
 import femmt as fmt
@@ -49,11 +49,6 @@ fmt_inductor_optimization_dto = fmt.InductorOptimizationDTO(
     time_current_vec=i_1,
     inductor_optimization_directory=os.path.join(os.path.dirname(__file__), "example_results/ito_optuna"),
     material_data_sources=material_data_sources
-    # os.path.join(
-    #     configuration_data.study_data.optimization_directory,
-    #     circuit_id,
-    #     configuration_data.study_data.study_name),
-    # material_data_sources=act_material_data_sources)
 )
 
 # Set task according your need
@@ -85,7 +80,6 @@ if __name__ == '__main__':
         fmt.InductorOptimization.ReluctanceModel.df_plot_pareto_front(
             reluctance_result_df, pareto_reluctance_dto_df, label_list=["all", "filtered"], interactive=False)
 
-        # inductor_id_list_pareto = pareto_reluctance_dto_df_list["number"].to_numpy()
         inductor_id_list_pareto = pareto_reluctance_dto_df["number"].to_numpy()
 
         pareto_reluctance_dto_df.to_csv(config_filtered_filepath)
@@ -134,7 +128,7 @@ if __name__ == '__main__':
 
         volume, combined_losses, area_to_heat_sink, winding_loss, core_loss = fmt.InductorOptimization.FemSimulation.full_simulation(
             df_geometry_re_simulation_number, current_waveform=i_1,
-            inductor_config_filepath=config_filepath, process_number=1, print_derivations=False)
+            inductor_config_filepath=config_filepath, process_number=1, print_derivations=False, saturation_threshold=1.5)
 
     if task_plot_study_results:
         fmt.InductorOptimization.ReluctanceModel.show_study_results(fmt_inductor_optimization_dto)

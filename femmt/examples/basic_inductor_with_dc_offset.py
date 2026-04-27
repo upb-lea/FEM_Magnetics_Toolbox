@@ -124,6 +124,9 @@ def basic_example_inductor_with_dc_offset(onelab_folder: str = None, show_visual
     # Set insulation
     geo.set_insulation(insulation)
     geo.set_winding_windows([winding_window])
+    # Increase material saturation maximum
+    geo.set_saturation_threshold(2)
+
     # List of inductance for better approximation
     inductance_list: list[tuple[float, float, float]] = []
 

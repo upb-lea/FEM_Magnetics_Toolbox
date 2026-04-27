@@ -104,10 +104,11 @@ class IoFemInput:
     time_vec: list[float]
     current_vec: list[float]
 
-    # ASA: Workaround
+    # Parameter to handle DC-offset
     initial_mag_curve: pd.DataFrame | None = None
     imported_complex_material: ImportedComplexCoreMaterial | None = None
     current_offset: float = 0
+    saturation_threshold: float = 0.7
 
 @dataclasses.dataclass
 class IoFemOutput:
