@@ -534,6 +534,8 @@ bOPET
 xlsxwriter
 Thermoset
 Polyphenylene
+LossModel
+mh
 
 # Time domain Visualization
 VisualizationMode

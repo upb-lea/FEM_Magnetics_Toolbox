@@ -387,9 +387,28 @@ class StackedTransformerOptimization:
                                ff.calculate_cylinder_volume(2 * r_outer, reluctance_input.core_inner_diameter / 4))
             volume_core_middle = ff.calculate_cylinder_volume(2 * r_outer, reluctance_input.core_inner_diameter / 4)
 
-            p_top = p_density_top * volume_core_top
-            p_bot = p_density_bot * volume_core_bot
-            p_middle = p_density_middle * volume_core_middle
+            p_top_tablet = fr.magent_loss_model_on_cylinder_radiant(
+                magnet_material_model=reluctance_input.magnet_material_model, r_cyl_inner=reluctance_input.core_inner_diameter,
+                r_cyl_outer=r_outer, time_vec=reluctance_input.time_extracted_vec, flux_vec=flux_top,
+                h_cyl=reluctance_input.core_inner_diameter / 4, temperature=reluctance_input.temperature)
+            volume_core_top_cylinder = 2 * ff.calculate_cylinder_volume(reluctance_input.core_inner_diameter, reluctance_input.window_h_top) - \
+                ff.calculate_cylinder_volume(reluctance_input.core_inner_diameter, l_top_air_gap)
+            p_top_cylinder = p_density_top * volume_core_top_cylinder
+            p_top = p_top_tablet + p_top_cylinder
+
+            p_bot_tablet = fr.magent_loss_model_on_cylinder_radiant(
+                magnet_material_model=reluctance_input.magnet_material_model, r_cyl_inner=reluctance_input.core_inner_diameter,
+                r_cyl_outer=r_outer, time_vec=reluctance_input.time_extracted_vec, flux_vec=flux_bot,
+                h_cyl=reluctance_input.core_inner_diameter / 4, temperature=reluctance_input.temperature)
+            volume_core_bot_cylinder = 2 * ff.calculate_cylinder_volume(reluctance_input.core_inner_diameter, reluctance_input.window_h_bot) - \
+                ff.calculate_cylinder_volume(reluctance_input.core_inner_diameter, l_bot_air_gap)
+            p_bot_cylinder = p_density_bot * volume_core_bot_cylinder
+            p_bot = p_bot_tablet + p_bot_cylinder
+
+            p_middle = fr.magent_loss_model_on_cylinder_radiant(
+                magnet_material_model=reluctance_input.magnet_material_model, r_cyl_inner=reluctance_input.core_inner_diameter,
+                r_cyl_outer=r_outer, time_vec=reluctance_input.time_extracted_vec, flux_vec=flux_middle,
+                h_cyl=reluctance_input.core_inner_diameter / 4, temperature=reluctance_input.temperature)
 
             p_hyst = p_top + p_bot + p_middle
 
