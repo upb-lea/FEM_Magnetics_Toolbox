@@ -11,9 +11,6 @@ import pandas as pd
 import femmt as fmt
 from materialdatabase.meta.data_enums import Material, DataSource
 
-i_2 = [[0.0, 3.265248131976911e-07, 2.5e-06, 2.8265248131976912e-06, 5e-06],
-       [-0.9196195846583147, -19.598444313231134, 0.9196195846583122, 19.59844431323113, -0.9196195846583147]]
-
 i_offset = 6
 ac_factor = 1
 
@@ -128,7 +125,7 @@ if __name__ == '__main__':
 
         volume, combined_losses, area_to_heat_sink, winding_loss, core_loss = fmt.InductorOptimization.FemSimulation.full_simulation(
             df_geometry_re_simulation_number, current_waveform=i_1,
-            inductor_config_filepath=config_filepath, process_number=1, print_derivations=False, saturation_threshold=1.5)
+            inductor_config_filepath=config_filepath, process_number=1, print_derivations=False)
 
     if task_plot_study_results:
         fmt.InductorOptimization.ReluctanceModel.show_study_results(fmt_inductor_optimization_dto)

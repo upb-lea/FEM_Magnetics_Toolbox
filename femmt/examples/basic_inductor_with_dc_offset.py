@@ -19,7 +19,7 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 # Current amplitute
 current_amplitude_list: list[float] = [3]
 # Current offset
-current_offset: float = 20
+current_offset: float = 10
 # Target inductance (L_is)
 target_inductance = 2e-05
 # Deviation to target inductance (abs(L_is/L_shall)
@@ -124,8 +124,6 @@ def basic_example_inductor_with_dc_offset(onelab_folder: str = None, show_visual
     # Set insulation
     geo.set_insulation(insulation)
     geo.set_winding_windows([winding_window])
-    # Increase material saturation maximum
-    geo.set_saturation_threshold(2)
 
     # List of inductance for better approximation
     inductance_list: list[tuple[float, float, float]] = []

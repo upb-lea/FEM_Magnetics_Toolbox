@@ -33,6 +33,9 @@ logger = logging.getLogger(__name__)
 class InductorOptimization:
     """Reluctance model and FEM simulation for the inductor optimization."""
 
+    # Saturation threshold for calculation with Inductor optimization
+    _IO_SATURATION_THRESHOLD = 0.8
+
     @staticmethod
     def filter_df(df: pd.DataFrame, x: str = "values_0", y: str = "values_1", factor_min_dc_losses: float = 1.2,
                   factor_max_dc_losses: float = 10) -> pd.DataFrame:
@@ -437,9 +440,9 @@ class InductorOptimization:
                 previous_dynamic_mu_r_abs = dynamic_mu_r_abs
 
             # Do not cross out saturation, as the genetic algorithm is missing bad results to improve its suggestions
-            if flux_avg_density > 0.8 * reluctance_input.initial_mag_curve["b"].iloc[-1] or dynamic_mu_r_abs < 0:
-                print(f"Average flux density is too high (80 % of b_sat): {flux_avg_density} "
-                      f"T > 0.8 * {reluctance_input.initial_mag_curve['b'].iloc[-1]} T  mur={dynamic_mu_r_abs}")
+            if flux_avg_density > reluctance_input.initial_mag_curve["b"].iloc[-1] or dynamic_mu_r_abs < 0:
+                logger.info(f"Average flux density exceeds range of initial magnetization curve: {flux_avg_density} "
+                            f"T > {reluctance_input.initial_mag_curve['b'].iloc[-1]} T mur={dynamic_mu_r_abs}")
                 reluctance_model_output = IoReluctanceModelOutput(
                     p_loss_total=float('nan'),
                     volume=float('nan'),
@@ -468,22 +471,6 @@ class InductorOptimization:
             flux_density = flux / core_cross_section
             flux_amplitude = (flux.max() - flux.min())/2
             flux_amplitude_density = flux_amplitude / core_cross_section
-
-            # Do not cross out saturation, as the genetic algorithm is missing bad results to improve its suggestions
-            if (flux_avg_density + flux_amplitude_density) > 0.8 * reluctance_input.initial_mag_curve["b"].iloc[-1]:
-                print(f"Maximum flux density is too high (80 % of b_sat): {flux_avg_density + flux_amplitude_density} "
-                      f"T > 0.8 * {reluctance_input.initial_mag_curve['b'].iloc[-1]} T mur={dynamic_mu_r_abs}")
-                reluctance_model_output = IoReluctanceModelOutput(
-                    p_loss_total=float('nan'),
-                    volume=float('nan'),
-                    area_to_heat_sink=float('nan'),
-                    p_winding=float('nan'),
-                    p_hyst=float('nan'),
-                    l_air_gap=float('nan'),
-                    flux_density_peak=flux_avg_density + flux_amplitude_density,
-                    dynamic_mu_r_abs=float('nan')
-                )
-                return reluctance_model_output
 
             # p_loss calculation
             # get power loss in W/m³ and estimated H wave in A/m
@@ -1449,7 +1436,7 @@ class InductorOptimization:
 
         @staticmethod
         def full_simulation(df_geometry: pd.DataFrame, current_waveform: list, inductor_config_filepath: str, process_number: int = 1,
-                            print_derivations: bool = False, saturation_threshold: float = 0.7) -> tuple:
+                            print_derivations: bool = False) -> tuple:
             """
             FEM simulation (winding losses and hysteresis losses from magnet model) for geometries from df_geometry.
 
@@ -1463,8 +1450,6 @@ class InductorOptimization:
             :type process_number: int
             :param print_derivations: True to print derivation from FEM simulation to reluctance model
             :type print_derivations: bool
-            :param saturation_threshold: Threshold of maximum material saturation (default: 0.7)
-            :type  saturation_threshold: float
             :return: volume, loss
             :rtype: tuple
             """
@@ -1534,7 +1519,7 @@ class InductorOptimization:
                 time_vec=target_and_fix_parameters.time_extracted_vec,
                 current_vec=target_and_fix_parameters.current_extracted_vec,
                 current_offset=target_and_fix_parameters.current_offset,
-                saturation_threshold=saturation_threshold
+                saturation_threshold=InductorOptimization._IO_SATURATION_THRESHOLD
             )
 
             # Load reluctance model input for magnet model and litz wire resistance calculation
