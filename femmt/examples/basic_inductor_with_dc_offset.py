@@ -1,12 +1,12 @@
 """
-Basic example to show how to simulate an inductor.
+Basic example to show how to simulate an inductor with current offset.
 
-After starting the program, the geometry dimensions are displayed. Verify this geometry, close the window, to continue the simulation.
-After a short time, B-Field and winding losses simulation results are shown. Winding losses are shown as a colormap.
-In the core, the magnitude B-Field in Tesla is shown. With the gmsh window, one can move the picture in the 3D way (not recommended).
-If you close this window, the thermal simulation will be continued, if programmed. If true, the thermal heat distribution will be displayed.
-To continue with the next simulation (or end the program), you need to close this window. All results are written to the result
+This example shows the calculation of the air gap by a given (dynamic) inductance.
+The dynamic inductance is calculated with a start air gap. The result of the inductance is taken to change the air gap
+accordingly. This changes the magnetic flux density, which influences the dynamic induction, so that the air gap will
+be approximated, until the requested accuracy is reached. All results are written to the result
 folder .../femmt/examples/example_results/simulation_file_name/results/log_electro_magnetic.json. and .../results_thermal.json.
+and the air gap length, calculated dynamic inductance and target  inductance is displayed.
 """
 import femmt as fmt
 import os
@@ -87,12 +87,6 @@ def basic_example_inductor_with_dc_offset(onelab_folder: str = None, show_visual
 
     # 4. set insulation
     # it is preferred to assign the exact dimensions of the bobbin for running electrostatic simulations or obtaining the capacitance of the inductor component
-    # using the function below
-    # bobbin_db = fmt.bobbin_database()["PQ 40/40"]
-    # bobbin_dimensions = fmt.dtos.BobbinDimensions(bobbin_inner_diameter=bobbin_db["bobbin_inner_diameter"],
-    #                                               bobbin_window_w=bobbin_db["bobbin_window_w"],
-    #                                               bobbin_window_h=bobbin_db["bobbin_window_h"],
-    #                                               bobbin_h=bobbin_db["bobbin_h"])
     insulation = fmt.Insulation(flag_insulation=True)
     insulation.add_core_insulations(0.001, 0.001, 0.003, 0.001)
     insulation.add_winding_insulations([[0.0005, 0.0005]], per_layer_of_turns=False)

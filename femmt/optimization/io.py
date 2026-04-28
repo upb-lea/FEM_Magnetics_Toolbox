@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 class InductorOptimization:
     """Reluctance model and FEM simulation for the inductor optimization."""
 
-    # Saturation threshold for calculation with Inductor optimization
+    # Relative saturation threshold for material based on 'b_sat' from material data base
     _IO_SATURATION_THRESHOLD = 0.8
 
     @staticmethod
@@ -390,14 +390,11 @@ class InductorOptimization:
             :rtype: IoReluctanceModelOutput
             """
             if act_dynamic_mu_r_abs is None:
-                # Variable declarationreluctance_input = {IoReluctanceModelInput} IoReluctanceModelInput(target_inductance=1e-05,
-                # core_inner_diameter=0.02, window_w=0.012, window_h=0.013463557904098145,
-                # turns...imported_complex_material=<femmt.model.ImportedComplexCoreMaterial object at 0x7c3ca5521e20>,
-                # current_offset=5.998990605058874)... View
                 dynamic_mu_r_abs = reluctance_input.material_mu_r_abs
             else:
                 dynamic_mu_r_abs = act_dynamic_mu_r_abs
 
+            # Variable declaration
             previous_dynamic_mu_r_abs = dynamic_mu_r_abs
 
             # prepare equidistant flux vector for the magnet loss simulation
@@ -501,13 +498,9 @@ class InductorOptimization:
 
             winding_area = reluctance_input.turns * reluctance_input.litz_wire_diameter ** 2
 
+            # Winding loss calculation
             p_winding = 0
             for count, fft_frequency in enumerate(reluctance_input.fft_frequency_list):
-                # proximity_factor_assumption = fmt.calc_proximity_factor_air_gap(
-                #     litz_wire_name=litz_wire_name, number_turns=turns, r_1=config.insulations.core_left,
-                #     frequency=fft_frequency, winding_area=winding_area,
-                #     litz_wire_material_name='Copper', temperature=config.temperature)
-
                 proximity_factor_assumption = fmt.calc_proximity_factor(
                     litz_wire_name=reluctance_input.litz_wire_name, number_turns=reluctance_input.turns, window_h=reluctance_input.window_h,
                     iso_core_top=reluctance_input.insulations.core_top, iso_core_bot=reluctance_input.insulations.core_bot,
