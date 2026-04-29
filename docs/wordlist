@@ -93,6 +93,7 @@ il
 ln
 Runtimes
 ItoSingleResultFiles
+ito
 gui
 OneDrive
 
@@ -369,6 +370,8 @@ DirResVals
 DirResValsCore
 DirStrandCoeff
 ScaleType
+SingleCoreDimensions
+ImportedComplexCoreMaterial
 pB
 pI
 nf

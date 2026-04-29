@@ -356,8 +356,8 @@ def parse_gmsh_parsed(file_path: str):
     :param file_path: file path
     :type file_path: str
     """
-    regex_view_line = "View \"(?P<key>\w+)\" \{\n"
-    regex_SP_line = "SP\(-?\d+\.\d+(e-\d+)?,-?\d+\.\d+(e-\d+)?,0\)\{(?P<value>-?\d+\.\d+)\};\n"
+    regex_view_line = r"View \"(?P<key>\w+)\" \{\n"
+    regex_SP_line = r"SP\(-?\d+\.\d+(e-\d+)?,-?\d+\.\d+(e-\d+)?,0\)\{(?P<value>-?\d+\.\d+)\};\n"
 
     value_dict = {}
 

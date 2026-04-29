@@ -115,12 +115,15 @@ class MagneticComponent:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Components
         self.core: Core = None  # Contains all information about the cores
+        self.is_core_parameter_valid = False
         self.air_gaps: AirGaps | None = None  # Contains every air gap
+        self.is_airgap_parameter_valid = False
         self.windings = None
         # self.windings: List of the different winding objects which the following structure:
         # windings[0]: primary, windings[1]: secondary, windings[2]: tertiary ....
         self.insulation: Insulation = None  # Contains information about the needed insulations
         self.winding_windows = None
+        self.is_winding_windows_valid = False
         # self.winding_windows: Contains a list of every winding_window which was created containing a
         # list of virtual_winding_windows
         self.stray_path = None  # Contains information about the stray_path (only for integrated transformers)
@@ -157,6 +160,8 @@ class MagneticComponent:
         self.red_freq = None  # [] * self.n_windings  # Defined for every conductor
         self.max_reduced_frequency = 3.25
         self.delta = None
+        # Saturation threshold used in method 'excitation' for reluctance model pre-check (Default: 0.7 of material saturation)
+        self._saturation_threshold: float = 0.7
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # MeshData to store the mesh size for different points
@@ -204,6 +209,19 @@ class MagneticComponent:
         self.onelab_setup(is_gui)
         self.onelab_client = onelab.client(__file__)
         self.simulation_name = simulation_name
+
+    def get_core_parameter(self) -> Core:
+        """
+        Return the core parameter.
+
+        :return: Core parameter of geo-object
+        :rtype:  Core
+        """
+        # Check, if core parameter are invalid
+        if not self.is_core_parameter_valid:
+            raise ValueError("Core parameter are invalid. You need to set them by method 'initialize_core_parameter'!")
+        # Return core parameter
+        return self.core
 
     def calc_hystersis_losses_with_MagNet_model_PB_based_on_reluctance(self, peak_magnetizing_current: float = 1, b_wave: WaveformType = WaveformType.Sine,
                                                                        custom_b_wave: np.ndarray = None) -> float:
@@ -579,6 +597,9 @@ class MagneticComponent:
 
         self.air_gaps = air_gaps
 
+        # Set core parameter flag to True
+        self.is_airgap_parameter_valid = True
+
     def set_winding_windows(self, winding_windows: list[WindingWindow]):
         """
         Add the winding windows to the model.
@@ -627,6 +648,8 @@ class MagneticComponent:
                     for _ in range(0, zeros_to_append):
                         vww.turns.append(0)
 
+        self.is_winding_windows_valid = True
+
     def set_core(self, core: Core):
         """Add the core to the model.
 
@@ -634,6 +657,8 @@ class MagneticComponent:
         :type core: Core
         """
         self.core = core
+        # Set core parameter flag to True
+        self.is_core_parameter_valid = True
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Pre-Processing
@@ -1169,7 +1194,7 @@ class MagneticComponent:
 
         # check the core saturation ( It does not work for custom)
         if self.core.material.material != "custom":
-            self.reluctance_model_pre_check()
+            self.reluctance_model_pre_check(self._saturation_threshold)
 
     def excitation_time_domain(self, current_list: list[list[float]], time_list: list[float], number_of_periods: int, ex_type: str = 'current',
                                plot_interpolation: bool = False, imposed_red_f=0):
@@ -1489,8 +1514,99 @@ class MagneticComponent:
             with open(os.path.join(os.path.join(self.file_data.e_m_mesh_file)), "w") as mesh_file:
                 mesh_file.write(mesh_data)
 
-    def single_simulation(self, freq: float, current: list[float], phi_deg: list[float] = None, plot_interpolation: bool = False,
-                          show_fem_simulation_results: bool = True, benchmark: bool = False):
+    def single_simulation_with_current_offset(self, freq: float, current: list[float], current_offset: float,
+                                              initial_mag_curve: pd.DataFrame, phi_deg: list[float] = None,
+                                              plot_interpolation: bool = False, show_fem_simulation_results: bool = True,
+                                              benchmark: bool = False) -> tuple[float, float]:
+        """
+        Start a _single_ electromagnetic ONELAB simulation with current offset.
+
+        Therefor the h-offset is calculated in a first simulation to load the complex permeability.
+
+        :param freq: frequency to simulate
+        :type  freq: float
+        :param current: List of current measured points within a period (average value has to be 0)
+        :type  current: list[float]
+        :param current_offset: current offset
+        :type  current_offset: float
+        :param initial_mag_curve: Initial magnetization curve
+        :type  initial_mag_curve: pd.DataFrame
+        :param phi_deg: phase angle in degree of current measured points
+        :type phi_deg: list[float]
+        :param plot_interpolation: If True, plots interpolation of data. (Not used in sub-methods)
+        :type plot_interpolation: bool
+        :param show_fem_simulation_results: Set to True to show the simulation results after the simulation has finished
+        :type show_fem_simulation_results: bool
+        :param benchmark: Benchmark simulation (stop time). Defaults to False.
+        :type benchmark: bool
+        :return: Dynamic inductance and static inductance
+        :rtype:  tuple[float, float]
+        """
+        # Variable declaration
+        h_offset = 0
+        h_offset_max = 0
+
+        # Create the model (ASA: Later to check condition, if this is necessary)
+        self.create_model(freq=freq, pre_visualize_geometry=show_fem_simulation_results, save_png=False)
+
+        # First calculation without offet
+        self.core.material.calculate_without_h_offset()
+
+        # Check if current offset is set to 0
+        if current_offset == 0:
+            self.single_simulation(freq, current, phi_deg, plot_interpolation, show_fem_simulation_results, benchmark)
+            return
+
+        # Due to symetry set current offset as absolute value (positive)
+        current_offset = abs(current_offset)
+
+        current_offset_list = [current_offset]
+        # Calculate with low frequency (1 Hz) to get the b-offset
+        self.single_simulation(1, current_offset_list, show_fem_simulation_results=show_fem_simulation_results)
+        result_data_file = os.path.join(self.file_data.results_folder_path, "log_electro_magnetic.json")
+
+        if os.path.exists(result_data_file):
+            with open(result_data_file, 'r', encoding='utf-8') as file_handler:
+                result_data = json.load(file_handler)
+        else:
+            raise ValueError(f"Result data file  {result_data_file} is not created!")
+
+        # Get static inductance
+        static_inductance = float(result_data["single_sweeps"][0]["winding1"]["flux_over_current"][0])
+
+        # Calculate the b-Field from json data
+        core_inner_diameter = result_data["simulation_settings"]["core"]["core_inner_diameter"]
+        b_field = (result_data["single_sweeps"][0]["winding1"]["flux"][0]) / core_inner_diameter
+        # Calculate h_offset from  initial magnetization curve
+        b_lower_line = initial_mag_curve[initial_mag_curve["b"] <= b_field].iloc[-1]
+        b_upper_line = initial_mag_curve[initial_mag_curve["b"] >= b_field].iloc[0]
+        # Interplolate h-offset within initial magnetization curve between 2 measured points (if necessary)
+        if b_lower_line["b"] == b_upper_line["b"]:
+            required_h_offset = b_lower_line["h"]
+        else:
+            required_h_offset = (b_lower_line["h"] + (b_upper_line["h"] - b_lower_line["h"]) * (
+                                 b_field - b_lower_line["b"]) / (b_upper_line["b"] - b_lower_line["b"]))
+
+        # Set h-offset for calculation
+        self.core.material.calculate_with_h_offset(required_h_offset)
+        # Perform simulation with h-offset
+        self.single_simulation(freq, current, phi_deg, plot_interpolation, show_fem_simulation_results, benchmark)
+
+        if os.path.exists(result_data_file):
+            with open(result_data_file, 'r', encoding='utf-8') as file_handler:
+                result_data = json.load(file_handler)
+        else:
+            raise ValueError(f"Result data file  {result_data_file} is not created!")
+        # Get dynamic inductance value
+        dynamic_inductance = float(result_data["single_sweeps"][0]["winding1"]["flux_over_current"][0])
+        # Reset h-Offset calculation
+        self.core.material.calculate_without_h_offset()
+
+        return dynamic_inductance, static_inductance
+
+    def single_simulation(self, freq: float, current: list[float], phi_deg: list[float] = None,
+                          plot_interpolation: bool = False, show_fem_simulation_results: bool = True,
+                          benchmark: bool = False):
         """
         Start a _single_ electromagnetic ONELAB simulation.
 
@@ -2111,6 +2227,7 @@ class MagneticComponent:
                 "current_phases_deg": None
             }
         }
+
         """
         def split_hysteresis_loss_excitation_center_tapped(hyst_frequency: list, hyst_loss_amplitudes: list, hyst_loss_phases_deg: list):
             """
@@ -2646,7 +2763,7 @@ class MagneticComponent:
         return (total_airgap_reluctance, air_gaps_reluctance, total_airgap_top_reluctance, air_gaps_top_reluctance, total_airgap_bot_reluctance,
                 air_gaps_bot_reluctance, total_air_gap_radial_reluctance, air_gap_radial_reluctance)
 
-    def log_reluctance_and_inductance(self):
+    def log_reluctance_and_inductance(self) -> dict:
         """
         Log the reluctance calculations for each part of the core and air gaps.
 
@@ -2737,6 +2854,24 @@ class MagneticComponent:
         # Save the reluctance log as a JSON file
         with open(self.file_data.reluctance_log_path, "w+", encoding='utf-8') as outfile:
             json.dump(reluctance_log, outfile, indent=2, ensure_ascii=False)
+
+    def set_saturation_threshold(self, saturation_threshold: float = 0.7):
+        """
+        Set the reluctance model simulation limit.
+
+        :param saturation_threshold: Value of saturation limit based on the material saturation flux density
+        :type  saturation_threshold: float
+        """
+        self._saturation_threshold = saturation_threshold
+
+    def get_saturation_threshold(self) -> bool:
+        """
+        Provide the saturation threshold for calculation.
+
+        :return: Value of the saturation threshold
+        :rtype:  float
+        """
+        return self._saturation_threshold
 
     def reluctance_model_pre_check(self, saturation_threshold: float = 0.7):
         """
