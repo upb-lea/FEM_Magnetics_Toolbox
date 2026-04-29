@@ -20,6 +20,22 @@ jobs:
       with:
         python-version: '3.12'
     - uses: actions/checkout@v4
+
+    - name: install material database package
+      run: |
+          pwd
+          ls
+          wget https://github.com/upb-lea/materialdatabase/archive/refs/heads/main.zip
+          unzip main.zip
+          rm main.zip
+          cd materialdatabase-main
+          pip install -e .
+          cd ..
+          echo show folder path
+          pwd
+          echo show folder structure:
+          ls 
+
     - name: install femmt package
       run: |
         sudo apt-get update
