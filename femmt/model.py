@@ -1519,6 +1519,33 @@ class WindingWindow:
 
             self.virtual_winding_windows = [top_left, top_right, bot_left, bot_right]
             return top_left, top_right, bot_left, bot_right
+        elif split_type == WindingWindowSplit.HorizontalDistancedAndVerticalSplit:
+            top_left = VirtualWindingWindow(
+                bot_bound=horizontal_split + split_distance / 2,
+                top_bound=self.max_top_bound,
+                left_bound=self.max_left_bound,
+                right_bound=vertical_split )
+
+            top_right = VirtualWindingWindow(
+                bot_bound=horizontal_split + split_distance / 2,
+                top_bound=self.max_top_bound,
+                left_bound=vertical_split,
+                right_bound=self.max_right_bound)
+
+            bot_left = VirtualWindingWindow(
+                bot_bound=self.max_bot_bound,
+                top_bound=horizontal_split - split_distance / 2,
+                left_bound=self.max_left_bound,
+                right_bound=vertical_split)
+
+            bot_right = VirtualWindingWindow(
+                bot_bound=self.max_bot_bound,
+                top_bound=horizontal_split - split_distance / 2,
+                left_bound=vertical_split,
+                right_bound=self.max_right_bound)
+
+            self.virtual_winding_windows = [top_left, top_right, bot_left, bot_right]
+            return top_left, top_right, bot_left, bot_right
         else:
             raise Exception(f"Winding window split type {split_type} not found")
 
