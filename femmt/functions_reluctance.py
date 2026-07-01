@@ -1339,7 +1339,7 @@ def magent_loss_model_on_cylinder_radiant(magnet_material_model: mh.loss.LossMod
         return p_density_middle
 
     # generate flux and loss distribution along the radius
-    radius_list = np.linspace(r_cyl_inner, r_cyl_outer, 10)
+    radius_list = np.linspace(r_cyl_inner, r_cyl_outer, 5)
     radius_list_df = pd.DataFrame({"radius": radius_list})
 
     radius_list_df["p_density"] = radius_list_df.apply(

@@ -326,16 +326,24 @@ class InductorOptimization:
             # get power loss in W/m³ and estimated H wave in A/m
             p_density, _ = reluctance_input.magnet_material_model(flux_density, reluctance_input.fundamental_frequency, reluctance_input.temperature)
 
-            # volume calculation
             r_outer = fr.calculate_r_outer(reluctance_input.core_inner_diameter, reluctance_input.window_w)
-            volume = ff.calculate_cylinder_volume(cylinder_diameter=2 * r_outer,
-                                                  cylinder_height=reluctance_input.window_h + reluctance_input.core_inner_diameter / 2)
+            r_inner = reluctance_input.core_inner_diameter / 2 + reluctance_input.window_w
 
-            volume_winding_window = ((reluctance_input.core_inner_diameter / 2 + reluctance_input.window_w) ** 2 * np.pi - \
-                                     (reluctance_input.core_inner_diameter / 2) ** 2 * np.pi) * reluctance_input.window_h
-            volume_core = volume - volume_winding_window
+            p_tablet = fr.magent_loss_model_on_cylinder_radiant(
+                magnet_material_model=reluctance_input.magnet_material_model, r_cyl_inner=reluctance_input.core_inner_diameter / 2,
+                r_cyl_outer=r_inner, time_vec=reluctance_input.time_extracted_vec, flux_vec=flux,
+                h_cyl=reluctance_input.core_inner_diameter / 4, temperature=reluctance_input.temperature)
+
+            # volume calculation
+            volume_total = ff.calculate_cylinder_volume(cylinder_diameter=2 * r_outer,
+                                                        cylinder_height=reluctance_input.window_h + reluctance_input.core_inner_diameter / 2)
+
+            volume_inner_leg = ff.calculate_cylinder_volume(cylinder_diameter=reluctance_input.core_inner_diameter,
+                                                            cylinder_height=reluctance_input.window_h + reluctance_input.core_inner_diameter / 2)
+
+            p_core_inner_leg = volume_inner_leg * p_density
             area_to_heat_sink = r_outer ** 2 * np.pi
-            p_core = volume_core * p_density
+            p_core = 2 * (p_tablet + p_core_inner_leg)
 
             # winding loss calculation
             winding_dc_resistance = fr.resistance_litz_wire(
@@ -367,7 +375,7 @@ class InductorOptimization:
 
             reluctance_model_output = IoReluctanceModelOutput(
                 p_loss_total=p_loss,
-                volume=volume,
+                volume=volume_total,
                 area_to_heat_sink=area_to_heat_sink,
                 p_winding=p_winding,
                 p_hyst=p_core,
