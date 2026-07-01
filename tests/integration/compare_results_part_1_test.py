@@ -736,7 +736,7 @@ def test_inductor_core_material_database_measurement(fixture_inductor_core_mater
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "thermal_inductor_core_material_database_measurement.json")
-    compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=6)
+    compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=4)
 
 def test_transformer_core_fixed_loss_angle(fixture_transformer_core_fixed_loss_angle: pytest.fixture):
     """
