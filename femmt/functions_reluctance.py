@@ -964,21 +964,6 @@ def r_core_tablet(tablet_height: float | np.ndarray, tablet_radius: float | np.n
     """
     return np.log(tablet_radius / (core_inner_diameter / 2)) / (2 * np.pi * mu_0 * mu_r_abs * tablet_height)
 
-def r_core_tablet_2(tablet_height, tablet_radius, mu_r_abs):
-    """
-     Calculate the magnetic resistance (reluctance) of the core tablet.
-
-    :param tablet_height: The height of the core tablet.
-    :type tablet_height: float
-    :param tablet_radius: The radius of the core tablet.
-    :type tablet_radius: float
-    :param mu_r_abs: The absolute relative permeability (mu_r) of the core material.
-    :type mu_r_abs: float
-    :return: The magnetic reluctance of the core tablet.
-    :rtype: float
-    """
-    return tablet_height / (np.pi * mu_0 * mu_r_abs * tablet_radius ** 2)
-
 
 def r_core_top_bot_radiant(core_inner_diameter: float | np.ndarray, window_w: float | np.ndarray, mu_r_abs: float | np.ndarray,
                            core_top_bot_height: float | np.ndarray) -> float | np.ndarray:

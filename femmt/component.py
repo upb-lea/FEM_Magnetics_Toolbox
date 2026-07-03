@@ -2451,19 +2451,21 @@ class MagneticComponent:
             else:
                 # Calculate the subpart lengths and reluctance
                 # subpart 1: bot left part
-                core_part1_length = sorted_midpoints[0][1] + self.core.geometry.window_h / 2 - sorted_midpoints[0][2] / 2
-                length.append(core_part1_length)
-                core_part1_reluctance = fr.r_core_tablet_2(core_part1_length, self.core.geometry.core_inner_diameter / 2, self.core.material.mu_r_abs)
-                core_parts_reluctance.append(core_part1_reluctance)
+                core_bot_upper_center_leg_length = sorted_midpoints[0][1] + self.core.geometry.window_h / 2 - sorted_midpoints[0][2] / 2
+                length.append(core_bot_upper_center_leg_length)
+                core_bot_upper_center_leg_reluctance = fr.r_core_tablet_2(core_bot_upper_center_leg_length, self.core.geometry.core_inner_diameter / 2,
+                                                                          self.core.material.mu_r_abs)
+                core_parts_reluctance.append(core_bot_upper_center_leg_reluctance)
                 # append this also to the bottom part reluctance for the integrated transformer
-                core_parts_bot_reluctance.append(core_part1_reluctance)
+                core_parts_bot_reluctance.append(core_bot_upper_center_leg_reluctance)
                 # subpart 2: top left part
-                core_part2_length = self.core.geometry.window_h / 2 - sorted_midpoints[-1][1] - sorted_midpoints[-1][2] / 2
-                length.append(core_part2_length)
-                core_part2_reluctance = fr.r_core_tablet_2(core_part2_length, self.core.geometry.core_inner_diameter / 2, self.core.material.mu_r_abs)
-                core_parts_reluctance.append(core_part2_reluctance)
+                core_lower_center_leg_length = self.core.geometry.window_h / 2 - sorted_midpoints[-1][1] - sorted_midpoints[-1][2] / 2
+                length.append(core_lower_center_leg_length)
+                core_lower_center_leg_reluctance = fr.r_core_tablet_2(core_lower_center_leg_length, self.core.geometry.core_inner_diameter / 2,
+                                                                      self.core.material.mu_r_abs)
+                core_parts_reluctance.append(core_lower_center_leg_reluctance)
                 # append this also to the bottom part reluctance for the integrated transformer
-                core_parts_top_reluctance.append(core_part2_reluctance)
+                core_parts_top_reluctance.append(core_lower_center_leg_reluctance)
                 # loop over the intermediate segments between air gaps
                 for i in range(len(sorted_midpoints) - 1):
                     air_gap_1_position = sorted_midpoints[i][1]
@@ -2511,19 +2513,19 @@ class MagneticComponent:
             # This is taken from Appendix B of book "E. C. Snelling. Soft Ferrites, Properties and Applications. 2nd edition. Butterworths, 1988"
             # inner corners
             s_1 = (self.core.geometry.core_inner_diameter / 2) - (self.core.geometry.core_inner_diameter / (2 * np.sqrt(2)))
-            length_inner = (np.pi / 4) * (s_1 + (self.core.geometry.core_inner_diameter / 8))
-            inner_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter, length_inner, self.core.material.mu_r_abs) * 2
+            length_inner_corner = (np.pi / 4) * (s_1 + (self.core.geometry.core_inner_diameter / 8))
+            inner_corner_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter, length_inner_corner, self.core.material.mu_r_abs) * 2
             # outer corners
             s_2 = np.sqrt(((self.core.geometry.r_inner ** 2) + (self.core.geometry.r_outer ** 2)) / 2) - self.core.geometry.r_inner
-            length_outer = (np.pi / 4) * (s_2 + (self.core.geometry.core_inner_diameter / 8))
-            outer_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter, length_outer, self.core.material.mu_r_abs) * 2
+            length_outer_corner = (np.pi / 4) * (s_2 + (self.core.geometry.core_inner_diameter / 8))
+            outer_corner_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter, length_outer_corner, self.core.material.mu_r_abs) * 2
             # corners reluctance
-            corner_reluctance = inner_reluctance + outer_reluctance
+            corner_reluctance = inner_corner_reluctance + outer_corner_reluctance
             # winding window
             length_window = self.core.geometry.window_w
-            window_reluctance = (fr.r_core_top_bot_radiant(self.core.geometry.core_inner_diameter, length_window,
-                                                           self.core.material.mu_r_abs, self.core.geometry.core_inner_diameter / 4) * 2)
-            core_part3_reluctance = corner_reluctance + window_reluctance
+            core_top_bot_mid_reluctance = (fr.r_core_top_bot_radiant(self.core.geometry.core_inner_diameter, length_window,
+                                           self.core.material.mu_r_abs, self.core.geometry.core_inner_diameter / 4) * 2)
+            core_part3_reluctance = corner_reluctance + core_top_bot_mid_reluctance
             # if it is integrated transformer, half will be to the top part and half to the bottom part
             if self.stray_path:
                 core_parts_top_reluctance.append(core_part3_reluctance / 2)
@@ -2531,7 +2533,7 @@ class MagneticComponent:
             # total reluctance
             core_parts_reluctance.append(core_part3_reluctance)
             # total length
-            core_part3_length = length_inner + length_outer + length_window
+            core_part3_length = length_inner_corner + length_outer_corner + length_window
             length.append(core_part3_length)
 
             # subpart 4: right subpart (outer leg)
@@ -2561,11 +2563,11 @@ class MagneticComponent:
                 core_parts_reluctance.append(core_part4_total_reluctance)
                 length.append(core_part4_total_length)
             else:
-                core_part4_length = self.core.geometry.window_h
+                core_tablet_length = self.core.geometry.window_h
                 core_part4_radius_eff = np.sqrt(self.core.geometry.r_outer ** 2 - self.core.geometry.r_inner ** 2)
-                core_part4_reluctance = fr.r_core_tablet_2(core_part4_length, core_part4_radius_eff, self.core.material.mu_r_abs)
-                core_parts_reluctance.append(core_part4_reluctance)
-                length.append(core_part4_length)
+                core_tablet_incl_corners_reluctance = fr.r_core_tablet_2(core_tablet_length, core_part4_radius_eff, self.core.material.mu_r_abs)
+                core_parts_reluctance.append(core_tablet_incl_corners_reluctance)
+                length.append(core_tablet_length)
 
             # Total
             core_top_reluctance = np.sum(core_parts_top_reluctance)
@@ -2579,67 +2581,76 @@ class MagneticComponent:
         # Stacked core
         elif self.core.geometry.core_type == CoreType.Stacked:
             # Core parts lie in the center leg (bottom window)
-            # first part (top left in the bottom window)
-            core_part1_length = self.core.geometry.window_h_bot / 2 - sorted_midpoints[0][2] / 2
-            length.append(core_part1_length)
-            core_part1_reluctance = fr.r_core_tablet_2(core_part1_length, self.core.geometry.core_inner_diameter / 2, self.core.material.mu_r_abs)
-            core_parts_bot_reluctance.append(core_part1_reluctance)
-            core_parts_reluctance.append(core_part1_reluctance)
-            # second part (top left in the bottom window)
-            core_part2_length = self.core.geometry.window_h_bot / 2 - sorted_midpoints[0][2] / 2
-            length.append(core_part2_length)
-            core_part2_reluctance = fr.r_core_tablet_2(core_part2_length, self.core.geometry.core_inner_diameter / 2, self.core.material.mu_r_abs)
-            core_parts_bot_reluctance.append(core_part2_reluctance)
-            core_parts_reluctance.append(core_part2_reluctance)
-            # third part (top left of the top winding window)
+
+            # core: upper center leg in the bottom window
+            core_bot_upper_center_leg_length = self.core.geometry.window_h_bot / 2 - sorted_midpoints[0][2] / 2
+            length.append(core_bot_upper_center_leg_length)
+            core_bot_upper_center_leg_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter, core_bot_upper_center_leg_length,
+                                                                   self.core.material.mu_r_abs)
+            core_parts_bot_reluctance.append(core_bot_upper_center_leg_reluctance)
+            core_parts_reluctance.append(core_bot_upper_center_leg_reluctance)
+
+            # core: lower center leg in the bottom window
+            core_lower_center_leg_length = self.core.geometry.window_h_bot / 2 - sorted_midpoints[0][2] / 2
+            length.append(core_lower_center_leg_length)
+            core_lower_center_leg_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter, core_lower_center_leg_length,
+                                                               self.core.material.mu_r_abs)
+            core_parts_bot_reluctance.append(core_lower_center_leg_reluctance)
+            core_parts_reluctance.append(core_lower_center_leg_reluctance)
+
+            # core: center leg in the top window
             core_part3_length = self.core.geometry.window_h_top - sorted_midpoints[1][2]
             length.append(core_part3_length)
-            core_part3_reluctance = fr.r_core_tablet_2(core_part3_length, self.core.geometry.core_inner_diameter / 2, self.core.material.mu_r_abs)
+            core_part3_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter, core_part3_length, self.core.material.mu_r_abs)
             core_parts_top_reluctance.append(core_part3_reluctance)
             core_parts_reluctance.append(core_part3_reluctance)
-            # core part 4 (inner and outer corners and window section)
+
+            # core corners
             # In stacked core, there are inner corners, outer corners , and window sections above and below the bottom and top windows
             # So it is multiplied by 3
             # inner corners
-            s_1 = (self.core.geometry.core_inner_diameter / 2) - (self.core.geometry.core_inner_diameter / (2 * np.sqrt(2)))
-            length_inner = (np.pi / 4) * (s_1 + (self.core.geometry.core_inner_diameter / 8))
-            inner_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter, length_inner, self.core.material.mu_r_abs) * 3
+            s_1 = (self.core.geometry.core_inner_diameter / 2) - (self.core.geometry.core_inner_diameter / (2 * np.sqrt(2)))  # formula checked: OK
+            length_inner_corner = (np.pi / 4) * (s_1 + (self.core.geometry.core_inner_diameter / 8))  # formula checked: OK
+            cross_section_inner_corner = np.pi * self.core.geometry.core_inner_diameter ** 2 / 4  # formula checked: OK
+            inner_corner_reluctance = length_inner_corner / (self.core.material.mu_r_abs * mu_0 * cross_section_inner_corner) * 3
+
             # outer corners
-            s_2 = np.sqrt(((self.core.geometry.r_inner ** 2) + (self.core.geometry.r_outer ** 2)) / 2) - self.core.geometry.r_inner
-            length_outer = (np.pi / 4) * (s_2 + (self.core.geometry.core_inner_diameter / 8))
-            outer_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter, length_outer, self.core.material.mu_r_abs) * 3
+            s_2 = np.sqrt((self.core.geometry.r_inner ** 2 + self.core.geometry.r_outer ** 2) / 2) - self.core.geometry.r_inner  # formula checked: OK
+            length_outer_corner = (np.pi / 4) * (s_2 + (self.core.geometry.core_inner_diameter / 8))  # formula checked: OK
+            cross_section_outer_corner = np.pi / 2 * (2 * self.core.geometry.r_inner * self.core.geometry.core_inner_diameter / 4 + \
+                                                      self.core.geometry.r_outer ** 2 - self.core.geometry.r_inner ** 2)
+            outer_corner_reluctance = length_outer_corner / (self.core.material.mu_r_abs * mu_0 * cross_section_outer_corner) * 3
+
             # corners reluctance
-            corner_reluctance = inner_reluctance + outer_reluctance
+            corner_reluctance = inner_corner_reluctance + outer_corner_reluctance
             # winding window
             length_window = self.core.geometry.window_w
-            window_reluctance = (fr.r_core_top_bot_radiant(self.core.geometry.core_inner_diameter, length_window,
-                                                           self.core.material.mu_r_abs, self.core.geometry.core_inner_diameter / 4) * 3)
-            core_part4_reluctance = corner_reluctance + window_reluctance
+            core_top_bot_mid_reluctance = (fr.r_core_top_bot_radiant(self.core.geometry.core_inner_diameter, length_window,
+                                           self.core.material.mu_r_abs, self.core.geometry.core_inner_diameter / 4) * 3)
+            core_tablet_incl_corners_reluctance = corner_reluctance + core_top_bot_mid_reluctance
             # top , bot, and middle parts
-            core_parts_top_reluctance.append(core_part4_reluctance / 3)
-            core_parts_bot_reluctance.append(core_part4_reluctance / 3)
-            core_parts_middle_reluctance.append(core_part4_reluctance / 3)
+            core_parts_top_reluctance.append(core_tablet_incl_corners_reluctance / 3)
+            core_parts_bot_reluctance.append(core_tablet_incl_corners_reluctance / 3)
+            core_parts_middle_reluctance.append(core_tablet_incl_corners_reluctance / 3)
             # total reluctance
-            core_parts_reluctance.append(core_part4_reluctance)
+            core_parts_reluctance.append(core_tablet_incl_corners_reluctance)
             # total length
-            core_part4_length = length_inner + length_outer + length_window
-            length.append(core_part4_length)
+            core_tablet_length = length_inner_corner + length_outer_corner + length_window
+            length.append(core_tablet_length)
 
-            # core part 5: right part of the bottom window
-            core_part5_length = self.core.geometry.window_h_bot
-            core_part5_radius_eff = np.sqrt(self.core.geometry.r_outer ** 2 - self.core.geometry.r_inner ** 2)
-            core_part5_reluctance = fr.r_core_tablet_2(core_part5_length, core_part5_radius_eff, self.core.material.mu_r_abs)
-            core_parts_bot_reluctance.append(core_part5_reluctance)
-            core_parts_reluctance.append(core_part5_reluctance)
-            length.append(core_part5_length)
+            # core: outer leg in the bottom core
+            core_bot_outer_leg_length = self.core.geometry.window_h_bot
+            core_bot_outer_leg_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter, core_bot_outer_leg_length, self.core.material.mu_r_abs)
+            core_parts_bot_reluctance.append(core_bot_outer_leg_reluctance)
+            core_parts_reluctance.append(core_bot_outer_leg_reluctance)
+            length.append(core_bot_outer_leg_length)
 
-            # core part 6: right part of the top window
-            core_part6_length = self.core.geometry.window_h_top
-            core_part6_radius_eff = np.sqrt(self.core.geometry.r_outer ** 2 - self.core.geometry.r_inner ** 2)
-            core_part6_reluctance = fr.r_core_tablet_2(core_part6_length, core_part6_radius_eff, self.core.material.mu_r_abs)
-            core_parts_top_reluctance.append(core_part6_reluctance)
-            core_parts_reluctance.append(core_part6_reluctance)
-            length.append(core_part6_length)
+            # core: outer leg in the top core
+            core_top_outer_leg_length = self.core.geometry.window_h_top
+            core_top_outer_leg_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter, core_top_outer_leg_length, self.core.material.mu_r_abs)
+            core_parts_top_reluctance.append(core_top_outer_leg_reluctance)
+            core_parts_reluctance.append(core_top_outer_leg_reluctance)
+            length.append(core_top_outer_leg_length)
 
             # Total
             core_top_reluctance = np.sum(core_parts_top_reluctance)
