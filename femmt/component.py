@@ -2445,7 +2445,7 @@ class MagneticComponent:
             # If no air gaps, calculate reluctance for the whole left part
             if not sorted_midpoints:
                 core_part_length = self.core.geometry.window_h
-                core_part_reluctance = fr.r_core_tablet_2(core_part_length, self.core.geometry.core_inner_diameter / 2, self.core.material.mu_r_abs)
+                core_part_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter, core_part_length, self.core.material.mu_r_abs)
                 core_parts_reluctance.append(core_part_reluctance)
                 length.append(core_part_length)
             else:
@@ -2453,16 +2453,15 @@ class MagneticComponent:
                 # subpart 1: bot left part
                 core_bot_upper_center_leg_length = sorted_midpoints[0][1] + self.core.geometry.window_h / 2 - sorted_midpoints[0][2] / 2
                 length.append(core_bot_upper_center_leg_length)
-                core_bot_upper_center_leg_reluctance = fr.r_core_tablet_2(core_bot_upper_center_leg_length, self.core.geometry.core_inner_diameter / 2,
-                                                                          self.core.material.mu_r_abs)
+                core_bot_upper_center_leg_reluctance = fr.core_part_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter,
+                                                                                                 core_bot_upper_center_leg_length, self.core.material.mu_r_abs)
                 core_parts_reluctance.append(core_bot_upper_center_leg_reluctance)
                 # append this also to the bottom part reluctance for the integrated transformer
                 core_parts_bot_reluctance.append(core_bot_upper_center_leg_reluctance)
                 # subpart 2: top left part
                 core_lower_center_leg_length = self.core.geometry.window_h / 2 - sorted_midpoints[-1][1] - sorted_midpoints[-1][2] / 2
                 length.append(core_lower_center_leg_length)
-                core_lower_center_leg_reluctance = fr.r_core_tablet_2(core_lower_center_leg_length, self.core.geometry.core_inner_diameter / 2,
-                                                                      self.core.material.mu_r_abs)
+                core_lower_center_leg_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter, core_lower_center_leg_length, self.core.material.mu_r_abs)
                 core_parts_reluctance.append(core_lower_center_leg_reluctance)
                 # append this also to the bottom part reluctance for the integrated transformer
                 core_parts_top_reluctance.append(core_lower_center_leg_reluctance)
@@ -2498,7 +2497,7 @@ class MagneticComponent:
 
                     else:
                         core_part_radius = self.core.geometry.core_inner_diameter / 2
-                        core_part_reluctance = fr.r_core_tablet_2(core_part_length, core_part_radius, self.core.material.mu_r_abs)
+                        core_part_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter, core_part_length, self.core.material.mu_r_abs)
                         core_parts_reluctance.append(core_part_reluctance)
                         length.append(core_part_length)
                         # Add this condition to check if the segment is over the stray path
@@ -2545,7 +2544,7 @@ class MagneticComponent:
                 air_gap_top_position = sorted_midpoints[start_index + 1][1] + self.core.geometry.window_h / 2
                 air_gap_top_height = sorted_midpoints[start_index + 1][2]
                 core_part4_top_length = self.core.geometry.window_h - air_gap_top_position + air_gap_top_height / 2
-                core_part4_top_reluctance = fr.r_core_tablet_2(core_part4_top_length, core_part4_radius_eff, self.core.material.mu_r_abs)
+                core_part4_top_reluctance = fr.r_core_round(core_part4_radius_eff * 2, core_part4_top_length, self.core.material.mu_r_abs)
                 core_parts_top_reluctance.append(core_part4_top_reluctance)
                 length.append(core_part4_top_length)
 
@@ -2553,7 +2552,7 @@ class MagneticComponent:
                 air_gap_bot_position = sorted_midpoints[start_index][1] + self.core.geometry.window_h / 2
                 air_gap_bot_height = sorted_midpoints[start_index][2]
                 core_part4_bot_length = air_gap_bot_position + air_gap_bot_height / 2
-                core_part4_bot_reluctance = fr.r_core_tablet_2(core_part4_bot_length, core_part4_radius_eff, self.core.material.mu_r_abs)
+                core_part4_bot_reluctance = fr.r_core_round(core_part4_radius_eff * 2, core_part4_bot_length, self.core.material.mu_r_abs)
                 core_parts_bot_reluctance.append(core_part4_bot_reluctance)
                 length.append(core_part4_bot_length)
 
@@ -2565,7 +2564,7 @@ class MagneticComponent:
             else:
                 core_tablet_length = self.core.geometry.window_h
                 core_part4_radius_eff = np.sqrt(self.core.geometry.r_outer ** 2 - self.core.geometry.r_inner ** 2)
-                core_tablet_incl_corners_reluctance = fr.r_core_tablet_2(core_tablet_length, core_part4_radius_eff, self.core.material.mu_r_abs)
+                core_tablet_incl_corners_reluctance = fr.r_core_round(core_part4_radius_eff * 2, core_tablet_length, self.core.material.mu_r_abs)
                 core_parts_reluctance.append(core_tablet_incl_corners_reluctance)
                 length.append(core_tablet_length)
 
