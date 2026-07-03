@@ -4,22 +4,22 @@ import csv
 import fileinput
 import os
 import sys
-import gmsh
 import json
 import warnings
 import inspect
 import re
-import pandas as pd
 from datetime import datetime
 import time
 import logging
 import dataclasses
-from matplotlib import pyplot as plt
 import ast
 
 # Third party libraries
 from onelab import onelab
 import numpy as np
+import pandas as pd
+from matplotlib import pyplot as plt
+import gmsh
 
 # Local libraries
 import femmt.functions as ff
