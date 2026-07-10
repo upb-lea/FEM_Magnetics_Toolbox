@@ -721,8 +721,8 @@ class MagneticComponent:
         :rtype: float
         """
         # Calculate the cross-sectional area using the inner diameter of the core
-        width = self.core.geometry.core_inner_diameter / 2
-        cross_sectional_area = np.pi * (width ** 2)
+        core_radius = self.core.geometry.core_inner_diameter / 2
+        cross_sectional_area = np.pi * (core_radius ** 2)
         return cross_sectional_area
 
     def calculate_core_volume_with_air(self) -> float:
@@ -2969,12 +2969,17 @@ class MagneticComponent:
                 # Values for the current matrix
                 i_1 = self.current[0]
                 i_2 = self.current[1]
+
+
+
                 # Reluctance matrix
                 reluctance_matrix = np.array([
                     [r1, r2],
                     [r3, r4]
                 ])
-                # Current matrix
+                # Current matrix. Takes no phase into account, everything is assumed with 180° phase shift.
+                # The definition of currents i_1 and i_2 is same with the reluctance model basics from dissertation L. Keuck.
+                # no factor '-1' needed in the reluctance model WHEN neglecting the phase information!
                 current_matrix = np.array([
                     [i_1],
                     [i_2]
@@ -2991,7 +2996,8 @@ class MagneticComponent:
                 # Area
                 core_cross_sectional_area = self.calculate_core_cross_sectional_area()
 
-                # Calculate magnetic flux densities
+                # Calculate magnetic flux densities. For the saturation check, it is enough to check this in the center leg
+                # as the flux would lead to different flux density in the tablet parts.
                 b_field_top = flux_top / core_cross_sectional_area
                 b_field_bot = flux_bot / core_cross_sectional_area
                 b_field_middle = flux_middle / core_cross_sectional_area
