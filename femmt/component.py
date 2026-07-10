@@ -2461,7 +2461,8 @@ class MagneticComponent:
                 # subpart 2: top left part
                 core_lower_center_leg_length = self.core.geometry.window_h / 2 - sorted_midpoints[-1][1] - sorted_midpoints[-1][2] / 2
                 length.append(core_lower_center_leg_length)
-                core_lower_center_leg_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter, core_lower_center_leg_length, self.core.material.mu_r_abs)
+                core_lower_center_leg_reluctance = fr.r_core_round(self.core.geometry.core_inner_diameter, core_lower_center_leg_length,
+                                                                   self.core.material.mu_r_abs)
                 core_parts_reluctance.append(core_lower_center_leg_reluctance)
                 # append this also to the bottom part reluctance for the integrated transformer
                 core_parts_top_reluctance.append(core_lower_center_leg_reluctance)
@@ -2971,8 +2972,6 @@ class MagneticComponent:
                 # Values for the current matrix
                 i_1 = self.current[0]
                 i_2 = self.current[1]
-
-
 
                 # Reluctance matrix
                 reluctance_matrix = np.array([
