@@ -2617,7 +2617,7 @@ class MagneticComponent:
             s_2 = np.sqrt((self.core.geometry.r_inner ** 2 + self.core.geometry.r_outer ** 2) / 2) - self.core.geometry.r_inner  # formula checked: OK
             length_outer_corner = (np.pi / 4) * (s_2 + (self.core.geometry.core_inner_diameter / 8))  # formula checked: OK
             cross_section_outer_corner = np.pi / 2 * (2 * self.core.geometry.r_inner * self.core.geometry.core_inner_diameter / 4 + \
-                                                      self.core.geometry.r_outer ** 2 - self.core.geometry.r_inner ** 2)
+                                                      self.core.geometry.r_outer ** 2 - self.core.geometry.r_inner ** 2)  # formula checked: OK
             outer_corner_reluctance = length_outer_corner / (self.core.material.mu_r_abs * mu_0 * cross_section_outer_corner) * 3
 
             # corners reluctance
@@ -2626,14 +2626,14 @@ class MagneticComponent:
             length_window = self.core.geometry.window_w
             core_top_bot_mid_reluctance = (fr.r_core_top_bot_radiant(self.core.geometry.core_inner_diameter, length_window,
                                            self.core.material.mu_r_abs, self.core.geometry.core_inner_diameter / 4) * 3)
-            core_tablet_incl_corners_reluctance = corner_reluctance + core_top_bot_mid_reluctance
+            core_tablet_incl_corners_reluctance = corner_reluctance + core_top_bot_mid_reluctance  # this is 3 times the tablet!
             # top , bot, and middle parts
             core_parts_top_reluctance.append(core_tablet_incl_corners_reluctance / 3)
             core_parts_bot_reluctance.append(core_tablet_incl_corners_reluctance / 3)
             core_parts_middle_reluctance.append(core_tablet_incl_corners_reluctance / 3)
             # total reluctance
             core_parts_reluctance.append(core_tablet_incl_corners_reluctance)
-            # total length
+            # single tablet length
             core_tablet_length = length_inner_corner + length_outer_corner + length_window
             length.append(core_tablet_length)
 
@@ -2651,10 +2651,12 @@ class MagneticComponent:
             core_parts_reluctance.append(core_top_outer_leg_reluctance)
             length.append(core_top_outer_leg_length)
 
-            # Total
+            # reluctance sums for top, bot, middle
             core_top_reluctance = np.sum(core_parts_top_reluctance)
             core_bot_reluctance = np.sum(core_parts_bot_reluctance)
             core_middle_reluctance = np.sum(core_parts_middle_reluctance)
+
+            # statistics
             core_reluctance = np.sum(core_parts_reluctance)
             total_length = np.sum(length)
             return (core_reluctance, core_parts_reluctance, core_top_reluctance, core_parts_top_reluctance, core_bot_reluctance, core_parts_bot_reluctance,
@@ -2925,7 +2927,7 @@ class MagneticComponent:
                         f"    Total Reluctance: {reluctance:.6e} A/Wb")
 
         else:
-            # single core with stray path
+            # single core with stray path or stacked core
             if len(self.windings) == 2:
                 if self.core.geometry.core_type == CoreType.Single and self.stray_path:
                     # Values for the reluctance matrix
@@ -2998,6 +3000,7 @@ class MagneticComponent:
 
                 # Calculate magnetic flux densities. For the saturation check, it is enough to check this in the center leg
                 # as the flux would lead to different flux density in the tablet parts.
+                # Note: Do not calculate losses, this will result in incorrect calculations!
                 b_field_top = flux_top / core_cross_sectional_area
                 b_field_bot = flux_bot / core_cross_sectional_area
                 b_field_middle = flux_middle / core_cross_sectional_area
@@ -3018,6 +3021,7 @@ class MagneticComponent:
                 logger.info(f"B-field Bottom: {b_field_bot:.4f} T")
                 logger.info(f"B-field Middle: {b_field_middle:.4f} T")
             else:
+                # 2 windings in the upper core part is not supported.
                 if self.core.geometry.core_type == CoreType.Stacked or self.stray_path:
                     # Raise a warning if there are more than 2 windings in a stacked core with stray path
                     raise Warning("Warning: More than two windings detected in a stacked core with a stray path. "
