@@ -267,7 +267,10 @@ class InductorOptimization:
                     reluctance_output: IoReluctanceModelOutput = (
                         InductorOptimization.ReluctanceModel.single_reluctance_model_simulation_dc_offset(reluctance_model_input))
             except ValueError as e:
-                logger.debug("bot air gap: No fitting air gap length")
+                if str(e) == "f(a) and f(b) must have different signs":
+                    logger.debug("bot air gap: No fitting air gap length")
+                else:
+                    logger.warn(f"Other error detected: {e}")
                 return float('nan'), float('nan')
 
             trial.set_user_attr('p_winding', reluctance_output.p_winding)
@@ -331,7 +334,7 @@ class InductorOptimization:
 
             p_tablet = fr.magent_loss_model_on_cylinder_radiant(
                 magnet_material_model=reluctance_input.magnet_material_model, r_cyl_inner=reluctance_input.core_inner_diameter / 2,
-                r_cyl_outer=r_inner, time_vec=reluctance_input.time_extracted_vec, flux_vec=flux,
+                r_cyl_outer=r_inner, time_vec=time_interp, flux_vec=flux,
                 h_cyl=reluctance_input.core_inner_diameter / 4, temperature=reluctance_input.temperature)
 
             # volume calculation
