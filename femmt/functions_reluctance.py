@@ -1268,7 +1268,7 @@ def magent_loss_model_on_cylinder_radiant(
     temperature: float,
     total_opening_angle_rad: float = 210 / 360 * 2 * np.pi,
     n_radius: int = 10,
-    n_interp: int = 1024,
+    n_time: int = 1024,
 ):
     """
     Get the core hysteresis losses for the radiant flux parts in a tablet. Uses the MagNet model.
@@ -1291,20 +1291,20 @@ def magent_loss_model_on_cylinder_radiant(
     :type total_opening_angle_rad: float
     :param n_radius: number of points to interpolate the radius
     :type n_radius: int
-    :param n_interp: number of points to interpolate the time
-    :type n_interp: int
+    :param n_time: number of points to interpolate the time
+    :type n_time: int
     """
     radius_list = np.linspace(r_cyl_inner, r_cyl_outer, n_radius)
 
     t_period = time_vec[-1]
     fundamental_frequency = 1.0 / t_period
 
-    interp_points = np.arange(n_interp) * t_period / n_interp
+    interp_points = np.arange(n_time) * t_period / n_time
 
     # Interpolate flux only once
     flux_interp = np.interp(interp_points, time_vec, flux_vec)
 
-    # Shape: (n_radius, n_interp)
+    # Shape: (n_radius, n_time)
     flux_density_interp = flux_interp[np.newaxis, :] / (
         total_opening_angle_rad * h_cyl * radius_list[:, np.newaxis]
     )
