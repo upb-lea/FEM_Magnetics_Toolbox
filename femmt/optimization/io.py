@@ -270,7 +270,7 @@ class InductorOptimization:
                 if str(e) == "f(a) and f(b) must have different signs":
                     logger.debug("bot air gap: No fitting air gap length")
                 else:
-                    logger.warn(f"Other error detected: {e}")
+                    logger.warning(f"Other error detected: {e}")
                 return float('nan'), float('nan')
 
             trial.set_user_attr('p_winding', reluctance_output.p_winding)
