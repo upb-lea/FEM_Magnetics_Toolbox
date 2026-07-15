@@ -1267,7 +1267,7 @@ def magent_loss_model_on_cylinder_radiant(
     h_cyl: float,
     temperature: float,
     total_opening_angle_rad: float = 210 / 360 * 2 * np.pi,
-    n_radius: int = 10,
+    n_radius: int = 5,
     n_time: int = 1024,
 ):
     """
