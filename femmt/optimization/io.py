@@ -277,7 +277,6 @@ class InductorOptimization:
             trial.set_user_attr('p_hyst', reluctance_output.p_hyst)
             trial.set_user_attr('l_air_gap', reluctance_output.l_air_gap)
             trial.set_user_attr('core_inner_diameter', core_inner_diameter)
-            trial.set_user_attr('window_h', window_h)
             trial.set_user_attr('window_w', window_w)
             trial.set_user_attr('flux_density_peak', reluctance_output.flux_density_peak)
             trial.set_user_attr('dynamic_mu_r_abs', reluctance_output.dynamic_mu_r_abs)
@@ -1070,7 +1069,7 @@ class InductorOptimization:
                         if reluctance_df["params_core_name"] is not None:
                             core_inner_diameter = reluctance_df["user_attrs_core_inner_diameter"][index].item()
                             window_w = reluctance_df["user_attrs_window_w"][index].item()
-                            window_h = reluctance_df["user_attrs_window_h"][index].item()
+                            window_h = reluctance_df["params_window_h"][index].item()
                         else:
                             core_inner_diameter = reluctance_df["params_core_inner_diameter"][index].item()
                             window_w = reluctance_df["params_window_w"][index].item()

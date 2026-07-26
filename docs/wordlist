@@ -539,6 +539,9 @@ Thermoset
 Polyphenylene
 LossModel
 mh
+ls
+Ls
+RS
 
 # Time domain Visualization
 VisualizationMode
