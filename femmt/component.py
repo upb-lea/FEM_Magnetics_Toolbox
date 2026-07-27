@@ -2564,7 +2564,6 @@ class MagneticComponent:
 
         # calculate hysteresis losses
         # use a single simulation
-        self.generate_load_litz_approximation_parameters()
         self.excitation(frequency=two_chamber_center_tapped_study_excitation["hysteresis"]["frequency"],
                         amplitude_list=two_chamber_center_tapped_study_excitation["hysteresis"]["current_amplitudes"],
                         phase_deg_list=two_chamber_center_tapped_study_excitation["hysteresis"]["current_phases_deg"], plot_interpolation=False)  # frequency and current
@@ -2572,6 +2571,8 @@ class MagneticComponent:
         self.generate_load_litz_approximation_parameters()
         self.simulate()
         self.calculate_and_write_freq_domain_log()
+
+        #self.visualize()
 
         # read the log of the transformer losses
         log = self.read_log()
@@ -2586,7 +2587,7 @@ class MagneticComponent:
 
         self.excitation_sweep(two_chamber_center_tapped_study_excitation["linear_losses"]["frequencies"],
                               two_chamber_center_tapped_study_excitation["linear_losses"]["current_amplitudes"],
-                              two_chamber_center_tapped_study_excitation["linear_losses"]["current_phases_deg"],
+                              two_chamber_center_tapped_study_excitation["linear_losses"]["current_phases_deg"], 
                               inductance_dict=inductance_dict, core_hyst_loss=p_hyst_core_parts)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
@@ -4857,6 +4858,18 @@ class MagneticComponent:
 
         if self.simulation_type == SimulationType.FreqDomain:
             view = 0
+            # Magnetic flux density
+            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Magb.pos"))
+            gmsh.option.setNumber(f"View[{view}].ScaleType", 1)
+            gmsh.option.setNumber(f"View[{view}].RangeType", 1)
+            gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)
+            gmsh.option.setNumber(f"View[{view}].CustomMax", gmsh.option.getNumber(f"View[{view}].Max"))
+            gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
+            gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
+            gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
+            gmsh.option.setNumber(f"View[{view}].NbIso", 40)
+            view += 1
+            
             if any(self.windings[i].conductor_type != ConductorType.RoundLitz for i in range(len(self.windings))):
                 # Ohmic losses (weighted effective value of current density)
                 gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2F_density.pos"))
@@ -4886,17 +4899,7 @@ class MagneticComponent:
                 gmsh.option.setNumber(f"View[{view}].NbIso", 40)
                 view += 1
 
-            # Magnetic flux density
-            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Magb.pos"))
-            gmsh.option.setNumber(f"View[{view}].ScaleType", 1)
-            gmsh.option.setNumber(f"View[{view}].RangeType", 1)
-            gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)
-            gmsh.option.setNumber(f"View[{view}].CustomMax", gmsh.option.getNumber(f"View[{view}].Max"))
-            gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
-            gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
-            gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
-            gmsh.option.setNumber(f"View[{view}].NbIso", 40)
-            view += 1
+            
 
         if self.simulation_type == SimulationType.ElectroStatic:
             # Visualization for electrostatic simulations

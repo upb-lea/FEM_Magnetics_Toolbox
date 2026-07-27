@@ -390,11 +390,11 @@ def set_center_tapped_windings(core: Core,
 
 def set_two_chamber_windings(core: Core,
                             primary_turns: int, primary_radius: float, primary_number_strands: int, primary_strand_radius: float,
-                            winding_distance: float,
+                            winding_distance: float, split_line: float,
                             secondary_turns: int, secondary_radius: float, secondary_number_strands: int, secondary_strand_radius: float,
                             iso_top_core: float, iso_bot_core: float, iso_left_core: float, iso_right_core: float,
                             iso_primary_to_primary: float, iso_secondary_to_secondary: float, iso_primary_to_secondary: float,
-                            winding_temperature: float | None = None):
+                            winding_temperature: float):
     """
         Set two chamber windings.
         :param core: Core object
@@ -407,9 +407,14 @@ def set_two_chamber_windings(core: Core,
         :type primary_strand_radius: float
         :param primary_number_strands: Primary number of strands
         :type primary_number_strands: int
+        :param winding_distance: Winding distance in m
+        :type winding_distance: float
+        :param split_line: Vertical split factor
+        :type split_line: float
         :param secondary_turns: Secondary turns
         :type secondary_turns: int
         :param: secondary_radius: Secondary litz radius in m
+        :type secondary_radius: float
         :param secondary_strand_radius: Secondary strand radius in m
         :type secondary_strand_radius: float
         :param secondary_number_strands: Secondary number of strands
@@ -436,8 +441,8 @@ def set_two_chamber_windings(core: Core,
         insulation = Insulation(flag_insulation=True)
         insulation.add_core_insulations(iso_top_core, iso_bot_core, iso_left_core, iso_right_core)
         insulation.add_winding_insulations([[iso_primary_to_primary, iso_primary_to_secondary, iso_primary_to_secondary],
-                                            [iso_primary_to_secondary, iso_secondary_to_secondary, iso_primary_to_secondary],
-                                            [iso_primary_to_secondary, iso_primary_to_secondary, iso_secondary_to_secondary]])
+                                            [iso_primary_to_secondary, iso_secondary_to_secondary, iso_secondary_to_secondary],
+                                            [iso_primary_to_secondary, iso_secondary_to_secondary, iso_secondary_to_secondary]])
         return insulation
     insulation = define_insulations()
 
@@ -458,7 +463,8 @@ def set_two_chamber_windings(core: Core,
     winding1, winding2, winding3 = define_windings(winding_temperature)
 
     ww = WindingWindow(core, insulation)
-    top_left, top_right, bot_left, bot_right = ww.split_window(WindingWindowSplit.HorizontalDistancedAndVerticalSplit, split_distance=winding_distance)
+    top_left, top_right, bot_left, bot_right = ww.split_window(WindingWindowSplit.HorizontalDistancedAndVerticalSplit, split_distance=winding_distance,
+                                                               horizontal_split_factor= split_line)
 
     bot = ww.combine_vww(bot_left, bot_right)
 
