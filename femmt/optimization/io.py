@@ -1565,6 +1565,8 @@ class InductorOptimization:
                 volume_result = reluctance_output.volume
                 area_to_heat_sink_result = reluctance_output.area_to_heat_sink
                 p_total = fem_output.p_core_magnet + fem_output.p_loss_winding
+                # Calculate with simulation results
+                p_core = fem_output.p_core_magnet
 
                 if print_derivations:
                     logger.info(f"Inductance reluctance: {local_config.target_inductance}")
@@ -1580,6 +1582,7 @@ class InductorOptimization:
                     logger.info(f"P_hyst reluctance: {reluctance_output.p_hyst}")
                     logger.info(f"P_hyst FEM: {fem_output.p_core_magnet}")
                     logger.info(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.p_core_magnet) / reluctance_output.p_hyst * 100} %")
+            # current offset
             else:
                 # Notify user that simulation is performed with DC-Offset
                 logger.info(f"Simulation is performed with DC-Offset of {target_and_fix_parameters.current_offset}A")
