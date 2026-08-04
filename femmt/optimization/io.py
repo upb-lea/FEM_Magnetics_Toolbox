@@ -277,7 +277,6 @@ class InductorOptimization:
             trial.set_user_attr('p_hyst', reluctance_output.p_hyst)
             trial.set_user_attr('l_air_gap', reluctance_output.l_air_gap)
             trial.set_user_attr('core_inner_diameter', core_inner_diameter)
-            trial.set_user_attr('window_h', window_h)
             trial.set_user_attr('window_w', window_w)
             trial.set_user_attr('flux_density_peak', reluctance_output.flux_density_peak)
             trial.set_user_attr('dynamic_mu_r_abs', reluctance_output.dynamic_mu_r_abs)
@@ -1070,7 +1069,7 @@ class InductorOptimization:
                         if reluctance_df["params_core_name"] is not None:
                             core_inner_diameter = reluctance_df["user_attrs_core_inner_diameter"][index].item()
                             window_w = reluctance_df["user_attrs_window_w"][index].item()
-                            window_h = reluctance_df["user_attrs_window_h"][index].item()
+                            window_h = reluctance_df["params_window_h"][index].item()
                         else:
                             core_inner_diameter = reluctance_df["params_core_inner_diameter"][index].item()
                             window_w = reluctance_df["params_window_w"][index].item()
@@ -1566,6 +1565,8 @@ class InductorOptimization:
                 volume_result = reluctance_output.volume
                 area_to_heat_sink_result = reluctance_output.area_to_heat_sink
                 p_total = fem_output.p_core_magnet + fem_output.p_loss_winding
+                # Calculate with simulation results
+                p_core = fem_output.p_core_magnet
 
                 if print_derivations:
                     logger.info(f"Inductance reluctance: {local_config.target_inductance}")
@@ -1581,6 +1582,7 @@ class InductorOptimization:
                     logger.info(f"P_hyst reluctance: {reluctance_output.p_hyst}")
                     logger.info(f"P_hyst FEM: {fem_output.p_core_magnet}")
                     logger.info(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.p_core_magnet) / reluctance_output.p_hyst * 100} %")
+            # current offset
             else:
                 # Notify user that simulation is performed with DC-Offset
                 logger.info(f"Simulation is performed with DC-Offset of {target_and_fix_parameters.current_offset}A")
