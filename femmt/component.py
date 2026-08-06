@@ -2552,7 +2552,7 @@ class MagneticComponent:
 
     def two_chamber_transformer_center_tapped_study(self, two_chamber_center_tapped_study_excitation: dict) -> None:
         """
-        Comprehensive component analysis for two chamber center tapped transformers with defiend stray inductance.
+        Comprehensive component analysis for two chamber center tapped transformers with defined stray inductance.
 
         :param two_chamber_center_tapped_study_excitation: Dictionary with frequencies and currents
         :type two_chamber_center_tapped_study_excitation: dict
