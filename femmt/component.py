@@ -2572,8 +2572,6 @@ class MagneticComponent:
         self.simulate()
         self.calculate_and_write_freq_domain_log()
 
-        #self.visualize()
-
         # read the log of the transformer losses
         log = self.read_log()
 
@@ -2929,6 +2927,8 @@ class MagneticComponent:
 
             :param core_angle: Angle of the core window
             :type core_angle: float
+            :return: Reluctance of the stray window
+            :rtype: float
         """
         window_w = self.core.geometry.window_w
         window_h = self.core.geometry.window_h
@@ -4858,17 +4858,6 @@ class MagneticComponent:
 
         if self.simulation_type == SimulationType.FreqDomain:
             view = 0
-            # Magnetic flux density
-            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Magb.pos"))
-            gmsh.option.setNumber(f"View[{view}].ScaleType", 1)
-            gmsh.option.setNumber(f"View[{view}].RangeType", 1)
-            gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)
-            gmsh.option.setNumber(f"View[{view}].CustomMax", gmsh.option.getNumber(f"View[{view}].Max"))
-            gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
-            gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
-            gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
-            gmsh.option.setNumber(f"View[{view}].NbIso", 40)
-            view += 1
             
             if any(self.windings[i].conductor_type != ConductorType.RoundLitz for i in range(len(self.windings))):
                 # Ohmic losses (weighted effective value of current density)
@@ -4899,6 +4888,17 @@ class MagneticComponent:
                 gmsh.option.setNumber(f"View[{view}].NbIso", 40)
                 view += 1
 
+            # Magnetic flux density
+            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Magb.pos"))
+            gmsh.option.setNumber(f"View[{view}].ScaleType", 1)
+            gmsh.option.setNumber(f"View[{view}].RangeType", 1)
+            gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)
+            gmsh.option.setNumber(f"View[{view}].CustomMax", gmsh.option.getNumber(f"View[{view}].Max"))
+            gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
+            gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
+            gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
+            gmsh.option.setNumber(f"View[{view}].NbIso", 40)
+            view += 1
             
 
         if self.simulation_type == SimulationType.ElectroStatic:

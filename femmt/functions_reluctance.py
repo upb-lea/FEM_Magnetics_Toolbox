@@ -1035,6 +1035,8 @@ def r_stray_window(window_w: float | np.ndarray, window_h: float | np.ndarray, c
         :type winding_sign: np.ndarray
         :param core_angle: Angle of the core section in rad
         :type core_angle: float
+        :return: stray reluctance
+        :rtype: float
         """
 
     def antiderivative_stray_inductance(x: np.array, y: np.array):
@@ -1094,10 +1096,6 @@ def r_stray_window(window_w: float | np.ndarray, window_h: float | np.ndarray, c
     sign_array_air = np.array([])
 
     for i in range(np.size(x_center)):
-        #x_positions_windings_core = np.append(x_positions_windings_core, [-window_w - x_center[i], -window_w - x_center[i], -window_w - x_center[i],
-        #                                                                  x_center[i], x_center[i], x_center[i], window_w - x_center[i], window_w - x_center[i],
-        #                                                                  window_w - x_center[i]])
-
         x_positions_windings_core = np.append(x_positions_windings_core, [-2 * window_w - x_center[i], -2 * window_w - x_center[i],
                                                                           -2 * window_w - x_center[i], -2 * window_w - x_center[i], -2 * window_w - x_center[i],
                                                                           -window_w - x_center[i], -window_w - x_center[i], -window_w - x_center[i],
@@ -1106,10 +1104,6 @@ def r_stray_window(window_w: float | np.ndarray, window_h: float | np.ndarray, c
                                                                           window_w - x_center[i], window_w - x_center[i], window_w - x_center[i],
                                                                           2*window_w - x_center[i], 2*window_w - x_center[i],
                                                                           2*window_w - x_center[i], 2*window_w - x_center[i], 2*window_w - x_center[i]])
-
-        #y_positions_windings_core = np.append(y_positions_windings_core, [-window_h - y_center[i], y_center[i], window_h - y_center[i],
-        #                                                                  -window_h - y_center[i], y_center[i], window_h - y_center[i],-window_h - y_center[i],
-        #                                                                  y_center[i], window_h - y_center[i]])
 
         y_positions_windings_core = np.append(y_positions_windings_core, [-2*window_h - y_center[i], -window_h - y_center[i], y_center[i],
                                                                           window_h - y_center[i], 2*window_h - y_center[i], -2*window_h - y_center[i],
@@ -1122,13 +1116,9 @@ def r_stray_window(window_w: float | np.ndarray, window_h: float | np.ndarray, c
                                                                           ])
 
         area = winding_width[i] * winding_height[i]
-        #areas_windings_core = np.append(areas_windings_core, [area, area, area, area, area, area, area, area, area])
 
         areas_windings_core = np.append( areas_windings_core, [area, area, area, area, area, area, area, area, area, area, area, area, area, area, area,
                                                                area, area, area, area, area, area, area, area, area, area])
-
-        #winding_width_array_core = np.append(winding_width_array_core, [winding_width[i], winding_width[i], winding_width[i], winding_width[i],
-        #                                     winding_width[i], winding_width[i], winding_width[i], winding_width[i], winding_width[i]])
 
         winding_width_array_core = np.append(winding_width_array_core, [winding_width[i], winding_width[i], winding_width[i], winding_width[i],
                                                                         winding_width[i], winding_width[i], winding_width[i], winding_width[i],
@@ -1137,18 +1127,12 @@ def r_stray_window(window_w: float | np.ndarray, window_h: float | np.ndarray, c
                                                                         winding_width[i], winding_width[i], winding_width[i], winding_width[i], winding_width[i],
                                                                         winding_width[i], winding_width[i], winding_width[i]])
 
-        #winding_height_array_core = np.append(winding_height_array_core, [winding_height[i], winding_height[i], winding_height[i], winding_height[i],
-        #                                                                  winding_height[i], winding_height[i], winding_height[i], winding_height[i], winding_height[i]])
-
         winding_height_array_core = np.append(winding_height_array_core, [winding_height[i], winding_height[i], winding_height[i], winding_height[i],
                                                                           winding_height[i], winding_height[i], winding_height[i], winding_height[i],
                                                                           winding_height[i], winding_height[i], winding_height[i], winding_height[i], winding_height[i],
                                                                           winding_height[i], winding_height[i], winding_height[i], winding_height[i],
                                                                           winding_height[i], winding_height[i], winding_height[i], winding_height[i], winding_height[i],
                                                                           winding_height[i], winding_height[i], winding_height[i]])
-
-        #sign_array_core = np.append(sign_array_core, [winding_sign[i], winding_sign[i], winding_sign[i], winding_sign[i], winding_sign[i],
-        #                                              winding_sign[i], winding_sign[i], winding_sign[i], winding_sign[i]])
 
         sign_array_core = np.append(sign_array_core, [winding_sign[i], winding_sign[i], winding_sign[i], winding_sign[i], winding_sign[i],
                                                       winding_sign[i], winding_sign[i], winding_sign[i], winding_sign[i], winding_sign[i], winding_sign[i],

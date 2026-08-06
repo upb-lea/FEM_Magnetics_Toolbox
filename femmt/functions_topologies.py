@@ -472,6 +472,4 @@ def set_two_chamber_windings(core: Core,
 
     top_left.set_winding(winding2, secondary_turns, None, Align.ToEdges, ConductorDistribution.VerticalDownward_HorizontalRightward)
     top_right.set_winding(winding3, secondary_turns, None, Align.ToEdges, ConductorDistribution.VerticalDownward_HorizontalLeftward)
-    #top.set_interleaved_winding(winding2, secondary_turns, winding3, secondary_turns, InterleavedWindingScheme.HorizontalAlternating)
-
     return insulation, ww
