@@ -1049,9 +1049,9 @@ def r_stray_window(window_w: float | np.ndarray, window_h: float | np.ndarray, c
             elif x[i] != 0 and y[i] == 0:
                 antiderivative[i] = np.log(x[i] ** 2 + y[i] ** 2) * (-1 / 24 * x[i] ** 4 + 1 / 4 * x[i] ** 2 * y[i] ** 2 - 1 / 24 * y[i] ** 4)
             else:
-                antiderivative[i] = (np.log(x[i] ** 2 + y[i] ** 2) * (-1 / 24 * x[i] ** 4 + 1 / 4 * x[i] ** 2 * y[i] ** 2 - 1 / 24 * y[i] ** 4)
-                                     + 1 / 3 * x[i] * y[i] * (x[i] ** 2 * np.atan(y[i] / x[i]) + y[i] ** 2 * np.atan(x[i] / y[i]))
-                                     - 7 / 24 * x[i] ** 2 * y[i] ** 2)
+                antiderivative[i] = (np.log(x[i] ** 2 + y[i] ** 2) * (-1 / 24 * x[i] ** 4 + 1 / 4 * x[i] ** 2 * y[i] ** 2 - 1 / 24 * y[i] ** 4) + \
+                                     1 / 3 * x[i] * y[i] * (x[i] ** 2 * np.atan(y[i] / x[i]) + y[i] ** 2 * np.atan(x[i] / y[i])) - \
+                                     7 / 24 * x[i] ** 2 * y[i] ** 2)
         return antiderivative
 
     def calculate_stray_energy_winding_i_to_winding_j(x_center_i: float, y_center_i: float, x_center_j: float, y_center_j: float, winding_width_i: float,
@@ -1156,22 +1156,22 @@ def r_stray_window(window_w: float | np.ndarray, window_h: float | np.ndarray, c
     for j in range(np.size(x_center)):
         for k in range(np.size(x_positions_windings_core)):
             area = winding_width[j] * winding_height[j]
-            stray_inductance_per_length_per_turn_square_core += (-mu_0 / (4 * np.pi) * winding_sign[j] * sign_array_core[k] / (area * areas_windings_core[k])
-                                                                 * calculate_stray_energy_winding_i_to_winding_j(x_center[j], y_center[j],
-                                                                                                                 x_positions_windings_core[k],
-                                                                                                                 y_positions_windings_core[k], winding_width[j],
-                                                                                                                 winding_height[j], winding_width_array_core[k],
-                                                                                                                 winding_height_array_core[k]))
+            stray_inductance_per_length_per_turn_square_core += (-mu_0 / (4 * np.pi) * winding_sign[j] * sign_array_core[k] / (area * areas_windings_core[k]) *\
+                                                                 calculate_stray_energy_winding_i_to_winding_j(x_center[j], y_center[j],
+                                                                                                               x_positions_windings_core[k],
+                                                                                                               y_positions_windings_core[k], winding_width[j],
+                                                                                                               winding_height[j], winding_width_array_core[k],
+                                                                                                               winding_height_array_core[k]))
         for m in range(np.size(x_positions_windings_air)):
-            stray_inductance_per_length_per_turn_square_air += (-mu_0 / (4 * np.pi) * winding_sign[j] * sign_array_air[m] / (area * areas_windings_air[m])
-                                                                * calculate_stray_energy_winding_i_to_winding_j(x_center[j], y_center[j],
-                                                                                                                x_positions_windings_air[m],
-                                                                                                                y_positions_windings_air[m], winding_width[j],
-                                                                                                                winding_height[j], winding_width_array_air[m],
-                                                                                                                winding_height_array_air[m]))
+            stray_inductance_per_length_per_turn_square_air += (-mu_0 / (4 * np.pi) * winding_sign[j] * sign_array_air[m] / (area * areas_windings_air[m]) * \
+                                                                calculate_stray_energy_winding_i_to_winding_j(x_center[j], y_center[j],
+                                                                                                              x_positions_windings_air[m],
+                                                                                                              y_positions_windings_air[m], winding_width[j],
+                                                                                                              winding_height[j], winding_width_array_air[m],
+                                                                                                              winding_height_array_air[m]))
 
-    stray_inductance_per_turn_square = (stray_inductance_per_length_per_turn_square_core * 2 * core_angle * (core_inner_diameter / 2 + window_w / 2)
-                                        + stray_inductance_per_length_per_turn_square_air * 2 * (np.pi - core_angle) * (core_inner_diameter / 2 + window_w / 2))
+    stray_inductance_per_turn_square = (stray_inductance_per_length_per_turn_square_core * 2 * core_angle * (core_inner_diameter / 2 + window_w / 2) + \
+                                        stray_inductance_per_length_per_turn_square_air * 2 * (np.pi - core_angle) * (core_inner_diameter / 2 + window_w / 2))
 
     return 1 / stray_inductance_per_turn_square
 

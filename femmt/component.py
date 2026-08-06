@@ -2937,22 +2937,22 @@ class MagneticComponent:
         winding_width = np.array([])
         winding_height = np.array([])
         # TODO Erweiterung auf andere Winding-Window Splits
-        x_center = np.append(x_center, (self.winding_windows[0].virtual_winding_windows[2].right_bound
-                                        + self.winding_windows[0].virtual_winding_windows[2].left_bound)/2 - core_inner_diameter/2 - window_w/2)
-        x_center = np.append(x_center, (self.winding_windows[0].virtual_winding_windows[1].right_bound
-                                        + self.winding_windows[0].virtual_winding_windows[0].left_bound) / 2 - core_inner_diameter / 2 - window_w / 2)
-        y_center = np.append(y_center, (self.winding_windows[0].virtual_winding_windows[2].bot_bound
-                                        + self.winding_windows[0].virtual_winding_windows[2].top_bound) / 2)
-        y_center = np.append(y_center, (self.winding_windows[0].virtual_winding_windows[1].bot_bound
-                                        + self.winding_windows[0].virtual_winding_windows[1].top_bound) / 2)
-        winding_width = np.append(winding_width, np.abs(self.winding_windows[0].virtual_winding_windows[2].right_bound
-                                                        - self.winding_windows[0].virtual_winding_windows[2].left_bound))
-        winding_width = np.append(winding_width, np.abs(self.winding_windows[0].virtual_winding_windows[1].right_bound
-                                                        - self.winding_windows[0].virtual_winding_windows[0].left_bound))
-        winding_height = np.append(winding_height, np.abs(np.abs(self.winding_windows[0].virtual_winding_windows[2].top_bound
-                                                                 - self.winding_windows[0].virtual_winding_windows[2].bot_bound)))
-        winding_height = np.append(winding_height, np.abs(np.abs(self.winding_windows[0].virtual_winding_windows[1].top_bound
-                                                                 - self.winding_windows[0].virtual_winding_windows[1].bot_bound)))
+        x_center = np.append(x_center, (self.winding_windows[0].virtual_winding_windows[2].right_bound + \
+                                        self.winding_windows[0].virtual_winding_windows[2].left_bound)/2 - core_inner_diameter/2 - window_w/2)
+        x_center = np.append(x_center, (self.winding_windows[0].virtual_winding_windows[1].right_bound + \
+                                        self.winding_windows[0].virtual_winding_windows[0].left_bound) / 2 - core_inner_diameter / 2 - window_w / 2)
+        y_center = np.append(y_center, (self.winding_windows[0].virtual_winding_windows[2].bot_bound + \
+                                        self.winding_windows[0].virtual_winding_windows[2].top_bound) / 2)
+        y_center = np.append(y_center, (self.winding_windows[0].virtual_winding_windows[1].bot_bound + \
+                                        self.winding_windows[0].virtual_winding_windows[1].top_bound) / 2)
+        winding_width = np.append(winding_width, np.abs(self.winding_windows[0].virtual_winding_windows[2].right_bound - \
+                                                        self.winding_windows[0].virtual_winding_windows[2].left_bound))
+        winding_width = np.append(winding_width, np.abs(self.winding_windows[0].virtual_winding_windows[1].right_bound - \
+                                                        self.winding_windows[0].virtual_winding_windows[0].left_bound))
+        winding_height = np.append(winding_height, np.abs(np.abs(self.winding_windows[0].virtual_winding_windows[2].top_bound - \
+                                                                 self.winding_windows[0].virtual_winding_windows[2].bot_bound)))
+        winding_height = np.append(winding_height, np.abs(np.abs(self.winding_windows[0].virtual_winding_windows[1].top_bound - \
+                                                                 self.winding_windows[0].virtual_winding_windows[1].bot_bound)))
 
         winding_sign_array = np.array([1, -1])
         return fr.r_stray_window(window_w, window_h, core_inner_diameter, x_center, y_center, winding_width, winding_height, winding_sign_array, core_angle)
