@@ -2517,7 +2517,6 @@ class MagneticComponent:
                 "current_phases_deg": None
             }
         }
-
         # Hysteresis Loss Excitation
         # time_current_vectors[1][1] = time_current_vectors[1][1] * (-1)
         hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = ff.hysteresis_current_excitation(time_current_vectors)
@@ -2935,7 +2934,7 @@ class MagneticComponent:
                 air_gaps_bot_reluctance, total_air_gap_radial_reluctance, air_gap_radial_reluctance)
 
     def stray_window_reluctance(self, core_angle: float):
-        """Calculate the stray window reluctance.
+        """Calculate the stray window reluctance. Applicability is limited to one horizonal VWW at the bottom and two horizontal VWWs at the top.
 
         :param core_angle: Angle of the core window
         :type core_angle: float
@@ -2949,7 +2948,7 @@ class MagneticComponent:
         y_center = np.array([])
         winding_width = np.array([])
         winding_height = np.array([])
-        # TODO Erweiterung auf andere Winding-Window Splits
+        # TODO Extension to other Winding Window splits.
         x_center = np.append(x_center, (self.winding_windows[0].virtual_winding_windows[2].right_bound + \
                                         self.winding_windows[0].virtual_winding_windows[2].left_bound)/2 - core_inner_diameter/2 - window_w/2)
         x_center = np.append(x_center, (self.winding_windows[0].virtual_winding_windows[1].right_bound + \

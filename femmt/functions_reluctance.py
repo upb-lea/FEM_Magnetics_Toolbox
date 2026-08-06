@@ -1000,6 +1000,11 @@ def r_stray_window(window_w: float | np.ndarray, window_h: float | np.ndarray, c
     """
     Calculate the stray reluctance of the winding window.
 
+    The calculations are based on the following papers:
+    ["Improved Analytical Triple-2D Leakage Inductance Model of Cone Winding Matrix Transformers" - R. Schlesinger, J. Biela]
+    ["Complete Analytical Calculation of Static Leakage Parameters: A Step Toward HF Transformer Optimization" - X. Margueron, A. Besri, P.-O. Jeannin,
+    J.-P. Keradec, G. Parent]
+
     :param window_w: width of the winding window in m
     :type window_w: float | np.ndarray
     :param window_h: height of the winding window in m
@@ -1023,6 +1028,18 @@ def r_stray_window(window_w: float | np.ndarray, window_h: float | np.ndarray, c
     """
 
     def antiderivative_stray_inductance(x: np.array, y: np.array):
+        """
+        Calculate the antiderivative G(x,y).
+
+        Formula can be found in ["Improved Analytical Triple-2D Leakage Inductance Model of Cone Winding Matrix Transformers" - R. Schlesinger, J. Biela].
+
+        :param x: x-Arguments of the antiderivative
+        :type x: np.ndarray
+        :param y: y-Arguments of the antiderivative
+        :type y: np.ndarray
+        :return: Array of antiderivatives
+        :rtype: np.ndarray
+        """
         antiderivative = np.zeros(np.size(x))
         for i in range(np.size(antiderivative)):
             if x[i] == 0 and y[i] == 0:
@@ -1039,6 +1056,28 @@ def r_stray_window(window_w: float | np.ndarray, window_h: float | np.ndarray, c
 
     def calculate_stray_energy_winding_i_to_winding_j(x_center_i: float, y_center_i: float, x_center_j: float, y_center_j: float, winding_width_i: float,
                                                       winding_height_i: float, winding_width_j: float, winding_height_j: float):
+        """
+        Calculate the stray energy at the position of winding i created by winding j.
+
+        :param x_center_i: x-coordinate of center of winding i
+        :type x_center_i: float
+        :param y_center_i: x-coordinate of center of winding i
+        :type y_center_i: float
+        :param x_center_j: x-coordinate of center of winding j
+        :type x_center_j: float
+        :param y_center_j: x-coordinate of center of winding j
+        :type y_center_j: float
+        :param winding_width_i: Width of winding i
+        :type winding_width_i: float
+        :param winding_height_i: Height of winding i
+        :type winding_height_i: float
+        :param winding_width_j: Width of winding j
+        :type winding_width_j: float
+        :param winding_height_j: Height of winding j
+        :type winding_height_j: float
+        :return: stray energy
+        :rtype: float
+        """
         x_argument_array = np.array(
             [x_center_i + winding_width_i / 2 - x_center_j + winding_width_j / 2, x_center_i + winding_width_i / 2 - x_center_j + winding_width_j / 2,
              x_center_i + winding_width_i / 2 - x_center_j - winding_width_j / 2, x_center_i + winding_width_i / 2 - x_center_j - winding_width_j / 2,
