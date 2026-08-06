@@ -989,8 +989,8 @@ class StackedTransformerOptimization:
                         reluctance_df.loc[index, 'l_h_conc'] = fem_output.l_h_conc
                         reluctance_df.loc[index, 'p_loss_winding_1'] = fem_output.p_loss_winding_1
                         reluctance_df.loc[index, 'p_loss_winding_2'] = fem_output.p_loss_winding_2
-                        reluctance_df.loc[index, 'eddy_core'] = fem_output.eddy_core
-                        reluctance_df.loc[index, 'core'] = fem_output.p_core_sine
+                        reluctance_df.loc[index, 'p_core_eddy'] = fem_output.p_core_eddy
+                        reluctance_df.loc[index, 'p_core_sine'] = fem_output.p_core_sine
 
                         # copy result files to result-file folder
                         source_json_file = os.path.join(
@@ -1006,8 +1006,8 @@ class StackedTransformerOptimization:
                         reluctance_df.loc[index, 'l_h_conc'] = None
                         reluctance_df.loc[index, 'p_loss_winding_1'] = None
                         reluctance_df.loc[index, 'p_loss_winding_2'] = None
-                        reluctance_df.loc[index, 'eddy_core'] = None
-                        reluctance_df.loc[index, 'core'] = None
+                        reluctance_df.loc[index, 'p_core_eddy'] = None
+                        reluctance_df.loc[index, 'p_core_sine'] = None
             return reluctance_df
 
         @staticmethod
@@ -1114,6 +1114,7 @@ class StackedTransformerOptimization:
                     l_h_conc=result_dict['inductances']['l_h_conc'],
                     p_loss_winding_1=result_dict['total_losses']['winding1']['total'],
                     p_loss_winding_2=result_dict['total_losses']['winding2']['total'],
+                    p_core_eddy=result_dict['total_losses']['eddy_core'],
                     p_core_sine=0,
                     p_core_magnet=0,
                     volume=result_dict["misc"]["core_2daxi_total_volume"],
@@ -1131,6 +1132,7 @@ class StackedTransformerOptimization:
                     l_h_conc=result_dict['inductances']['l_h_conc'],
                     p_loss_winding_1=result_dict['total_losses']['winding1']['total'],
                     p_loss_winding_2=result_dict['total_losses']['winding2']['total'],
+                    p_core_eddy=result_dict['total_losses']['eddy_core'],
                     p_core_sine=result_dict['total_losses']['core'],
                     p_core_magnet=0,
                     volume=result_dict["misc"]["core_2daxi_total_volume"],
@@ -1159,7 +1161,7 @@ class StackedTransformerOptimization:
             # add new columns to the dataframe, init values with None
             reluctance_df_copy['fem_inductance'] = None
             reluctance_df_copy['fem_p_loss_winding'] = None
-            reluctance_df_copy['fem_eddy_core'] = None
+            reluctance_df_copy['fem_p_core_eddy'] = None
             reluctance_df_copy['fem_core'] = None
 
             for file in files_in_folder:
@@ -1172,11 +1174,11 @@ class StackedTransformerOptimization:
                     reluctance_df_copy.at[index, 'fem_inductance'] = scanned_log_dict['single_sweeps'][0]['winding1']['flux_over_current'][0]
                     reluctance_df_copy.at[index, 'fem_p_loss_winding'] = (
                         scanned_log_dict['total_losses']['winding1']['total'] + scanned_log_dict['total_losses']['winding2']['total'])
-                    reluctance_df_copy.at[index, 'fem_eddy_core'] = scanned_log_dict['total_losses']['eddy_core']
+                    reluctance_df_copy.at[index, 'fem_p_core_eddy'] = scanned_log_dict['total_losses']['eddy_core']
                     reluctance_df_copy.at[index, 'fem_core'] = scanned_log_dict['total_losses']['core']
 
             # final loss calculation
-            reluctance_df_copy["combined_losses"] = (reluctance_df_copy["fem_eddy_core"] + reluctance_df_copy["fem_p_loss_winding"] + \
+            reluctance_df_copy["combined_losses"] = (reluctance_df_copy["fem_p_core_eddy"] + reluctance_df_copy["fem_p_loss_winding"] + \
                                                      reluctance_df_copy["user_attrs_p_hyst"])
 
             return reluctance_df_copy
@@ -1331,7 +1333,7 @@ class StackedTransformerOptimization:
             reluctance_output: StoReluctanceModelOutput = StackedTransformerOptimization.ReluctanceModel.single_reluctance_model_simulation(
                 reluctance_model_input)
 
-            p_core = reluctance_output.p_hyst + fem_output.eddy_core
+            p_core = reluctance_output.p_hyst + fem_output.p_core_eddy
             p_total = p_core + fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2
 
             if print_derivations:
@@ -1352,8 +1354,8 @@ class StackedTransformerOptimization:
                                       (fem_output.p_loss_winding_1 + fem_output.p_loss_winding_2) * 100)
                 logger.info(f"P_winding_both derivation: "
                             f"{winding_derivation}")
-                logger.info(f"P_hyst reluctance: {reluctance_output.p_hyst}")
-                logger.info(f"P_hyst FEM (sine): {fem_output.p_core_sine}")
+                logger.info(f"P_hyst reluctance (MagNet): {reluctance_output.p_hyst}")
+                logger.info(f"P_hyst FEM (sine) incl. eddy current losses: {fem_output.p_core_sine}")
                 logger.info(f"P_hyst derivation (sine): {(reluctance_output.p_hyst - fem_output.p_core_sine) / reluctance_output.p_hyst * 100}")
 
             return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink, fem_output.p_loss_winding_1, fem_output.p_loss_winding_2, p_core

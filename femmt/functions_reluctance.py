@@ -10,8 +10,6 @@ import femmt.functions as ff
 import numpy as np
 import scipy
 from matplotlib import pyplot as plt
-import magnethub as mh
-import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -964,21 +962,6 @@ def r_core_tablet(tablet_height: float | np.ndarray, tablet_radius: float | np.n
     """
     return np.log(tablet_radius / (core_inner_diameter / 2)) / (2 * np.pi * mu_0 * mu_r_abs * tablet_height)
 
-def r_core_tablet_2(tablet_height, tablet_radius, mu_r_abs):
-    """
-     Calculate the magnetic resistance (reluctance) of the core tablet.
-
-    :param tablet_height: The height of the core tablet.
-    :type tablet_height: float
-    :param tablet_radius: The radius of the core tablet.
-    :type tablet_radius: float
-    :param mu_r_abs: The absolute relative permeability (mu_r) of the core material.
-    :type mu_r_abs: float
-    :return: The magnetic reluctance of the core tablet.
-    :rtype: float
-    """
-    return tablet_height / (np.pi * mu_0 * mu_r_abs * tablet_radius ** 2)
-
 
 def r_core_top_bot_radiant(core_inner_diameter: float | np.ndarray, window_w: float | np.ndarray, mu_r_abs: float | np.ndarray,
                            core_top_bot_height: float | np.ndarray) -> float | np.ndarray:
@@ -1439,9 +1422,18 @@ def calc_proximity_factor_air_gap(litz_wire_name: str, number_turns: int, r_1: f
     proximity_factor = 1 + nominator / denominator
     return proximity_factor
 
-def magent_loss_model_on_cylinder_radiant(magnet_material_model: mh.loss.LossModel, r_cyl_inner: np.float64, r_cyl_outer: np.float64,
-                                          time_vec: np.ndarray, flux_vec: np.ndarray, h_cyl: np.ndarray, temperature: np.float64,
-                                          total_opening_angle_rad: float = 210 / 360 * 2 * np.pi):
+def magent_loss_model_on_cylinder_radiant(
+    magnet_material_model,
+    r_cyl_inner: float,
+    r_cyl_outer: float,
+    time_vec: np.ndarray,
+    flux_vec: np.ndarray,
+    h_cyl: float,
+    temperature: float,
+    total_opening_angle_rad: float = 210 / 360 * 2 * np.pi,
+    n_radius: int = 5,
+    n_time: int = 1024,
+):
     """
     Get the core hysteresis losses for the radiant flux parts in a tablet. Uses the MagNet model.
 
@@ -1461,57 +1453,35 @@ def magent_loss_model_on_cylinder_radiant(magnet_material_model: mh.loss.LossMod
     :type temperature: np.float64
     :param total_opening_angle_rad: cylinder/tablet total opening angle
     :type total_opening_angle_rad: float
+    :param n_radius: number of points to interpolate the radius
+    :type n_radius: int
+    :param n_time: number of points to interpolate the time
+    :type n_time: int
     """
+    radius_list = np.linspace(r_cyl_inner, r_cyl_outer, n_radius)
 
-    def flux_density_cylinder_envelope(cylinder_radius: float | np.ndarray, flux_in_cylinder: float | np.ndarray,
-                                       height_of_cylinder: float | np.ndarray, magnet_material_model: mh.loss.LossModel,
-                                       time_vec: np.ndarray, temperature: np.float64, total_opening_angle_rad: float) -> float | np.ndarray:
-        """
-        Helper-function, what is used as a function to integrate by scipy.integrate.quad.
+    t_period = time_vec[-1]
+    fundamental_frequency = 1.0 / t_period
 
-        It calculates the flux density in a cylinder envelope. By using the integration function, the flux density
-        in a volume can be calculated, as done in the superordinate function.
+    interp_points = np.arange(n_time) * t_period / n_time
 
-        :param cylinder_radius: cylinder radius in m
-        :type cylinder_radius: float | np.ndarray
-        :param flux_in_cylinder: flux in Wb trough cylinder envelope depending on its radius
-        :type flux_in_cylinder: float | np.ndarray
-        :param height_of_cylinder: cylinder height in m
-        :type height_of_cylinder: float | np.ndarray
-        :param magnet_material_model: Magnet material model
-        :type magnet_material_model: mh.loss.LossModel
-        :param time_vec: time vector
-        :type time_vec: np.ndarray
-        :param temperature: temperature in degree
-        :type temperature: np.float64
-        :param total_opening_angle_rad: total opening angle in radiant
-        :type total_opening_angle_rad: float
-        :return: Flux density in T
-        :rtype: float | np.ndarray
-        """
-        # calculate flux density in dependence of the radius
-        flux_density_middle = flux_in_cylinder / (total_opening_angle_rad * cylinder_radius * height_of_cylinder)
+    # Interpolate flux only once
+    flux_interp = np.interp(interp_points, time_vec, flux_vec)
 
-        # prepare magnet model loss calculation
-        interp_points = np.arange(0, 1024) * time_vec[-1] / 1024
-        flux_density_middle_interp = np.interp(interp_points, time_vec, flux_density_middle)
+    # Shape: (n_radius, n_time)
+    flux_density_interp = flux_interp[np.newaxis, :] / (
+        total_opening_angle_rad * h_cyl * radius_list[:, np.newaxis]
+    )
 
-        # magnet model loss calculation
-        fundamental_frequency = 1 / time_vec[-1]
-        p_density_middle, _ = magnet_material_model(flux_density_middle_interp, fundamental_frequency, temperature)
+    # run the magnet model
+    p_density_list, *_ = magnet_material_model(
+        flux_density_interp,
+        fundamental_frequency,
+        temperature,
+    )
 
-        return p_density_middle
+    integrand = p_density_list * radius_list
 
-    # generate flux and loss distribution along the radius
-    radius_list = np.linspace(r_cyl_inner, r_cyl_outer, 10)
-    radius_list_df = pd.DataFrame({"radius": radius_list})
-
-    radius_list_df["p_density"] = radius_list_df.apply(
-        lambda x: flux_density_cylinder_envelope(
-            cylinder_radius=x["radius"], flux_in_cylinder=flux_vec, height_of_cylinder=h_cyl, magnet_material_model=magnet_material_model,
-            time_vec=time_vec, temperature=temperature, total_opening_angle_rad=total_opening_angle_rad), axis=1)
-
-    # integrate along the axis
-    power = total_opening_angle_rad * h_cyl * np.trapezoid(radius_list_df["p_density"] * radius_list, x=radius_list)
+    power = total_opening_angle_rad * h_cyl * np.trapezoid(integrand, x=radius_list)
 
     return power

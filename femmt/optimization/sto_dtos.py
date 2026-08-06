@@ -149,8 +149,9 @@ class StoFemOutput:
     l_h_conc: float
     p_loss_winding_1: float
     p_loss_winding_2: float
-    p_core_sine: float
-    p_core_magnet: float
+    p_core_eddy: float  # losses FEMMT eddy currents in core only
+    p_core_sine: float  # losses FEMMT frequency domain from sine with base frequency
+    p_core_magnet: float  # losses FEMMT via MagNet model
     volume: float
 
 @dataclass

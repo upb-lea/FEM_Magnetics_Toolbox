@@ -267,14 +267,16 @@ class InductorOptimization:
                     reluctance_output: IoReluctanceModelOutput = (
                         InductorOptimization.ReluctanceModel.single_reluctance_model_simulation_dc_offset(reluctance_model_input))
             except ValueError as e:
-                logger.debug("bot air gap: No fitting air gap length")
+                if str(e) == "f(a) and f(b) must have different signs":
+                    logger.debug("bot air gap: No fitting air gap length")
+                else:
+                    logger.warning(f"Other error detected: {e}")
                 return float('nan'), float('nan')
 
             trial.set_user_attr('p_winding', reluctance_output.p_winding)
             trial.set_user_attr('p_hyst', reluctance_output.p_hyst)
             trial.set_user_attr('l_air_gap', reluctance_output.l_air_gap)
             trial.set_user_attr('core_inner_diameter', core_inner_diameter)
-            trial.set_user_attr('window_h', window_h)
             trial.set_user_attr('window_w', window_w)
             trial.set_user_attr('flux_density_peak', reluctance_output.flux_density_peak)
             trial.set_user_attr('dynamic_mu_r_abs', reluctance_output.dynamic_mu_r_abs)
@@ -326,16 +328,24 @@ class InductorOptimization:
             # get power loss in W/m³ and estimated H wave in A/m
             p_density, _ = reluctance_input.magnet_material_model(flux_density, reluctance_input.fundamental_frequency, reluctance_input.temperature)
 
-            # volume calculation
             r_outer = fr.calculate_r_outer(reluctance_input.core_inner_diameter, reluctance_input.window_w)
-            volume = ff.calculate_cylinder_volume(cylinder_diameter=2 * r_outer,
-                                                  cylinder_height=reluctance_input.window_h + reluctance_input.core_inner_diameter / 2)
+            r_inner = reluctance_input.core_inner_diameter / 2 + reluctance_input.window_w
 
-            volume_winding_window = ((reluctance_input.core_inner_diameter / 2 + reluctance_input.window_w) ** 2 * np.pi - \
-                                     (reluctance_input.core_inner_diameter / 2) ** 2 * np.pi) * reluctance_input.window_h
-            volume_core = volume - volume_winding_window
+            p_tablet = fr.magent_loss_model_on_cylinder_radiant(
+                magnet_material_model=reluctance_input.magnet_material_model, r_cyl_inner=reluctance_input.core_inner_diameter / 2,
+                r_cyl_outer=r_inner, time_vec=time_interp, flux_vec=flux,
+                h_cyl=reluctance_input.core_inner_diameter / 4, temperature=reluctance_input.temperature)
+
+            # volume calculation
+            volume_total = ff.calculate_cylinder_volume(cylinder_diameter=2 * r_outer,
+                                                        cylinder_height=reluctance_input.window_h + reluctance_input.core_inner_diameter / 2)
+
+            volume_inner_leg = ff.calculate_cylinder_volume(cylinder_diameter=reluctance_input.core_inner_diameter,
+                                                            cylinder_height=reluctance_input.window_h + reluctance_input.core_inner_diameter / 2)
+
+            p_core_inner_leg = volume_inner_leg * p_density
             area_to_heat_sink = r_outer ** 2 * np.pi
-            p_core = volume_core * p_density
+            p_core = 2 * (p_tablet + p_core_inner_leg)
 
             # winding loss calculation
             winding_dc_resistance = fr.resistance_litz_wire(
@@ -367,7 +377,7 @@ class InductorOptimization:
 
             reluctance_model_output = IoReluctanceModelOutput(
                 p_loss_total=p_loss,
-                volume=volume,
+                volume=volume_total,
                 area_to_heat_sink=area_to_heat_sink,
                 p_winding=p_winding,
                 p_hyst=p_core,
@@ -1059,7 +1069,7 @@ class InductorOptimization:
                         if reluctance_df["params_core_name"] is not None:
                             core_inner_diameter = reluctance_df["user_attrs_core_inner_diameter"][index].item()
                             window_w = reluctance_df["user_attrs_window_w"][index].item()
-                            window_h = reluctance_df["user_attrs_window_h"][index].item()
+                            window_h = reluctance_df["params_window_h"][index].item()
                         else:
                             core_inner_diameter = reluctance_df["params_core_inner_diameter"][index].item()
                             window_w = reluctance_df["params_window_w"][index].item()
@@ -1555,6 +1565,8 @@ class InductorOptimization:
                 volume_result = reluctance_output.volume
                 area_to_heat_sink_result = reluctance_output.area_to_heat_sink
                 p_total = fem_output.p_core_magnet + fem_output.p_loss_winding
+                # Calculate with simulation results
+                p_core = fem_output.p_core_magnet
 
                 if print_derivations:
                     logger.info(f"Inductance reluctance: {local_config.target_inductance}")
@@ -1570,6 +1582,7 @@ class InductorOptimization:
                     logger.info(f"P_hyst reluctance: {reluctance_output.p_hyst}")
                     logger.info(f"P_hyst FEM: {fem_output.p_core_magnet}")
                     logger.info(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.p_core_magnet) / reluctance_output.p_hyst * 100} %")
+            # current offset
             else:
                 # Notify user that simulation is performed with DC-Offset
                 logger.info(f"Simulation is performed with DC-Offset of {target_and_fix_parameters.current_offset}A")
