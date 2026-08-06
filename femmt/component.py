@@ -2934,7 +2934,9 @@ class MagneticComponent:
                 air_gaps_bot_reluctance, total_air_gap_radial_reluctance, air_gap_radial_reluctance)
 
     def stray_window_reluctance(self, core_angle: float):
-        """Calculate the stray window reluctance. Applicability is limited to one horizonal VWW at the bottom and two horizontal VWWs at the top.
+        """Calculate the stray window reluctance.
+
+        Applicability is limited to one horizontal Virtual Winding Window at the bottom and two horizontal Virtual Winding Windows at the top.
 
         :param core_angle: Angle of the core window
         :type core_angle: float

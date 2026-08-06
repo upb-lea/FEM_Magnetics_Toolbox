@@ -1029,15 +1029,15 @@ def r_stray_window(window_w: float | np.ndarray, window_h: float | np.ndarray, c
 
     def antiderivative_stray_inductance(x: np.array, y: np.array):
         """
-        Calculate the antiderivative G(x,y).
+        Calculate the Antiderivative G(x,y).
 
         Formula can be found in ["Improved Analytical Triple-2D Leakage Inductance Model of Cone Winding Matrix Transformers" - R. Schlesinger, J. Biela].
 
-        :param x: x-Arguments of the antiderivative
+        :param x: x-Arguments of the Antiderivative
         :type x: np.ndarray
-        :param y: y-Arguments of the antiderivative
+        :param y: y-Arguments of the Antiderivative
         :type y: np.ndarray
-        :return: Array of antiderivatives
+        :return: Array of Antiderivatives
         :rtype: np.ndarray
         """
         antiderivative = np.zeros(np.size(x))
