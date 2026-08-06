@@ -9,7 +9,7 @@ from femmt.dtos import *
 from femmt.model import WindingWindow, Conductor, Insulation, Core, VirtualWindingWindow
 from femmt.functions_drawing import *
 from femmt.functions_model import define_center_tapped_insulation
-from femmt.enumerations import CoreType, ConductorType, ConductorMaterial, WindingWindowSplit, Align, InterleavedWindingScheme, ConductorDistribution
+from femmt.enumerations import CoreType, ConductorType, ConductorMaterial, WindingWindowSplit, Align, ConductorDistribution
 
 
 def create_stacked_winding_windows(core: Core, insulation: Insulation) -> (WindingWindow, WindingWindow):
@@ -389,54 +389,54 @@ def set_center_tapped_windings(core: Core,
 
 
 def set_two_chamber_windings(core: Core,
-                            primary_turns: int, primary_radius: float, primary_number_strands: int, primary_strand_radius: float,
-                            winding_distance: float, split_line: float,
-                            secondary_turns: int, secondary_radius: float, secondary_number_strands: int, secondary_strand_radius: float,
-                            iso_top_core: float, iso_bot_core: float, iso_left_core: float, iso_right_core: float,
-                            iso_primary_to_primary: float, iso_secondary_to_secondary: float, iso_primary_to_secondary: float,
-                            winding_temperature: float):
+                             primary_turns: int, primary_radius: float, primary_number_strands: int, primary_strand_radius: float,
+                             winding_distance: float, split_line: float,
+                             secondary_turns: int, secondary_radius: float, secondary_number_strands: int, secondary_strand_radius: float,
+                             iso_top_core: float, iso_bot_core: float, iso_left_core: float, iso_right_core: float,
+                             iso_primary_to_primary: float, iso_secondary_to_secondary: float, iso_primary_to_secondary: float,
+                             winding_temperature: float):
     """
-        Set two chamber windings.
-        :param core: Core object
-        :type core: fmt.model.core
-        :param primary_turns: Primary turns
-        :type primary_turns: int
-        :param primary_radius: Primary litz radius in m
-        :type primary_radius: float
-        :param primary_strand_radius: Primary strand radius in m
-        :type primary_strand_radius: float
-        :param primary_number_strands: Primary number of strands
-        :type primary_number_strands: int
-        :param winding_distance: Winding distance in m
-        :type winding_distance: float
-        :param split_line: Vertical split factor
-        :type split_line: float
-        :param secondary_turns: Secondary turns
-        :type secondary_turns: int
-        :param: secondary_radius: Secondary litz radius in m
-        :type secondary_radius: float
-        :param secondary_strand_radius: Secondary strand radius in m
-        :type secondary_strand_radius: float
-        :param secondary_number_strands: Secondary number of strands
-        :type secondary_number_strands: int
-        :param iso_right_core: Insulation right core side in m
-        :type iso_right_core: float
-        :param iso_left_core: Insulation left core side in m
-        :type iso_left_core: float
-        :param iso_bot_core: Insulation bottom core side in m
-        :type iso_bot_core: float
-        :param iso_top_core: Insulation top core side in m
-        :type iso_top_core: float
-        :param iso_primary_to_secondary: Insulation primary to secondary winding in m
-        :type iso_primary_to_secondary: float
-        :param iso_secondary_to_secondary: Insulation secondary to secondary winding in m
-        :type iso_secondary_to_secondary: float
-        :param iso_primary_to_primary: Insulation primary to primary winding in m
-        :type iso_primary_to_primary: float
-        :param winding_temperature: winding temperature in °C
-        :type winding_temperature: float | None
-        """
+    Set two chamber windings.
 
+    :param core: Core object
+    :type core: fmt.model.core
+    :param primary_turns: Primary turns
+    :type primary_turns: int
+    :param primary_radius: Primary litz radius in m
+    :type primary_radius: float
+    :param primary_strand_radius: Primary strand radius in m
+    :type primary_strand_radius: float
+    :param primary_number_strands: Primary number of strands
+    :type primary_number_strands: int
+    :param winding_distance: Winding distance in m
+    :type winding_distance: float
+    :param split_line: Vertical split factor
+    :type split_line: float
+    :param secondary_turns: Secondary turns
+    :type secondary_turns: int
+    :param secondary_radius: Secondary litz radius in m
+    :type secondary_radius: float
+    :param secondary_strand_radius: Secondary strand radius in m
+    :type secondary_strand_radius: float
+    :param secondary_number_strands: Secondary number of strands
+    :type secondary_number_strands: int
+    :param iso_right_core: Insulation right core side in m
+    :type iso_right_core: float
+    :param iso_left_core: Insulation left core side in m
+    :type iso_left_core: float
+    :param iso_bot_core: Insulation bottom core side in m
+    :type iso_bot_core: float
+    :param iso_top_core: Insulation top core side in m
+    :type iso_top_core: float
+    :param iso_primary_to_secondary: Insulation primary to secondary winding in m
+    :type iso_primary_to_secondary: float
+    :param iso_secondary_to_secondary: Insulation secondary to secondary winding in m
+    :type iso_secondary_to_secondary: float
+    :param iso_primary_to_primary: Insulation primary to primary winding in m
+    :type iso_primary_to_primary: float
+    :param winding_temperature: winding temperature in °C
+    :type winding_temperature: float | None
+    """
     def define_insulations():
         insulation = Insulation(flag_insulation=True)
         insulation.add_core_insulations(iso_top_core, iso_bot_core, iso_left_core, iso_right_core)
@@ -464,7 +464,7 @@ def set_two_chamber_windings(core: Core,
 
     ww = WindingWindow(core, insulation)
     top_left, top_right, bot_left, bot_right = ww.split_window(WindingWindowSplit.HorizontalDistancedAndVerticalSplit, split_distance=winding_distance,
-                                                               horizontal_split_factor= split_line)
+                                                               horizontal_split_factor=split_line)
 
     bot = ww.combine_vww(bot_left, bot_right)
 

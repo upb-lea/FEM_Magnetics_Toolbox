@@ -2430,7 +2430,7 @@ class MagneticComponent:
                               inductance_dict=inductance_dict, core_hyst_loss=p_hyst_core_parts)
 
     def two_chamber_transformer_center_tapped_pre_study(self, time_current_vectors: list[list[list[float]]], plot_waveforms: bool = False,
-                                             fft_filter_value_factor: float = 0.01) -> dict:
+                                                        fft_filter_value_factor: float = 0.01) -> dict:
         """
         Generate the current waveforms needed for the two_chamber_transformer_center_tapped_study().
 
@@ -2550,14 +2550,13 @@ class MagneticComponent:
 
         return two_chamber_center_tapped_study_excitation
 
-
     def two_chamber_transformer_center_tapped_study(self, two_chamber_center_tapped_study_excitation: dict) -> None:
         """
-                Comprehensive component analysis for two chamber center tapped transformers with defiend stray inductance.
+        Comprehensive component analysis for two chamber center tapped transformers with defiend stray inductance.
 
-                :param two_chamber_center_tapped_study_excitation: Dictionary with frequencies and currents
-                :type center_tapped_study_excitation: dict
-                """
+        :param two_chamber_center_tapped_study_excitation: Dictionary with frequencies and currents
+        :type two_chamber_center_tapped_study_excitation: dict
+        """
         # get the inductance
         inductance_dict = self.get_inductances(I0=1, skin_mesh_factor=1, op_frequency=two_chamber_center_tapped_study_excitation["hysteresis"]["frequency"],
                                                silent=self.is_onelab_silent)
@@ -2566,7 +2565,7 @@ class MagneticComponent:
         # use a single simulation
         self.excitation(frequency=two_chamber_center_tapped_study_excitation["hysteresis"]["frequency"],
                         amplitude_list=two_chamber_center_tapped_study_excitation["hysteresis"]["current_amplitudes"],
-                        phase_deg_list=two_chamber_center_tapped_study_excitation["hysteresis"]["current_phases_deg"], plot_interpolation=False)  # frequency and current
+                        phase_deg_list=two_chamber_center_tapped_study_excitation["hysteresis"]["current_phases_deg"], plot_interpolation=False)
         self.write_simulation_parameters_to_pro_files()
         self.generate_load_litz_approximation_parameters()
         self.simulate()
@@ -2925,10 +2924,10 @@ class MagneticComponent:
     def stray_window_reluctance(self, core_angle: float):
         """Calculate the stray window reluctance.
 
-            :param core_angle: Angle of the core window
-            :type core_angle: float
-            :return: Reluctance of the stray window
-            :rtype: float
+        :param core_angle: Angle of the core window
+        :type core_angle: float
+        :return: Reluctance of the stray window
+        :rtype: float
         """
         window_w = self.core.geometry.window_w
         window_h = self.core.geometry.window_h
@@ -2937,27 +2936,26 @@ class MagneticComponent:
         y_center = np.array([])
         winding_width = np.array([])
         winding_height = np.array([])
-        #TODO Erweiterung auf andere Winding-Window Splits
-        x_center = np.append(x_center, (self.winding_windows[0].virtual_winding_windows[2].right_bound +
-                                          self.winding_windows[0].virtual_winding_windows[2].left_bound)/2 -core_inner_diameter/2 - window_w/2)
-        x_center = np.append(x_center, (self.winding_windows[0].virtual_winding_windows[1].right_bound +
-                                        self.winding_windows[0].virtual_winding_windows[0].left_bound) / 2 - core_inner_diameter / 2 - window_w / 2)
-        y_center = np.append(y_center, (self.winding_windows[0].virtual_winding_windows[2].bot_bound +
-                                        self.winding_windows[0].virtual_winding_windows[2].top_bound) / 2)
-        y_center = np.append(y_center, (self.winding_windows[0].virtual_winding_windows[1].bot_bound +
-                                        self.winding_windows[0].virtual_winding_windows[1].top_bound) / 2)
-        winding_width = np.append(winding_width, np.abs(self.winding_windows[0].virtual_winding_windows[2].right_bound -
-                                                        self.winding_windows[0].virtual_winding_windows[2].left_bound))
-        winding_width = np.append(winding_width, np.abs(self.winding_windows[0].virtual_winding_windows[1].right_bound -
-                                                        self.winding_windows[0].virtual_winding_windows[0].left_bound))
-        winding_height = np.append(winding_height, np.abs(np.abs(self.winding_windows[0].virtual_winding_windows[2].top_bound -
-                                                                 self.winding_windows[0].virtual_winding_windows[2].bot_bound)))
-        winding_height = np.append(winding_height, np.abs(np.abs(self.winding_windows[0].virtual_winding_windows[1].top_bound -
-                                                                 self.winding_windows[0].virtual_winding_windows[1].bot_bound)))
+        # TODO Erweiterung auf andere Winding-Window Splits
+        x_center = np.append(x_center, (self.winding_windows[0].virtual_winding_windows[2].right_bound
+                                        + self.winding_windows[0].virtual_winding_windows[2].left_bound)/2 - core_inner_diameter/2 - window_w/2)
+        x_center = np.append(x_center, (self.winding_windows[0].virtual_winding_windows[1].right_bound
+                                        + self.winding_windows[0].virtual_winding_windows[0].left_bound) / 2 - core_inner_diameter / 2 - window_w / 2)
+        y_center = np.append(y_center, (self.winding_windows[0].virtual_winding_windows[2].bot_bound
+                                        + self.winding_windows[0].virtual_winding_windows[2].top_bound) / 2)
+        y_center = np.append(y_center, (self.winding_windows[0].virtual_winding_windows[1].bot_bound
+                                        + self.winding_windows[0].virtual_winding_windows[1].top_bound) / 2)
+        winding_width = np.append(winding_width, np.abs(self.winding_windows[0].virtual_winding_windows[2].right_bound
+                                                        - self.winding_windows[0].virtual_winding_windows[2].left_bound))
+        winding_width = np.append(winding_width, np.abs(self.winding_windows[0].virtual_winding_windows[1].right_bound
+                                                        - self.winding_windows[0].virtual_winding_windows[0].left_bound))
+        winding_height = np.append(winding_height, np.abs(np.abs(self.winding_windows[0].virtual_winding_windows[2].top_bound
+                                                                 - self.winding_windows[0].virtual_winding_windows[2].bot_bound)))
+        winding_height = np.append(winding_height, np.abs(np.abs(self.winding_windows[0].virtual_winding_windows[1].top_bound
+                                                                 - self.winding_windows[0].virtual_winding_windows[1].bot_bound)))
 
         winding_sign_array = np.array([1, -1])
         return fr.r_stray_window(window_w, window_h, core_inner_diameter, x_center, y_center, winding_width, winding_height, winding_sign_array, core_angle)
-
 
     def log_reluctance_and_inductance(self) -> dict:
         """
@@ -4899,7 +4897,6 @@ class MagneticComponent:
             gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
             gmsh.option.setNumber(f"View[{view}].NbIso", 40)
             view += 1
-            
 
         if self.simulation_type == SimulationType.ElectroStatic:
             # Visualization for electrostatic simulations

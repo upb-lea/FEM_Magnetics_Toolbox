@@ -1524,7 +1524,7 @@ class WindingWindow:
                 bot_bound=horizontal_split + split_distance / 2,
                 top_bound=self.max_top_bound,
                 left_bound=self.max_left_bound,
-                right_bound=vertical_split )
+                right_bound=vertical_split)
 
             top_right = VirtualWindingWindow(
                 bot_bound=horizontal_split + split_distance / 2,
