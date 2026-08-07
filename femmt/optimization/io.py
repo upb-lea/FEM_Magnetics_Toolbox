@@ -116,7 +116,8 @@ class InductorOptimization:
             i_rms = fr.i_rms(config.time_current_vec)
             # Perform FFT
             (fft_frequencies, fft_amplitudes, fft_phases) = ff.fft(
-                period_vector_t_i=config.time_current_vec, sample_factor=1000, plot='no', mode='time', filter_type='factor', filter_value_factor=0.03)
+                period_vector_t_i=config.time_current_vec, sample_factor=1000, plot='no', mode='time', filter_type='factor',
+                filter_value_factor=config.fft_filter_value_factor)
 
             # Check für current offset
             if fft_frequencies[0] == 0:
@@ -129,7 +130,8 @@ class InductorOptimization:
                     config.time_current_vec)
                 # Perform FFT without current offset
                 (fft_frequencies, fft_amplitudes, fft_phases) = ff.fft(
-                    period_vector_t_i=time_current_vec_no_offset, sample_factor=1000, plot='no', mode='time', filter_type='factor', filter_value_factor=0.03)
+                    period_vector_t_i=time_current_vec_no_offset, sample_factor=1000, plot='no', mode='time', filter_type='factor',
+                    filter_value_factor=config.fft_filter_value_factor)
             else:
                 current_offset = 0
 
@@ -1092,7 +1094,9 @@ class InductorOptimization:
                             fft_amplitude_list=target_and_fix_parameters.fft_amplitude_list,
                             fft_phases_list=target_and_fix_parameters.fft_phases_list,
                             time_vec=target_and_fix_parameters.time_extracted_vec,
-                            current_vec=target_and_fix_parameters.current_extracted_vec
+                            current_vec=target_and_fix_parameters.current_extracted_vec,
+                            fft_filter_value_factor=config.fft_filter_value_factor,
+                            mesh_accuracy=config.mesh_accuracy
                         )
 
                         # fem simulation here
@@ -1269,7 +1273,7 @@ class InductorOptimization:
                             zigzag=True)
             geo.set_winding_windows([winding_window])
 
-            # 7a. Set the reluctance model pre check flag
+            # 7a. Set the reluctance model pre-check flag
             geo.set_saturation_threshold(fem_input.saturation_threshold)
 
             # 8. create the model
@@ -1299,7 +1303,8 @@ class InductorOptimization:
 
             # get the winding losses
             geo.excitation_sweep(frequency_list=fem_input.fft_frequency_list, current_list_list=current_amplitudes,
-                                 phi_deg_list_list=phases, show_last_fem_simulation=show_visual_outputs)
+                                 phi_deg_list_list=phases, show_last_fem_simulation=show_visual_outputs,
+                                 skin_mesh_factor=fem_input.mesh_accuracy)
             result_dict = geo.read_log()
 
             fem_output = IoFemOutput(
@@ -1522,7 +1527,9 @@ class InductorOptimization:
                 time_vec=target_and_fix_parameters.time_extracted_vec,
                 current_vec=target_and_fix_parameters.current_extracted_vec,
                 current_offset=target_and_fix_parameters.current_offset,
-                saturation_threshold=InductorOptimization._IO_SATURATION_THRESHOLD
+                saturation_threshold=InductorOptimization._IO_SATURATION_THRESHOLD,
+
+                mesh_accuracy=local_config.mesh_accuracy
             )
 
             # Load reluctance model input for magnet model and litz wire resistance calculation
