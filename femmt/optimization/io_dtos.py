@@ -45,6 +45,10 @@ class InductorOptimizationDTO:
     window_h_min_max_list: list[float] | None
     litz_wire_name_list: list[str]
 
+    # misc
+    fft_filter_value_factor: float
+    mesh_accuracy: float
+
     # FEM simulation
     material_data_sources: MaterialDataSources
 
@@ -104,12 +108,16 @@ class IoFemInput:
     time_vec: list[float]
     current_vec: list[float]
 
+    # misc
+    mesh_accuracy: float
+
     # Parameter to handle DC-offset
     initial_mag_curve: pd.DataFrame | None = None
     imported_complex_material: ImportedComplexCoreMaterial | None = None
     current_offset: float = 0
     saturation_threshold: float = 0.7
 
+    
 @dataclasses.dataclass
 class IoFemOutput:
     """Output DTO for a FEM simulation within the inductor optimization."""
