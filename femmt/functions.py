@@ -715,6 +715,132 @@ def litz_database() -> dict:
                                  "litz": "",
                                  "insulation": ""}
 
+    litz_dict["1.4x115x0.1"] = {"strands_numbers": 115,
+                                "strand_radii": 0.1e-3 / 2,
+                                "conductor_radii": 1.4e-3 / 2,
+                                "ff": None,
+                                "manufacturer": "",
+                                "material_number": "",
+                                "litz": "",
+                                "insulation": ""}
+
+    litz_dict["2.9x300x0.1"] = {"strands_numbers": 300,
+                                "strand_radii": 0.1e-3 / 2,
+                                "conductor_radii": 2.9e-3 / 2,
+                                "ff": None,
+                                "manufacturer": "",
+                                "material_number": "",
+                                "litz": "",
+                                "insulation": ""}
+
+    litz_dict["1.1x45x0.1"] = {"strands_numbers": 45,
+                               "strand_radii": 0.1e-3 / 2,
+                               "conductor_radii": 1.1e-3 / 2,
+                               "ff": None,
+                               "manufacturer": "",
+                               "material_number": "",
+                               "litz": "",
+                               "insulation": ""}
+
+    litz_dict["2.3x200x0.1"] = {"strands_numbers": 200,
+                                "strand_radii": 0.1e-3 / 2,
+                                "conductor_radii": 2.3e-3 / 2,
+                                "ff": None,
+                                "manufacturer": "",
+                                "material_number": "",
+                                "litz": "",
+                                "insulation": ""}
+
+    litz_dict["0.5x15x0.1"] = {"strands_numbers": 15,
+                               "strand_radii": 0.1e-3 / 2,
+                               "conductor_radii": 0.5e-3 / 2,
+                               "ff": None,
+                               "manufacturer": "Block",
+                               "material_number": "",
+                               "litz": "",
+                               "insulation": ""}
+
+    litz_dict["0.7x30x0.1"] = {"strands_numbers": 30,
+                               "strand_radii": 0.1e-3 / 2,
+                               "conductor_radii": 0.71e-3 / 2,
+                               "ff": None,
+                               "manufacturer": "Block",
+                               "material_number": "",
+                               "litz": "",
+                               "insulation": ""}
+
+    litz_dict["1x60x0.1"] = {"strands_numbers": 60,
+                             "strand_radii": 0.1e-3 / 2,
+                             "conductor_radii": 0.99e-3 / 2,
+                             "ff": None,
+                             "manufacturer": "Block",
+                             "material_number": "",
+                             "litz": "",
+                             "insulation": ""}
+
+    litz_dict["1.2x90x0.1"] = {"strands_numbers": 90,
+                               "strand_radii": 0.1e-3 / 2,
+                               "conductor_radii": 1.2e-3 / 2,
+                               "ff": None,
+                               "manufacturer": "Block",
+                               "material_number": "",
+                               "litz": "",
+                               "insulation": ""}
+
+    litz_dict["1.4x120x0.1"] = {"strands_numbers": 120,
+                                "strand_radii": 0.1e-3 / 2,
+                                "conductor_radii": 1.4e-3 / 2,
+                                "ff": None,
+                                "manufacturer": "Block",
+                                "material_number": "",
+                                "litz": "",
+                                "insulation": ""}
+
+    litz_dict["1.7x180x0.1"] = {"strands_numbers": 180,
+                                "strand_radii": 0.1e-3 / 2,
+                                "conductor_radii": 1.7e-3 / 2,
+                                "ff": None,
+                                "manufacturer": "",
+                                "material_number": "",
+                                "litz": "",
+                                "insulation": ""}
+
+    litz_dict["2.0x240x0.1"] = {"strands_numbers": 240,
+                                "strand_radii": 0.1e-3 / 2,
+                                "conductor_radii": 2.0e-3 / 2,
+                                "ff": None,
+                                "manufacturer": "",
+                                "material_number": "",
+                                "litz": "",
+                                "insulation": ""}
+
+    litz_dict["2.1x270x0.1"] = {"strands_numbers": 270,
+                                "strand_radii": 0.1e-3 / 2,
+                                "conductor_radii": 2.1e-3 / 2,
+                                "ff": None,
+                                "manufacturer": "",
+                                "material_number": "",
+                                "litz": "",
+                                "insulation": ""}
+
+    litz_dict["2.2x300x0.1"] = {"strands_numbers": 300,
+                                "strand_radii": 0.1e-3 / 2,
+                                "conductor_radii": 2.2e-3 / 2,
+                                "ff": None,
+                                "manufacturer": "",
+                                "material_number": "",
+                                "litz": "",
+                                "insulation": ""}
+
+    litz_dict["2.5x360x0.1"] = {"strands_numbers": 360,
+                                "strand_radii": 0.1e-3 / 2,
+                                "conductor_radii": 2.45e-3 / 2,
+                                "ff": None,
+                                "manufacturer": "",
+                                "material_number": "",
+                                "litz": "",
+                                "insulation": ""}
+
     return litz_dict
 
 

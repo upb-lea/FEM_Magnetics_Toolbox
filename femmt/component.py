@@ -2428,6 +2428,163 @@ class MagneticComponent:
                               center_tapped_study_excitation["linear_losses"]["current_phases_deg"],
                               inductance_dict=inductance_dict, core_hyst_loss=p_hyst_core_parts)
 
+    def two_chamber_transformer_center_tapped_pre_study(self, time_current_vectors: list[list[list[float]]], plot_waveforms: bool = False,
+                                                        fft_filter_value_factor: float = 0.01) -> dict:
+        """
+        Generate the current waveforms needed for the two_chamber_transformer_center_tapped_study().
+
+        As magnetizing currents are often non-sinusoidal, some corrections in the simulation current waveforms are needed. This function
+        calculates the new current waveforms for the two chamber center tapped study to get inductance values and so on.
+
+        :param time_current_vectors: time-current vectors for primary and secondary, e.g. [[time, current_prim], [time, current_sec]]
+        :type time_current_vectors: list[list[list[float]]]
+        :param plot_waveforms: True to watch the pre-calculated waveforms
+        :type plot_waveforms: bool
+        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all
+            amplitudes below 1 % of the maximum amplitude from the result-frequency list
+        :type fft_filter_value_factor: float
+        :return: new current waveform vector
+        :rtype: dict
+
+        return dict:
+        two_chamber_center_tapped_study_excitation = {
+            "hysteresis": {
+                "frequency": None,
+                    "current_amplitudes": None,
+                    "current_phases_deg": None
+            },
+            "linear_losses": {
+                "frequencies": None,
+                "current_amplitudes": None,
+                "current_phases_deg": None
+            }
+        }
+        """
+        def split_hysteresis_loss_excitation_center_tapped(hyst_frequency: list, hyst_loss_amplitudes: list, hyst_loss_phases_deg: list):
+            """
+            Split the last winding (2nd) peak current into half and add a 3rd winding with the same value.
+
+            :param hyst_frequency: list with the fundamental frequency of core losses
+            :type hyst_frequency: list
+            :param hyst_loss_amplitudes: amplitudes for all windings in a list
+            :type hyst_loss_amplitudes: list
+            :param hyst_loss_phases_deg: phases in degree for all windings in a list
+            :type hyst_loss_phases_deg: list
+            """
+            hyst_loss_amplitudes[-1] = hyst_loss_amplitudes[-1] / 2
+            hyst_loss_amplitudes.append(hyst_loss_amplitudes[-1])
+            hyst_loss_phases_deg.append(hyst_loss_phases_deg[-1])
+            return hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg
+
+        def split_time_current_vectors_center_tapped(time_current_vectors: list[list[list[float]]]):
+            """
+            Split the given time-current vectors (primary and a common secondary) into primary, secondary and tertiary current.
+
+            :param time_current_vectors: e.g. [[time_vec, i_primary_vec], [time_vec, i_secondary_vec]]
+            :type time_current_vectors: list[list[list[float]]]
+            """
+            positive_secondary_current = np.copy(time_current_vectors[1][1])
+            positive_secondary_current[positive_secondary_current < 0] = 0
+            negative_secondary_current = np.copy(time_current_vectors[1][1])
+            negative_secondary_current[negative_secondary_current > 0] = 0
+
+            center_tapped_time_current_vectors = [time_current_vectors[0],
+                                                  [time_current_vectors[1][0], positive_secondary_current],
+                                                  [time_current_vectors[1][0], negative_secondary_current]]
+
+            if plot_waveforms:
+                plt.plot(time_current_vectors[1][0], negative_secondary_current, label="negative_secondary_current")
+                plt.plot(time_current_vectors[1][0], positive_secondary_current, label="positive_secondary_current")
+                plt.plot(time_current_vectors[0][0], time_current_vectors[0][1], label="primary_current")
+                plt.xlabel("time / s")
+                plt.ylabel("current / A")
+                plt.grid()
+                plt.legend()
+                plt.show()
+
+            return center_tapped_time_current_vectors
+
+        two_chamber_center_tapped_study_excitation = {
+            "hysteresis": {
+                "frequency": None,
+                "current_amplitudes": None,
+                "current_phases_deg": None
+            },
+            "linear_losses": {
+                "frequencies": None,
+                "current_amplitudes": None,
+                "current_phases_deg": None
+            }
+        }
+        # Hysteresis Loss Excitation
+        # time_current_vectors[1][1] = time_current_vectors[1][1] * (-1)
+        hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = ff.hysteresis_current_excitation(time_current_vectors)
+        hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = split_hysteresis_loss_excitation_center_tapped(
+            hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg)
+        two_chamber_center_tapped_study_excitation["hysteresis"]["frequency"] = hyst_frequency
+        two_chamber_center_tapped_study_excitation["hysteresis"]["current_amplitudes"] = hyst_loss_amplitudes
+        two_chamber_center_tapped_study_excitation["hysteresis"]["current_phases_deg"] = hyst_loss_phases_deg
+
+        # Linear Loss Excitation
+        time_current_vectors = split_time_current_vectors_center_tapped(time_current_vectors)
+        frequency_list, current_list_list, phi_deg_list_list = ff.time_current_vector_to_fft_excitation(time_current_vectors, fft_filter_value_factor)
+
+        if plot_waveforms:
+            i_1 = hyst_loss_amplitudes[0] * np.cos(time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[0]))
+            i_2 = hyst_loss_amplitudes[1] * np.cos(time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[1]))
+            i_3 = hyst_loss_amplitudes[2] * np.cos(time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[2]))
+            plt.plot(time_current_vectors[0][0], i_1, label="i_1")
+            plt.plot(time_current_vectors[0][0], i_2, "-", label="i_2")
+            plt.plot(time_current_vectors[0][0], i_3, "--", label="i_3")
+            plt.xlabel("time / s")
+            plt.ylabel("current / A")
+            plt.grid()
+            plt.legend()
+            plt.show()
+
+        two_chamber_center_tapped_study_excitation["linear_losses"]["frequencies"] = list(frequency_list)
+        two_chamber_center_tapped_study_excitation["linear_losses"]["current_amplitudes"] = current_list_list
+        two_chamber_center_tapped_study_excitation["linear_losses"]["current_phases_deg"] = phi_deg_list_list
+
+        return two_chamber_center_tapped_study_excitation
+
+    def two_chamber_transformer_center_tapped_study(self, two_chamber_center_tapped_study_excitation: dict) -> None:
+        """
+        Comprehensive component analysis for two chamber center tapped transformers with defined stray inductance.
+
+        :param two_chamber_center_tapped_study_excitation: Dictionary with frequencies and currents
+        :type two_chamber_center_tapped_study_excitation: dict
+        """
+        # get the inductance
+        inductance_dict = self.get_inductances(I0=1, skin_mesh_factor=1, op_frequency=two_chamber_center_tapped_study_excitation["hysteresis"]["frequency"],
+                                               silent=self.is_onelab_silent)
+
+        # calculate hysteresis losses
+        # use a single simulation
+        self.excitation(frequency=two_chamber_center_tapped_study_excitation["hysteresis"]["frequency"],
+                        amplitude_list=two_chamber_center_tapped_study_excitation["hysteresis"]["current_amplitudes"],
+                        phase_deg_list=two_chamber_center_tapped_study_excitation["hysteresis"]["current_phases_deg"], plot_interpolation=False)
+        self.write_simulation_parameters_to_pro_files()
+        self.generate_load_litz_approximation_parameters()
+        self.simulate()
+        self.calculate_and_write_freq_domain_log()
+
+        # read the log of the transformer losses
+        log = self.read_log()
+
+        # find out the number of core parts, init core part losses with zeros
+        number_of_core_parts = len(log["single_sweeps"][0]['core_parts'])
+        p_hyst_core_parts = np.zeros(number_of_core_parts)
+
+        for core_part in range(1, number_of_core_parts + 1):
+            core_part_hyst_loss = log['single_sweeps'][0]['core_parts'][f'core_part_{core_part}']['hyst_losses']
+            p_hyst_core_parts[core_part - 1] += core_part_hyst_loss
+
+        self.excitation_sweep(two_chamber_center_tapped_study_excitation["linear_losses"]["frequencies"],
+                              two_chamber_center_tapped_study_excitation["linear_losses"]["current_amplitudes"],
+                              two_chamber_center_tapped_study_excitation["linear_losses"]["current_phases_deg"], 
+                              inductance_dict=inductance_dict, core_hyst_loss=p_hyst_core_parts)
+
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Reluctance
     def calculate_core_reluctance(self):
@@ -2774,6 +2931,44 @@ class MagneticComponent:
 
         return (total_airgap_reluctance, air_gaps_reluctance, total_airgap_top_reluctance, air_gaps_top_reluctance, total_airgap_bot_reluctance,
                 air_gaps_bot_reluctance, total_air_gap_radial_reluctance, air_gap_radial_reluctance)
+
+    def stray_window_reluctance(self, core_angle: float):
+        """Calculate the stray window reluctance.
+
+        Applicability is limited to one horizontal Virtual Winding Window at the bottom and two horizontal Virtual Winding Windows at the top.
+
+        :param core_angle: Angle of the core window
+        :type core_angle: float
+        :return: Reluctance of the stray window
+        :rtype: float
+        """
+        window_w = self.core.geometry.window_w
+        window_h = self.core.geometry.window_h
+        core_inner_diameter = self.core.geometry.core_inner_diameter
+        x_center = np.array([])
+        y_center = np.array([])
+        winding_width = np.array([])
+        winding_height = np.array([])
+        # TODO Extension to other Winding Window splits.
+        x_center = np.append(x_center, (self.winding_windows[0].virtual_winding_windows[2].right_bound + \
+                                        self.winding_windows[0].virtual_winding_windows[2].left_bound)/2 - core_inner_diameter/2 - window_w/2)
+        x_center = np.append(x_center, (self.winding_windows[0].virtual_winding_windows[1].right_bound + \
+                                        self.winding_windows[0].virtual_winding_windows[0].left_bound) / 2 - core_inner_diameter / 2 - window_w / 2)
+        y_center = np.append(y_center, (self.winding_windows[0].virtual_winding_windows[2].bot_bound + \
+                                        self.winding_windows[0].virtual_winding_windows[2].top_bound) / 2)
+        y_center = np.append(y_center, (self.winding_windows[0].virtual_winding_windows[1].bot_bound + \
+                                        self.winding_windows[0].virtual_winding_windows[1].top_bound) / 2)
+        winding_width = np.append(winding_width, np.abs(self.winding_windows[0].virtual_winding_windows[2].right_bound - \
+                                                        self.winding_windows[0].virtual_winding_windows[2].left_bound))
+        winding_width = np.append(winding_width, np.abs(self.winding_windows[0].virtual_winding_windows[1].right_bound - \
+                                                        self.winding_windows[0].virtual_winding_windows[0].left_bound))
+        winding_height = np.append(winding_height, np.abs(np.abs(self.winding_windows[0].virtual_winding_windows[2].top_bound - \
+                                                                 self.winding_windows[0].virtual_winding_windows[2].bot_bound)))
+        winding_height = np.append(winding_height, np.abs(np.abs(self.winding_windows[0].virtual_winding_windows[1].top_bound - \
+                                                                 self.winding_windows[0].virtual_winding_windows[1].bot_bound)))
+
+        winding_sign_array = np.array([1, -1])
+        return fr.r_stray_window(window_w, window_h, core_inner_diameter, x_center, y_center, winding_width, winding_height, winding_sign_array, core_angle)
 
     def log_reluctance_and_inductance(self) -> dict:
         """
@@ -4676,6 +4871,7 @@ class MagneticComponent:
 
         if self.simulation_type == SimulationType.FreqDomain:
             view = 0
+            
             if any(self.windings[i].conductor_type != ConductorType.RoundLitz for i in range(len(self.windings))):
                 # Ohmic losses (weighted effective value of current density)
                 gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2F_density.pos"))
@@ -4693,7 +4889,7 @@ class MagneticComponent:
 
             if any(self.windings[i].conductor_type == ConductorType.RoundLitz for i in range(len(self.windings))):
                 # Ohmic losses (weighted effective value of current density)
-                gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "jH_density.pos"))
+                gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2H_density.pos"))
                 gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
                 gmsh.option.setNumber(f"View[{view}].RangeType", 2)
                 gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)

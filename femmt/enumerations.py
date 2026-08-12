@@ -56,7 +56,9 @@ class WindingWindowSplit(IntEnum):
     """
     Acts like "NoSplit", but takes bobbin geometry instead of core-cond insulation to define the virtual winding window.
     """
-
+    HorizontalDistancedAndVerticalSplit = 9
+    """Splits winding window in four virtual winding windows separated by a horizontal and vertical line. The horizontal windows have a distance in between.
+    """
 
 class ComponentType(IntEnum):
     """Sets the component type for the whole simulation. Needs to be given to the MagneticComponent on creation."""
