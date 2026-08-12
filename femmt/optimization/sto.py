@@ -82,10 +82,12 @@ class StackedTransformerOptimization:
                                                                                    config.n_target)
 
             (fft_frequencies_1, fft_amplitudes_1, fft_phases_1) = ff.fft(
-                period_vector_t_i=config.time_current_1_vec, sample_factor=1000, plot='no', mode='time', filter_type='factor', filter_value_factor=0.03)
+                period_vector_t_i=config.time_current_1_vec, sample_factor=1000, plot='no', mode='time', filter_type='factor',
+                filter_value_factor=config.fft_filter_value_factor)
 
             (fft_frequencies_2, fft_amplitudes_2, fft_phases_2) = ff.fft(
-                period_vector_t_i=config.time_current_2_vec, sample_factor=1000, plot='no', mode='time', filter_type='factor', filter_value_factor=0.03)
+                period_vector_t_i=config.time_current_2_vec, sample_factor=1000, plot='no', mode='time', filter_type='factor',
+                filter_value_factor=config.fft_filter_value_factor)
 
             # material properties
             material_db = mdb.Data()
@@ -134,7 +136,7 @@ class StackedTransformerOptimization:
                 # winding 2
                 fft_frequency_list_2=fft_frequencies_2,
                 fft_amplitude_list_2=fft_amplitudes_2,
-                fft_phases_list_2=fft_phases_2
+                fft_phases_list_2=fft_phases_2,
             )
 
             return target_and_fix_parameters
@@ -980,6 +982,9 @@ class StackedTransformerOptimization:
 
                             time_current_1_vec=config.time_current_1_vec,
                             time_current_2_vec=config.time_current_2_vec,
+
+                            fft_filter_value_factor=config.fft_filter_value_factor,
+                            mesh_accuracy=config.mesh_accuracy
                         )
 
                         fem_output = StackedTransformerOptimization.FemSimulation.single_fem_simulation(fem_input, show_visual_outputs=show_visual_outputs)
@@ -1095,10 +1100,10 @@ class StackedTransformerOptimization:
 
             if wire_loss_only:
                 hyst_frequency, _, _ = ff.hysteresis_current_excitation(time_current_vectors)
-                inductance_dict = geo.get_inductances(I0=1, skin_mesh_factor=1, op_frequency=hyst_frequency, silent=True)
+                inductance_dict = geo.get_inductances(I0=1, skin_mesh_factor=fem_input.q, op_frequency=hyst_frequency, silent=True)
 
                 study_excitation = geo.stacked_core_study_excitation(time_current_vectors, plot_waveforms=False,
-                                                                     fft_filter_value_factor=0.1,
+                                                                     fft_filter_value_factor=fem_input.fft_filter_value_factor,
                                                                      transfer_ratio_n=inductance_dict["n_conc"])
 
                 geo.excitation_sweep(study_excitation["linear_losses"]["frequencies"],
@@ -1122,7 +1127,7 @@ class StackedTransformerOptimization:
 
             else:
                 geo.stacked_core_study(number_primary_coil_turns=primary_coil_turns, time_current_vectors=time_current_vectors,
-                                       plot_waveforms=show_visual_outputs, fft_filter_value_factor=0.1)
+                                       plot_waveforms=show_visual_outputs, fft_filter_value_factor=fem_input.fft_filter_value_factor)
 
                 result_dict = geo.read_log()
 
@@ -1273,7 +1278,10 @@ class StackedTransformerOptimization:
                 temperature=local_config.temperature,
                 fundamental_frequency=target_and_fix_parameters.fundamental_frequency,
                 time_current_1_vec=[list(target_and_fix_parameters.time_extracted_vec), list(target_and_fix_parameters.current_extracted_1_vec)],
-                time_current_2_vec=[list(target_and_fix_parameters.time_extracted_vec), list(target_and_fix_parameters.current_extracted_2_vec)]
+                time_current_2_vec=[list(target_and_fix_parameters.time_extracted_vec), list(target_and_fix_parameters.current_extracted_2_vec)],
+
+                fft_filter_value_factor=local_config.fft_filter_value_factor,
+                mesh_accuracy=local_config.mesh_accuracy
             )
 
             # pd.read_csv("~/Downloads/Pandas_trial.csv", header=0, index_col=0, delimiter=';')

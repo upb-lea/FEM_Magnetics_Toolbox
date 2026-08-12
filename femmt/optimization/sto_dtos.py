@@ -140,6 +140,10 @@ class StoFemInput:
     time_current_1_vec: np.ndarray
     time_current_2_vec: np.ndarray
 
+    # misc
+    fft_filter_value_factor: float
+    mesh_accuracy: float
+
 @dataclass
 class StoFemOutput:
     """Output DTO for a FEM simulation within the stacked transformer optimization."""

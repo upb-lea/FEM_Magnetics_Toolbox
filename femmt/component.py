@@ -100,9 +100,8 @@ class MagneticComponent:
         # visulization
         self.visualization_mode = visualization_mode
 
-        logger.info(f"\n"
-                    f"Initialized a new Magnetic Component of type {component_type.name}\n"
-                    f"--- --- --- ---")
+        logger.info(f"--- --- --- --- --- --- --- --- --- --- --- --- ---\n"
+                    f"Initialized a new Magnetic Component of type {component_type.name}")
 
         # To make sure femm is only imported once
         self.femm_is_imported = False
@@ -3182,7 +3181,7 @@ class MagneticComponent:
                 ])
                 # Calculate flux matrix
                 flux_matrix = fr.calculate_flux_matrix(reluctance_matrix, winding_matrix, current_matrix)
-                logger.info(flux_matrix)
+                logger.info(f"Reluctance model pre-check {flux_matrix=}")
                 # Extract flux values from the flux matrix
                 flux_top = flux_matrix[0, 0]
                 flux_bot = flux_matrix[1, 0]
@@ -3261,9 +3260,7 @@ class MagneticComponent:
                     else:
                         # Mutual inductance
                         inductance_matrix[i, j] = (turns_i * turns_j) / reluctance
-            # Print the inductance matrix
-            logger.info("Inductance Matrix from reluctance:")
-            logger.info(f"{inductance_matrix}")
+            logger.info(f"Inductance Matrix from reluctance: {inductance_matrix}")
             return inductance_matrix
         else:
             # Initialize the inductance matrix
@@ -3321,9 +3318,7 @@ class MagneticComponent:
                     else:
                         # Mutual inductance
                         inductance_matrix[i, j] = (turns_i_top * turns_j_top / top_reluctance) + (turns_i_bottom * turns_j_bottom / bot_reluctance)
-            # Print the inductance matrix
-            logger.info("Inductance Matrix from reluctance:")
-            logger.info(f"{inductance_matrix}")
+            logger.info(f"Inductance Matrix from reluctance: {inductance_matrix}")
             return inductance_matrix
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
@@ -3723,7 +3718,7 @@ class MagneticComponent:
                         f"    - Primary Side Main Inductance: L_h\n"
                         f"n := M / L_2_2 = k * Sqrt(L_1_1 / L_2_2) = {self.n_conc}\n"
                         f"L_s1 = (1 - k^2) * L_1_1 = {self.L_s_conc}\n"
-                        f"L_h = M^2 / L_2_2 = k^2 * L_1_1 = {self.L_h_conc}\n"
+                        f"L_h = M^2 / L_2_2 = k^2 * L_1_1 = {self.L_h_conc}"
                         )
 
             inductance = TransformerInductance(l_h_conc=self.L_h_conc, l_s_conc=self.L_s_conc, n_conc=self.n_conc,
