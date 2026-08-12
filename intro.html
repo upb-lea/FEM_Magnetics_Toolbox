@@ -340,6 +340,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions_topologies.place_center_tapped_conductor_row"><code class="docutils literal notranslate"><span class="pre">place_center_tapped_conductor_row()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions_topologies.place_windings_in_vwws"><code class="docutils literal notranslate"><span class="pre">place_windings_in_vwws()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#femmt.functions_topologies.set_center_tapped_windings"><code class="docutils literal notranslate"><span class="pre">set_center_tapped_windings()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#femmt.functions_topologies.set_two_chamber_windings"><code class="docutils literal notranslate"><span class="pre">set_two_chamber_windings()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-femmt.constants"><span class="sectnum">4.14 </span>Constants</a></li>
@@ -4126,6 +4127,37 @@ It is an independent function and has been used to analyze the expression and it
 <li><p><strong>winding_temperature</strong> (<em>float</em><em> | </em><em>None</em>) – winding temperature in °C</p></li>
 <li><p><strong>wrap_para_type</strong> (<em>WrapParaType</em>) – wrap parameter type</p></li>
 <li><p><strong>foil_horizontal_placing_strategy</strong> (<em>FoilHorizontalDistribution</em>) – strategy for placing foil horizontal windings</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt.functions_topologies.set_two_chamber_windings">
+<span class="sig-prename descclassname"><span class="pre">femmt.functions_topologies.</span></span><span class="sig-name descname"><span class="pre">set_two_chamber_windings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">core</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#femmt.Core" title="femmt.model.Core"><span class="pre">Core</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">primary_turns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">primary_radius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">primary_number_strands</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">primary_strand_radius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">winding_distance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split_line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">secondary_turns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">secondary_radius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">secondary_number_strands</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">secondary_strand_radius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iso_top_core</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iso_bot_core</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iso_left_core</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iso_right_core</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iso_primary_to_primary</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iso_secondary_to_secondary</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iso_primary_to_secondary</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">winding_temperature</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.functions_topologies.set_two_chamber_windings" title="Link to this definition"></a></dt>
+<dd><p>Set two chamber windings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>core</strong> (<em>fmt.model.core</em>) – Core object</p></li>
+<li><p><strong>primary_turns</strong> (<em>int</em>) – Primary turns</p></li>
+<li><p><strong>primary_radius</strong> (<em>float</em>) – Primary litz radius in m</p></li>
+<li><p><strong>primary_strand_radius</strong> (<em>float</em>) – Primary strand radius in m</p></li>
+<li><p><strong>primary_number_strands</strong> (<em>int</em>) – Primary number of strands</p></li>
+<li><p><strong>winding_distance</strong> (<em>float</em>) – Winding distance in m</p></li>
+<li><p><strong>split_line</strong> (<em>float</em>) – Vertical split factor</p></li>
+<li><p><strong>secondary_turns</strong> (<em>int</em>) – Secondary turns</p></li>
+<li><p><strong>secondary_radius</strong> (<em>float</em>) – Secondary litz radius in m</p></li>
+<li><p><strong>secondary_strand_radius</strong> (<em>float</em>) – Secondary strand radius in m</p></li>
+<li><p><strong>secondary_number_strands</strong> (<em>int</em>) – Secondary number of strands</p></li>
+<li><p><strong>iso_right_core</strong> (<em>float</em>) – Insulation right core side in m</p></li>
+<li><p><strong>iso_left_core</strong> (<em>float</em>) – Insulation left core side in m</p></li>
+<li><p><strong>iso_bot_core</strong> (<em>float</em>) – Insulation bottom core side in m</p></li>
+<li><p><strong>iso_top_core</strong> (<em>float</em>) – Insulation top core side in m</p></li>
+<li><p><strong>iso_primary_to_secondary</strong> (<em>float</em>) – Insulation primary to secondary winding in m</p></li>
+<li><p><strong>iso_secondary_to_secondary</strong> (<em>float</em>) – Insulation secondary to secondary winding in m</p></li>
+<li><p><strong>iso_primary_to_primary</strong> (<em>float</em>) – Insulation primary to primary winding in m</p></li>
+<li><p><strong>winding_temperature</strong> (<em>float</em><em> | </em><em>None</em>) – winding temperature in °C</p></li>
 </ul>
 </dd>
 </dl>
