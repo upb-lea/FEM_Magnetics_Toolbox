@@ -1100,7 +1100,7 @@ class StackedTransformerOptimization:
 
             if wire_loss_only:
                 hyst_frequency, _, _ = ff.hysteresis_current_excitation(time_current_vectors)
-                inductance_dict = geo.get_inductances(I0=1, skin_mesh_factor=fem_input.q, op_frequency=hyst_frequency, silent=True)
+                inductance_dict = geo.get_inductances(I0=1, skin_mesh_factor=fem_input.mesh_accuracy, op_frequency=hyst_frequency, silent=True)
 
                 study_excitation = geo.stacked_core_study_excitation(time_current_vectors, plot_waveforms=False,
                                                                      fft_filter_value_factor=fem_input.fft_filter_value_factor,
