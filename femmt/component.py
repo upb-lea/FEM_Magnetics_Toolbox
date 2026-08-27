@@ -6907,29 +6907,29 @@ class MagneticComponent:
         """
         logger.info("Generate component drawing.")
 
-        def sort_points_clockwise(pts: np.ndarray) -> np.ndarray:
+        def sort_points_clockwise(points: np.ndarray) -> np.ndarray:
             """
-            Sort a set of 2D points in clockwise order around their centroid.
+            Sort a set of 2D points in clockwise order around their center.
 
-            :param pts: Array of 2D points with shape (N, 2).
-            :type pts: np.ndarray
+            :param points: Array of 2D points with shape (N, 2).
+            :type points: np.ndarray
             :return: Points sorted in clockwise order.
             :rtype: np.ndarray
             """
-            center = np.mean(pts, axis=0)
-            angles = np.arctan2(pts[:, 1] - center[1], pts[:, 0] - center[0])
-            return pts[np.argsort(angles)]
+            center = np.mean(points, axis=0)
+            angles = np.arctan2(points[:, 1] - center[1], points[:, 0] - center[0])
+            return points[np.argsort(angles)]
 
-        def draw_polygon(coords: np.ndarray, gray_value: int) -> None:
+        def draw_polygon(coordinates: np.ndarray, gray_value: int) -> None:
             """
-            Draw a filled polygon on the image using grayscale.
+            Draw a filled polygon on the image using gray scale.
 
-            :param coords: List of (x, y) coordinates representing the polygon vertices.
-            :type coords: list of tuple
-            :param gray_value: Grayscale value to fill the polygon with (0–255).
+            :param coordinates: List of (x, y) coordinates representing the polygon vertices.
+            :type coordinates: list of tuple
+            :param gray_value: Gray scale value to fill the polygon with (0–255).
             :type gray_value: int
             """
-            pixels = [to_pixel(x, y) for x, y in coords]
+            pixels = [to_pixel(x, y) for x, y in coordinates]
             draw.polygon(pixels, fill=gray_value)
 
         def to_pixel(x: int, y: int) -> tuple[int, int]:
@@ -6940,12 +6940,12 @@ class MagneticComponent:
             :type x: int
             :param y: Y-coordinate in real-world units.
             :type y: int
-            :return: Corresponding pixel coordinates as (x_px, y_px).
+            :return: Corresponding pixel coordinates as (x_pixel, y_pixel).
             :rtype: tuple[int, int]
             """
-            x_px = int((x - min_x) * scale_x)
-            y_px = int((y - min_y) * scale_y)
-            return x_px, height_px - y_px
+            x_pixel = int((x - min_x) * scale_x)
+            y_pixel = int((y - min_y) * scale_y)
+            return x_pixel, height_pixel - y_pixel
 
         with open(self.file_data.coordinates_description_log_path, "r") as file:
             data_coordinates = json.load(file)
@@ -6978,11 +6978,11 @@ class MagneticComponent:
             min_x, max_x = all_x.min(), all_x.max()
             min_y, max_y = all_y.min(), all_y.max()
             pixels_per_unit = pixels_per_mm * FACTOR_MM_TO_M  # mm → m
-            width_px = int((max_x - min_x) * pixels_per_unit)
-            height_px = int((max_y - min_y) * pixels_per_unit)
+            width_pixel = int((max_x - min_x) * pixels_per_unit)
+            height_pixel = int((max_y - min_y) * pixels_per_unit)
             scale_x = scale_y = pixels_per_unit
 
-            mask = Image.new("L", (width_px, height_px), 0)
+            mask = Image.new("L", (width_pixel, height_pixel), 0)
             draw = ImageDraw.Draw(mask)
 
             # 1. Core
@@ -7004,14 +7004,14 @@ class MagneticComponent:
                 right_bound = p_ww[0][0]
                 left_bound = 0
 
-                px_right, _ = to_pixel(right_bound, 0)
-                px_left, _ = to_pixel(left_bound, 0)
+                pixel_right, _ = to_pixel(right_bound, 0)
+                pixel_left, _ = to_pixel(left_bound, 0)
                 _, py_top = to_pixel(0, y - half_length)
                 _, py_bottom = to_pixel(0, y + half_length)
 
                 draw.polygon([
-                    (px_right, py_top), (px_right, py_bottom),
-                    (px_left, py_bottom), (px_left, py_top)
+                    (pixel_right, py_top), (pixel_right, py_bottom),
+                    (pixel_left, py_bottom), (pixel_left, py_top)
                 ], fill=150)
 
             # 4. Winding window
@@ -7039,11 +7039,11 @@ class MagneticComponent:
             min_y, max_y = all_y.min(), all_y.max()
 
             pixels_per_unit = pixels_per_mm * FACTOR_MM_TO_M  # mm → m
-            width_px = int((max_x - min_x) * pixels_per_unit)
-            height_px = int((max_y - min_y) * pixels_per_unit)
+            width_pixel = int((max_x - min_x) * pixels_per_unit)
+            height_pixel = int((max_y - min_y) * pixels_per_unit)
             scale_x = scale_y = pixels_per_unit
 
-            mask = Image.new("L", (width_px, height_px), 0)
+            mask = Image.new("L", (width_pixel, height_pixel), 0)
             draw = ImageDraw.Draw(mask)
 
             # 1. Core
@@ -7081,28 +7081,28 @@ class MagneticComponent:
                 right_bound = p_ww_bot[0][0]
                 left_bound = 0
 
-                px_right, _ = to_pixel(right_bound, 0)
-                px_left, _ = to_pixel(left_bound, 0)
+                pixel_right, _ = to_pixel(right_bound, 0)
+                pixel_left, _ = to_pixel(left_bound, 0)
                 _, py_top = to_pixel(0, y - half_length)
                 _, py_bottom = to_pixel(0, y + half_length)
 
                 draw.polygon([
-                    (px_right, py_top), (px_right, py_bottom),
-                    (px_left, py_bottom), (px_left, py_top)
+                    (pixel_right, py_top), (pixel_right, py_bottom),
+                    (pixel_left, py_bottom), (pixel_left, py_top)
                 ], fill=150)
 
         # 5. Conductors type 1
         for cx, cy in p_cond_center_1:
-            cx_px, cy_px = to_pixel(cx, cy)
+            cx_pixel, cy_pixel = to_pixel(cx, cy)
             rx = int(radius_cond_1 * scale_x)
             ry = int(radius_cond_1 * scale_y)
-            draw.ellipse([cx_px - rx, cy_px - ry, cx_px + rx, cy_px + ry], fill=200)
+            draw.ellipse([cx_pixel - rx, cy_pixel - ry, cx_pixel + rx, cy_pixel + ry], fill=200)
 
         # 6. Conductors type 2
         for cx, cy in p_cond_center_2:
-            cx_px, cy_px = to_pixel(cx, cy)
+            cx_pixel, cy_pixel = to_pixel(cx, cy)
             rx = int(radius_cond_2 * scale_x)
             ry = int(radius_cond_2 * scale_y)
-            draw.ellipse([cx_px - rx, cy_px - ry, cx_px + rx, cy_px + ry], fill=255)
+            draw.ellipse([cx_pixel - rx, cy_pixel - ry, cx_pixel + rx, cy_pixel + ry], fill=255)
 
         mask.save(self.file_data.geometry_figure)
