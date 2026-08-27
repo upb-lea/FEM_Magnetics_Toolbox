@@ -7105,8 +7105,4 @@ class MagneticComponent:
             ry = int(radius_cond_2 * scale_y)
             draw.ellipse([cx_px - rx, cy_px - ry, cx_px + rx, cy_px + ry], fill=255)
 
-        # Save image
-        plt.imshow(mask, cmap='gray')
-        plt.axis('off')
-
         mask.save(self.file_data.geometry_figure)
