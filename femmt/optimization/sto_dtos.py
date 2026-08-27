@@ -157,6 +157,7 @@ class StoFemOutput:
     p_core_sine: float  # losses FEMMT frequency domain from sine with base frequency
     p_core_magnet: float  # losses FEMMT via MagNet model
     volume: float
+    geometry_figure_path: str
 
 @dataclass
 class StoReluctanceModelInput:

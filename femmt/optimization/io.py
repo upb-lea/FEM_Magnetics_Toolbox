@@ -1305,7 +1305,7 @@ class InductorOptimization:
             geo.excitation_sweep(frequency_list=fem_input.fft_frequency_list, current_list_list=current_amplitudes,
                                  phi_deg_list_list=phases, show_last_fem_simulation=show_visual_outputs,
                                  skin_mesh_factor=fem_input.mesh_accuracy)
-            geo.draw_component_mask()
+            geo.draw_component_mask(pixels_per_mm=20)
 
             result_dict = geo.read_log()
 
