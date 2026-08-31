@@ -730,6 +730,47 @@ def litz_database() -> dict:
                                  "insulation": "",
                                  "location": "LEA lab"}
 
+    litz_dict["0.9x8x0.2"] = {"strands_numbers": 8,
+                                 "strand_radii": 0.2e-3 / 2,
+                                 "conductor_radii": 0.9e-3 / 2,
+                                 "ff": None,
+                                 "manufacturer": "PACK",
+                                 "material_number": "30-0008",
+                                 "litz": "RUPALIT Safety V155",
+                                 "insulation": "3 Layers Mylar",
+                                 "location": "LEA lab"}
+
+    litz_dict["1.5x100x0.1"] = {"strands_numbers": 100,
+                                 "strand_radii": 0.1e-3 / 2,
+                                 "conductor_radii": 1.5e-3 / 2,
+                                 "ff": None,
+                                 "manufacturer": "PACK",
+                                 "material_number": "37-0023",
+                                 "litz": "RUPALIT Safety V155",
+                                 "insulation": "3 Layers Mylar",
+                                 "location": "LEA lab"}
+
+    litz_dict["1.2x225x0.071"] = {"strands_numbers": 225,
+                                 "strand_radii": 0.071e-3 / 2,
+                                 "conductor_radii": 1.2e-3 / 2,
+                                 "ff": None,
+                                 "manufacturer": "PACK",
+                                 "material_number": "25-0149",
+                                 "litz": "RUPALIT Profil V155",
+                                 "insulation": "textile",
+                                 "location": "LEA lab"}
+
+    litz_dict["2.28x1000x0.05"] = {"strands_numbers": 1000,
+                                 "strand_radii": 0.05e-3 / 2,
+                                 "conductor_radii": 2.28e-3,
+                                 "ff": None,
+                                 "manufacturer": "PACK",
+                                 "material_number": "30-0057",
+                                 "litz": "RUPALIT Safety V155",
+                                 "insulation": "3 Layers Mylar",
+                                 "location": "LEA lab"}
+
+
     litz_dict["1.4x115x0.1"] = {"strands_numbers": 115,
                                 "strand_radii": 0.1e-3 / 2,
                                 "conductor_radii": 1.4e-3 / 2,
