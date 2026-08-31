@@ -151,7 +151,9 @@ def fixture_inductor_core_material_database_measurement(temp_folder: pytest.fixt
         core_material = fmt.ImportedComplexCoreMaterial(material=fmt.Material.N49,
                                                         temperature=25,
                                                         permeability_datasource=fmt.DataSource.TDK_MDT,
-                                                        permittivity_datasource=fmt.DataSource.LEA_MTB)
+                                                        permittivity_datasource=fmt.DataSource.LEA_MTB,
+                                                        permittivity_probe=["U3G"]
+                                                        )
 
         core = fmt.Core(material=core_material,
                         core_type=fmt.CoreType.Single,

@@ -352,7 +352,9 @@ class ImportedComplexCoreMaterial:
                  material: Union[str, Material],
                  temperature: Optional[float],
                  permeability_datasource: Union[str, DataSource],
-                 permittivity_datasource: Union[str, DataSource]):
+                 permittivity_datasource: Union[str, DataSource],
+                 permeability_probe: list[str] | None = None,
+                 permittivity_probe: list[str] | None = None):
         """Create a CoreMaterial object describing electromagnetic and loss properties.
 
         The class uses material database queries and supports both predefined and custom material configurations.
@@ -405,7 +407,8 @@ class ImportedComplexCoreMaterial:
         self.permeability = self.database.get_complex_permeability(
             material=material,
             data_source=permeability_datasource,
-            pv_fit_function=mdb.FitFunction.enhancedSteinmetz
+            pv_fit_function=mdb.FitFunction.enhancedSteinmetz,
+            probe_codes=permeability_probe
         )
         self.permeability.fit_losses()
         self.permeability.fit_permeability_magnitude()
@@ -427,7 +430,8 @@ class ImportedComplexCoreMaterial:
         # ComplexPermittivity class from material database (except for datasheet)
         if self.permittivity_datasource != DataSource.Datasheet:
             self.permittivity = self.database.get_complex_permittivity(material=material,
-                                                                       data_source=permittivity_datasource)
+                                                                       data_source=permittivity_datasource,
+                                                                       probe_codes=permittivity_probe)
             self.permittivity.fit_sigma()
 
     def update_permittivity(self, frequency: float) -> None:
