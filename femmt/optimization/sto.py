@@ -1100,7 +1100,7 @@ class StackedTransformerOptimization:
 
             if wire_loss_only:
                 hyst_frequency, _, _ = ff.hysteresis_current_excitation(time_current_vectors)
-                inductance_dict = geo.get_inductances(I0=1, skin_mesh_factor=fem_input.q, op_frequency=hyst_frequency, silent=True)
+                inductance_dict = geo.get_inductances(I0=1, skin_mesh_factor=fem_input.mesh_accuracy, op_frequency=hyst_frequency, silent=True)
 
                 study_excitation = geo.stacked_core_study_excitation(time_current_vectors, plot_waveforms=False,
                                                                      fft_filter_value_factor=fem_input.fft_filter_value_factor,
@@ -1110,7 +1110,7 @@ class StackedTransformerOptimization:
                                      study_excitation["linear_losses"]["current_amplitudes"],
                                      study_excitation["linear_losses"]["current_phases_deg"],
                                      inductance_dict=inductance_dict)
-
+                geo.draw_component_mask(pixels_per_mm=15)
                 result_dict = geo.read_log()
 
                 fem_output = StoFemOutput(
@@ -1123,12 +1123,14 @@ class StackedTransformerOptimization:
                     p_core_sine=0,
                     p_core_magnet=0,
                     volume=result_dict["misc"]["core_2daxi_total_volume"],
+                    geometry_figure_path=geo.file_data.geometry_figure
                 )
 
             else:
                 geo.stacked_core_study(number_primary_coil_turns=primary_coil_turns, time_current_vectors=time_current_vectors,
                                        plot_waveforms=show_visual_outputs, fft_filter_value_factor=fem_input.fft_filter_value_factor)
 
+                geo.draw_component_mask(pixels_per_mm=15)
                 result_dict = geo.read_log()
 
                 fem_output = StoFemOutput(
@@ -1141,6 +1143,7 @@ class StackedTransformerOptimization:
                     p_core_sine=result_dict['total_losses']['core'],
                     p_core_magnet=0,
                     volume=result_dict["misc"]["core_2daxi_total_volume"],
+                    geometry_figure_path=geo.file_data.geometry_figure
                 )
 
             return fem_output
@@ -1366,4 +1369,5 @@ class StackedTransformerOptimization:
                 logger.info(f"P_hyst FEM (sine) incl. eddy current losses: {fem_output.p_core_sine}")
                 logger.info(f"P_hyst derivation (sine): {(reluctance_output.p_hyst - fem_output.p_core_sine) / reluctance_output.p_hyst * 100}")
 
-            return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink, fem_output.p_loss_winding_1, fem_output.p_loss_winding_2, p_core
+            return (reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink, fem_output.p_loss_winding_1,
+                    fem_output.p_loss_winding_2, p_core, fem_output.geometry_figure_path)

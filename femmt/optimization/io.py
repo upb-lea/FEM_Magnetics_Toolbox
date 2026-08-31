@@ -1305,6 +1305,8 @@ class InductorOptimization:
             geo.excitation_sweep(frequency_list=fem_input.fft_frequency_list, current_list_list=current_amplitudes,
                                  phi_deg_list_list=phases, show_last_fem_simulation=show_visual_outputs,
                                  skin_mesh_factor=fem_input.mesh_accuracy)
+            geo.draw_component_mask(pixels_per_mm=20)
+
             result_dict = geo.read_log()
 
             fem_output = IoFemOutput(
@@ -1312,7 +1314,8 @@ class InductorOptimization:
                 p_loss_winding=result_dict['total_losses']['winding1']['total'],
                 p_core_sine=result_dict_hyst['total_losses']['core'],
                 p_core_magnet=core_loss_magnet_eddy,
-                volume=result_dict["misc"]["core_2daxi_total_volume"]
+                volume=result_dict["misc"]["core_2daxi_total_volume"],
+                geometry_figure_path=geo.file_data.geometry_figure
             )
             return fem_output
 
@@ -1639,4 +1642,4 @@ class InductorOptimization:
                     logger.info(f"P_hyst FEM: {fem_output.p_core_magnet}")
                     # logger.info(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.p_core_magnet) / reluctance_output.p_hyst * 100} %")
 
-            return volume_result, p_total, area_to_heat_sink_result, fem_output.p_loss_winding, p_core
+            return volume_result, p_total, area_to_heat_sink_result, fem_output.p_loss_winding, p_core, fem_output.geometry_figure_path

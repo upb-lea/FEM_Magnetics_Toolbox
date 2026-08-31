@@ -127,6 +127,7 @@ class IoFemOutput:
     p_core_sine: float
     p_core_magnet: float
     volume: float
+    geometry_figure_path: str
 
 @dataclasses.dataclass
 class IoReluctanceModelInput:

@@ -588,7 +588,8 @@ def litz_database() -> dict:
                                 "manufacturer": "PACK",
                                 "material_number": "",
                                 "litz": "RUPALIT V155",
-                                "insulation": "textile"}
+                                "insulation": "textile",
+                                "location": "LEA lab"}
     litz_dict["1.4x200x0.071"] = {"strands_numbers": 200,
                                   "strand_radii": 0.071e-3 / 2,
                                   "conductor_radii": 1.4e-3 / 2,
@@ -596,7 +597,8 @@ def litz_database() -> dict:
                                   "manufacturer": "PACK",
                                   "material_number": "",
                                   "litz": "RUPALIT V155",
-                                  "insulation": "textile"}
+                                  "insulation": "textile",
+                                  "location": "LEA lab"}
     litz_dict["2.0x405x0.071"] = {"strands_numbers": 405,
                                   "strand_radii": 0.071e-3 / 2,
                                   "conductor_radii": 2.0e-3 / 2,
@@ -604,7 +606,8 @@ def litz_database() -> dict:
                                   "manufacturer": "",
                                   "material_number": "",
                                   "litz": "",
-                                  "insulation": "unknown blue plastic"}
+                                  "insulation": "unknown blue plastic",
+                                  "location": "LEA lab"}
     litz_dict["2.0x800x0.05"] = {"strands_numbers": 800,
                                  "strand_radii": 0.05e-3 / 2,
                                  "conductor_radii": 2e-3 / 2,
@@ -612,7 +615,8 @@ def litz_database() -> dict:
                                  "manufacturer": "Elektrisola",
                                  "material_number": "12104184",
                                  "litz": "",
-                                 "insulation": ""
+                                 "insulation": "",
+                                 "location": "LEA lab"
                                  }
     litz_dict["1.1x60x0.1"] = {"strands_numbers": 60,
                                "strand_radii": 0.1e-3 / 2,
@@ -621,7 +625,8 @@ def litz_database() -> dict:
                                "manufacturer": "PACK",
                                "material_number": "",
                                "litz": "RUPALIT V155",
-                               "insulation": "textile"
+                               "insulation": "textile",
+                               "location": "LEA lab"
                                }
     litz_dict["1.35x200x0.071"] = {"strands_numbers": 200,
                                    "strand_radii": 0.071e-3 / 2,
@@ -630,7 +635,8 @@ def litz_database() -> dict:
                                    "manufacturer": "PACK",
                                    "material_number": "",
                                    "litz": "RUPALIT V155",
-                                   "insulation": "textile"}
+                                   "insulation": "textile",
+                                   "location": "LEA lab"}
 
     litz_dict["3.2x2100x0.05"] = {"strands_numbers": 2100,
                                   "strand_radii": 0.05e-3 / 2,
@@ -639,7 +645,8 @@ def litz_database() -> dict:
                                   "manufacturer": "PACK",
                                   "material_number": "AB21220373",
                                   "litz": "RUPALIT V155",
-                                  "insulation": "textile"
+                                  "insulation": "textile",
+                                  "location": "LEA lab"
                                   }
 
     litz_dict["4.6x2160x0.071"] = {"strands_numbers": 2160,
@@ -649,7 +656,8 @@ def litz_database() -> dict:
                                    "manufacturer": "PACK",
                                    "material_number": "AB21225497",
                                    "litz": "RUPALIT V155",
-                                   "insulation": "textile"
+                                   "insulation": "textile",
+                                   "location": "LEA lab"
                                    }
 
     litz_dict["2.9x1200x0.06"] = {"strands_numbers": 1200,
@@ -659,7 +667,8 @@ def litz_database() -> dict:
                                   "manufacturer": "Elektrisola",
                                   "material_number": "",
                                   "litz": "",
-                                  "insulation": "unknown plastic"}
+                                  "insulation": "unknown plastic",
+                                  "location": "LEA lab"}
 
     litz_dict["2.6x1000x0.06"] = {"strands_numbers": 1000,
                                   "strand_radii": 0.06e-3 / 2,
@@ -668,7 +677,8 @@ def litz_database() -> dict:
                                   "manufacturer": "Elektrisola",
                                   "material_number": "",
                                   "litz": "",
-                                  "insulation": "unknown plastic"}
+                                  "insulation": "unknown plastic",
+                                  "location": "LEA lab"}
 
     litz_dict["1.8x512x0.05"] = {"strands_numbers": 512,
                                  "strand_radii": 0.05e-3 / 2,
@@ -677,7 +687,8 @@ def litz_database() -> dict:
                                  "manufacturer": "PACK",
                                  "material_number": "AB21217207",
                                  "litz": "RUPALIT Safety VB155",
-                                 "insulation": "3 layers Mylar"}
+                                 "insulation": "3 layers Mylar",
+                                 "location": "LEA lab"}
 
     litz_dict["2.3x600x0.071"] = {"strands_numbers": 600,
                                   "strand_radii": 0.071e-3 / 2,
@@ -686,7 +697,8 @@ def litz_database() -> dict:
                                   "manufacturer": "PACK",
                                   "material_number": "AB21220522",
                                   "litz": "RUPALIT Safety Profil V155",
-                                  "insulation": "3 layers Mylar"}
+                                  "insulation": "3 layers Mylar",
+                                  "location": "LEA lab"}
 
     litz_dict["2.8x400x0.1"] = {"strands_numbers": 400,
                                 "strand_radii": 0.1e-3 / 2,
@@ -695,7 +707,8 @@ def litz_database() -> dict:
                                 "manufacturer": "PACK",
                                 "material_number": "AB21222210",
                                 "litz": "RUPALIT Safety V155",
-                                "insulation": "3 layers Mylar"}
+                                "insulation": "3 layers Mylar",
+                                "location": "LEA lab"}
 
     litz_dict["1.71x140x0.1"] = {"strands_numbers": 140,
                                  "strand_radii": 0.1e-3 / 2,
@@ -704,7 +717,8 @@ def litz_database() -> dict:
                                  "manufacturer": "",
                                  "material_number": "",
                                  "litz": "",
-                                 "insulation": ""}
+                                 "insulation": "",
+                                 "location": "LEA lab"}
 
     litz_dict["1.7x500x0.06"] = {"strands_numbers": 500,
                                  "strand_radii": 0.06e-3 / 2,
@@ -713,7 +727,48 @@ def litz_database() -> dict:
                                  "manufacturer": "",
                                  "material_number": "",
                                  "litz": "",
-                                 "insulation": ""}
+                                 "insulation": "",
+                                 "location": "LEA lab"}
+
+    litz_dict["0.9x8x0.2"] = {"strands_numbers": 8,
+                              "strand_radii": 0.2e-3 / 2,
+                              "conductor_radii": 0.9e-3 / 2,
+                              "ff": None,
+                              "manufacturer": "PACK",
+                              "material_number": "30-0008",
+                              "litz": "RUPALIT Safety V155",
+                              "insulation": "3 Layers Mylar",
+                              "location": "LEA lab"}
+
+    litz_dict["1.5x100x0.1"] = {"strands_numbers": 100,
+                                "strand_radii": 0.1e-3 / 2,
+                                "conductor_radii": 1.5e-3 / 2,
+                                "ff": None,
+                                "manufacturer": "PACK",
+                                "material_number": "37-0023",
+                                "litz": "RUPALIT Safety V155",
+                                "insulation": "3 Layers Mylar",
+                                "location": "LEA lab"}
+
+    litz_dict["1.2x225x0.071"] = {"strands_numbers": 225,
+                                  "strand_radii": 0.071e-3 / 2,
+                                  "conductor_radii": 1.2e-3 / 2,
+                                  "ff": None,
+                                  "manufacturer": "PACK",
+                                  "material_number": "25-0149",
+                                  "litz": "RUPALIT Profil V155",
+                                  "insulation": "textile",
+                                  "location": "LEA lab"}
+
+    litz_dict["2.28x1000x0.05"] = {"strands_numbers": 1000,
+                                   "strand_radii": 0.05e-3 / 2,
+                                   "conductor_radii": 2.28e-3,
+                                   "ff": None,
+                                   "manufacturer": "PACK",
+                                   "material_number": "30-0057",
+                                   "litz": "RUPALIT Safety V155",
+                                   "insulation": "3 Layers Mylar",
+                                   "location": "LEA lab"}
 
     litz_dict["1.4x115x0.1"] = {"strands_numbers": 115,
                                 "strand_radii": 0.1e-3 / 2,
@@ -722,7 +777,8 @@ def litz_database() -> dict:
                                 "manufacturer": "",
                                 "material_number": "",
                                 "litz": "",
-                                "insulation": ""}
+                                "insulation": "",
+                                "location": "external"}
 
     litz_dict["2.9x300x0.1"] = {"strands_numbers": 300,
                                 "strand_radii": 0.1e-3 / 2,
@@ -731,7 +787,8 @@ def litz_database() -> dict:
                                 "manufacturer": "",
                                 "material_number": "",
                                 "litz": "",
-                                "insulation": ""}
+                                "insulation": "",
+                                "location": "external"}
 
     litz_dict["1.1x45x0.1"] = {"strands_numbers": 45,
                                "strand_radii": 0.1e-3 / 2,
@@ -740,7 +797,8 @@ def litz_database() -> dict:
                                "manufacturer": "",
                                "material_number": "",
                                "litz": "",
-                               "insulation": ""}
+                               "insulation": "",
+                               "location": "external"}
 
     litz_dict["2.3x200x0.1"] = {"strands_numbers": 200,
                                 "strand_radii": 0.1e-3 / 2,
@@ -749,7 +807,8 @@ def litz_database() -> dict:
                                 "manufacturer": "",
                                 "material_number": "",
                                 "litz": "",
-                                "insulation": ""}
+                                "insulation": "",
+                                "location": "external"}
 
     litz_dict["0.5x15x0.1"] = {"strands_numbers": 15,
                                "strand_radii": 0.1e-3 / 2,
@@ -758,7 +817,8 @@ def litz_database() -> dict:
                                "manufacturer": "Block",
                                "material_number": "",
                                "litz": "",
-                               "insulation": ""}
+                               "insulation": "",
+                               "location": "external"}
 
     litz_dict["0.7x30x0.1"] = {"strands_numbers": 30,
                                "strand_radii": 0.1e-3 / 2,
@@ -767,7 +827,8 @@ def litz_database() -> dict:
                                "manufacturer": "Block",
                                "material_number": "",
                                "litz": "",
-                               "insulation": ""}
+                               "insulation": "",
+                               "location": "external"}
 
     litz_dict["1x60x0.1"] = {"strands_numbers": 60,
                              "strand_radii": 0.1e-3 / 2,
@@ -776,7 +837,8 @@ def litz_database() -> dict:
                              "manufacturer": "Block",
                              "material_number": "",
                              "litz": "",
-                             "insulation": ""}
+                             "insulation": "",
+                             "location": "external"}
 
     litz_dict["1.2x90x0.1"] = {"strands_numbers": 90,
                                "strand_radii": 0.1e-3 / 2,
@@ -785,7 +847,8 @@ def litz_database() -> dict:
                                "manufacturer": "Block",
                                "material_number": "",
                                "litz": "",
-                               "insulation": ""}
+                               "insulation": "",
+                               "location": "external"}
 
     litz_dict["1.4x120x0.1"] = {"strands_numbers": 120,
                                 "strand_radii": 0.1e-3 / 2,
@@ -794,7 +857,8 @@ def litz_database() -> dict:
                                 "manufacturer": "Block",
                                 "material_number": "",
                                 "litz": "",
-                                "insulation": ""}
+                                "insulation": "",
+                                "location": "external"}
 
     litz_dict["1.7x180x0.1"] = {"strands_numbers": 180,
                                 "strand_radii": 0.1e-3 / 2,
@@ -803,7 +867,8 @@ def litz_database() -> dict:
                                 "manufacturer": "",
                                 "material_number": "",
                                 "litz": "",
-                                "insulation": ""}
+                                "insulation": "",
+                                "location": "external"}
 
     litz_dict["2.0x240x0.1"] = {"strands_numbers": 240,
                                 "strand_radii": 0.1e-3 / 2,
@@ -812,7 +877,8 @@ def litz_database() -> dict:
                                 "manufacturer": "",
                                 "material_number": "",
                                 "litz": "",
-                                "insulation": ""}
+                                "insulation": "",
+                                "location": "external"}
 
     litz_dict["2.1x270x0.1"] = {"strands_numbers": 270,
                                 "strand_radii": 0.1e-3 / 2,
@@ -821,7 +887,8 @@ def litz_database() -> dict:
                                 "manufacturer": "",
                                 "material_number": "",
                                 "litz": "",
-                                "insulation": ""}
+                                "insulation": "",
+                                "location": "external"}
 
     litz_dict["2.2x300x0.1"] = {"strands_numbers": 300,
                                 "strand_radii": 0.1e-3 / 2,
@@ -830,7 +897,8 @@ def litz_database() -> dict:
                                 "manufacturer": "",
                                 "material_number": "",
                                 "litz": "",
-                                "insulation": ""}
+                                "insulation": "",
+                                "location": "external"}
 
     litz_dict["2.5x360x0.1"] = {"strands_numbers": 360,
                                 "strand_radii": 0.1e-3 / 2,
@@ -839,7 +907,8 @@ def litz_database() -> dict:
                                 "manufacturer": "",
                                 "material_number": "",
                                 "litz": "",
-                                "insulation": ""}
+                                "insulation": "",
+                                "location": "external"}
 
     return litz_dict
 

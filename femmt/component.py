@@ -13,6 +13,7 @@ import time
 import logging
 import dataclasses
 import ast
+from PIL import Image, ImageDraw
 
 # Third party libraries
 from onelab import onelab
@@ -6896,3 +6897,212 @@ class MagneticComponent:
             return geo
 
         raise Exception(f"Couldn't extract settings from file {log_file_path}")
+
+    def draw_component_mask(self, pixels_per_mm: int = 5) -> None:
+        """
+        Draw a component mask image from FEMMT geometry data.
+
+        :param pixels_per_mm: Pixel density used when the original aspect ratio is preserved.
+        :type pixels_per_mm: int
+        """
+        logger.info("Generate component drawing.")
+
+        def sort_points_clockwise(points: np.ndarray) -> np.ndarray:
+            """
+            Sort a set of 2D points in clockwise order around their center.
+
+            :param points: Array of 2D points with shape (N, 2).
+            :type points: np.ndarray
+            :return: Points sorted in clockwise order.
+            :rtype: np.ndarray
+            """
+            center = np.mean(points, axis=0)
+            angles = np.arctan2(points[:, 1] - center[1], points[:, 0] - center[0])
+            return points[np.argsort(angles)]
+
+        def draw_polygon(coordinates: np.ndarray, gray_value: int) -> None:
+            """
+            Draw a filled polygon on the image using gray scale.
+
+            :param coordinates: List of (x, y) coordinates representing the polygon vertices.
+            :type coordinates: list of tuple
+            :param gray_value: Gray scale value to fill the polygon with (0–255).
+            :type gray_value: int
+            """
+            pixels = [to_pixel(x, y) for x, y in coordinates]
+            draw.polygon(pixels, fill=gray_value)
+
+        def to_pixel(x: int, y: int) -> tuple[int, int]:
+            """
+            Convert real-world coordinates (x, y) to pixel coordinates for image rendering.
+
+            :param x: X-coordinate in real-world units.
+            :type x: int
+            :param y: Y-coordinate in real-world units.
+            :type y: int
+            :return: Corresponding pixel coordinates as (x_pixel, y_pixel).
+            :rtype: tuple[int, int]
+            """
+            x_pixel = int((x - min_x) * scale_x)
+            y_pixel = int((y - min_y) * scale_y)
+            return x_pixel, height_pixel - y_pixel
+
+        with open(self.file_data.coordinates_description_log_path, "r") as file:
+            data_coordinates = json.load(file)
+
+        with open(self.file_data.e_m_results_log_path, "r") as file:
+            data_e_m_result_log = json.load(file)
+
+        # Data extraction
+        p_outer = [tuple(p) for p in data_coordinates["p_outer"]]
+
+        # Sort points clockwise
+        p_outer_sorted = sort_points_clockwise(np.array(p_outer))
+
+        p_air_gap_center = [tuple(p) for p in data_coordinates.get("p_air_gap_center", [])]
+        lengths_air_gap = data_coordinates.get("lengths_air_gap", [])
+
+        p_cond_center_1 = [tuple(p[:2]) for p in data_coordinates.get("p_cond_center_1", [])]
+        radius_cond_1 = data_coordinates.get("radius_cond_1", 0)
+
+        p_cond_center_2 = [tuple(p[:2]) for p in data_coordinates.get("p_cond_center_2", [])]
+        radius_cond_2 = data_coordinates.get("radius_cond_2", 0)
+
+        if self.core.geometry.core_type == CoreType.Single:
+            thickness_core_insulation = list(data_e_m_result_log["simulation_settings"]["insulation"]["core_insulations"])
+            p_ww = [tuple(p) for p in data_coordinates["p_ww"]]
+            p_ww_sorted = sort_points_clockwise(np.array(p_ww))
+            # Determine limits
+            all_x = np.concatenate([p_outer_sorted[:, 0], p_ww_sorted[:, 0]])
+            all_y = np.concatenate([p_outer_sorted[:, 1], p_ww_sorted[:, 1]])
+            min_x, max_x = all_x.min(), all_x.max()
+            min_y, max_y = all_y.min(), all_y.max()
+            pixels_per_unit = pixels_per_mm * FACTOR_MM_TO_M  # mm → m
+            width_pixel = int((max_x - min_x) * pixels_per_unit)
+            height_pixel = int((max_y - min_y) * pixels_per_unit)
+            scale_x = scale_y = pixels_per_unit
+
+            mask = Image.new("L", (width_pixel, height_pixel), 0)
+            draw = ImageDraw.Draw(mask)
+
+            # 1. Core
+            draw_polygon(p_outer_sorted, 50)
+
+            # 2. Core Insulation
+            (x0, y0), (x1, y1), (x2, y2), (x3, y3) = p_ww
+            t_top, t_bottom, t_left, t_right = thickness_core_insulation
+            core_insulation_bot = np.array([
+                (x2 + t_left, y2 - t_top), (x3 - t_right, y2 - t_top),
+                (x3 - t_right, y1 + t_bottom), (x2 + t_left, y1 + t_bottom)
+            ])
+
+            # 3. Air Gaps
+            for center, length in zip(p_air_gap_center, lengths_air_gap, strict=False):
+                x, y = center
+                half_length = length / 2
+
+                right_bound = p_ww[0][0]
+                left_bound = 0
+
+                pixel_right, _ = to_pixel(right_bound, 0)
+                pixel_left, _ = to_pixel(left_bound, 0)
+                _, py_top = to_pixel(0, y - half_length)
+                _, py_bottom = to_pixel(0, y + half_length)
+
+                draw.polygon([
+                    (pixel_right, py_top), (pixel_right, py_bottom),
+                    (pixel_left, py_bottom), (pixel_left, py_top)
+                ], fill=150)
+
+            # 4. Winding window
+            draw_polygon(p_ww_sorted, 0)
+
+            draw_polygon(core_insulation_bot, 100)
+
+        elif self.core.geometry.core_type == CoreType.Stacked:
+            stacked_core_correction = (data_e_m_result_log["simulation_settings"]["core"]["window_h_top"] + \
+                                       data_e_m_result_log["simulation_settings"]["core"]["core_inner_diameter"] / 4)
+
+            p_outer_sorted[2][1] = p_outer_sorted[2][1] + stacked_core_correction
+            p_outer_sorted[3][1] = p_outer_sorted[3][1] + stacked_core_correction
+
+            thickness_core_insulation_top = list(data_e_m_result_log["simulation_settings"]["insulation"]["top_section_core_insulations"])
+            thickness_core_insulation_bot = list(data_e_m_result_log["simulation_settings"]["insulation"]["top_section_core_insulations"])
+            p_ww_top = [tuple(p) for p in data_coordinates["p_ww"]["top"]]
+            p_ww_bot = [tuple(p) for p in data_coordinates["p_ww"]["bot"]]
+            p_ww_sorted_top = sort_points_clockwise(np.array(p_ww_top))
+            p_ww_sorted_bot = sort_points_clockwise(np.array(p_ww_bot))
+            # Determine limits
+            all_x = np.concatenate([p_outer_sorted[:, 0], p_ww_sorted_top[:, 0]])
+            all_y = np.concatenate([p_outer_sorted[:, 1], p_ww_sorted_bot[:, 1]])
+            min_x, max_x = all_x.min(), all_x.max()
+            min_y, max_y = all_y.min(), all_y.max()
+
+            pixels_per_unit = pixels_per_mm * FACTOR_MM_TO_M  # mm → m
+            width_pixel = int((max_x - min_x) * pixels_per_unit)
+            height_pixel = int((max_y - min_y) * pixels_per_unit)
+            scale_x = scale_y = pixels_per_unit
+
+            mask = Image.new("L", (width_pixel, height_pixel), 0)
+            draw = ImageDraw.Draw(mask)
+
+            # 1. Core
+            draw_polygon(p_outer_sorted, 50)
+
+            # 2. Core Insulation
+            (x0, y0), (x1, y1), (x2, y2), (x3, y3) = p_ww_bot
+            t_top, t_bottom, t_left, t_right = thickness_core_insulation_bot
+            core_insulation_bot = np.array([
+                (x2 + t_left, y2 - t_top), (x3 - t_right, y2 - t_top),
+                (x3 - t_right, y1 + t_bottom), (x2 + t_left, y1 + t_bottom)
+            ])
+
+            # 2. Core Insulation
+            (x0, y0), (x1, y1), (x2, y2), (x3, y3) = p_ww_top
+            t_top, t_bottom, t_left, t_right = thickness_core_insulation_top
+            core_insulation_top = np.array([
+                (x2 + t_left, y2 - t_top), (x3 - t_right, y2 - t_top),
+                (x3 - t_right, y1 + t_bottom), (x2 + t_left, y1 + t_bottom)
+            ])
+
+            # Draw Winding window (fully fills the winding window)
+            draw_polygon(p_ww_sorted_bot, 0)
+            draw_polygon(p_ww_sorted_top, 0)
+
+            # Draw core insulation (fully fill the core insulation window)
+            draw_polygon(core_insulation_bot, 100)
+            draw_polygon(core_insulation_top, 100)
+
+            # 3. Air Gaps
+            for center, length in zip(p_air_gap_center, lengths_air_gap, strict=False):
+                x, y = center
+                half_length = length / 2
+
+                right_bound = p_ww_bot[0][0]
+                left_bound = 0
+
+                pixel_right, _ = to_pixel(right_bound, 0)
+                pixel_left, _ = to_pixel(left_bound, 0)
+                _, py_top = to_pixel(0, y - half_length)
+                _, py_bottom = to_pixel(0, y + half_length)
+
+                draw.polygon([
+                    (pixel_right, py_top), (pixel_right, py_bottom),
+                    (pixel_left, py_bottom), (pixel_left, py_top)
+                ], fill=150)
+
+        # 5. Conductors type 1
+        for cx, cy in p_cond_center_1:
+            cx_pixel, cy_pixel = to_pixel(cx, cy)
+            rx = int(radius_cond_1 * scale_x)
+            ry = int(radius_cond_1 * scale_y)
+            draw.ellipse([cx_pixel - rx, cy_pixel - ry, cx_pixel + rx, cy_pixel + ry], fill=200)
+
+        # 6. Conductors type 2
+        for cx, cy in p_cond_center_2:
+            cx_pixel, cy_pixel = to_pixel(cx, cy)
+            rx = int(radius_cond_2 * scale_x)
+            ry = int(radius_cond_2 * scale_y)
+            draw.ellipse([cx_pixel - rx, cy_pixel - ry, cx_pixel + rx, cy_pixel + ry], fill=255)
+
+        mask.save(self.file_data.geometry_figure)

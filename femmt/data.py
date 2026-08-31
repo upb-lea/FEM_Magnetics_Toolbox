@@ -113,6 +113,7 @@ class FileData:
         self.gmsh_log = os.path.join(self.results_folder_path, "log_gmsh.txt")
         self.getdp_log = os.path.join(self.results_folder_path, "log_getdp.txt")
         self.femmt_log = os.path.join(self.results_folder_path, "log_femmt.txt")
+        self.geometry_figure = os.path.join(self.results_folder_path, "geometry.png")
 
         # Create necessary folders
         self.create_folders(self.femmt_folder_path, self.mesh_folder_path, self.electro_magnetic_folder_path, 
