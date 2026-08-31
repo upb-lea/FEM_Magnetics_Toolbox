@@ -446,14 +446,14 @@ spatial parameters are shown in the image below.</p>
 <p>Core spatial parameters can be entered manually but FEMMT provides a
 database of different practical cores. This database can be accessed
 using:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">core_db</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">core_database</span><span class="p">()[</span><span class="s2">&quot;PQ 40/40&quot;</span><span class="p">]</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">core_db</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">core_database</span><span class="p">()[</span><span class="s2">"PQ 40/40"</span><span class="p">]</span>
 </pre></div>
 </div>
 <p>Now the core object can be created and added to the model (geo object)</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">core_dimensions</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">dtos</span><span class="o">.</span><span class="n">SingleCoreDimensions</span><span class="p">(</span><span class="n">core_inner_diameter</span><span class="o">=</span><span class="n">core_db</span><span class="p">[</span><span class="s2">&quot;core_inner_diameter&quot;</span><span class="p">],</span>
-                                                 <span class="n">window_w</span><span class="o">=</span><span class="n">core_db</span><span class="p">[</span><span class="s2">&quot;window_w&quot;</span><span class="p">],</span>
-                                                 <span class="n">window_h</span><span class="o">=</span><span class="n">core_db</span><span class="p">[</span><span class="s2">&quot;window_h&quot;</span><span class="p">],</span>
-                                                 <span class="n">core_h</span><span class="o">=</span><span class="n">core_db</span><span class="p">[</span><span class="s2">&quot;core_h&quot;</span><span class="p">])</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">core_dimensions</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">dtos</span><span class="o">.</span><span class="n">SingleCoreDimensions</span><span class="p">(</span><span class="n">core_inner_diameter</span><span class="o">=</span><span class="n">core_db</span><span class="p">[</span><span class="s2">"core_inner_diameter"</span><span class="p">],</span>
+                                                 <span class="n">window_w</span><span class="o">=</span><span class="n">core_db</span><span class="p">[</span><span class="s2">"window_w"</span><span class="p">],</span>
+                                                 <span class="n">window_h</span><span class="o">=</span><span class="n">core_db</span><span class="p">[</span><span class="s2">"window_h"</span><span class="p">],</span>
+                                                 <span class="n">core_h</span><span class="o">=</span><span class="n">core_db</span><span class="p">[</span><span class="s2">"core_h"</span><span class="p">])</span>
 
 <span class="n">core_material</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">ImportedComplexCoreMaterial</span><span class="p">(</span><span class="n">material</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">Material</span><span class="o">.</span><span class="n">N49</span><span class="p">,</span>
                                                 <span class="n">temperature</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span>
@@ -1043,18 +1043,18 @@ parameter</p></li>
 <p>Have a look at this example on how to set the parameters since the
 dictionary keywords are important to write correctly:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">thermal_conductivity_dict</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;air&quot;</span><span class="p">:</span> <span class="mf">0.0263</span><span class="p">,</span>
-        <span class="s2">&quot;case&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;top&quot;</span><span class="p">:</span> <span class="mf">0.122</span><span class="p">,</span>
-            <span class="s2">&quot;top_right&quot;</span><span class="p">:</span> <span class="mf">0.122</span><span class="p">,</span>
-            <span class="s2">&quot;right&quot;</span><span class="p">:</span> <span class="mf">0.122</span><span class="p">,</span>
-            <span class="s2">&quot;bot_right&quot;</span><span class="p">:</span> <span class="mf">0.122</span><span class="p">,</span>
-            <span class="s2">&quot;bot&quot;</span><span class="p">:</span> <span class="mf">0.122</span>
+        <span class="s2">"air"</span><span class="p">:</span> <span class="mf">0.0263</span><span class="p">,</span>
+        <span class="s2">"case"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"top"</span><span class="p">:</span> <span class="mf">0.122</span><span class="p">,</span>
+            <span class="s2">"top_right"</span><span class="p">:</span> <span class="mf">0.122</span><span class="p">,</span>
+            <span class="s2">"right"</span><span class="p">:</span> <span class="mf">0.122</span><span class="p">,</span>
+            <span class="s2">"bot_right"</span><span class="p">:</span> <span class="mf">0.122</span><span class="p">,</span>
+            <span class="s2">"bot"</span><span class="p">:</span> <span class="mf">0.122</span>
         <span class="p">},</span>
-        <span class="s2">&quot;core&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
-        <span class="s2">&quot;winding&quot;</span><span class="p">:</span> <span class="mi">400</span><span class="p">,</span>
-        <span class="s2">&quot;air_gaps&quot;</span><span class="p">:</span> <span class="mi">180</span><span class="p">,</span>
-        <span class="s2">&quot;insulation&quot;</span><span class="p">:</span> <span class="mf">0.42</span> <span class="k">if</span> <span class="n">flag_insulation</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="s2">"core"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="s2">"winding"</span><span class="p">:</span> <span class="mi">400</span><span class="p">,</span>
+        <span class="s2">"air_gaps"</span><span class="p">:</span> <span class="mi">180</span><span class="p">,</span>
+        <span class="s2">"insulation"</span><span class="p">:</span> <span class="mf">0.42</span> <span class="k">if</span> <span class="n">flag_insulation</span> <span class="k">else</span> <span class="kc">None</span>
 <span class="p">}</span>
 
 <span class="n">case_gap_top</span> <span class="o">=</span> <span class="mf">0.002</span>
@@ -1062,23 +1062,23 @@ dictionary keywords are important to write correctly:</p>
 <span class="n">case_gap_bot</span> <span class="o">=</span> <span class="mf">0.002</span>
 
 <span class="n">boundary_temperatures</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;value_boundary_top&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
-    <span class="s2">&quot;value_boundary_top_right&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
-    <span class="s2">&quot;value_boundary_right_top&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
-    <span class="s2">&quot;value_boundary_right&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
-    <span class="s2">&quot;value_boundary_right_bottom&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
-    <span class="s2">&quot;value_boundary_bottom_right&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
-    <span class="s2">&quot;value_boundary_bottom&quot;</span><span class="p">:</span> <span class="mi">20</span>
+    <span class="s2">"value_boundary_top"</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="s2">"value_boundary_top_right"</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="s2">"value_boundary_right_top"</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="s2">"value_boundary_right"</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="s2">"value_boundary_right_bottom"</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="s2">"value_boundary_bottom_right"</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="s2">"value_boundary_bottom"</span><span class="p">:</span> <span class="mi">20</span>
 <span class="p">}</span>
 
 <span class="n">boundary_flags</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;flag_boundary_top&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-    <span class="s2">&quot;flag_boundary_top_right&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-    <span class="s2">&quot;flag_boundary_right_top&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="s2">&quot;flag_boundary_right&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="s2">&quot;flag_boundary_right_bottom&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="s2">&quot;flag_boundary_bottom_right&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="s2">&quot;flag_boundary_bottom&quot;</span><span class="p">:</span> <span class="mi">1</span>
+    <span class="s2">"flag_boundary_top"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="s2">"flag_boundary_top_right"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="s2">"flag_boundary_right_top"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">"flag_boundary_right"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">"flag_boundary_right_bottom"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">"flag_boundary_bottom_right"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">"flag_boundary_bottom"</span><span class="p">:</span> <span class="mi">1</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -1174,45 +1174,45 @@ the frequency domain and the time domain. Each domain provides unique insights i
 <h4>log_electro_magnetic.json File in Frequency Domain<a class="headerlink" href="#log-electro-magnetic-json-file-in-frequency-domain" title="Link to this heading"></a></h4>
 <p>Here is an example of how the outcomes of frequency domain simulation are structured.</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;single_sweeps&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nt">"single_sweeps"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;f&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">200000</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;winding1&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;turn_losses&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;...&quot;</span><span class="p">],</span>
-<span class="w">        </span><span class="nt">&quot;flux&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">6.34870443074174e-06</span><span class="p">,</span><span class="w"> </span><span class="mf">-6.969982393761393e-07</span><span class="p">],</span>
-<span class="w">        </span><span class="nt">&quot;flux_over_current&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">3.17434773053773e-06</span><span class="p">,</span><span class="w"> </span><span class="mf">-3.51948446513906e-07</span><span class="p">],</span>
-<span class="w">        </span><span class="nt">&quot;V&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.8845429232083418</span><span class="p">,</span><span class="w"> </span><span class="mf">7.978006008157411</span><span class="p">],</span>
-<span class="w">        </span><span class="s2">&quot;...&quot;</span>
+<span class="w">      </span><span class="nt">"f"</span><span class="p">:</span><span class="w"> </span><span class="mi">200000</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"winding1"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"turn_losses"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"..."</span><span class="p">],</span>
+<span class="w">        </span><span class="nt">"flux"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">6.34870443074174e-06</span><span class="p">,</span><span class="w"> </span><span class="mf">-6.969982393761393e-07</span><span class="p">],</span>
+<span class="w">        </span><span class="nt">"flux_over_current"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">3.17434773053773e-06</span><span class="p">,</span><span class="w"> </span><span class="mf">-3.51948446513906e-07</span><span class="p">],</span>
+<span class="w">        </span><span class="nt">"V"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.8845429232083418</span><span class="p">,</span><span class="w"> </span><span class="mf">7.978006008157411</span><span class="p">],</span>
+<span class="w">        </span><span class="s2">"..."</span>
 <span class="w">      </span><span class="p">},</span>
-<span class="w">      </span><span class="nt">&quot;winding2&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="s2">&quot;...&quot;</span>
+<span class="w">      </span><span class="nt">"winding2"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="s2">"..."</span>
 <span class="w">      </span><span class="p">},</span>
-<span class="w">      </span><span class="nt">&quot;core_eddy_losses&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.00050908155779138</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;core_hyst_losses&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">3.16018326710339</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;core_parts&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;core_part_1&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">&quot;eddy_losses&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.09956183619015413</span><span class="p">,</span>
-<span class="w">          </span><span class="nt">&quot;hyst_losses&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">3.16018326710339</span><span class="p">,</span>
-<span class="w">          </span><span class="nt">&quot;total_core_part_1&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">3.259745103293544</span>
+<span class="w">      </span><span class="nt">"core_eddy_losses"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.00050908155779138</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"core_hyst_losses"</span><span class="p">:</span><span class="w"> </span><span class="mf">3.16018326710339</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"core_parts"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"core_part_1"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"eddy_losses"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.09956183619015413</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"hyst_losses"</span><span class="p">:</span><span class="w"> </span><span class="mf">3.16018326710339</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"total_core_part_1"</span><span class="p">:</span><span class="w"> </span><span class="mf">3.259745103293544</span>
 <span class="w">        </span><span class="p">}</span>
-<span class="w">      </span><span class="nt">&quot;...&quot;</span>
-<span class="w">      </span><span class="nt">&quot;all_winding_losses&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.5355581006243983</span>
+<span class="w">      </span><span class="nt">"..."</span>
+<span class="w">      </span><span class="nt">"all_winding_losses"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.5355581006243983</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">],</span>
-<span class="w">  </span><span class="nt">&quot;total_losses&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;winding1&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;total&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.5355581006244025</span><span class="p">,</span>
-<span class="w">       </span><span class="nt">&quot;turns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;...&quot;</span><span class="p">]</span>
+<span class="w">  </span><span class="nt">"total_losses"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"winding1"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"total"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.5355581006244025</span><span class="p">,</span>
+<span class="w">       </span><span class="nt">"turns"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"..."</span><span class="p">]</span>
 <span class="w">    </span><span class="p">}</span>
-<span class="w">    </span><span class="nt">&quot;all_windings&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.5355581006243983</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;eddy_core&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.09956183619015413</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;hyst_core_fundamental_freq&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">3.16018326710339</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;total_core_part_1&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">3.259745103293544</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;total_eddy_core_part_1&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.09956183619015413</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;total_hyst_core_part_1&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">3.16018326710339</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;core&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">3.259745103293544</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;total_losses&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">3.7953032039179426</span>
+<span class="w">    </span><span class="nt">"all_windings"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.5355581006243983</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"eddy_core"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.09956183619015413</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"hyst_core_fundamental_freq"</span><span class="p">:</span><span class="w"> </span><span class="mf">3.16018326710339</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"total_core_part_1"</span><span class="p">:</span><span class="w"> </span><span class="mf">3.259745103293544</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"total_eddy_core_part_1"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.09956183619015413</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"total_hyst_core_part_1"</span><span class="p">:</span><span class="w"> </span><span class="mf">3.16018326710339</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"core"</span><span class="p">:</span><span class="w"> </span><span class="mf">3.259745103293544</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"total_losses"</span><span class="p">:</span><span class="w"> </span><span class="mf">3.7953032039179426</span>
 <span class="w"> </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
@@ -1270,48 +1270,48 @@ providing a comprehensive view of the core’s total contribution to the system�
 <h4>log_electro_magnetic.json File in Time Domain<a class="headerlink" href="#log-electro-magnetic-json-file-in-time-domain" title="Link to this heading"></a></h4>
 <p>Here is an example of how the outcomes of time domain simulation are structured.</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;time_domain_simulation&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nt">"time_domain_simulation"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;f&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100000</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;T&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1e-05</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;Timemax&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1.25e-05</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;number_of_steps&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;dt&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">2.5e-06</span>
+<span class="w">      </span><span class="nt">"f"</span><span class="p">:</span><span class="w"> </span><span class="mi">100000</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"T"</span><span class="p">:</span><span class="w"> </span><span class="mf">1e-05</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"Timemax"</span><span class="p">:</span><span class="w"> </span><span class="mf">1.25e-05</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"number_of_steps"</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"dt"</span><span class="p">:</span><span class="w"> </span><span class="mf">2.5e-06</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;step_1&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;windings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">&quot;winding1&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;number_turns&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;flux&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">-7.209142581890734e-06</span><span class="p">],</span>
-<span class="w">            </span><span class="nt">&quot;V&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">-2.892335944263035</span><span class="p">],</span>
-<span class="w">            </span><span class="nt">&quot;I&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">2.0</span>
+<span class="w">      </span><span class="nt">"step_1"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"windings"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"winding1"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"number_turns"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"flux"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">-7.209142581890734e-06</span><span class="p">],</span>
+<span class="w">            </span><span class="nt">"V"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">-2.892335944263035</span><span class="p">],</span>
+<span class="w">            </span><span class="nt">"I"</span><span class="p">:</span><span class="w"> </span><span class="mf">2.0</span>
 <span class="w">          </span><span class="p">},</span>
-<span class="w">          </span><span class="nt">&quot;winding2&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="s2">&quot;...&quot;</span><span class="w"> </span><span class="p">}}}</span>
+<span class="w">          </span><span class="nt">"winding2"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="s2">"..."</span><span class="w"> </span><span class="p">}}}</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">     </span><span class="nt">&quot;...&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span>
+<span class="w">     </span><span class="nt">"..."</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span>
 <span class="w">  </span><span class="p">],</span>
-<span class="w">  </span><span class="nt">&quot;average_losses&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;core_eddy_losses&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.00037330739608363716</span><span class="p">],</span>
-<span class="w">    </span><span class="nt">&quot;core_hyst_losses&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-<span class="w">    </span><span class="nt">&quot;winding1&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;winding_losses&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1.2578033060966147</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;flux_over_current&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">6.703043813058433e-06</span><span class="p">],</span>
-<span class="w">      </span><span class="nt">&quot;average_current&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.4</span><span class="p">],</span>
-<span class="w">      </span><span class="nt">&quot;average_voltage&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">1.8009901071754213</span><span class="p">],</span>
-<span class="w">      </span><span class="nt">&quot;P&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.7203960428701686</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;S&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">4.5274565545301515</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;Q&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">4.469775429993662</span>
+<span class="w">  </span><span class="nt">"average_losses"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"core_eddy_losses"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.00037330739608363716</span><span class="p">],</span>
+<span class="w">    </span><span class="nt">"core_hyst_losses"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+<span class="w">    </span><span class="nt">"winding1"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"winding_losses"</span><span class="p">:</span><span class="w"> </span><span class="mf">1.2578033060966147</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"flux_over_current"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">6.703043813058433e-06</span><span class="p">],</span>
+<span class="w">      </span><span class="nt">"average_current"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.4</span><span class="p">],</span>
+<span class="w">      </span><span class="nt">"average_voltage"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">1.8009901071754213</span><span class="p">],</span>
+<span class="w">      </span><span class="nt">"P"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.7203960428701686</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"S"</span><span class="p">:</span><span class="w"> </span><span class="mf">4.5274565545301515</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"Q"</span><span class="p">:</span><span class="w"> </span><span class="mf">4.469775429993662</span>
 <span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;winding2&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;...&quot;</span><span class="p">}</span>
+<span class="w">    </span><span class="nt">"winding2"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="s2">"..."</span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">&quot;total_losses&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;all_windings_losses&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">2.511429275334878</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;eddy_core&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.00037330739608363716</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;core&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.00037330739608363716</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;total_losses&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">2.5118025827309616</span>
+<span class="w">  </span><span class="nt">"total_losses"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"all_windings_losses"</span><span class="p">:</span><span class="w"> </span><span class="mf">2.511429275334878</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"eddy_core"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.00037330739608363716</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"core"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.00037330739608363716</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"total_losses"</span><span class="p">:</span><span class="w"> </span><span class="mf">2.5118025827309616</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
@@ -1344,35 +1344,35 @@ losses (<strong>total_losses</strong>), providing a total view of losses.</p></l
 <p>This section provides an overview and analysis of thermal data, including temperature-related metrics obtained from the electromagnetic
 simulation. The outcomes of thermal simulation are structured as:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;core_parts&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;core_part_1&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;min&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">20.48340546242281</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;max&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">30.82746116029882</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;mean&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">26.775625696609733</span>
+<span class="w">  </span><span class="nt">"core_parts"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"core_part_1"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"min"</span><span class="p">:</span><span class="w"> </span><span class="mf">20.48340546242281</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"max"</span><span class="p">:</span><span class="w"> </span><span class="mf">30.82746116029882</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"mean"</span><span class="p">:</span><span class="w"> </span><span class="mf">26.775625696609733</span>
 <span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;total&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;min&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">20.48340546242281</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;max&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">30.82746116029882</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;mean&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">26.775625696609733</span>
+<span class="w">    </span><span class="nt">"total"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"min"</span><span class="p">:</span><span class="w"> </span><span class="mf">20.48340546242281</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"max"</span><span class="p">:</span><span class="w"> </span><span class="mf">30.82746116029882</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"mean"</span><span class="p">:</span><span class="w"> </span><span class="mf">26.775625696609733</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">&quot;windings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;winding_0_0&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;...&quot;</span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;winding_0_1&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;...&quot;</span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;winding_0_2&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;...&quot;</span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;winding_1_0&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;...&quot;</span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;winding_1_1&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;...&quot;</span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;winding_1_2&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;...&quot;</span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;total&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;...&quot;</span><span class="p">}</span>
+<span class="w">  </span><span class="nt">"windings"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"winding_0_0"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="s2">"..."</span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"winding_0_1"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="s2">"..."</span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"winding_0_2"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="s2">"..."</span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"winding_1_0"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="s2">"..."</span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"winding_1_1"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="s2">"..."</span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"winding_1_2"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="s2">"..."</span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"total"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="s2">"..."</span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">&quot;misc&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;case_volume&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.00017214993340642786</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;case_weight&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">-1</span>
+<span class="w">  </span><span class="nt">"misc"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"case_volume"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.00017214993340642786</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"case_weight"</span><span class="p">:</span><span class="w"> </span><span class="mi">-1</span>
 <span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">&quot;insulations&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;min&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">20.57984040880558</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;max&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">34.82921229676766</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;mean&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">27.465726650615863</span>
+<span class="w">  </span><span class="nt">"insulations"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"min"</span><span class="p">:</span><span class="w"> </span><span class="mf">20.57984040880558</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"max"</span><span class="p">:</span><span class="w"> </span><span class="mf">34.82921229676766</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"mean"</span><span class="p">:</span><span class="w"> </span><span class="mf">27.465726650615863</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
