@@ -1575,7 +1575,7 @@ class InductorOptimization:
                 logger.debug(f"Inductance reluctance: {local_config.target_inductance}")
                 logger.debug(f"Inductance FEM: {fem_output.inductance}")
                 logger.debug(f"Inductance derivation: "
-                            f"{(fem_output.inductance - local_config.target_inductance) / local_config.target_inductance * 100} %")
+                             f"{(fem_output.inductance - local_config.target_inductance) / local_config.target_inductance * 100} %")
                 logger.debug(f"Volume derivation: {(reluctance_output.volume - fem_output.volume) / reluctance_output.volume * 100} %")
                 logger.debug(f"P_winding reluctance: {reluctance_output.p_winding}")
                 logger.debug(f"P_winding FEM: {fem_output.p_loss_winding}")
@@ -1608,6 +1608,6 @@ class InductorOptimization:
                 # Add DC-loss P= R * I²
                 fem_output.p_loss_winding += (winding_dc_resistance * fem_input.current_offset ** 2)
                 # Calculate total power loss of inductance
-                p_total = p_core + fem_output.p_loss_winding
+                p_total = fem_output.p_core_magnet + fem_output.p_loss_winding
 
             return fem_output, p_total, area_to_heat_sink_result
