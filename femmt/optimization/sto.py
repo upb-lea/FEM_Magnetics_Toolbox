@@ -1369,5 +1369,4 @@ class StackedTransformerOptimization:
                 logger.info(f"P_hyst FEM (sine) incl. eddy current losses: {fem_output.p_core_sine}")
                 logger.info(f"P_hyst derivation (sine): {(reluctance_output.p_hyst - fem_output.p_core_sine) / reluctance_output.p_hyst * 100}")
 
-            return (reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink, fem_output.p_loss_winding_1,
-                    fem_output.p_loss_winding_2, p_core, fem_output.geometry_figure_path)
+            return fem_output, p_total, p_core, reluctance_output.area_to_heat_sink
