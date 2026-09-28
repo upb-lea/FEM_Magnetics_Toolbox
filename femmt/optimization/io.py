@@ -1446,8 +1446,7 @@ class InductorOptimization:
             return filtered_df
 
         @staticmethod
-        def full_simulation(df_geometry: pd.DataFrame, current_waveform: list, inductor_config_filepath: str, process_number: int = 1,
-                            print_derivations: bool = False) -> tuple:
+        def full_simulation(df_geometry: pd.DataFrame, current_waveform: list, inductor_config_filepath: str, process_number: int = 1) -> tuple:
             """
             FEM simulation (winding losses and hysteresis losses from magnet model) for geometries from df_geometry.
 
@@ -1459,8 +1458,6 @@ class InductorOptimization:
             :type inductor_config_filepath: str
             :param process_number: process number to run the simulation on
             :type process_number: int
-            :param print_derivations: True to print derivation from FEM simulation to reluctance model
-            :type print_derivations: bool
             :return: volume, loss
             :rtype: tuple
             """
@@ -1572,39 +1569,29 @@ class InductorOptimization:
                 reluctance_output: IoReluctanceModelOutput = InductorOptimization.ReluctanceModel.single_reluctance_model_simulation(reluctance_model_input)
 
                 # Take over the result
-                volume_result = reluctance_output.volume
                 area_to_heat_sink_result = reluctance_output.area_to_heat_sink
                 p_total = fem_output.p_core_magnet + fem_output.p_loss_winding
-                # Calculate with simulation results
-                p_core = fem_output.p_core_magnet
 
-                if print_derivations:
-                    logger.info(f"Inductance reluctance: {local_config.target_inductance}")
-                    logger.info(f"Inductance FEM: {fem_output.inductance}")
-                    logger.info(f"Inductance derivation: "
-                                f"{(fem_output.inductance - local_config.target_inductance) / local_config.target_inductance * 100} %")
-                    logger.info(f"Volume reluctance: {reluctance_output.volume}")
-                    logger.info(f"Volume FEM: {fem_output.volume}")
-                    logger.info(f"Volume derivation: {(reluctance_output.volume - fem_output.volume) / reluctance_output.volume * 100} %")
-                    logger.info(f"P_winding reluctance: {reluctance_output.p_winding}")
-                    logger.info(f"P_winding FEM: {fem_output.p_loss_winding}")
-                    logger.info(f"P_winding derivation: {(fem_output.p_loss_winding - reluctance_output.p_winding) / fem_output.p_loss_winding * 100} %")
-                    logger.info(f"P_hyst reluctance: {reluctance_output.p_hyst}")
-                    logger.info(f"P_hyst FEM: {fem_output.p_core_magnet}")
-                    logger.info(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.p_core_magnet) / reluctance_output.p_hyst * 100} %")
+                logger.debug(f"Inductance reluctance: {local_config.target_inductance}")
+                logger.debug(f"Inductance FEM: {fem_output.inductance}")
+                logger.debug(f"Inductance derivation: "
+                             f"{(fem_output.inductance - local_config.target_inductance) / local_config.target_inductance * 100} %")
+                logger.debug(f"Volume derivation: {(reluctance_output.volume - fem_output.volume) / reluctance_output.volume * 100} %")
+                logger.debug(f"P_winding reluctance: {reluctance_output.p_winding}")
+                logger.debug(f"P_winding FEM: {fem_output.p_loss_winding}")
+                logger.debug(f"P_winding derivation: {(fem_output.p_loss_winding - reluctance_output.p_winding) / fem_output.p_loss_winding * 100} %")
+                logger.debug(f"P_hyst reluctance: {reluctance_output.p_hyst}")
+                logger.debug(f"P_hyst FEM: {fem_output.p_core_magnet}")
+                logger.debug(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.p_core_magnet) / reluctance_output.p_hyst * 100} %")
             # current offset
             else:
                 # Notify user that simulation is performed with DC-Offset
                 logger.info(f"Simulation is performed with DC-Offset of {target_and_fix_parameters.current_offset}A")
                 # Perform simulation
                 fem_output = InductorOptimization.FemSimulation.single_fem_simulation_with_h_offset(fem_input, False)
-                # Take over the result
-                volume_result = fem_output.volume
                 # Recalculate the heat sink area
                 r_outer = fr.calculate_r_outer(core_inner_diameter, window_w)
                 area_to_heat_sink_result = r_outer ** 2 * np.pi
-                # Calculate with simulation results
-                p_core = fem_output.p_core_magnet
 
                 # winding loss calculation
                 winding_dc_resistance = fr.resistance_litz_wire(
@@ -1621,25 +1608,6 @@ class InductorOptimization:
                 # Add DC-loss P= R * I²
                 fem_output.p_loss_winding += (winding_dc_resistance * fem_input.current_offset ** 2)
                 # Calculate total power loss of inductance
-                p_total = p_core + fem_output.p_loss_winding
+                p_total = fem_output.p_core_magnet + fem_output.p_loss_winding
 
-                # Debug ASA
-                # print(f"Ind.={fem_output.inductance}")
-                # print(f"Ind.={fem_output.inductance} gap={fem_input.air_gap_length}")
-
-                if print_derivations:
-                    logger.info(f"Inductance reluctance: {local_config.target_inductance}")
-                    logger.info(f"Inductance FEM: {fem_output.inductance}")
-                    logger.info(f"Inductance derivation: "
-                                f"{(fem_output.inductance - local_config.target_inductance) / local_config.target_inductance * 100} %")
-                    # logger.info(f"Volume reluctance: {reluctance_output.volume}")
-                    logger.info(f"Volume FEM: {fem_output.volume}")
-                    # logger.info(f"Volume derivation: {(reluctance_output.volume - fem_output.volume) / reluctance_output.volume * 100} %")
-                    # logger.info(f"P_winding reluctance: {reluctance_output.p_winding}")
-                    logger.info(f"P_winding FEM: {fem_output.p_loss_winding}")
-                    # logger.info(f"P_winding derivation: {(fem_output.p_loss_winding - reluctance_output.p_winding) / fem_output.p_loss_winding * 100} %")
-                    # logger.info(f"P_hyst reluctance: {reluctance_output.p_hyst}")
-                    logger.info(f"P_hyst FEM: {fem_output.p_core_magnet}")
-                    # logger.info(f"P_hyst derivation: {(reluctance_output.p_hyst - fem_output.p_core_magnet) / reluctance_output.p_hyst * 100} %")
-
-            return volume_result, p_total, area_to_heat_sink_result, fem_output.p_loss_winding, p_core, fem_output.geometry_figure_path
+            return fem_output, p_total, area_to_heat_sink_result
