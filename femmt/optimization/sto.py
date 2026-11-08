@@ -744,7 +744,7 @@ class StackedTransformerOptimization:
             SATURATION_THRESHOLD = 0.3
 
             if filter_saturation:
-                df = df.loc[(df["user_attrs_b_max_bot"] < SATURATION_THRESHOLD) & (df["user_attrs_b_max_middle"] < SATURATION_THRESHOLD) &
+                df = df.loc[(df["user_attrs_b_max_bot"] < SATURATION_THRESHOLD) & (df["user_attrs_b_max_middle"] < SATURATION_THRESHOLD) & \
                             (df["user_attrs_b_max_top"] < SATURATION_THRESHOLD)]
 
             pareto_df: pd.DataFrame = fo.pareto_front_from_df(df)
