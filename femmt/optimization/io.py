@@ -38,7 +38,7 @@ class InductorOptimization:
 
     @staticmethod
     def filter_df(df: pd.DataFrame, x: str = "values_0", y: str = "values_1", factor_min_dc_losses: float = 1.2,
-                  factor_max_dc_losses: float = 10) -> pd.DataFrame:
+                  factor_max_dc_losses: float = 10, filter_saturation: bool = False) -> pd.DataFrame:
         """
         Remove designs with too high losses compared to the minimum losses.
 
@@ -52,11 +52,15 @@ class InductorOptimization:
         :type factor_min_dc_losses: float
         :param factor_max_dc_losses: dc_max_loss = factor_max_dc_losses * min_available_dc_losses_in_pareto_front
         :type factor_max_dc_losses: float
+        :param filter_saturation: true to do not consider designs in saturation
+        :type filter_saturation: bool 
         :returns: pandas dataframe with Pareto front near points
         :rtype: pd.DataFrame
         """
-        # figure out pareto front
-        # pareto_volume_list, pareto_core_hyst_list, pareto_dto_list = self.pareto_front(volume_list, core_hyst_loss_list, valid_design_list)
+        SATURATION_THRESHOLD = 0.3
+
+        if filter_saturation:
+            df = df.loc[df["user_attrs_flux_density_peak"] < SATURATION_THRESHOLD]
 
         pareto_df: pd.DataFrame = fo.pareto_front_from_df(df)
 
@@ -911,7 +915,7 @@ class InductorOptimization:
             :rtype: pd.DataFrame
             """
             filtered_df = InductorOptimization.filter_df(df, x="values_0", y="values_1", factor_min_dc_losses=factor_min_dc_losses,
-                                                         factor_max_dc_losses=factor_max_dc_losses)
+                                                         factor_max_dc_losses=factor_max_dc_losses, filter_saturation=True)
             return filtered_df
 
         @staticmethod
@@ -1441,7 +1445,7 @@ class InductorOptimization:
             """
             df = df.drop(df[df["combined_losses"].isna()].index)
             filtered_df = InductorOptimization.filter_df(df, x="values_0", y="combined_losses", factor_min_dc_losses=factor_min_dc_losses,
-                                                         factor_max_dc_losses=factor_max_dc_losses)
+                                                         factor_max_dc_losses=factor_max_dc_losses, filter_saturation=True)
 
             return filtered_df
 

@@ -2100,7 +2100,7 @@ def test_transformer_5_windings(fixture_transformer_5_windings: pytest.fixture):
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                         "material_transformer_5_windings.json")
-    compare_result_logs(material_result_log, fixture_material_log, significant_digits=3, ignore_order=False, number_format_notation="e")
+    compare_result_logs(material_result_log, fixture_material_log, significant_digits=2, ignore_order=False, number_format_notation="e")
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 

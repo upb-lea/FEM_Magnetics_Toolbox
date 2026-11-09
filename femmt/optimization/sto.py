@@ -725,7 +725,8 @@ class StackedTransformerOptimization:
             plt.show()
 
         @staticmethod
-        def filter_loss_list_df(df: pd.DataFrame, factor_min_dc_losses: float = 1.2, factor_max_dc_losses: float = 10) -> pd.DataFrame:
+        def filter_loss_list_df(df: pd.DataFrame, factor_min_dc_losses: float = 1.2, factor_max_dc_losses: float = 10,
+                                filter_saturation: bool = False) -> pd.DataFrame:
             """
             Remove designs with too high losses compared to the minimum losses.
 
@@ -735,11 +736,22 @@ class StackedTransformerOptimization:
             :type factor_min_dc_losses: float
             :param factor_max_dc_losses: dc_max_loss = factor_max_dc_losses * min_available_dc_losses_in_pareto_front
             :type factor_max_dc_losses: float
+            :param filter_saturation: true to do not consider designs in saturation
+            :type filter_saturation: bool 
             :returns: list with removed objects (too small air gaps)
             :rtype: list[ItoSingleResultFile]
             """
-            # figure out pareto front
-            # pareto_volume_list, pareto_core_hyst_list, pareto_dto_list = self.pareto_front(volume_list, core_hyst_loss_list, valid_design_list)
+            SATURATION_THRESHOLD = 0.3
+
+            if df.empty:
+                return df.copy()
+
+            if filter_saturation:
+                df = df.loc[(df["user_attrs_b_max_bot"] < SATURATION_THRESHOLD) & (df["user_attrs_b_max_middle"] < SATURATION_THRESHOLD) & \
+                            (df["user_attrs_b_max_top"] < SATURATION_THRESHOLD)]
+
+            if df.empty:
+                return df.copy()
 
             pareto_df: pd.DataFrame = fo.pareto_front_from_df(df)
 
