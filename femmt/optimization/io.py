@@ -59,8 +59,14 @@ class InductorOptimization:
         """
         SATURATION_THRESHOLD = 0.3
 
+        if df.empty:
+            return df.copy()
+
         if filter_saturation:
             df = df.loc[df["user_attrs_flux_density_peak"] < SATURATION_THRESHOLD]
+
+        if df.empty:
+            return df.copy()
 
         pareto_df: pd.DataFrame = fo.pareto_front_from_df(df)
 
