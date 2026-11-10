@@ -1040,7 +1040,8 @@ class InductorOptimization:
                 # Extract total loss
                 p_total = reluctance_output.p_loss_total
 
-                return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink, reluctance_output.p_winding, reluctance_output.p_hyst
+                return (reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink, reluctance_output.p_winding, reluctance_output.p_hyst,
+                        reluctance_output.flux_density_peak)
 
     class FemSimulation:
         """Contains methods to perform FEM simulations or process their results."""

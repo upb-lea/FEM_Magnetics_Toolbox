@@ -919,9 +919,10 @@ class StackedTransformerOptimization:
                     reluctance_model_input)
 
                 p_total = reluctance_output.p_loss
+                b_max = np.max([reluctance_output.b_max_top, reluctance_output.b_max_bot, reluctance_output.b_max_middle])
 
                 return (reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink, reluctance_output.winding_1_loss,
-                        reluctance_output.winding_2_loss, reluctance_output.p_hyst)
+                        reluctance_output.winding_2_loss, reluctance_output.p_hyst, b_max)
 
     class FemSimulation:
         """Contains methods to perform FEM simulations or process their results."""
