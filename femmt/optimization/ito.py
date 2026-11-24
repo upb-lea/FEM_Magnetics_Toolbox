@@ -1090,7 +1090,7 @@ class IntegratedTransformerOptimization:
             :type visualize: bool
             """
             all_filtered_reluctance_dtos = femmt.IntegratedTransformerOptimization.ReluctanceModel.load_filtered_results(
-                config_dto.working_directory)
+                config_dto.integrated_transformer_optimization_directory)
 
             simulation_dto_list = []
             for result_log in result_log_dict_list:
