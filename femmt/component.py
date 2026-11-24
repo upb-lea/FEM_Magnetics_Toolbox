@@ -1877,6 +1877,8 @@ class MagneticComponent:
         :type excitation_meshing_type: ExcitationMeshingType
         :param skin_mesh_factor: Define the fineness of the mesh
         :type skin_mesh_factor: float
+        :param perform_saturation_pre_check: True to perform the saturation pre check (default)
+        :type perform_saturation_pre_check: bool
         """
         # negative currents are not allowed and lead to wrong simulation results. Check for this.
         # this message appears before meshing and before simulation
