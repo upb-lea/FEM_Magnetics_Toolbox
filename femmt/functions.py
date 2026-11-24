@@ -1145,7 +1145,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
     if isinstance(period_vector_t_i, list):
         if plot != 'no' and plot is not False:
             logger.warning("Input is list, convert to np.array()")
-        period_vector_t_i = np.array(period_vector_t_i)
+    period_vector_t_i = np.array(period_vector_t_i, dtype=float, copy=True)
 
     # first value of time vector must be zero
     if period_vector_t_i[0][0] != 0:
@@ -2249,30 +2249,23 @@ def time_current_vector_to_fft_excitation(time_current_vectors: list[list[list[f
         phi_deg = np.rad2deg(phi_rad)
         frequency_current_phase_deg_list.append([frequency_list, amplitude, phi_deg])
 
-    # check if all frequency vectors include the same frequencies
-    # WORKAROUND: if any frequency is not included in one of the vectors it is
-    # added with amplitude  = 0 and phase = 0
-    # TODO: recalculate the fft at the "missing frequencies and add their values...
-    all_frequencies = set()
-    for count in range(len(frequency_current_phase_deg_list) - 1):
-        if not np.array_equal(frequency_current_phase_deg_list[count][0], frequency_current_phase_deg_list[count + 1][0]):
-            all_frequencies = all_frequencies | set(frequency_current_phase_deg_list[count][0]) | set(
-                frequency_current_phase_deg_list[count + 1][0])
-
-    for frequency in list(all_frequencies):
-        for count in range(0, len(frequency_current_phase_deg_list)):
-            if frequency not in frequency_current_phase_deg_list[count][0]:
-                ii = np.searchsorted(frequency_current_phase_deg_list[count][0], frequency)
-                frequency_current_phase_deg_list[count][0] = np.insert(
-                    frequency_current_phase_deg_list[count][0], ii, frequency)
-                frequency_current_phase_deg_list[count][1] = np.insert(
-                    frequency_current_phase_deg_list[count][1], ii, 0)
-                frequency_current_phase_deg_list[count][2] = np.insert(
-                    frequency_current_phase_deg_list[count][2], ii, 0)
+    # Use the union of all frequencies and align each waveform's data to it.
+    # Missing frequencies receive zero amplitude and phase.
+    all_frequencies = np.unique(np.concatenate([
+        np.asarray(frequency_data[0]) for frequency_data in frequency_current_phase_deg_list
+    ]))
+    for frequency_data in frequency_current_phase_deg_list:
+        frequency_indices = np.searchsorted(all_frequencies, frequency_data[0])
+        aligned_amplitudes = np.zeros(len(all_frequencies), dtype=float)
+        aligned_phases = np.zeros(len(all_frequencies), dtype=float)
+        aligned_amplitudes[frequency_indices] = frequency_data[1]
+        aligned_phases[frequency_indices] = frequency_data[2]
+        frequency_data[:] = [all_frequencies, aligned_amplitudes, aligned_phases]
 
     # transfer format from fft()-output to excitation_sweep()-input
     current_list_list = []
     phi_deg_list_list = []
+    frequency_list = all_frequencies
     for count_frequency, _ in enumerate(frequency_list):
         currents_single_frequency = []
         phi_deg_single_frequency = []

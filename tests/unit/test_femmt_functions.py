@@ -1,6 +1,7 @@
 """Contains Unittests for some sub-functions of FEMMT."""
 import pytest
 import femmt
+import femmt.functions as femmt_functions
 import numpy as np
 
 def test_fft():
@@ -26,6 +27,37 @@ def test_fft():
         femmt.fft(example_waveform, mode='rad')
         femmt.fft(example_waveform, mode='not_allowed_mode')
 
+
+@pytest.mark.parametrize("mode", ["rad", "deg"])
+def test_fft_does_not_modify_input(mode):
+    """FFT mode conversion must leave the caller's waveform unchanged."""
+    period = 2 * np.pi if mode == "rad" else 360
+    waveform = np.array([[0, period / 4, period / 2, 3 * period / 4, period], [1, 0, -1, 0, 1]], dtype=float)
+    original_waveform = waveform.copy()
+
+    first_result = femmt.fft(waveform, mode=mode, f0=25000)
+    second_result = femmt.fft(waveform, mode=mode, f0=25000)
+
+    np.testing.assert_array_equal(waveform, original_waveform)
+    np.testing.assert_allclose(first_result, second_result)
+
+
+def test_electrostatic_excitation_clears_inactive_input():
+    """Voltage and charge excitation state must be mutually exclusive."""
+    component = object.__new__(femmt.MagneticComponent)
+    component.windings = [object()]
+    component.voltage = [None]
+    component.charge = []
+
+    component.excitation_electrostatic(charge=[[1e-9]])
+    assert component.voltage is None
+    assert component.charge == [[1e-9]]
+
+    component.excitation_electrostatic(voltage=[[12.0]])
+    assert component.charge is None
+    assert component.voltage == [[12.0]]
+
+
 def test_time_current_vector_to_fft_excitation():
     """Unittest to calculate the excitation sweep parameters for a given waveform vector."""
     example_waveform_1 = np.array([[0, 1.34e-3, 3.14e-3, 4.48e-3, 6.28e-3], [-175.69, 103.47, 175.69, -103.47, -175.69]])
@@ -40,6 +72,24 @@ def test_time_current_vector_to_fft_excitation():
     for count, _ in enumerate(current_list_list):
         assert current_list_list[count] == pytest.approx(current_result_list_list[count], rel=4e-3)
         assert phi_deg_list_list[count] == pytest.approx(phase_deg_result_list_list[count], rel=3e-3)
+
+
+def test_time_current_vector_to_fft_excitation_aligns_union_of_frequencies(monkeypatch):
+    """All input spectra must be aligned to the complete frequency union."""
+    def fake_fft(waveform, **kwargs):
+        if waveform[1][0] == 1:
+            return np.array([50, 100, 150]), np.array([1, 2, 3]), np.array([0, np.pi / 2, np.pi])
+        return np.array([50, 150]), np.array([5, 7]), np.array([np.pi / 4, -np.pi / 4])
+
+    monkeypatch.setattr(femmt_functions, "fft", fake_fft)
+    waveform_1 = np.array([[0, 1], [1, 1]])
+    waveform_2 = np.array([[0, 1], [2, 2]])
+
+    frequencies, currents, phases = femmt.time_current_vector_to_fft_excitation([waveform_1, waveform_2])
+
+    assert frequencies == pytest.approx([50, 100, 150])
+    assert currents == [[1, 5], [2, 0], [3, 7]]
+    np.testing.assert_allclose(phases, [[0, 45], [90, 0], [180, -45]])
 
 def test_find_common_frequencies():
     """Unittest to figure out common frequencies in different current waveforms."""
