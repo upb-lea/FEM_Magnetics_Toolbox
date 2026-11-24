@@ -1933,7 +1933,7 @@ class MagneticComponent:
 
             for count_frequency, _ in enumerate(range(0, len(frequency_list))):
                 self.excitation(frequency=frequency_list[count_frequency], amplitude_list=current_list_list[count_frequency],
-                                phase_deg_list=phi_deg_list_list[count_frequency])  # frequency and current
+                                phase_deg_list=phi_deg_list_list[count_frequency], perform_saturation_pre_check=perform_saturation_pre_check)
                 self.write_simulation_parameters_to_pro_files()
                 self.generate_load_litz_approximation_parameters()
                 self.simulate()
