@@ -2023,7 +2023,7 @@ class MagneticComponent:
         self.excitation_sweep(frequency_list, current_list_list, phi_deg_list_list, inductance_dict=inductance_dict, core_hyst_loss=p_hyst_core_parts)
 
     def stacked_core_study_excitation(self, time_current_vectors: list[list[list[float]]], transfer_ratio_n: float,
-                                      plot_waveforms: bool = False, fft_filter_value_factor: float = 0.01):
+                                      plot_waveforms: bool = False, fft_filter_value_factor: float = 0.01) -> dict:
         """
         Generate the current waveforms needed for the stacked_core_study().
 
@@ -2039,6 +2039,8 @@ class MagneticComponent:
         :type fft_filter_value_factor: float
         :param transfer_ratio_n: transformer transfer ratio n
         :type transfer_ratio_n: float
+        :return: dictionary with frequencies/currents/phases for hysteresis and winding loss calculation
+        :rtype: dict
         """
         stacked_core_study_excitation = {
             "hysteresis": {
@@ -3120,7 +3122,11 @@ class MagneticComponent:
             # # Check for saturation and raise error if B-field exceeds threshold
             if abs(b_field) > saturation_threshold * self.core.material.b_sat:
                 raise ValueError(f"Core saturation detected! B-field ({abs(b_field)} T) exceeds {saturation_threshold * 100}% of the saturation flux density"
-                                 f" ({self.core.material.b_sat} T).")
+                                 f" ({self.core.material.b_sat} T)."
+                                 f"frequency: {self.frequency}"
+                                 f"Currents: {self.current}"
+                                 f"Phases: {self.phase_deg}"
+                                 )
 
             logger.info(f"Reluctance model pre-check:\n"
                         f"    B-field: {b_field:.4f} T\n"
@@ -3206,15 +3212,27 @@ class MagneticComponent:
 
                 if abs(b_field_top) > saturation_threshold * self.core.material.b_sat:
                     raise ValueError(f"Core saturation detected in top section! B-field ({abs(b_field_top)} T) exceeds "
-                                     f"{saturation_threshold * 100}% of the saturation flux density ({self.core.material.b_sat} T).")
+                                     f"{saturation_threshold * 100}% of the saturation flux density ({self.core.material.b_sat} T). "
+                                     f"Frequency: {self.frequency}, "
+                                     f"Currents: {np.abs(self.current)}, "
+                                     f"Phases: {self.phase_deg}."
+                                     )
 
                 if abs(b_field_bot) > saturation_threshold * self.core.material.b_sat:
                     raise ValueError(f"Core saturation detected in bottom section! B-field ({abs(b_field_bot)} T) exceeds "
-                                     f"{saturation_threshold * 100}% of the saturation flux density ({self.core.material.b_sat} T).")
+                                     f"{saturation_threshold * 100}% of the saturation flux density ({self.core.material.b_sat} T). "
+                                     f"Frequency: {self.frequency}, "
+                                     f"Currents: {np.abs(self.current)}, "
+                                     f"Phases: {self.phase_deg}."
+                                     )
 
                 if abs(b_field_middle) > saturation_threshold * self.core.material.b_sat:
                     raise ValueError(f"Core saturation detected in middle section! B-field ({abs(b_field_middle)} T) exceeds "
-                                     f"{saturation_threshold * 100}% of the saturation flux density ({self.core.material.b_sat} T).")
+                                     f"{saturation_threshold * 100}% of the saturation flux density ({self.core.material.b_sat} T). "
+                                     f"Frequency: {self.frequency}, "
+                                     f"Currents: {np.abs(self.current)}, "
+                                     f"Phases: {self.phase_deg}."
+                                     )
 
                 logger.info(f"B-field Top: {b_field_top:.4f} T")
                 logger.info(f"B-field Bottom: {b_field_bot:.4f} T")
