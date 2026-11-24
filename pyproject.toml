@@ -34,7 +34,7 @@ packages = ["femmt/"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "femmt/*.py",
+    "femmt",
     "tests",
     "requirements.txt"
 ]

@@ -559,20 +559,17 @@ class MagneticComponent:
         """
         # For integrated transformers, check if top and bottom core insulations are set
         if self.component_type == ComponentType.IntegratedTransformer:
-            if (insulation.top_section_core_cond is None or not insulation.top_section_core_cond) and (
+            if (insulation.top_section_core_cond is None or not insulation.top_section_core_cond) or (
                     insulation.bot_section_core_cond is None or not insulation.bot_section_core_cond):
                 raise Exception("Insulations for the top and bottom core sections must be set for integrated transformers")
         else:
             if insulation.cond_cond is None or not insulation.cond_cond:
                 raise Exception("insulations between the conductors must be set")
 
-        if self.simulation_type == SimulationType.ElectroStatic:
-            insulation.bobbin_dimensions = True
-        else:
-            insulation.bobbin_dimensions = False
-
         if self.simulation_type == SimulationType.ElectroStatic and insulation.bobbin_dimensions is None:
             raise Exception("bobbin parameters must be set in electrostatic simulations")
+
+        insulation.bobbin_dimensions = self.simulation_type == SimulationType.ElectroStatic
 
         self.insulation = insulation
 
@@ -1099,7 +1096,8 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # GetDP Interaction / Simulation / Excitation
-    def excitation(self, frequency: float, amplitude_list: list, phase_deg_list: list = None, ex_type: str = 'current', plot_interpolation: bool = False):
+    def excitation(self, frequency: float, amplitude_list: list, phase_deg_list: list = None, ex_type: str = 'current', plot_interpolation: bool = False, 
+                   perform_saturation_pre_check: bool = True):
         """
         Run the electromagnetic simulation.
 
@@ -1116,6 +1114,8 @@ class MagneticComponent:
         :type phase_deg_list: list
         :param ex_type: Excitation type. 'Current' implemented only. Future use may: 'voltage' and 'current_density'
         :type ex_type: str
+        :param perform_saturation_pre_check: True to perform the saturation pre check (default)
+        :type perform_saturation_pre_check: bool
         """
         # negative currents are not allowed and lead to wrong simulation results. Check for this.
         # this message appears after meshing but before simulation
@@ -1193,7 +1193,7 @@ class MagneticComponent:
                 self.red_freq[num] = 0
 
         # check the core saturation ( It does not work for custom)
-        if self.core.material.material != "custom":
+        if self.core.material.material != "custom" and perform_saturation_pre_check:
             self.reluctance_model_pre_check(self._saturation_threshold)
 
     def excitation_time_domain(self, current_list: list[list[float]], time_list: list[float], number_of_periods: int, ex_type: str = 'current',
@@ -1351,6 +1351,7 @@ class MagneticComponent:
         num_windings = len(self.windings)
 
         if excitation_type == 'charge':
+            self.voltage = None
             # Initialize charges with zero values
             self.charge = [[0.0] * len(turns) for turns in value_list]
             for winding_index in range(num_windings):
@@ -1358,6 +1359,7 @@ class MagneticComponent:
                     # Assign charge value to each turn in each winding
                     self.charge[winding_index][turn_index] = value_list[winding_index][turn_index]
         else:
+            self.charge = None
             # Initialize voltages with zero values
             self.voltage = [[0.0] * len(turns) for turns in value_list]
             for winding_index in range(num_windings):
@@ -1828,7 +1830,8 @@ class MagneticComponent:
     def excitation_sweep(self, frequency_list: list, current_list_list: list, phi_deg_list_list: list, show_last_fem_simulation: bool = False,
                          excitation_meshing_type: ExcitationMeshingType = None, skin_mesh_factor: float = 0.5, visualize_before: bool = False,
                          save_png: bool = False, color_scheme: dict = ff.colors_femmt_default, colors_geometry: dict = ff.colors_geometry_femmt_default,
-                         inductance_dict: dict = None, core_hyst_loss: list[float] | np.ndarray = None) -> None:
+                         inductance_dict: dict = None, core_hyst_loss: list[float] | np.ndarray = None, perform_saturation_pre_check: bool = True
+                         ) -> None:
         """
         Perform a sweep simulation for frequency-current pairs.
 
@@ -1876,6 +1879,8 @@ class MagneticComponent:
         :type excitation_meshing_type: ExcitationMeshingType
         :param skin_mesh_factor: Define the fineness of the mesh
         :type skin_mesh_factor: float
+        :param perform_saturation_pre_check: True to perform the saturation pre check (default)
+        :type perform_saturation_pre_check: bool
         """
         # negative currents are not allowed and lead to wrong simulation results. Check for this.
         # this message appears before meshing and before simulation
@@ -1912,7 +1917,7 @@ class MagneticComponent:
                 self.mesh.generate_electro_magnetic_mesh()
 
                 self.excitation(frequency=frequency_list[count_frequency], amplitude_list=current_list_list[count_frequency],
-                                phase_deg_list=phi_deg_list_list[count_frequency])  # frequency and current
+                                phase_deg_list=phi_deg_list_list[count_frequency], perform_saturation_pre_check=perform_saturation_pre_check)
                 self.write_simulation_parameters_to_pro_files()
                 self.generate_load_litz_approximation_parameters()
                 self.simulate()
@@ -3608,7 +3613,7 @@ class MagneticComponent:
             self.high_level_geo_gen(frequency=op_frequency, skin_mesh_factor=skin_mesh_factor)
             frequencies, currents, phases = ff.create_open_circuit_excitation_sweep(I0, len(self.windings), op_frequency)
             self.excitation_sweep(frequency_list=frequencies, current_list_list=currents, phi_deg_list_list=phases,
-                                  show_last_fem_simulation=visualize_last_fem_simulation)
+                                  show_last_fem_simulation=visualize_last_fem_simulation, perform_saturation_pre_check=False)
 
             # Post-Processing
             log = self.read_log()

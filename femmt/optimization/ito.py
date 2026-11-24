@@ -527,7 +527,7 @@ class IntegratedTransformerOptimization:
                 """
                 number_turns_per_row = int((available_width + iso_winding_to_winding) / (litz_diameter + iso_winding_to_winding))
                 if number_turns_per_row < 1:
-                    return float('nan'), float('nan')
+                    return float('nan')
                 number_of_rows = np.ceil(number_turns / number_turns_per_row)
                 winding_height = number_of_rows * litz_diameter + (number_of_rows - 1) * iso_winding_to_winding
                 return winding_height
@@ -535,6 +535,8 @@ class IntegratedTransformerOptimization:
             # height of top core needed
             window_h_1_top = calc_winding_height(available_width_top, config.insulations.iso_primary_to_primary, litz_diameter_1, n_1_top)
             window_h_2_top = calc_winding_height(available_width_top, config.insulations.iso_secondary_to_secondary, litz_diameter_2, n_2_top)
+            if not np.isfinite(window_h_1_top) or not np.isfinite(window_h_2_top):
+                return float('nan'), float('nan')
             window_h_top = (window_h_1_top + window_h_2_top + config.insulations.iso_primary_to_secondary + \
                             config.insulations.iso_window_top_core_top + config.insulations.iso_window_top_core_bot)
             if window_h_top > window_h_half_max:
@@ -544,6 +546,8 @@ class IntegratedTransformerOptimization:
             # height of bot core needed
             window_h_1_bot = calc_winding_height(available_width_bot, config.insulations.iso_primary_to_primary, litz_diameter_1, n_1_bot)
             window_h_2_bot = calc_winding_height(available_width_bot, config.insulations.iso_secondary_to_secondary, litz_diameter_2, n_2_bot)
+            if not np.isfinite(window_h_1_bot) or not np.isfinite(window_h_2_bot):
+                return float('nan'), float('nan')
             window_h_bot = (window_h_1_bot + window_h_2_bot + config.insulations.iso_primary_to_secondary + \
                             config.insulations.iso_window_bot_core_top + config.insulations.iso_window_bot_core_bot)
             if window_h_bot > window_h_half_max:
@@ -654,7 +658,7 @@ class IntegratedTransformerOptimization:
                 # Means, in total there are four slashes including the path itself '////home/.../database.sqlite3'
                 storage = f"sqlite:///{config.integrated_transformer_optimization_directory}/{config.integrated_transformer_study_name}.sqlite3"
             elif storage == 'mysql':
-                storage = "mysql://monty@localhost/mydb",
+                storage = "mysql://monty@localhost/mydb"
 
             # set logging verbosity: https://optuna.readthedocs.io/en/stable/reference/generated/optuna.logging.set_verbosity.html#optuna.logging.set_verbosity
             # .INFO: all messages (default)
@@ -679,7 +683,7 @@ class IntegratedTransformerOptimization:
                     number_trials = target_number_trials - len(study_in_memory.trials)
                     study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
                     study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
-                    loger.info(f"Finished {number_trials} trials.")
+                    logger.info(f"Finished {number_trials} trials.")
                     logger.info(f"current time: {datetime.datetime.now()}")
                 else:
                     logger.info(f"Study has already {len(study_in_storage.trials)} trials, and target is {target_number_trials} trials.")
@@ -1090,7 +1094,7 @@ class IntegratedTransformerOptimization:
             :type visualize: bool
             """
             all_filtered_reluctance_dtos = femmt.IntegratedTransformerOptimization.ReluctanceModel.load_filtered_results(
-                config_dto.working_directory)
+                config_dto.integrated_transformer_optimization_directory)
 
             simulation_dto_list = []
             for result_log in result_log_dict_list:

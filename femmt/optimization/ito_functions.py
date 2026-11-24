@@ -44,19 +44,11 @@ def dto_list_to_vec(dto_list: list[ItoSingleResultFile]) -> tuple:
     :type dto_list: list[ItoSingleResultFile]
 
     """
-    for dto in dto_list:
-        x_pareto_vec = dto.core_2daxi_total_volume
-        y_pareto_vec = dto.total_loss
+    x_pareto_vec = np.asarray([dto.core_2daxi_total_volume for dto in dto_list])
+    y_pareto_vec = np.asarray([dto.total_loss for dto in dto_list])
 
-    vector_to_sort = np.array([x_pareto_vec, y_pareto_vec])
-
-    # sorting 2d array by 1st row
-    # https://stackoverflow.com/questions/49374253/sort-a-numpy-2d-array-by-1st-row-maintaining-columns
-    sorted_vector = vector_to_sort[:, vector_to_sort[0].argsort()]
-    x_pareto_vec = sorted_vector[0]
-    y_pareto_vec = sorted_vector[1]
-
-    return x_pareto_vec, y_pareto_vec
+    sort_indices = np.argsort(x_pareto_vec)
+    return x_pareto_vec[sort_indices], y_pareto_vec[sort_indices]
 
 
 def set_up_folder_structure(working_directory: str) -> WorkingDirectories:
@@ -172,18 +164,15 @@ def integrated_transformer_fem_simulation_from_result_dto(config_dto: ItoSingleI
                                                     window_h=window_h,
                                                     core_h=window_h + dto.core_inner_diameter / 2)
 
-    if isinstance(dto.core_material, str):
-        material = fmt.Material(dto.core_material)
-    else:
-        material = dto.core_material
-
+    core_material = fmt.ImportedComplexCoreMaterial(
+        material=dto.core_material,
+        temperature=config_dto.temperature,
+        permeability_datasource=config_dto.material_data_sources.permeability_datasource,
+        permittivity_datasource=config_dto.material_data_sources.permittivity_datasource,
+    )
     core = fmt.Core(core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
-                    material=material,
-                    temperature=config_dto.temperature,
-                    frequency=fundamental_frequency,
-                    permeability_datasource=fmt.MaterialDataSource.ManufacturerDatasheet,
-                    permittivity_datasource=fmt.MaterialDataSource.ManufacturerDatasheet)
+                    material=core_material)
 
     geo.set_core(core)
 
@@ -206,9 +195,22 @@ def integrated_transformer_fem_simulation_from_result_dto(config_dto: ItoSingleI
 
     # 4. set insulations
     insulation = fmt.Insulation()
-    insulation.add_core_insulations(0.001, 0.001, 0.001, 0.001)
-    insulation.add_winding_insulations([[0.0002, 0.001],
-                                        [0.001, 0.0002]])
+    insulation.add_top_section_core_insulations(
+        config_dto.insulations.iso_window_top_core_top,
+        config_dto.insulations.iso_window_top_core_bot,
+        config_dto.insulations.iso_window_top_core_left,
+        config_dto.insulations.iso_window_top_core_right,
+    )
+    insulation.add_bottom_section_core_insulations(
+        config_dto.insulations.iso_window_bot_core_top,
+        config_dto.insulations.iso_window_bot_core_bot,
+        config_dto.insulations.iso_window_bot_core_left,
+        config_dto.insulations.iso_window_bot_core_right,
+    )
+    insulation.add_winding_insulations([
+        [config_dto.insulations.iso_primary_to_primary, config_dto.insulations.iso_primary_to_secondary],
+        [config_dto.insulations.iso_primary_to_secondary, config_dto.insulations.iso_secondary_to_secondary],
+    ])
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)

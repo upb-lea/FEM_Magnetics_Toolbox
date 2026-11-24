@@ -215,15 +215,14 @@ class StackedTransformerCenterTappedOptimization:
             core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter,
                                                                window_w=window_w,
                                                                window_h_top=window_h_top, window_h_bot=window_h_bot)
+            imported_core_material = femmt.ImportedComplexCoreMaterial(
+                material=core_material,
+                temperature=config.temperature,
+                permeability_datasource=config.material_datasources.permeability_datasource,
+                permittivity_datasource=config.material_datasources.permittivity_datasource,
+            )
             core = femmt.Core(core_type=femmt.CoreType.Stacked, core_dimensions=core_dimensions,
-                              material=core_material, temperature=config.temperature,
-                              frequency=target_and_fixed_parameters.fundamental_frequency,
-                              permeability_datasource=config.permeability_datasource,
-                              permeability_datatype=config.permeability_datatype,
-                              permeability_measurement_setup=config.permeability_measurement_setup,
-                              permittivity_datasource=config.permittivity_datasource,
-                              permittivity_datatype=config.permittivity_datatype,
-                              permittivity_measurement_setup=config.permittivity_measurement_setup)
+                              material=imported_core_material)
 
             geo.set_core(core)
 
@@ -378,7 +377,7 @@ class StackedTransformerCenterTappedOptimization:
             # Means, in total there are four slashes including the path itself '////home/.../database.sqlite3'
             storage = f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3"
         elif storage == 'mysql':
-            storage = "mysql://monty@localhost/mydb",
+            storage = "mysql://monty@localhost/mydb"
 
         # set logging verbosity: https://optuna.readthedocs.io/en/stable/reference/generated/optuna.logging.set_verbosity.html#optuna.logging.set_verbosity
         # .INFO: all messages (default)
@@ -456,7 +455,7 @@ class StackedTransformerCenterTappedOptimization:
             # Means, in total there are four slashes including the path itself '////home/.../database.sqlite3'
             storage = f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3"
         elif storage == 'mysql':
-            storage = "mysql://monty@localhost/mydb",
+            storage = "mysql://monty@localhost/mydb"
 
         target_and_fixed_parameters = femmt.optimization.StackedTransformerCenterTappedOptimization.calculate_fix_parameters(config)
 
@@ -687,15 +686,14 @@ class StackedTransformerCenterTappedOptimization:
         core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
                                                            window_h_top=window_h_top, window_h_bot=window_h_bot)
 
+        imported_core_material = femmt.ImportedComplexCoreMaterial(
+            material=core_material,
+            temperature=config.temperature,
+            permeability_datasource=config.material_datasources.permeability_datasource,
+            permittivity_datasource=config.material_datasources.permittivity_datasource,
+        )
         core = femmt.Core(core_type=femmt.CoreType.Stacked, core_dimensions=core_dimensions,
-                          material=core_material, temperature=config.temperature,
-                          frequency=target_and_fixed_parameters.fundamental_frequency,
-                          permeability_datasource=config.permeability_datasource,
-                          permeability_datatype=config.permeability_datatype,
-                          permeability_measurement_setup=config.permeability_measurement_setup,
-                          permittivity_datasource=config.permittivity_datasource,
-                          permittivity_datatype=config.permittivity_datatype,
-                          permittivity_measurement_setup=config.permittivity_measurement_setup)
+                          material=imported_core_material)
 
         geo.set_core(core)
 
@@ -845,15 +843,14 @@ class StackedTransformerCenterTappedOptimization:
         core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
                                                            window_h_top=window_h_top, window_h_bot=window_h_bot)
 
+        imported_core_material = femmt.ImportedComplexCoreMaterial(
+            material=core_material,
+            temperature=config.temperature,
+            permeability_datasource=config.material_datasources.permeability_datasource,
+            permittivity_datasource=config.material_datasources.permittivity_datasource,
+        )
         core = femmt.Core(core_type=femmt.CoreType.Stacked, core_dimensions=core_dimensions,
-                          material=core_material, temperature=config.temperature,
-                          frequency=target_and_fixed_parameters.fundamental_frequency,
-                          permeability_datasource=config.permeability_datasource,
-                          permeability_datatype=config.permeability_datatype,
-                          permeability_measurement_setup=config.permeability_measurement_setup,
-                          permittivity_datasource=config.permittivity_datasource,
-                          permittivity_datatype=config.permittivity_datatype,
-                          permittivity_measurement_setup=config.permittivity_measurement_setup)
+                          material=imported_core_material)
 
         geo.set_core(core)
 
@@ -989,15 +986,14 @@ class StackedTransformerCenterTappedOptimization:
         core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
                                                            window_h_top=window_h_top, window_h_bot=window_h_bot)
 
+        imported_core_material = femmt.ImportedComplexCoreMaterial(
+            material=core_material,
+            temperature=config.temperature,
+            permeability_datasource=config.material_datasources.permeability_datasource,
+            permittivity_datasource=config.material_datasources.permittivity_datasource,
+        )
         core = femmt.Core(core_type=femmt.CoreType.Stacked, core_dimensions=core_dimensions,
-                          material=core_material, temperature=config.temperature,
-                          frequency=target_and_fixed_parameters.fundamental_frequency,
-                          permeability_datasource=config.permeability_datasource,
-                          permeability_datatype=config.permeability_datatype,
-                          permeability_measurement_setup=config.permeability_measurement_setup,
-                          permittivity_datasource=config.permittivity_datasource,
-                          permittivity_datatype=config.permittivity_datatype,
-                          permittivity_measurement_setup=config.permittivity_measurement_setup)
+                          material=imported_core_material)
 
         geo.set_core(core)
 

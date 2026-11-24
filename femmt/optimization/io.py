@@ -59,8 +59,14 @@ class InductorOptimization:
         """
         SATURATION_THRESHOLD = 0.3
 
+        if df.empty:
+            return df.copy()
+
         if filter_saturation:
             df = df.loc[df["user_attrs_flux_density_peak"] < SATURATION_THRESHOLD]
+
+        if df.empty:
+            return df.copy()
 
         pareto_df: pd.DataFrame = fo.pareto_front_from_df(df)
 
@@ -522,7 +528,8 @@ class InductorOptimization:
                     iso_core_top=reluctance_input.insulations.core_top, iso_core_bot=reluctance_input.insulations.core_bot,
                     frequency=fft_frequency, litz_wire_material_name='Copper', temperature=reluctance_input.temperature)
 
-                p_winding += proximity_factor_assumption * winding_dc_resistance * reluctance_input.fft_amplitude_list[count] ** 2
+                # FFT amplitudes are peak values; convert AC current to RMS before calculating its loss.
+                p_winding += proximity_factor_assumption * winding_dc_resistance * 0.5 * reluctance_input.fft_amplitude_list[count] ** 2
 
             # Add DC-loss P= R * I²
             p_winding += winding_dc_resistance * reluctance_input.current_offset ** 2
@@ -693,7 +700,7 @@ class InductorOptimization:
                 # Means, in total there are four slashes including the path itself '////home/.../database.sqlite3'
                 storage = f"sqlite:///{config.inductor_optimization_directory}/{config.inductor_study_name}.sqlite3"
             elif storage == 'mysql':
-                storage = "mysql://monty@localhost/mydb",
+                storage = "mysql://monty@localhost/mydb"
 
             # set logging verbosity: https://optuna.readthedocs.io/en/stable/reference/generated/optuna.logging.set_verbosity.html#optuna.logging.set_verbosity
             # .INFO: all messages (default)
@@ -1034,7 +1041,8 @@ class InductorOptimization:
                 # Extract total loss
                 p_total = reluctance_output.p_loss_total
 
-                return reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink, reluctance_output.p_winding, reluctance_output.p_hyst
+                return (reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink, reluctance_output.p_winding, reluctance_output.p_hyst,
+                        reluctance_output.flux_density_peak)
 
     class FemSimulation:
         """Contains methods to perform FEM simulations or process their results."""
@@ -1072,7 +1080,7 @@ class InductorOptimization:
                 else:
 
                     try:
-                        if reluctance_df["params_core_name"] is not None:
+                        if config.core_name_list is not None:
                             core_inner_diameter = reluctance_df["user_attrs_core_inner_diameter"][index].item()
                             window_w = reluctance_df["user_attrs_window_w"][index].item()
                             window_h = reluctance_df["params_window_h"][index].item()

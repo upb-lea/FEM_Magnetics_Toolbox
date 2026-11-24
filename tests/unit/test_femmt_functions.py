@@ -1,6 +1,7 @@
 """Contains Unittests for some sub-functions of FEMMT."""
 import pytest
 import femmt
+import femmt.functions as femmt_functions
 import numpy as np
 
 def test_fft():
@@ -11,20 +12,90 @@ def test_fft():
     out_f_test = np.array([25013., 75039., 125065., 175091., 275143., ])
     out_x_test = np.array([169.6, 26.8, 3., 5.4, 2.])
     out_phi_test = np.array([-2.5, 2.8, -2.5, -3.1, -2.7])
-    out_test = np.array([out_f_test, out_x_test, out_phi_test])
-    assert out.any() == out_test.any()
+    np.testing.assert_allclose(out[0], out_f_test, rtol=1e-3)
+    np.testing.assert_allclose(out[1], out_x_test, rtol=3e-2)
+    np.testing.assert_allclose(out[2], out_phi_test, atol=0.04)
 
-    out = femmt.fft(example_waveform, plot='no', mode='rad', f0=25000, title='FFT input current', filter_type='harmonic', filter_value_harmonic=10)
+    out = femmt.fft(example_waveform, plot='no', mode='rad', f0=25000, title='FFT input current', filter_type='harmonic', filter_value_harmonic=3)
     out_f_test = np.array([0., 25013., 50026.])
     out_x_test = np.array([0.2, 169.6, 0.2])
     out_phi_test = np.array([3.1, -2.5, 1.8])
-    out_test = np.array([out_f_test, out_x_test, out_phi_test])
-    assert out.any() == out_test.any()
+    np.testing.assert_allclose(out[0], out_f_test, rtol=1e-3)
+    np.testing.assert_allclose(out[1], out_x_test, rtol=2e-1, atol=0.005)
+    np.testing.assert_allclose(out[2], out_phi_test, atol=0.05)
 
     with pytest.raises(ValueError):
         femmt.fft(example_waveform, mode='deg')
         femmt.fft(example_waveform, mode='rad')
         femmt.fft(example_waveform, mode='not_allowed_mode')
+
+
+@pytest.mark.parametrize("mode", ["rad", "deg"])
+def test_fft_does_not_modify_input(mode: str) -> None:
+    """Check that FFT mode conversion leaves the caller's waveform unchanged.
+
+    :param mode: Input time-axis mode, either radians or degrees.
+    :type mode: str
+    """
+    period = 2 * np.pi if mode == "rad" else 360
+    waveform = np.array([[0, period / 4, period / 2, 3 * period / 4, period], [1, 0, -1, 0, 1]], dtype=float)
+    original_waveform = waveform.copy()
+
+    first_result = femmt.fft(waveform, mode=mode, f0=25000)
+    second_result = femmt.fft(waveform, mode=mode, f0=25000)
+
+    np.testing.assert_array_equal(waveform, original_waveform)
+    np.testing.assert_allclose(first_result, second_result)
+
+
+def test_electrostatic_excitation_clears_inactive_input() -> None:
+    """Check that voltage and charge excitation states are mutually exclusive."""
+    component = object.__new__(femmt.MagneticComponent)
+    component.windings = [object()]
+    component.voltage = [None]
+    component.charge = []
+
+    component.excitation_electrostatic(charge=[[1e-9]])
+    assert component.voltage is None
+    assert component.charge == [[1e-9]]
+
+    component.excitation_electrostatic(voltage=[[12.0]])
+    assert component.charge is None
+    assert component.voltage == [[12.0]]
+
+
+def test_integrated_transformer_requires_both_core_insulations():
+    """Integrated-transformer insulation must be specified for both sections."""
+    component = object.__new__(femmt.MagneticComponent)
+    component.component_type = femmt.ComponentType.IntegratedTransformer
+    component.simulation_type = femmt.SimulationType.FreqDomain
+    insulation = femmt.Insulation()
+    insulation.add_top_section_core_insulations(1e-3, 1e-3, 1e-3, 1e-3)
+
+    with pytest.raises(Exception, match="top and bottom core sections"):
+        component.set_insulation(insulation)
+
+
+def test_electrostatic_insulation_requires_bobbin_dimensions():
+    """Electrostatic setup must reject insulation without bobbin dimensions."""
+    component = object.__new__(femmt.MagneticComponent)
+    component.component_type = femmt.ComponentType.Inductor
+    component.simulation_type = femmt.SimulationType.ElectroStatic
+    insulation = femmt.Insulation()
+    insulation.add_winding_insulations([[1e-3]])
+
+    with pytest.raises(Exception, match="bobbin parameters"):
+        component.set_insulation(insulation)
+
+
+def test_air_gap_overlap_is_rejected():
+    """Overlapping manual air-gap intervals must be rejected."""
+    air_gaps = femmt.AirGaps(femmt.AirGapMethod.Manually, None)
+    air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, height=2e-3, position_value=0.0)
+
+    with pytest.raises(ValueError, match="overlaps"):
+        air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, height=2e-3, position_value=0.5e-3)
+
 
 def test_time_current_vector_to_fft_excitation():
     """Unittest to calculate the excitation sweep parameters for a given waveform vector."""
@@ -40,6 +111,40 @@ def test_time_current_vector_to_fft_excitation():
     for count, _ in enumerate(current_list_list):
         assert current_list_list[count] == pytest.approx(current_result_list_list[count], rel=4e-3)
         assert phi_deg_list_list[count] == pytest.approx(phase_deg_result_list_list[count], rel=3e-3)
+
+
+def test_time_current_vector_to_fft_excitation_aligns_union_of_frequencies(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """Check that input spectra are aligned to their complete frequency union.
+
+    :param monkeypatch: Fixture used to provide deterministic FFT spectra.
+    :type monkeypatch: pytest.MonkeyPatch
+    :return: None
+    :rtype: None
+    """
+    def fake_fft(waveform: np.ndarray, **kwargs: object) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Return predetermined FFT spectra based on the waveform's first current sample.
+
+        :param waveform: Test waveform represented as time and current rows.
+        :type waveform: np.ndarray
+        :param kwargs: FFT options accepted by the function being patched.
+        :type kwargs: object
+        :return: Frequency bins, amplitudes, and phases in radians.
+        :rtype: tuple[np.ndarray, np.ndarray, np.ndarray]
+        """
+        if waveform[1][0] == 1:
+            return np.array([50, 100, 150]), np.array([1, 2, 3]), np.array([0, np.pi / 2, np.pi])
+        return np.array([50, 150]), np.array([5, 7]), np.array([np.pi / 4, -np.pi / 4])
+
+    monkeypatch.setattr(femmt_functions, "fft", fake_fft)
+    waveform_1 = np.array([[0, 1], [1, 1]])
+    waveform_2 = np.array([[0, 1], [2, 2]])
+
+    frequencies, currents, phases = femmt.time_current_vector_to_fft_excitation([waveform_1, waveform_2])
+
+    assert frequencies == pytest.approx([50, 100, 150])
+    assert currents == [[1, 5], [2, 0], [3, 7]]
+    np.testing.assert_allclose(phases, [[0, 45], [90, 0], [180, -45]])
 
 def test_find_common_frequencies():
     """Unittest to figure out common frequencies in different current waveforms."""

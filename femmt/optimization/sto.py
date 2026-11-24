@@ -562,7 +562,7 @@ class StackedTransformerOptimization:
                 # Means, in total there are four slashes including the path itself '////home/.../database.sqlite3'
                 storage = f"sqlite:///{config.stacked_transformer_optimization_directory}/{config.stacked_transformer_study_name}.sqlite3"
             elif storage == 'mysql':
-                storage = "mysql://monty@localhost/mydb",
+                storage = "mysql://monty@localhost/mydb"
 
             # set logging verbosity: https://optuna.readthedocs.io/en/stable/reference/generated/optuna.logging.set_verbosity.html#optuna.logging.set_verbosity
             # .INFO: all messages (default)
@@ -919,9 +919,10 @@ class StackedTransformerOptimization:
                     reluctance_model_input)
 
                 p_total = reluctance_output.p_loss
+                b_max = np.max([reluctance_output.b_max_top, reluctance_output.b_max_bot, reluctance_output.b_max_middle])
 
                 return (reluctance_output.volume, p_total, reluctance_output.area_to_heat_sink, reluctance_output.winding_1_loss,
-                        reluctance_output.winding_2_loss, reluctance_output.p_hyst)
+                        reluctance_output.winding_2_loss, reluctance_output.p_hyst, b_max)
 
     class FemSimulation:
         """Contains methods to perform FEM simulations or process their results."""
@@ -961,7 +962,7 @@ class StackedTransformerOptimization:
                 else:
 
                     try:
-                        if reluctance_df["params_core_name"] is not None:
+                        if config.core_name_list is not None:
                             core_inner_diameter = reluctance_df["user_attrs_core_inner_diameter"][index].item()
                             window_w = reluctance_df["user_attrs_window_w"][index].item()
                             window_h_bot = reluctance_df["user_attrs_window_h_bot"][index].item()
