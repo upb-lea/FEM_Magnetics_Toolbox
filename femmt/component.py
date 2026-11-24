@@ -1096,7 +1096,8 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # GetDP Interaction / Simulation / Excitation
-    def excitation(self, frequency: float, amplitude_list: list, phase_deg_list: list = None, ex_type: str = 'current', plot_interpolation: bool = False):
+    def excitation(self, frequency: float, amplitude_list: list, phase_deg_list: list = None, ex_type: str = 'current', plot_interpolation: bool = False, 
+        perform_saturation_pre_check: bool = True):
         """
         Run the electromagnetic simulation.
 
@@ -1190,7 +1191,7 @@ class MagneticComponent:
                 self.red_freq[num] = 0
 
         # check the core saturation ( It does not work for custom)
-        if self.core.material.material != "custom":
+        if self.core.material.material != "custom" and perform_saturation_pre_check:
             self.reluctance_model_pre_check(self._saturation_threshold)
 
     def excitation_time_domain(self, current_list: list[list[float]], time_list: list[float], number_of_periods: int, ex_type: str = 'current',
@@ -1827,7 +1828,8 @@ class MagneticComponent:
     def excitation_sweep(self, frequency_list: list, current_list_list: list, phi_deg_list_list: list, show_last_fem_simulation: bool = False,
                          excitation_meshing_type: ExcitationMeshingType = None, skin_mesh_factor: float = 0.5, visualize_before: bool = False,
                          save_png: bool = False, color_scheme: dict = ff.colors_femmt_default, colors_geometry: dict = ff.colors_geometry_femmt_default,
-                         inductance_dict: dict = None, core_hyst_loss: list[float] | np.ndarray = None) -> None:
+                         inductance_dict: dict = None, core_hyst_loss: list[float] | np.ndarray = None, perform_saturation_pre_check: bool = True
+                         ) -> None:
         """
         Perform a sweep simulation for frequency-current pairs.
 
@@ -1911,7 +1913,7 @@ class MagneticComponent:
                 self.mesh.generate_electro_magnetic_mesh()
 
                 self.excitation(frequency=frequency_list[count_frequency], amplitude_list=current_list_list[count_frequency],
-                                phase_deg_list=phi_deg_list_list[count_frequency])  # frequency and current
+                                phase_deg_list=phi_deg_list_list[count_frequency], perform_saturation_pre_check=perform_saturation_pre_check)  # frequency and current
                 self.write_simulation_parameters_to_pro_files()
                 self.generate_load_litz_approximation_parameters()
                 self.simulate()
@@ -3607,7 +3609,7 @@ class MagneticComponent:
             self.high_level_geo_gen(frequency=op_frequency, skin_mesh_factor=skin_mesh_factor)
             frequencies, currents, phases = ff.create_open_circuit_excitation_sweep(I0, len(self.windings), op_frequency)
             self.excitation_sweep(frequency_list=frequencies, current_list_list=currents, phi_deg_list_list=phases,
-                                  show_last_fem_simulation=visualize_last_fem_simulation)
+                                  show_last_fem_simulation=visualize_last_fem_simulation, perform_saturation_pre_check=False)
 
             # Post-Processing
             log = self.read_log()
