@@ -1097,7 +1097,7 @@ class MagneticComponent:
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # GetDP Interaction / Simulation / Excitation
     def excitation(self, frequency: float, amplitude_list: list, phase_deg_list: list = None, ex_type: str = 'current', plot_interpolation: bool = False, 
-        perform_saturation_pre_check: bool = True):
+                   perform_saturation_pre_check: bool = True):
         """
         Run the electromagnetic simulation.
 
@@ -1913,7 +1913,7 @@ class MagneticComponent:
                 self.mesh.generate_electro_magnetic_mesh()
 
                 self.excitation(frequency=frequency_list[count_frequency], amplitude_list=current_list_list[count_frequency],
-                                phase_deg_list=phi_deg_list_list[count_frequency], perform_saturation_pre_check=perform_saturation_pre_check)  # frequency and current
+                                phase_deg_list=phi_deg_list_list[count_frequency], perform_saturation_pre_check=perform_saturation_pre_check)
                 self.write_simulation_parameters_to_pro_files()
                 self.generate_load_litz_approximation_parameters()
                 self.simulate()
