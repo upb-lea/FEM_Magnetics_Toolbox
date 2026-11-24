@@ -528,7 +528,8 @@ class InductorOptimization:
                     iso_core_top=reluctance_input.insulations.core_top, iso_core_bot=reluctance_input.insulations.core_bot,
                     frequency=fft_frequency, litz_wire_material_name='Copper', temperature=reluctance_input.temperature)
 
-                p_winding += proximity_factor_assumption * winding_dc_resistance * reluctance_input.fft_amplitude_list[count] ** 2
+                # FFT amplitudes are peak values; convert AC current to RMS before calculating its loss.
+                p_winding += proximity_factor_assumption * winding_dc_resistance * 0.5 * reluctance_input.fft_amplitude_list[count] ** 2
 
             # Add DC-loss P= R * I²
             p_winding += winding_dc_resistance * reluctance_input.current_offset ** 2
