@@ -1351,6 +1351,7 @@ class MagneticComponent:
         num_windings = len(self.windings)
 
         if excitation_type == 'charge':
+            self.voltage = None
             # Initialize charges with zero values
             self.charge = [[0.0] * len(turns) for turns in value_list]
             for winding_index in range(num_windings):
@@ -1358,6 +1359,7 @@ class MagneticComponent:
                     # Assign charge value to each turn in each winding
                     self.charge[winding_index][turn_index] = value_list[winding_index][turn_index]
         else:
+            self.charge = None
             # Initialize voltages with zero values
             self.voltage = [[0.0] * len(turns) for turns in value_list]
             for winding_index in range(num_windings):
