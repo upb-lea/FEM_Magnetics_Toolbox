@@ -1421,7 +1421,7 @@ class WindingWindow:
         :type horizontal_split_factor: float, optional
         :param vertical_split_factor: Vertical split factor 0...1, defaults to 0.5
         :type vertical_split_factor: float, optional
-        :return: One window for unsplit modes, otherwise the tuple of created windows
+        :return: One window for not split modes, otherwise the tuple of created windows
         :rtype: VirtualWindingWindow | tuple[VirtualWindingWindow, ...]
         :param top_bobbin: top bobbin thickness in m
         :type top_bobbin: float
