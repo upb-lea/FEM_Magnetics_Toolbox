@@ -566,13 +566,10 @@ class MagneticComponent:
             if insulation.cond_cond is None or not insulation.cond_cond:
                 raise Exception("insulations between the conductors must be set")
 
-        if self.simulation_type == SimulationType.ElectroStatic:
-            insulation.bobbin_dimensions = True
-        else:
-            insulation.bobbin_dimensions = False
-
         if self.simulation_type == SimulationType.ElectroStatic and insulation.bobbin_dimensions is None:
             raise Exception("bobbin parameters must be set in electrostatic simulations")
+
+        insulation.bobbin_dimensions = self.simulation_type == SimulationType.ElectroStatic
 
         self.insulation = insulation
 
