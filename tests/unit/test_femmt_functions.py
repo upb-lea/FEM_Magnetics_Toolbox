@@ -31,8 +31,12 @@ def test_fft():
 
 
 @pytest.mark.parametrize("mode", ["rad", "deg"])
-def test_fft_does_not_modify_input(mode):
-    """FFT mode conversion must leave the caller's waveform unchanged."""
+def test_fft_does_not_modify_input(mode: str) -> None:
+    """Check that FFT mode conversion leaves the caller's waveform unchanged.
+
+    :param mode: Input time-axis mode, either radians or degrees.
+    :type mode: str
+    """
     period = 2 * np.pi if mode == "rad" else 360
     waveform = np.array([[0, period / 4, period / 2, 3 * period / 4, period], [1, 0, -1, 0, 1]], dtype=float)
     original_waveform = waveform.copy()
@@ -44,8 +48,8 @@ def test_fft_does_not_modify_input(mode):
     np.testing.assert_allclose(first_result, second_result)
 
 
-def test_electrostatic_excitation_clears_inactive_input():
-    """Voltage and charge excitation state must be mutually exclusive."""
+def test_electrostatic_excitation_clears_inactive_input() -> None:
+    """Check that voltage and charge excitation states are mutually exclusive."""
     component = object.__new__(femmt.MagneticComponent)
     component.windings = [object()]
     component.voltage = [None]
@@ -109,9 +113,25 @@ def test_time_current_vector_to_fft_excitation():
         assert phi_deg_list_list[count] == pytest.approx(phase_deg_result_list_list[count], rel=3e-3)
 
 
-def test_time_current_vector_to_fft_excitation_aligns_union_of_frequencies(monkeypatch):
-    """All input spectra must be aligned to the complete frequency union."""
-    def fake_fft(waveform, **kwargs):
+def test_time_current_vector_to_fft_excitation_aligns_union_of_frequencies(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """Check that input spectra are aligned to their complete frequency union.
+
+    :param monkeypatch: Fixture used to provide deterministic FFT spectra.
+    :type monkeypatch: pytest.MonkeyPatch
+    :return: None
+    :rtype: None
+    """
+    def fake_fft(waveform: np.ndarray, **kwargs: object) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Return predetermined FFT spectra based on the waveform's first current sample.
+
+        :param waveform: Test waveform represented as time and current rows.
+        :type waveform: np.ndarray
+        :param kwargs: FFT options accepted by the function being patched.
+        :type kwargs: object
+        :return: Frequency bins, amplitudes, and phases in radians.
+        :rtype: tuple[np.ndarray, np.ndarray, np.ndarray]
+        """
         if waveform[1][0] == 1:
             return np.array([50, 100, 150]), np.array([1, 2, 3]), np.array([0, np.pi / 2, np.pi])
         return np.array([50, 150]), np.array([5, 7]), np.array([np.pi / 4, -np.pi / 4])

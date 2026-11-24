@@ -686,9 +686,9 @@ class AirGaps:
     def _check_for_overlap(self, leg_position: AirGapLegPosition, position: float, height: float) -> None:
         """Raise when a new manually positioned gap overlaps an existing gap on the same leg."""
         for index, midpoint in enumerate(self.midpoints):
-            if midpoint[0] == leg_position.value and (
-                position - height / 2 < midpoint[1] + midpoint[2] / 2
-                and position + height / 2 > midpoint[1] - midpoint[2] / 2
+            if midpoint[0] == leg_position.value and ( \
+                position - height / 2 < midpoint[1] + midpoint[2] / 2 and \
+                position + height / 2 > midpoint[1] - midpoint[2] / 2 \
             ):
                 raise ValueError(f"Air gap {self.number} overlaps air gap {index}.")
 

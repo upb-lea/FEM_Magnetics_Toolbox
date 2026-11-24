@@ -962,7 +962,7 @@ class StackedTransformerOptimization:
                 else:
 
                     try:
-                        if reluctance_df["params_core_name"] is not None:
+                        if config.core_name_list is not None:
                             core_inner_diameter = reluctance_df["user_attrs_core_inner_diameter"][index].item()
                             window_w = reluctance_df["user_attrs_window_w"][index].item()
                             window_h_bot = reluctance_df["user_attrs_window_h_bot"][index].item()
