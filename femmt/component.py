@@ -21,6 +21,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 import gmsh
+from pandas.io.pytables import performance_doc
 
 # Local libraries
 import femmt.functions as ff
@@ -2158,9 +2159,13 @@ class MagneticComponent:
         # From here, the hysteresis of transformer is calculated
         ps_primary_coil_turns = [150000 + i for i in range(number_primary_coil_turns)]
         self.overwrite_conductors_with_air(ps_primary_coil_turns)
+        # note: as the top inductor part has been overwritten with air, and a special hysteresis loss only waveform is introduced in the core,
+        # the reluctance model pre-check does not consider this and treats the circuit like a normal stacked transformer. Therefore, the
+        # saturation check needs to be disabled!
         self.excitation(frequency=study_excitation["hysteresis"]["frequency"],
                         amplitude_list=study_excitation["hysteresis"]["transformer"]["current_amplitudes"],
-                        phase_deg_list=study_excitation["hysteresis"]["transformer"]["current_phases_deg"], plot_interpolation=False)
+                        phase_deg_list=study_excitation["hysteresis"]["transformer"]["current_phases_deg"], plot_interpolation=False,
+                        perform_saturation_pre_check=False)
         self.write_simulation_parameters_to_pro_files()
         self.generate_load_litz_approximation_parameters()
         self.simulate()
