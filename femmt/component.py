@@ -1114,6 +1114,8 @@ class MagneticComponent:
         :type phase_deg_list: list
         :param ex_type: Excitation type. 'Current' implemented only. Future use may: 'voltage' and 'current_density'
         :type ex_type: str
+        :param perform_saturation_pre_check: True to perform the saturation pre check (default)
+        :type perform_saturation_pre_check: bool
         """
         # negative currents are not allowed and lead to wrong simulation results. Check for this.
         # this message appears after meshing but before simulation
