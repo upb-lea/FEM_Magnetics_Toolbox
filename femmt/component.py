@@ -559,7 +559,7 @@ class MagneticComponent:
         """
         # For integrated transformers, check if top and bottom core insulations are set
         if self.component_type == ComponentType.IntegratedTransformer:
-            if (insulation.top_section_core_cond is None or not insulation.top_section_core_cond) and (
+            if (insulation.top_section_core_cond is None or not insulation.top_section_core_cond) or (
                     insulation.bot_section_core_cond is None or not insulation.bot_section_core_cond):
                 raise Exception("Insulations for the top and bottom core sections must be set for integrated transformers")
         else:

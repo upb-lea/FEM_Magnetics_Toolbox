@@ -363,7 +363,7 @@ class TransformerOptimization:
             # Means, in total there are four slashes including the path itself '////home/.../database.sqlite3'
             storage = f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3"
         elif storage == 'mysql':
-            storage = "mysql://monty@localhost/mydb",
+            storage = "mysql://monty@localhost/mydb"
 
         target_and_fixed_parameters = femmt.optimization.TransformerOptimization.calculate_fix_parameters(config)
 

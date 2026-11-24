@@ -12,15 +12,17 @@ def test_fft():
     out_f_test = np.array([25013., 75039., 125065., 175091., 275143., ])
     out_x_test = np.array([169.6, 26.8, 3., 5.4, 2.])
     out_phi_test = np.array([-2.5, 2.8, -2.5, -3.1, -2.7])
-    out_test = np.array([out_f_test, out_x_test, out_phi_test])
-    assert out.any() == out_test.any()
+    np.testing.assert_allclose(out[0], out_f_test, rtol=1e-3)
+    np.testing.assert_allclose(out[1], out_x_test, rtol=3e-2)
+    np.testing.assert_allclose(out[2], out_phi_test, atol=0.04)
 
-    out = femmt.fft(example_waveform, plot='no', mode='rad', f0=25000, title='FFT input current', filter_type='harmonic', filter_value_harmonic=10)
+    out = femmt.fft(example_waveform, plot='no', mode='rad', f0=25000, title='FFT input current', filter_type='harmonic', filter_value_harmonic=3)
     out_f_test = np.array([0., 25013., 50026.])
     out_x_test = np.array([0.2, 169.6, 0.2])
     out_phi_test = np.array([3.1, -2.5, 1.8])
-    out_test = np.array([out_f_test, out_x_test, out_phi_test])
-    assert out.any() == out_test.any()
+    np.testing.assert_allclose(out[0], out_f_test, rtol=1e-3)
+    np.testing.assert_allclose(out[1], out_x_test, rtol=2e-1, atol=0.005)
+    np.testing.assert_allclose(out[2], out_phi_test, atol=0.05)
 
     with pytest.raises(ValueError):
         femmt.fft(example_waveform, mode='deg')
@@ -56,6 +58,39 @@ def test_electrostatic_excitation_clears_inactive_input():
     component.excitation_electrostatic(voltage=[[12.0]])
     assert component.charge is None
     assert component.voltage == [[12.0]]
+
+
+def test_integrated_transformer_requires_both_core_insulations():
+    """Integrated-transformer insulation must be specified for both sections."""
+    component = object.__new__(femmt.MagneticComponent)
+    component.component_type = femmt.ComponentType.IntegratedTransformer
+    component.simulation_type = femmt.SimulationType.FreqDomain
+    insulation = femmt.Insulation()
+    insulation.add_top_section_core_insulations(1e-3, 1e-3, 1e-3, 1e-3)
+
+    with pytest.raises(Exception, match="top and bottom core sections"):
+        component.set_insulation(insulation)
+
+
+def test_electrostatic_insulation_requires_bobbin_dimensions():
+    """Electrostatic setup must reject insulation without bobbin dimensions."""
+    component = object.__new__(femmt.MagneticComponent)
+    component.component_type = femmt.ComponentType.Inductor
+    component.simulation_type = femmt.SimulationType.ElectroStatic
+    insulation = femmt.Insulation()
+    insulation.add_winding_insulations([[1e-3]])
+
+    with pytest.raises(Exception, match="bobbin parameters"):
+        component.set_insulation(insulation)
+
+
+def test_air_gap_overlap_is_rejected():
+    """Overlapping manual air-gap intervals must be rejected."""
+    air_gaps = femmt.AirGaps(femmt.AirGapMethod.Manually, None)
+    air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, height=2e-3, position_value=0.0)
+
+    with pytest.raises(ValueError, match="overlaps"):
+        air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, height=2e-3, position_value=0.5e-3)
 
 
 def test_time_current_vector_to_fft_excitation():

@@ -700,7 +700,7 @@ class InductorOptimization:
                 # Means, in total there are four slashes including the path itself '////home/.../database.sqlite3'
                 storage = f"sqlite:///{config.inductor_optimization_directory}/{config.inductor_study_name}.sqlite3"
             elif storage == 'mysql':
-                storage = "mysql://monty@localhost/mydb",
+                storage = "mysql://monty@localhost/mydb"
 
             # set logging verbosity: https://optuna.readthedocs.io/en/stable/reference/generated/optuna.logging.set_verbosity.html#optuna.logging.set_verbosity
             # .INFO: all messages (default)

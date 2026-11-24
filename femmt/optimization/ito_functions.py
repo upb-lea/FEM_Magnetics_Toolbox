@@ -44,19 +44,11 @@ def dto_list_to_vec(dto_list: list[ItoSingleResultFile]) -> tuple:
     :type dto_list: list[ItoSingleResultFile]
 
     """
-    for dto in dto_list:
-        x_pareto_vec = dto.core_2daxi_total_volume
-        y_pareto_vec = dto.total_loss
+    x_pareto_vec = np.asarray([dto.core_2daxi_total_volume for dto in dto_list])
+    y_pareto_vec = np.asarray([dto.total_loss for dto in dto_list])
 
-    vector_to_sort = np.array([x_pareto_vec, y_pareto_vec])
-
-    # sorting 2d array by 1st row
-    # https://stackoverflow.com/questions/49374253/sort-a-numpy-2d-array-by-1st-row-maintaining-columns
-    sorted_vector = vector_to_sort[:, vector_to_sort[0].argsort()]
-    x_pareto_vec = sorted_vector[0]
-    y_pareto_vec = sorted_vector[1]
-
-    return x_pareto_vec, y_pareto_vec
+    sort_indices = np.argsort(x_pareto_vec)
+    return x_pareto_vec[sort_indices], y_pareto_vec[sort_indices]
 
 
 def set_up_folder_structure(working_directory: str) -> WorkingDirectories:

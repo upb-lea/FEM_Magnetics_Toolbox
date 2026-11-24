@@ -683,6 +683,15 @@ class AirGaps:
         self.number = 0
         self.air_gap_settings = []
 
+    def _check_for_overlap(self, leg_position: AirGapLegPosition, position: float, height: float) -> None:
+        """Raise when a new manually positioned gap overlaps an existing gap on the same leg."""
+        for index, midpoint in enumerate(self.midpoints):
+            if midpoint[0] == leg_position.value and (
+                position - height / 2 < midpoint[1] + midpoint[2] / 2
+                and position + height / 2 > midpoint[1] - midpoint[2] / 2
+            ):
+                raise ValueError(f"Air gap {self.number} overlaps air gap {index}.")
+
     def add_air_gap(self, leg_position: AirGapLegPosition, height: float, position_value: float | None = 0,
                     stacked_position: StackedPosition = None):
         """
@@ -697,17 +706,6 @@ class AirGaps:
         :param stacked_position: Top, Bot
         :type stacked_position: StackedPosition
         """
-        self.air_gap_settings.append({
-            "leg_position": leg_position.name,
-            "position_value": position_value,
-            "height": height,
-            "stacked_position": stacked_position})
-
-        for index, midpoint in enumerate(self.midpoints):
-            if midpoint[0] == leg_position and midpoint[1] + midpoint[2] < position_value - height \
-                    and midpoint[1] - midpoint[2] > position_value + height:
-                raise Exception(f"Air gaps {index} and {len(self.midpoints)} are overlapping")
-
         if leg_position == AirGapLegPosition.LeftLeg or leg_position == AirGapLegPosition.RightLeg:
             raise Exception("Currently the leg positions LeftLeg and RightLeg are not supported")
 
@@ -719,6 +717,7 @@ class AirGaps:
                 self.number += 1
 
         elif self.method == AirGapMethod.Manually:
+            self._check_for_overlap(leg_position, position_value, height)
             self.midpoints.append([leg_position.value, position_value, height])
             self.number += 1
 
@@ -743,6 +742,7 @@ class AirGaps:
             elif position - height / 2 < -self.core.geometry.window_h / 2:
                 position += -self.core.geometry.window_h / 2 - (position - height / 2)
 
+            self._check_for_overlap(leg_position, position, height)
             self.midpoints.append([leg_position.value, position, height])
             self.number += 1
 
@@ -765,6 +765,13 @@ class AirGaps:
 
         else:
             raise Exception(f"Method {self.method} is not supported.")
+
+        self.air_gap_settings.append({
+            "leg_position": leg_position.name,
+            "position_value": position_value,
+            "height": height,
+            "stacked_position": stacked_position,
+        })
 
     def to_dict(self):
         """Transfer object parameters to a dictionary. Important method to create the final result-log."""

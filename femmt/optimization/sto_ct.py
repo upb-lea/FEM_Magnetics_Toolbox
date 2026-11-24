@@ -377,7 +377,7 @@ class StackedTransformerCenterTappedOptimization:
             # Means, in total there are four slashes including the path itself '////home/.../database.sqlite3'
             storage = f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3"
         elif storage == 'mysql':
-            storage = "mysql://monty@localhost/mydb",
+            storage = "mysql://monty@localhost/mydb"
 
         # set logging verbosity: https://optuna.readthedocs.io/en/stable/reference/generated/optuna.logging.set_verbosity.html#optuna.logging.set_verbosity
         # .INFO: all messages (default)
@@ -455,7 +455,7 @@ class StackedTransformerCenterTappedOptimization:
             # Means, in total there are four slashes including the path itself '////home/.../database.sqlite3'
             storage = f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3"
         elif storage == 'mysql':
-            storage = "mysql://monty@localhost/mydb",
+            storage = "mysql://monty@localhost/mydb"
 
         target_and_fixed_parameters = femmt.optimization.StackedTransformerCenterTappedOptimization.calculate_fix_parameters(config)
 
