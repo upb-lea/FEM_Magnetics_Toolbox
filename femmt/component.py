@@ -2180,9 +2180,12 @@ class MagneticComponent:
 
         # From here on, inductor losses are calculated
         # Therefore, the first done overwrite of inductor conductors is restored
+        # do not perform the reluctance model pre-check, as the pre-check considers a full stacked transformer, but here,
+        # a special case is given, as the top windings do not exist.
         self.overwrite_air_conductors_with_conductors(list(np.array(ps_primary_coil_turns) + 1000000))
         self.excitation(frequency=study_excitation["hysteresis"]["frequency"], amplitude_list=study_excitation["hysteresis"]["choke"]["current_amplitudes"],
-                        phase_deg_list=study_excitation["hysteresis"]["choke"]["current_phases_deg"], plot_interpolation=False)
+                        phase_deg_list=study_excitation["hysteresis"]["choke"]["current_phases_deg"], plot_interpolation=False,
+                        perform_saturation_pre_check=False)
         self.write_simulation_parameters_to_pro_files()
         self.generate_load_litz_approximation_parameters()
         self.simulate()
