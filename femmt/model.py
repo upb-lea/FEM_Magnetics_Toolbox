@@ -13,6 +13,7 @@ from typing import Optional, Union, Dict, Any
 # Local libraries
 import materialdatabase as mdb
 from materialdatabase import Material, DataSource, DatasheetAttribute, ComplexDataType, ComplexPermeability
+from femmt.dtos import BobbinDimensions
 
 import femmt.functions as ff
 from femmt.functions_model import *
@@ -813,7 +814,7 @@ class Insulation:
     er_turn_insulation: list[float]
     er_layer_insulation: float = None
     er_bobbin: float = None
-    bobbin_dimensions: None
+    bobbin_dimensions: BobbinDimensions | None
     thickness_of_layer_insulation: float
     consistent_ins: bool = True
     draw_insulation_between_layers: bool = True
@@ -821,7 +822,8 @@ class Insulation:
     add_turn_insulations: bool = True
     max_aspect_ratio: float
 
-    def __init__(self, max_aspect_ratio: float = 10, flag_insulation: bool = True, bobbin_dimensions: None = None):
+    def __init__(self, max_aspect_ratio: float = 10, flag_insulation: bool = True,
+                 bobbin_dimensions: BobbinDimensions | None = None):
         """Create an insulation object.
 
         Sets an insulation_delta value. In order to simplify the drawing of the isolations between core and winding window the isolation rectangles
@@ -1073,7 +1075,7 @@ class VirtualWindingWindow:
         self.winding_is_set = False
         self.group_size: int | None = None
 
-    def set_winding(self, conductor: Conductor, turns: int, winding_scheme: WindingScheme, alignment: Align | None = None,
+    def set_winding(self, conductor: Conductor, turns: int, winding_scheme: WindingScheme | None, alignment: Align | None = None,
                     placing_strategy: ConductorDistribution | None = None, zigzag: bool = False,
                     wrap_para_type: WrapParaType = None, foil_vertical_placing_strategy: FoilVerticalDistribution | None = None,
                     foil_horizontal_placing_strategy: FoilHorizontalDistribution | None = None):
@@ -1395,7 +1397,7 @@ class WindingWindow:
     def split_window(self, split_type: WindingWindowSplit, split_distance: float = 0,
                      horizontal_split_factor: float = 0.5, vertical_split_factor: float = 0.5,
                      top_bobbin: float = None, bot_bobbin: float = None, left_bobbin: float = None,
-                     right_bobbin: float = None) -> tuple[VirtualWindingWindow]:
+                     right_bobbin: float = None) -> VirtualWindingWindow | tuple[VirtualWindingWindow, ...]:
         """Create up to 4 virtual winding windows depending on the split type and the horizontal and vertical split factors.
 
         The split factors are values between 0 and 1 and determine a horizontal and vertical line at which the window is split.
@@ -1419,8 +1421,8 @@ class WindingWindow:
         :type horizontal_split_factor: float, optional
         :param vertical_split_factor: Vertical split factor 0...1, defaults to 0.5
         :type vertical_split_factor: float, optional
-        :return: Tuple containing the virtual winding windows
-        :rtype: tuple[VirtualWindingWindow]
+        :return: One window for unsplit modes, otherwise the tuple of created windows
+        :rtype: VirtualWindingWindow | tuple[VirtualWindingWindow, ...]
         :param top_bobbin: top bobbin thickness in m
         :type top_bobbin: float
         :param bot_bobbin: bottom bobbin thickness in m
@@ -1776,14 +1778,20 @@ class WindingWindow:
 
         return new_vww
 
-    def NHorizontalAndVerticalSplit(self, horizontal_split_factors: list[float] = None, vertical_split_factors: list[list[float]] = None):
+    def NHorizontalAndVerticalSplit(
+            self,
+            horizontal_split_factors: list[float] | None = None,
+            vertical_split_factors: list[list[float] | None] | None = None) -> list[VirtualWindingWindow]:
         """
         Split a winding window into N columns (horizontal) with each M_N according rows (vertical).
 
         :param horizontal_split_factors: position of borders between columns
         :param vertical_split_factors: position of borders between rows per column
-        :return:
+        :return: The generated virtual winding windows.
+        :rtype: list[VirtualWindingWindow]
         """
+        if horizontal_split_factors is None:
+            horizontal_split_factors = []
         if vertical_split_factors is None:
             vertical_split_factors = [None] * (len(horizontal_split_factors) + 1)
 
