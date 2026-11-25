@@ -2202,8 +2202,10 @@ class MagneticComponent:
         # Note: As the result log is now re-written, the before calculated p_hyst_core_parts is added into this
         # result-log also the inductance dict is externally inserted into the final result log.
         # The final result log is written after this simulation
+        # winding loss simulation only: turn off the saturation pre check
         self.excitation_sweep(study_excitation["linear_losses"]["frequencies"], study_excitation["linear_losses"]["current_amplitudes"],
-                              study_excitation["linear_losses"]["current_phases_deg"], inductance_dict=inductance_dict, core_hyst_loss=p_hyst_core_parts)
+                              study_excitation["linear_losses"]["current_phases_deg"], inductance_dict=inductance_dict, core_hyst_loss=p_hyst_core_parts,
+                              perform_saturation_pre_check=False)
 
     def stacked_core_center_tapped_pre_study(self, time_current_vectors: list[list[list[float]]], plot_waveforms: bool = False,
                                              fft_filter_value_factor: float = 0.01) -> dict:
