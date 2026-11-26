@@ -1933,7 +1933,7 @@ class MagneticComponent:
 
             for count_frequency, _ in enumerate(range(0, len(frequency_list))):
                 self.excitation(frequency=frequency_list[count_frequency], amplitude_list=current_list_list[count_frequency],
-                                phase_deg_list=phi_deg_list_list[count_frequency])  # frequency and current
+                                phase_deg_list=phi_deg_list_list[count_frequency], perform_saturation_pre_check=perform_saturation_pre_check)
                 self.write_simulation_parameters_to_pro_files()
                 self.generate_load_litz_approximation_parameters()
                 self.simulate()
@@ -2023,7 +2023,7 @@ class MagneticComponent:
         self.excitation_sweep(frequency_list, current_list_list, phi_deg_list_list, inductance_dict=inductance_dict, core_hyst_loss=p_hyst_core_parts)
 
     def stacked_core_study_excitation(self, time_current_vectors: list[list[list[float]]], transfer_ratio_n: float,
-                                      plot_waveforms: bool = False, fft_filter_value_factor: float = 0.01):
+                                      plot_waveforms: bool = False, fft_filter_value_factor: float = 0.01) -> dict:
         """
         Generate the current waveforms needed for the stacked_core_study().
 
@@ -2039,6 +2039,8 @@ class MagneticComponent:
         :type fft_filter_value_factor: float
         :param transfer_ratio_n: transformer transfer ratio n
         :type transfer_ratio_n: float
+        :return: dictionary with frequencies/currents/phases for hysteresis and winding loss calculation
+        :rtype: dict
         """
         stacked_core_study_excitation = {
             "hysteresis": {
@@ -2156,9 +2158,13 @@ class MagneticComponent:
         # From here, the hysteresis of transformer is calculated
         ps_primary_coil_turns = [150000 + i for i in range(number_primary_coil_turns)]
         self.overwrite_conductors_with_air(ps_primary_coil_turns)
+        # note: as the top inductor part has been overwritten with air, and a special hysteresis loss only waveform is introduced in the core,
+        # the reluctance model pre-check does not consider this and treats the circuit like a normal stacked transformer. Therefore, the
+        # saturation check needs to be disabled!
         self.excitation(frequency=study_excitation["hysteresis"]["frequency"],
                         amplitude_list=study_excitation["hysteresis"]["transformer"]["current_amplitudes"],
-                        phase_deg_list=study_excitation["hysteresis"]["transformer"]["current_phases_deg"], plot_interpolation=False)
+                        phase_deg_list=study_excitation["hysteresis"]["transformer"]["current_phases_deg"], plot_interpolation=False,
+                        perform_saturation_pre_check=False)
         self.write_simulation_parameters_to_pro_files()
         self.generate_load_litz_approximation_parameters()
         self.simulate()
@@ -2173,9 +2179,12 @@ class MagneticComponent:
 
         # From here on, inductor losses are calculated
         # Therefore, the first done overwrite of inductor conductors is restored
+        # do not perform the reluctance model pre-check, as the pre-check considers a full stacked transformer, but here,
+        # a special case is given, as the top windings do not exist.
         self.overwrite_air_conductors_with_conductors(list(np.array(ps_primary_coil_turns) + 1000000))
         self.excitation(frequency=study_excitation["hysteresis"]["frequency"], amplitude_list=study_excitation["hysteresis"]["choke"]["current_amplitudes"],
-                        phase_deg_list=study_excitation["hysteresis"]["choke"]["current_phases_deg"], plot_interpolation=False)
+                        phase_deg_list=study_excitation["hysteresis"]["choke"]["current_phases_deg"], plot_interpolation=False,
+                        perform_saturation_pre_check=False)
         self.write_simulation_parameters_to_pro_files()
         self.generate_load_litz_approximation_parameters()
         self.simulate()
@@ -2192,8 +2201,10 @@ class MagneticComponent:
         # Note: As the result log is now re-written, the before calculated p_hyst_core_parts is added into this
         # result-log also the inductance dict is externally inserted into the final result log.
         # The final result log is written after this simulation
+        # winding loss simulation only: turn off the saturation pre check
         self.excitation_sweep(study_excitation["linear_losses"]["frequencies"], study_excitation["linear_losses"]["current_amplitudes"],
-                              study_excitation["linear_losses"]["current_phases_deg"], inductance_dict=inductance_dict, core_hyst_loss=p_hyst_core_parts)
+                              study_excitation["linear_losses"]["current_phases_deg"], inductance_dict=inductance_dict, core_hyst_loss=p_hyst_core_parts,
+                              perform_saturation_pre_check=False)
 
     def stacked_core_center_tapped_pre_study(self, time_current_vectors: list[list[list[float]]], plot_waveforms: bool = False,
                                              fft_filter_value_factor: float = 0.01) -> dict:
@@ -3120,7 +3131,11 @@ class MagneticComponent:
             # # Check for saturation and raise error if B-field exceeds threshold
             if abs(b_field) > saturation_threshold * self.core.material.b_sat:
                 raise ValueError(f"Core saturation detected! B-field ({abs(b_field)} T) exceeds {saturation_threshold * 100}% of the saturation flux density"
-                                 f" ({self.core.material.b_sat} T).")
+                                 f" ({self.core.material.b_sat} T)."
+                                 f"frequency: {self.frequency}"
+                                 f"Currents: {self.current}"
+                                 f"Phases: {self.phase_deg}"
+                                 )
 
             logger.info(f"Reluctance model pre-check:\n"
                         f"    B-field: {b_field:.4f} T\n"
@@ -3206,15 +3221,27 @@ class MagneticComponent:
 
                 if abs(b_field_top) > saturation_threshold * self.core.material.b_sat:
                     raise ValueError(f"Core saturation detected in top section! B-field ({abs(b_field_top)} T) exceeds "
-                                     f"{saturation_threshold * 100}% of the saturation flux density ({self.core.material.b_sat} T).")
+                                     f"{saturation_threshold * 100}% of the saturation flux density ({self.core.material.b_sat} T). "
+                                     f"Frequency: {self.frequency}, "
+                                     f"Currents: {np.abs(self.current)}, "
+                                     f"Phases: {self.phase_deg}."
+                                     )
 
                 if abs(b_field_bot) > saturation_threshold * self.core.material.b_sat:
                     raise ValueError(f"Core saturation detected in bottom section! B-field ({abs(b_field_bot)} T) exceeds "
-                                     f"{saturation_threshold * 100}% of the saturation flux density ({self.core.material.b_sat} T).")
+                                     f"{saturation_threshold * 100}% of the saturation flux density ({self.core.material.b_sat} T). "
+                                     f"Frequency: {self.frequency}, "
+                                     f"Currents: {np.abs(self.current)}, "
+                                     f"Phases: {self.phase_deg}."
+                                     )
 
                 if abs(b_field_middle) > saturation_threshold * self.core.material.b_sat:
                     raise ValueError(f"Core saturation detected in middle section! B-field ({abs(b_field_middle)} T) exceeds "
-                                     f"{saturation_threshold * 100}% of the saturation flux density ({self.core.material.b_sat} T).")
+                                     f"{saturation_threshold * 100}% of the saturation flux density ({self.core.material.b_sat} T). "
+                                     f"Frequency: {self.frequency}, "
+                                     f"Currents: {np.abs(self.current)}, "
+                                     f"Phases: {self.phase_deg}."
+                                     )
 
                 logger.info(f"B-field Top: {b_field_top:.4f} T")
                 logger.info(f"B-field Bottom: {b_field_bot:.4f} T")

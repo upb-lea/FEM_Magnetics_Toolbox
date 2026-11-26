@@ -36,6 +36,54 @@ class StackedTransformerOptimization:
     class ReluctanceModel:
         """Perform optimizations using the reluctance model of the stacked transformer."""
 
+        _magnet_loss_model_cache: dict[tuple[str, str], mh.loss.LossModel] = {}
+        _material_database_cache: mdb.Data | None = None
+        _datasheet_curve_cache: dict[tuple[str, mdb.DatasheetCurveType], pd.DataFrame] = {}
+        _cache_process_id: int | None = None
+
+        @staticmethod
+        def _ensure_process_local_caches() -> None:
+            """Reset cached database objects after a process fork."""
+            cls = StackedTransformerOptimization.ReluctanceModel
+            process_id = os.getpid()
+            if cls._cache_process_id != process_id:
+                cls._cache_process_id = process_id
+                cls._magnet_loss_model_cache = {}
+                cls._material_database_cache = None
+                cls._datasheet_curve_cache = {}
+
+        @staticmethod
+        def _get_material_database() -> mdb.Data:
+            """Return the process-local material database instance."""
+            cls = StackedTransformerOptimization.ReluctanceModel
+            cls._ensure_process_local_caches()
+            if cls._material_database_cache is None:
+                cls._material_database_cache = mdb.Data()
+            return cls._material_database_cache
+
+        @staticmethod
+        def _get_datasheet_curve(material_name: str, curve_type: mdb.DatasheetCurveType) -> pd.DataFrame:
+            """Return a cached datasheet curve for a material and curve type."""
+            cls = StackedTransformerOptimization.ReluctanceModel
+            cls._ensure_process_local_caches()
+            material_key = str(getattr(material_name, "value", material_name))
+            cache_key = (material_key, curve_type)
+            if cache_key not in cls._datasheet_curve_cache:
+                cls._datasheet_curve_cache[cache_key] = cls._get_material_database().get_datasheet_curve(
+                    material_name, curve_type)
+            return cls._datasheet_curve_cache[cache_key].copy(deep=True)
+
+        @staticmethod
+        def _get_magnet_loss_model(material_name: str, team: str = "paderborn") -> mh.loss.LossModel:
+            """Return a cached MagNet loss model for the given material and team."""
+            cls = StackedTransformerOptimization.ReluctanceModel
+            cls._ensure_process_local_caches()
+            material_key = str(getattr(material_name, "value", material_name))
+            cache_key = (team, material_key)
+            if cache_key not in cls._magnet_loss_model_cache:
+                cls._magnet_loss_model_cache[cache_key] = mh.loss.LossModel(material=material_name, team=team)
+            return cls._magnet_loss_model_cache[cache_key]
+
         @staticmethod
         def calculate_fix_parameters(config: StoSingleInputConfig) -> StoTargetAndFixedParameters:
             """Calculate fix parameters what can be derived from the input configuration.
@@ -90,13 +138,13 @@ class StackedTransformerOptimization:
                 filter_value_factor=config.fft_filter_value_factor)
 
             # material properties
-            material_db = mdb.Data()
-
             material_mu_r_abs_list = []
             magnet_model_list = []
             for material_name in config.material_list:
-                small_signal_mu_real_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_real_over_f_at_T)
-                small_signal_mu_imag_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_imag_over_f_at_T)
+                small_signal_mu_real_over_f_at_T = StackedTransformerOptimization.ReluctanceModel._get_datasheet_curve(
+                    material_name, mdb.DatasheetCurveType.small_signal_mu_real_over_f_at_T)
+                small_signal_mu_imag_over_f_at_T = StackedTransformerOptimization.ReluctanceModel._get_datasheet_curve(
+                    material_name, mdb.DatasheetCurveType.small_signal_mu_imag_over_f_at_T)
 
                 mu_real_at_f = np.interp(10_000, small_signal_mu_real_over_f_at_T["f"], small_signal_mu_real_over_f_at_T["mu_real"])
                 mu_imag_at_f = np.interp(10_000, small_signal_mu_imag_over_f_at_T["f"], small_signal_mu_imag_over_f_at_T["mu_imag"])
@@ -105,7 +153,7 @@ class StackedTransformerOptimization:
                 material_mu_r_abs_list.append(material_mu_r_abs)
 
                 # instantiate material-specific model
-                mdl: mh.loss.LossModel = mh.loss.LossModel(material=material_name, team="paderborn")
+                mdl = StackedTransformerOptimization.ReluctanceModel._get_magnet_loss_model(material_name)
                 magnet_model_list.append(mdl)
 
             # set up working directories
@@ -859,10 +907,11 @@ class StackedTransformerOptimization:
                 litz_wire_diameter_secondary = 2 * litz_wire_secondary_dict["conductor_radii"]
 
                 # material properties
-                material_db = mdb.Data()
                 material_name = Material(df_geometry['params_material_name'][index])
-                small_signal_mu_real_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_real_over_f_at_T)
-                small_signal_mu_imag_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_imag_over_f_at_T)
+                small_signal_mu_real_over_f_at_T = StackedTransformerOptimization.ReluctanceModel._get_datasheet_curve(
+                    material_name, mdb.DatasheetCurveType.small_signal_mu_real_over_f_at_T)
+                small_signal_mu_imag_over_f_at_T = StackedTransformerOptimization.ReluctanceModel._get_datasheet_curve(
+                    material_name, mdb.DatasheetCurveType.small_signal_mu_imag_over_f_at_T)
 
                 mu_real_at_f = np.interp(10_000, small_signal_mu_real_over_f_at_T["f"], small_signal_mu_real_over_f_at_T["mu_real"])
                 mu_imag_at_f = np.interp(10_000, small_signal_mu_imag_over_f_at_T["f"], small_signal_mu_imag_over_f_at_T["mu_imag"])
@@ -870,7 +919,7 @@ class StackedTransformerOptimization:
                 material_mu_r_abs = np.abs(np.array([mu_real_at_f + 1j * mu_imag_at_f]))
 
                 # instantiate material-specific model
-                magnet_material_model: mh.loss.LossModel = mh.loss.LossModel(material=material_name, team="paderborn")
+                magnet_material_model = StackedTransformerOptimization.ReluctanceModel._get_magnet_loss_model(material_name)
 
                 reluctance_model_input = StoReluctanceModelInput(
                     target_inductance_matrix=fr.calculate_inductance_matrix_from_ls_lh_n(local_config.l_s12_target, local_config.l_h_target,
@@ -1249,12 +1298,12 @@ class StackedTransformerOptimization:
             target_and_fix_parameters = StackedTransformerOptimization.ReluctanceModel.calculate_fix_parameters(local_config)
 
             # material properties
-            material_db = mdb.Data()
-
             material_name = Material(df_geometry['params_material_name'][index_number])
 
-            small_signal_mu_real_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_real_over_f_at_T)
-            small_signal_mu_imag_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_imag_over_f_at_T)
+            small_signal_mu_real_over_f_at_T = StackedTransformerOptimization.ReluctanceModel._get_datasheet_curve(
+                material_name, mdb.DatasheetCurveType.small_signal_mu_real_over_f_at_T)
+            small_signal_mu_imag_over_f_at_T = StackedTransformerOptimization.ReluctanceModel._get_datasheet_curve(
+                material_name, mdb.DatasheetCurveType.small_signal_mu_imag_over_f_at_T)
 
             mu_real_at_f = np.interp(10_000, small_signal_mu_real_over_f_at_T["f"], small_signal_mu_real_over_f_at_T["mu_real"])
             mu_imag_at_f = np.interp(10_000, small_signal_mu_imag_over_f_at_T["f"], small_signal_mu_imag_over_f_at_T["mu_imag"])
@@ -1309,7 +1358,7 @@ class StackedTransformerOptimization:
             litz_wire_diameter_secondary = 2 * litz_wire_secondary_dict["conductor_radii"]
 
             # instantiate material-specific model
-            magnet_material_model: mh.loss.LossModel = mh.loss.LossModel(material=material_name, team="paderborn")
+            magnet_material_model = StackedTransformerOptimization.ReluctanceModel._get_magnet_loss_model(material_name)
 
             reluctance_model_input = StoReluctanceModelInput(
                 target_inductance_matrix=fr.calculate_inductance_matrix_from_ls_lh_n(local_config.l_s12_target, local_config.l_h_target,
