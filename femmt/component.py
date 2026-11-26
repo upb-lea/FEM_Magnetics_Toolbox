@@ -21,7 +21,6 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 import gmsh
-from pandas.io.pytables import performance_doc
 
 # Local libraries
 import femmt.functions as ff

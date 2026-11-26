@@ -94,6 +94,90 @@ class InductorOptimization:
     class ReluctanceModel:
         """Reluctance model methods for the optimization."""
 
+        _magnet_loss_model_cache: dict[tuple[str, str], mh.loss.LossModel] = {}
+        _material_database_cache: mdb.Data | None = None
+        _datasheet_curve_cache: dict[tuple[str, mdb.DatasheetCurveType], pd.DataFrame] = {}
+        _initial_magnetization_curve_cache: dict[tuple[str, int, float | None], pd.DataFrame] = {}
+        _imported_complex_material_cache: dict[tuple[str, float | None, str, str], ImportedComplexCoreMaterial] = {}
+        _cache_process_id: int | None = None
+
+        @staticmethod
+        def _ensure_process_local_caches() -> None:
+            """Reset cached database objects after a process fork."""
+            cls = InductorOptimization.ReluctanceModel
+            process_id = os.getpid()
+            if cls._cache_process_id != process_id:
+                cls._cache_process_id = process_id
+                cls._magnet_loss_model_cache = {}
+                cls._material_database_cache = None
+                cls._datasheet_curve_cache = {}
+                cls._initial_magnetization_curve_cache = {}
+                cls._imported_complex_material_cache = {}
+
+        @staticmethod
+        def _get_material_database() -> mdb.Data:
+            """Return the process-local material database instance."""
+            cls = InductorOptimization.ReluctanceModel
+            cls._ensure_process_local_caches()
+            if cls._material_database_cache is None:
+                cls._material_database_cache = mdb.Data()
+            return cls._material_database_cache
+
+        @staticmethod
+        def _get_datasheet_curve(material_name: str, curve_type: mdb.DatasheetCurveType) -> pd.DataFrame:
+            """Return a cached datasheet curve for a material and curve type."""
+            cls = InductorOptimization.ReluctanceModel
+            cls._ensure_process_local_caches()
+            material_key = str(getattr(material_name, "value", material_name))
+            cache_key = (material_key, curve_type)
+            if cache_key not in cls._datasheet_curve_cache:
+                cls._datasheet_curve_cache[cache_key] = cls._get_material_database().get_datasheet_curve(
+                    material_name, curve_type)
+            return cls._datasheet_curve_cache[cache_key].copy(deep=True)
+
+        @staticmethod
+        def _get_initial_magnetization_curve(material_name: str, number_of_points: int,
+                                             temperature: float | None) -> pd.DataFrame:
+            """Return a cached initial magnetization curve."""
+            cls = InductorOptimization.ReluctanceModel
+            cls._ensure_process_local_caches()
+            material_key = str(getattr(material_name, "value", material_name))
+            cache_key = (material_key, number_of_points, temperature)
+            if cache_key not in cls._initial_magnetization_curve_cache:
+                cls._initial_magnetization_curve_cache[cache_key] = cls._get_material_database().get_initial_magnetization_curve(
+                    mdb.Material(material_key), number_of_points, temperature)
+            return cls._initial_magnetization_curve_cache[cache_key].copy(deep=True)
+
+        @staticmethod
+        def _get_imported_complex_material(material_name: str, temperature: float | None,
+                                           permeability_datasource: object,
+                                           permittivity_datasource: object) -> ImportedComplexCoreMaterial:
+            """Return a process-local imported complex material instance."""
+            cls = InductorOptimization.ReluctanceModel
+            cls._ensure_process_local_caches()
+            material_key = str(getattr(material_name, "value", material_name))
+            cache_key = (
+                material_key,
+                temperature,
+                str(getattr(permeability_datasource, "value", permeability_datasource)),
+                str(getattr(permittivity_datasource, "value", permittivity_datasource)),
+            )
+            if cache_key not in cls._imported_complex_material_cache:
+                cls._imported_complex_material_cache[cache_key] = ImportedComplexCoreMaterial(
+                    material_name, temperature, permeability_datasource, permittivity_datasource)
+            return cls._imported_complex_material_cache[cache_key]
+
+        @staticmethod
+        def _get_magnet_loss_model(material_name: str, team: str = "paderborn") -> mh.loss.LossModel:
+            """Return a cached MagNet loss model for the given material and team."""
+            cls = InductorOptimization.ReluctanceModel
+            cls._ensure_process_local_caches()
+            material_key = str(getattr(material_name, "value", material_name))
+            cache_key = (team, material_key)
+            if cache_key not in cls._magnet_loss_model_cache:
+                cls._magnet_loss_model_cache[cache_key] = mh.loss.LossModel(material=material_name, team=team)
+            return cls._magnet_loss_model_cache[cache_key]
+
         @staticmethod
         def calculate_fix_parameters(config: InductorOptimizationDTO) -> InductorOptimizationTargetAndFixedParameters:
             """Calculate fix parameters what can be derived from the input configuration.
@@ -129,7 +213,7 @@ class InductorOptimization:
                 period_vector_t_i=config.time_current_vec, sample_factor=1000, plot='no', mode='time', filter_type='factor',
                 filter_value_factor=config.fft_filter_value_factor)
 
-            # Check für current offset
+            # Check for current offset
             if fft_frequencies[0] == 0:
                 # Reduce vector by current offset
                 current_offset = fft_amplitudes[0]
@@ -147,15 +231,17 @@ class InductorOptimization:
 
             i_peak, = fr.max_value_from_value_vec(current_extracted_vec)
             # material properties
-            material_db = mdb.Data()
+            material_db = InductorOptimization.ReluctanceModel._get_material_database()
             material_mu_r_abs_list = []
             magnet_model_list = []
             initial_mag_curve_list: list[pd.DataFrame] = []
             imported_complex_material_list: list[ImportedComplexCoreMaterial] = []
 
             for material_name in config.material_name_list:
-                small_signal_mu_real_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_real_over_f_at_T)
-                small_signal_mu_imag_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_imag_over_f_at_T)
+                small_signal_mu_real_over_f_at_T = InductorOptimization.ReluctanceModel._get_datasheet_curve(
+                    material_name, mdb.DatasheetCurveType.small_signal_mu_real_over_f_at_T)
+                small_signal_mu_imag_over_f_at_T = InductorOptimization.ReluctanceModel._get_datasheet_curve(
+                    material_name, mdb.DatasheetCurveType.small_signal_mu_imag_over_f_at_T)
 
                 mu_real_at_f = np.interp(10_000, small_signal_mu_real_over_f_at_T["f"], small_signal_mu_real_over_f_at_T["mu_real"])
                 mu_imag_at_f = np.interp(10_000, small_signal_mu_imag_over_f_at_T["f"], small_signal_mu_imag_over_f_at_T["mu_imag"])
@@ -163,11 +249,12 @@ class InductorOptimization:
                 material_mu_r_abs = np.abs(np.array([mu_real_at_f + 1j * mu_imag_at_f]))
                 material_mu_r_abs_list.append(material_mu_r_abs)
                 # instantiate material-specific model
-                mdl: mh.loss.LossModel = mh.loss.LossModel(material=material_name, team="paderborn")
+                mdl = InductorOptimization.ReluctanceModel._get_magnet_loss_model(material_name)
                 magnet_model_list.append(mdl)
-                initial_magnetization_curve = material_db.get_initial_magnetization_curve(mdb.Material(material_name), 500, config.temperature)
+                initial_magnetization_curve = InductorOptimization.ReluctanceModel._get_initial_magnetization_curve(
+                    material_name, 500, config.temperature)
                 initial_mag_curve_list.append(initial_magnetization_curve)
-                imported_complex_material_list.append(ImportedComplexCoreMaterial(
+                imported_complex_material_list.append(InductorOptimization.ReluctanceModel._get_imported_complex_material(
                     material_name, config.temperature, config.material_data_sources.permeability_datasource,
                     config.material_data_sources.permittivity_datasource))
             # set up working directories
@@ -977,12 +1064,10 @@ class InductorOptimization:
                 litz_wire_diameter = 2 * litz_wire["conductor_radii"]
 
                 # material properties
-                material_db = mdb.Data()
-
                 material_name = mdb.meta.Material(df_geometry['params_material_name'][index])
 
                 # instantiate material-specific model
-                magnet_material_model: mh.loss.LossModel = mh.loss.LossModel(material=material_name, team="paderborn")
+                magnet_material_model = InductorOptimization.ReluctanceModel._get_magnet_loss_model(material_name)
 
                 # Set common IoReluctanceModelInput
                 reluctance_model_input = IoReluctanceModelInput(
@@ -1011,8 +1096,10 @@ class InductorOptimization:
                 # Check if simulation are without current offset
                 if target_and_fix_parameters.current_offset == 0:
 
-                    small_signal_mu_real_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_real_over_f_at_T)
-                    small_signal_mu_imag_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_imag_over_f_at_T)
+                    small_signal_mu_real_over_f_at_T = InductorOptimization.ReluctanceModel._get_datasheet_curve(
+                        material_name, mdb.DatasheetCurveType.small_signal_mu_real_over_f_at_T)
+                    small_signal_mu_imag_over_f_at_T = InductorOptimization.ReluctanceModel._get_datasheet_curve(
+                        material_name, mdb.DatasheetCurveType.small_signal_mu_imag_over_f_at_T)
 
                     mu_real_at_f = np.interp(10_000, small_signal_mu_real_over_f_at_T["f"], small_signal_mu_real_over_f_at_T["mu_real"])
                     mu_imag_at_f = np.interp(10_000, small_signal_mu_imag_over_f_at_T["f"], small_signal_mu_imag_over_f_at_T["mu_imag"])
@@ -1361,7 +1448,8 @@ class InductorOptimization:
                                                             permittivity_datasource=fem_input.material_data_sources.permittivity_datasource)
 
             # Get initial magnetization curve
-            material_initial_mag_curve = core_material.database.get_initial_magnetization_curve(core_material.material, 100, fem_input.temperature)
+            material_initial_mag_curve = InductorOptimization.ReluctanceModel._get_initial_magnetization_curve(
+                core_material.material, 100, fem_input.temperature)
 
             core = fmt.Core(material=core_material,
                             core_type=fmt.CoreType.Single,
@@ -1501,10 +1589,11 @@ class InductorOptimization:
                 target_and_fix_parameters.working_directories.fem_working_directory, f"process_{process_number}")
 
             # material properties
-            material_db = mdb.Data()
             material_name = mdb.meta.Material(df_geometry['params_material_name'][index_number])
-            small_signal_mu_real_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_real_over_f_at_T)
-            small_signal_mu_imag_over_f_at_T = material_db.get_datasheet_curve(material_name, mdb.DatasheetCurveType.small_signal_mu_imag_over_f_at_T)
+            small_signal_mu_real_over_f_at_T = InductorOptimization.ReluctanceModel._get_datasheet_curve(
+                material_name, mdb.DatasheetCurveType.small_signal_mu_real_over_f_at_T)
+            small_signal_mu_imag_over_f_at_T = InductorOptimization.ReluctanceModel._get_datasheet_curve(
+                material_name, mdb.DatasheetCurveType.small_signal_mu_imag_over_f_at_T)
 
             mu_real_at_f = np.interp(10_000, small_signal_mu_real_over_f_at_T["f"], small_signal_mu_real_over_f_at_T["mu_real"])
             mu_imag_at_f = np.interp(10_000, small_signal_mu_imag_over_f_at_T["f"], small_signal_mu_imag_over_f_at_T["mu_imag"])
@@ -1549,7 +1638,7 @@ class InductorOptimization:
             litz_wire_diameter = 2 * litz_wire["conductor_radii"]
 
             # instantiate material-specific model
-            magnet_material_model: mh.loss.LossModel = mh.loss.LossModel(material=material_name, team="paderborn")
+            magnet_material_model = InductorOptimization.ReluctanceModel._get_magnet_loss_model(material_name)
 
             reluctance_model_input = IoReluctanceModelInput(
                 core_inner_diameter=core_inner_diameter,
